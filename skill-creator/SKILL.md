@@ -209,7 +209,7 @@ Skill creation involves these steps:
 4. Choose skill location (user-level vs project-level)
 5. Initialize the skill (run init_skill.py)
 6. Edit the skill (implement resources and write SKILL.md)
-7. Package the skill (run package_skill.py)
+7. *OPTIONAL* Package the skill (run package_skill.py)
 8. Iterate based on real usage
 
 Follow these steps in order, skipping only if there is a clear reason why they are not applicable.
@@ -396,6 +396,8 @@ Do not include any other fields in YAML frontmatter.
 Write instructions for using the skill and its bundled resources.
 
 ### Step 7: Packaging a Skill
+
+**This step is optional** it should only be done at the request of the user.
 
 Once development of the skill is complete, it must be packaged into a distributable .skill file that gets shared with the user. The packaging process automatically validates the skill first to ensure it meets all requirements:
 
