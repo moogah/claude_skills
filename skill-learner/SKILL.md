@@ -1,6 +1,6 @@
 ---
 name: skill-learner
-description: Helps Claude iteratively capture learnings and patterns from sessions into skills. Use this skill when: (1) User explicitly corrects Claude's approach or provides feedback, (2) Claude notices repeated patterns across multiple tasks in the session, (3) User mentions repo-specific conventions or preferences, (4) Claude struggles with similar tasks multiple times, (5) User requests skill updates or creation, (6) Session reveals gaps in existing skill coverage. This skill operates proactively but asks permission before interrupting current work.
+description: "Helps Claude iteratively capture learnings and patterns from sessions into skills. Use this skill when: (1) User explicitly corrects Claude's approach or provides feedback, (2) Claude notices repeated patterns across multiple tasks in the session, (3) User mentions repo-specific conventions or preferences, (4) Claude struggles with similar tasks multiple times, (5) User requests skill updates or creation, (6) Session reveals gaps in existing skill coverage. This skill operates proactively but asks permission before interrupting current work."
 ---
 
 # Skill Learner

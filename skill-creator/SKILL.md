@@ -253,7 +253,29 @@ Example: When building a `big-query` skill to handle queries like "How many user
 
 To establish the skill's contents, analyze each concrete example to create a list of the reusable resources to include: scripts, references, and assets.
 
-### Step 3: Initializing the Skill
+### Step 3: Setup Python Environment
+
+The skill-creator scripts require Python dependencies (PyYAML). On systems with externally-managed Python environments (like macOS with Homebrew Python), you'll need a virtual environment:
+
+```bash
+# Create venv in skill-creator directory (one-time setup)
+cd ~/.claude/skills/skill-creator
+python3 -m venv .venv
+source .venv/bin/activate
+
+# Install dependencies
+pip install pyyaml
+
+# Scripts can now run within the venv
+```
+
+For subsequent uses, just activate the venv before running scripts:
+
+```bash
+source ~/.claude/skills/skill-creator/.venv/bin/activate
+```
+
+### Step 4: Initializing the Skill
 
 At this point, it is time to actually create the skill.
 
@@ -276,7 +298,7 @@ The script:
 
 After initialization, customize or remove the generated SKILL.md and example files as needed.
 
-### Step 4: Edit the Skill
+### Step 5: Edit the Skill
 
 When editing the (newly-generated or existing) skill, remember that the skill is being created for another instance of Claude to use. Include information that would be beneficial and non-obvious to Claude. Consider what procedural knowledge, domain-specific details, or reusable assets would help another Claude instance execute these tasks more effectively.
 
@@ -317,7 +339,7 @@ Do not include any other fields in YAML frontmatter.
 
 Write instructions for using the skill and its bundled resources.
 
-### Step 5: Packaging a Skill
+### Step 6: Packaging a Skill
 
 Once development of the skill is complete, it must be packaged into a distributable .skill file that gets shared with the user. The packaging process automatically validates the skill first to ensure it meets all requirements:
 
@@ -344,7 +366,7 @@ The packaging script will:
 
 If validation fails, the script will report the errors and exit without creating a package. Fix any validation errors and run the packaging command again.
 
-### Step 6: Iterate
+### Step 7: Iterate
 
 After testing the skill, users may request improvements. Often this happens right after using the skill, with fresh context of how the skill performed.
 
