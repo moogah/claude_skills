@@ -1,6 +1,6 @@
 ---
 name: software-testing
-description: Software testing guidance with decision tree. Use when: (1) Writing or improving tests, (2) User asks about testing approaches, (3) Need guidance on test scope or assertions, (4) Working with specific test frameworks. Routes to specialized testing strategies via reference files.
+description: "Software testing guidance with decision tree. Use when: (1) Writing or improving tests, (2) User asks about testing approaches, (3) Need guidance on test scope or assertions, (4) Working with specific test frameworks. Routes to specialized testing strategies via reference files."
 ---
 
 # Software Testing
@@ -50,6 +50,54 @@ npm test -- --testNamePattern="login validation"
 ```bash
 npm test  # Running entire suite unnecessarily
 ```
+
+### Use Sub Agents for Test Execution
+
+When running tests that produce verbose output, use a sub agent to preserve context in the main conversation. The sub agent runs the tests and summarizes only the important information.
+
+**When to use sub agents:**
+- Running test suites with many tests
+- Tests that produce verbose output or stack traces
+- When context preservation is important
+
+**How to use sub agents:**
+```
+Use Task tool with subagent_type="general-purpose"
+Ask the sub agent to:
+1. Determine the correct test command for the project
+2. Run the tests for the specified file(s)
+3. Report the EXACT commands executed
+4. Summarize results as:
+   - How many test suites and tests ran
+   - How many passed
+   - What tests failed (with error messages and stack traces)
+```
+
+**Example:**
+```
+Task(
+  description: "Run and summarize component tests",
+  subagent_type: "general-purpose",
+  prompt: "Run tests for src/components/Button.test.js.
+
+           First, determine the correct test command (check if this is an Nx monorepo,
+           package.json scripts, etc.).
+
+           Then run the tests and provide:
+           1. The EXACT command(s) you executed
+           2. How many test suites and tests ran
+           3. How many passed
+           4. What tests failed (with error messages and stack traces)
+
+           Including the exact commands is important for debugging."
+)
+```
+
+**Benefits:**
+- Preserves main conversation context
+- Filters verbose test output to essential information
+- Maintains focus on what matters (failures, error messages)
+- Provides exact commands for debugging and reproducibility
 
 ### Use Specific Assertion Values
 

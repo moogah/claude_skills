@@ -205,10 +205,12 @@ Skill creation involves these steps:
 
 1. Understand the skill with concrete examples
 2. Plan reusable skill contents (scripts, references, assets)
-3. Initialize the skill (run init_skill.py)
-4. Edit the skill (implement resources and write SKILL.md)
-5. Package the skill (run package_skill.py)
-6. Iterate based on real usage
+3. Setup Python environment
+4. Choose skill location (user-level vs project-level)
+5. Initialize the skill (run init_skill.py)
+6. Edit the skill (implement resources and write SKILL.md)
+7. Package the skill (run package_skill.py)
+8. Iterate based on real usage
 
 Follow these steps in order, skipping only if there is a clear reason why they are not applicable.
 
@@ -275,7 +277,31 @@ For subsequent uses, just activate the venv before running scripts:
 source ~/.claude/skills/skill-creator/.venv/bin/activate
 ```
 
-### Step 4: Initializing the Skill
+### Step 4: Choose Skill Location
+
+Before creating the skill, decide whether it should be a **user-level** or **project-level** skill:
+
+**User-level skills** (`~/.claude/skills/`):
+- Available across all projects
+- General-purpose capabilities (PDF editing, DOCX processing, etc.)
+- Workflows that apply universally
+- Tool integrations used in multiple contexts
+
+**Project-level skills** (`<project>/.claude/skills/`):
+- Specific to a single project or repository
+- Project-specific workflows, conventions, or patterns
+- Repository-specific knowledge (build systems, testing patterns, architecture)
+- Team or codebase-specific procedures
+
+**Examples:**
+- User-level: `pdf-editor`, `docx-processor`, `brand-guidelines`
+- Project-level: `nx-monorepo-testing`, `api-deployment-workflow`, `database-migration-guide`
+
+When initializing the skill in the next step, use:
+- User-level: `--path ~/.claude/skills`
+- Project-level: `--path <project-root>/.claude/skills`
+
+### Step 5: Initializing the Skill
 
 At this point, it is time to actually create the skill.
 
@@ -298,7 +324,7 @@ The script:
 
 After initialization, customize or remove the generated SKILL.md and example files as needed.
 
-### Step 5: Edit the Skill
+### Step 6: Edit the Skill
 
 When editing the (newly-generated or existing) skill, remember that the skill is being created for another instance of Claude to use. Include information that would be beneficial and non-obvious to Claude. Consider what procedural knowledge, domain-specific details, or reusable assets would help another Claude instance execute these tasks more effectively.
 
@@ -369,7 +395,7 @@ Do not include any other fields in YAML frontmatter.
 
 Write instructions for using the skill and its bundled resources.
 
-### Step 6: Packaging a Skill
+### Step 7: Packaging a Skill
 
 Once development of the skill is complete, it must be packaged into a distributable .skill file that gets shared with the user. The packaging process automatically validates the skill first to ensure it meets all requirements:
 
@@ -396,7 +422,7 @@ The packaging script will:
 
 If validation fails, the script will report the errors and exit without creating a package. Fix any validation errors and run the packaging command again.
 
-### Step 7: Iterate
+### Step 8: Iterate
 
 After testing the skill, users may request improvements. Often this happens right after using the skill, with fresh context of how the skill performed.
 
