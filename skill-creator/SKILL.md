@@ -302,6 +302,36 @@ After initialization, customize or remove the generated SKILL.md and example fil
 
 When editing the (newly-generated or existing) skill, remember that the skill is being created for another instance of Claude to use. Include information that would be beneficial and non-obvious to Claude. Consider what procedural knowledge, domain-specific details, or reusable assets would help another Claude instance execute these tasks more effectively.
 
+#### Start Minimal - The v1 Principle
+
+**Critical principle**: Start with the minimum needed for the skill to provide value.
+
+**For v1, include only:**
+- SKILL.md with core workflow (50-80 lines)
+- minimal concrete example showing usage, remember **Claude is smart**
+- Essential scripts/references/assets IF they're required for the skill to function at all
+
+**Save for later versions:**
+- Multiple variations or advanced techniques
+- Comprehensive edge case handling
+- Detailed reference documentation
+- Workflow templates or checklists
+- Optional enhancements
+
+**Ask yourself**: "What's the smallest version that would help with the concrete examples identified in Step 1?" That's your v1.
+
+Let skills grow naturally through iteration rather than anticipating every need upfront.
+
+To establish the skill's v1 contents, analyze each concrete example to identify the absolute minimum reusable resources needed to provide value.
+
+**Delete unnecessary resources:**
+- If no scripts needed: Delete `scripts/` directory
+- If no references needed: Delete `references/` directory
+- If no assets needed: Delete `assets/` directory
+- Most v1 skills are SKILL.md only
+
+**Remember**: You can always add more. You can't "unsee" premature complexity. Start minimal.
+
 #### Learn Proven Design Patterns
 
 Consult these helpful guides based on your skill's needs:
