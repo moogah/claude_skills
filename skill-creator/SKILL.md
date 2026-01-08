@@ -266,12 +266,12 @@ python3 -m venv .venv
 source .venv/bin/activate
 
 # Install dependencies
-pip install pyyaml
+pip install -r scripts/requirements.txt
 
 # Scripts can now run within the venv
 ```
 
-For subsequent uses, just activate the venv before running scripts:
+For subsequent uses, activate the venv before running skill-creator scripts:
 
 ```bash
 source ~/.claude/skills/skill-creator/.venv/bin/activate
@@ -307,7 +307,7 @@ At this point, it is time to actually create the skill.
 
 Skip this step only if the skill being developed already exists, and iteration or packaging is needed. In this case, continue to the next step.
 
-When creating a new skill from scratch, always run the `init_skill.py` script. The script conveniently generates a new template skill directory that automatically includes everything a skill requires, making the skill creation process much more efficient and reliable.
+When creating a new skill from scratch, always run the `init_skill.py` script. The script generates a minimal v1 template that follows the principle of starting small.
 
 Usage:
 
@@ -318,11 +318,13 @@ scripts/init_skill.py <skill-name> --path <output-directory>
 The script:
 
 - Creates the skill directory at the specified path
-- Generates a SKILL.md template with proper frontmatter and TODO placeholders
-- Creates example resource directories: `scripts/`, `references/`, and `assets/`
-- Adds example files in each directory that can be customized or deleted
+- Generates a minimal SKILL.md template (~50 lines) with:
+  - Proper YAML frontmatter (name, description)
+  - TODO placeholders for core sections
+  - Inline tips for v1 development
+  - Optional HTML comment about adding resource directories when needed
 
-After initialization, customize or remove the generated SKILL.md and example files as needed.
+After initialization, complete the TODOs in SKILL.md. Add `scripts/`, `references/`, or `assets/` directories only when you have concrete files to include.
 
 ### Step 6: Edit the Skill
 
@@ -400,6 +402,10 @@ Write instructions for using the skill and its bundled resources.
 Once the user has reviewed and approved all changes, run the validation script:
 
 ```bash
+# Activate venv (required for PyYAML dependency)
+source ~/.claude/skills/skill-creator/.venv/bin/activate
+
+# Run validator
 ~/.claude/skills/skill-creator/scripts/quick_validate.py <path-to-skill>
 ```
 
