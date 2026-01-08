@@ -25,12 +25,142 @@ Question 4: Does it involve meaningful complexity or decision-making?
     ├─ No → FILTER OUT (too trivial)
     └─ Yes → CAPTURE THIS LEARNING
          ↓
-    Proceed to Action Determination (Section 2)
+    Proceed to Triage (Section 2)
 ```
 
-## 2. Action Determination
+## 2. Triage: Skill vs CLAUDE.md
 
-### 2A. Update Existing vs Create New
+Determine whether the learning should be captured as a skill or in CLAUDE.md files:
+
+```
+Start: Significant learning confirmed
+    ↓
+Question: What TYPE of knowledge is this?
+    ├─ Procedural/Workflow → Is it complex? (multi-step, decision trees, tool integration)
+    │   ├─ Yes (3+ steps, conditional logic, tools) → CAPTURE AS SKILL
+    │   └─ No (1-2 simple steps) → Continue to CLAUDE.md triage
+    │
+    ├─ Conventions/Preferences → CLAUDE.md triage
+    ├─ Contextual Knowledge → CLAUDE.md triage
+    └─ Reference Data → CLAUDE.md triage
+         ↓
+    Proceed to CLAUDE.md Level Decision (Section 3)
+```
+
+### Capture as SKILL when:
+
+- Complex workflow with 3+ distinct steps or decision points
+- Requires tool integration with bundled scripts, references, or assets
+- Multi-step procedure with conditional logic or branching
+- Contains reusable code that would be written repeatedly (scripts/)
+- Needs resource bundles (templates, assets, reference docs)
+- Represents standalone capability in distinct domain
+
+### Capture in CLAUDE.md when:
+
+- Simple convention (1-2 step preference or formatting rule)
+- Code style preference (indentation, quotes, naming)
+- Command shortcut (single command with specific flags)
+- Context about codebase (architecture notes, file locations)
+- Team pattern (review process, commit message style)
+- Path-specific rule (convention that applies to specific directories)
+- Always-on knowledge that should be in every conversation
+
+### Quick Test:
+
+**If uncertain:** If it takes more than 3 steps to execute OR requires code/scripts → Skill. Otherwise → CLAUDE.md.
+
+## 3. CLAUDE.md Level Decision
+
+Once determined to capture in CLAUDE.md, choose the appropriate hierarchical level:
+
+```
+Start: Decided to capture in CLAUDE.md
+    ↓
+Question 1: Is it path-specific (applies only to certain files/directories)?
+    ├─ Yes → .claude/rules/*.md with paths frontmatter
+    └─ No → Continue to Question 2
+         ↓
+Question 2: Is it specific to this codebase/repo/team?
+    ├─ Yes → Project-level: ./CLAUDE.md or ./.claude/CLAUDE.md
+    └─ No → Continue to Question 3
+         ↓
+Question 3: Does it apply to all your projects?
+    ├─ Yes → User-level: ~/.claude/CLAUDE.md
+    └─ No/Uncertain → Project-level (default when uncertain)
+```
+
+### User-Level (~/.claude/CLAUDE.md)
+
+**When to use:**
+- Personal preferences across ALL projects
+- Language/framework conventions you always follow
+- Tool usage patterns you prefer universally
+- General engineering practices you apply everywhere
+
+**Examples:**
+- "I prefer single quotes in JavaScript/TypeScript"
+- "Always run tests before committing"
+- "Use descriptive variable names, avoid abbreviations"
+- "Format code with Prettier: --single-quote --print-width 100"
+
+### Project-Level (./CLAUDE.md or ./.claude/CLAUDE.md)
+
+**When to use:**
+- Team-shared conventions for THIS project
+- Architecture patterns specific to this codebase
+- Project-specific file locations or structure
+- Team workflows (not path-specific)
+- Build/test/deploy commands for this repo
+
+**Examples:**
+- "This is an Nx monorepo with apps in apps/ and libs in libs/"
+- "Database schema documented in docs/schema.sql"
+- "Deploy to staging first, get QA approval before production"
+- "Connection strings in config/database.yml, use 'analytics' database"
+
+### Path-Specific Rules (./.claude/rules/*.md)
+
+**When to use:**
+- Conventions that only apply to specific directories or file patterns
+- Different rules for different parts of the codebase
+- Language-specific guidelines (TypeScript vs Python files)
+- Component-specific patterns (API vs frontend)
+
+**Examples:**
+- API endpoints: "All files in src/api/ must include input validation"
+- React components: "Components in src/components/ must use functional components"
+- Test files: "Tests in tests/ must follow Arrange-Act-Assert pattern"
+- Config files: "YAML files in config/ must be validated against schema"
+
+**Frontmatter format:**
+```markdown
+---
+paths: "src/api/**/*.ts"
+---
+
+# API Development Rules
+
+- All endpoints must include input validation
+- Use standard error response format
+```
+
+### Project-Local (./CLAUDE.local.md)
+
+**When to use:**
+- Personal preferences ONLY for this project
+- Your local development setup
+- Sandbox URLs, test data specific to your workflow
+- Not ready for team (experimental patterns)
+
+**Examples:**
+- "Use my local dev database at localhost:5432"
+- "My staging URL is https://jefffarr-staging.example.com"
+- "Test with my test account: jeff.test@example.com"
+
+## 4. Action Determination (For Skills)
+
+### 4A. Update Existing vs Create New
 
 ```
 Start: Significant learning confirmed
@@ -48,7 +178,7 @@ Question 3: Would adding this make the existing skill unfocused or too broad?
     └─ No → UPDATE EXISTING SKILL
 ```
 
-### 2B. Local vs User-Level
+### 4B. Local vs User-Level
 
 ```
 Start: Decided to create new skill
@@ -70,9 +200,9 @@ Question 4: Is it generally applicable across projects?
     └─ No/Uncertain → USER-LEVEL SKILL (default when uncertain)
 ```
 
-## 3. Timing Decisions
+## 5. Timing Decisions
 
-### 3A. When to Suggest
+### 5A. When to Suggest
 
 | Situation | User State | Learning Urgency | Decision |
 |-----------|------------|------------------|----------|
@@ -85,7 +215,7 @@ Question 4: Is it generally applicable across projects?
 | User in flow (3+ rapid tasks) | Focused | High (contradicts skill) | INTERRUPT briefly |
 | User explicitly asks about skill | Available | Any | SUGGEST immediately |
 
-### 3B. Timing Flowchart
+### 5B. Timing Flowchart
 
 ```
 Start: Ready to get user approval
@@ -107,7 +237,7 @@ Question 4: Is user in rapid flow state (multiple quick tasks)?
     └─ No → SUGGEST NOW
 ```
 
-## 4. Edge Case: Conflicting Information
+## 6. Edge Case: Conflicting Information
 
 If user corrections conflict across different times:
 
@@ -121,13 +251,26 @@ Which approach should I capture in the skill, or does it depend on [some context
 
 Only capture once consistency is established.
 
-## 5. Quick Reference
+## 7. Quick Reference
 
 **Capture when:**
 - 2-3+ repetitions OR explicit user statement
 - Non-obvious information
 - Future applicability
 - Meaningful complexity
+
+**Triage: Skill vs CLAUDE.md:**
+- Complex workflow (3+ steps, tools, conditional logic) → Skill
+- Simple convention/preference/context → CLAUDE.md
+- When uncertain: If needs code/scripts → Skill, otherwise → CLAUDE.md
+
+**CLAUDE.md Level:**
+- Path-specific → .claude/rules/*.md (with frontmatter)
+- Project-specific → ./CLAUDE.md or ./.claude/CLAUDE.md
+- User-wide → ~/.claude/CLAUDE.md
+- When uncertain → Project-level
+
+**For Skills:**
 
 **Update existing skill when:**
 - Learning fits existing skill's domain
@@ -146,6 +289,6 @@ Only capture once consistency is established.
 - When uncertain (default)
 
 **Timing:**
-- Interrupt: Only for conflicts with existing skills
+- Interrupt: Only for conflicts with existing skills/patterns
 - Suggest: After task completion (preferred)
 - Defer: During mid-task, debugging, or flow state

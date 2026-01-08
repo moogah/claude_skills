@@ -20,13 +20,14 @@ This skill enables Claude to recognize learnings during sessions and incorporate
 
 ## Workflow Decision Tree
 
-The skill-learning process follows five sequential steps:
+The skill-learning process follows six sequential steps:
 
 1. **Detect** - Recognize learnings worth capturing
 2. **Assess** - Evaluate significance and filter out noise
-3. **Determine** - Decide on action type (update/create, local/user-level)
-4. **Approve** - Get user permission at appropriate time
-5. **Implement** - Execute the change using skill-creator tools
+3. **Triage** - Decide if learning belongs in skill or CLAUDE.md file
+4. **Determine** - Decide on action details (update/create, level/location)
+5. **Approve** - Get user permission at appropriate time
+6. **Implement** - Execute the change using appropriate tools
 
 ## Step 1: Detecting Learnings Worth Capturing
 
@@ -90,11 +91,28 @@ Use decision-framework.md for detailed criteria. Key filters:
 
 See references/decision-framework.md for flowcharts and references/examples.md for concrete scenarios.
 
-## Step 3: Determining Action Type
+## Step 3: Triaging to Skill vs CLAUDE.md
 
-Make three key decisions about how to capture the learning:
+Once significance is confirmed, determine whether to capture as a skill or in CLAUDE.md.
 
-### Decision 1: Update Existing vs Create New
+**Quick rule:** Complex workflow (3+ steps, tools, conditional logic) → Skill. Simple preference/convention/context → CLAUDE.md.
+
+**CLAUDE.md levels:**
+- Path-specific → .claude/rules/*.md (with `paths:` frontmatter)
+- Project-specific → ./CLAUDE.md or ./.claude/CLAUDE.md
+- User-wide → ~/.claude/CLAUDE.md
+
+See references/decision-framework.md for detailed decision trees and references/claude-md-structure.md for minimal examples.
+
+## Step 4: Determining Action Type
+
+Make decisions about how to capture the learning. The specific decisions depend on whether you're creating a skill or writing to CLAUDE.md.
+
+### For Skills
+
+Three key decisions for skill-based learnings:
+
+#### Decision 1: Update Existing vs Create New
 
 **Update existing skill when:**
 - Learning directly relates to an existing skill's domain
@@ -110,7 +128,7 @@ Make three key decisions about how to capture the learning:
 
 **Principle:** Prefer updates to avoid skill proliferation, but don't force unrelated content together.
 
-### Decision 2: Local vs User-Level
+#### Decision 2: Local vs User-Level
 
 **Local (.claude/skills in repo) when:**
 - Specific to this codebase's architecture
@@ -128,7 +146,7 @@ Make three key decisions about how to capture the learning:
 
 **When uncertain:** Start user-level. It's easier to migrate to local later if needed.
 
-### Decision 3: Timing and Interruption Strategy
+#### Decision 3: Timing and Interruption Strategy
 
 See decision-framework.md for the timing decision matrix. Quick reference:
 
@@ -136,11 +154,62 @@ See decision-framework.md for the timing decision matrix. Quick reference:
 - **Defer to end-of-task:** Preferred for most learnings (after task complete, natural stopping point)
 - **Defer to end-of-session:** When user is in urgent/flow state but learning is valuable
 
-## Step 4: Getting User Approval
+### For CLAUDE.md Files
 
-Always ask before implementing skill changes. Use appropriate timing and clear communication.
+Three key decisions for CLAUDE.md-based learnings:
 
-### Approval Request Format
+#### Decision 1: File Organization
+
+**For path-specific rules:**
+- Create new file in .claude/rules/ with descriptive name (e.g., `api-guidelines.md`)
+- Add YAML frontmatter with `paths` field using glob patterns
+- Organize by domain: `frontend/`, `backend/`, etc. if many rules exist
+- Example filename: `.claude/rules/api-guidelines.md` or `.claude/rules/frontend/react-components.md`
+
+**For project-level:**
+- Add to existing ./CLAUDE.md (or ./.claude/CLAUDE.md) or create if doesn't exist
+- Choose appropriate section (create if needed)
+- Keep organized with clear headings
+
+**For user-level:**
+- Add to existing ~/.claude/CLAUDE.md or create if doesn't exist
+- Organize into logical sections (Code Style, Workflow, Tools, etc.)
+- Keep focused on personal preferences
+
+**For project-local:**
+- Add to ./CLAUDE.local.md (personal, not committed)
+- Use for temporary or experimental patterns
+
+#### Decision 2: Section Placement
+
+- Place learning under most relevant existing section
+- Create new section if no good fit (use ## for top-level, ### for subsections)
+- Keep sections focused (one topic per section)
+- Group related items together for easy scanning
+
+**Common section names:**
+- Code Style (formatting, naming, language-specific)
+- Workflow Practices (testing, git, review process)
+- Tool Preferences (CLI flags, build commands)
+- Project Overview (architecture, tech stack)
+- Development Commands (build, test, deploy)
+- Important Locations (config files, schemas, docs)
+
+#### Decision 3: Content Format
+
+- Use bullet points for scannable content
+- Include concrete examples when helpful
+- Reference file paths with backticks
+- Keep additions concise (2-5 bullets typically)
+- Be specific over vague ("Use 2-space indentation" not "Format properly")
+
+See references/claude-md-structure.md for detailed examples of well-organized CLAUDE.md files.
+
+## Step 5: Getting User Approval
+
+Always ask before implementing changes. Use appropriate timing and clear communication.
+
+### Approval Request Format for Skills
 
 ```
 I noticed [specific learning]. This seems worth capturing because [reason].
@@ -152,6 +221,45 @@ I suggest [updating skill-name / creating skill-name] to include:
 Would you like me to:
 1. Do this now
 2. Do this after we finish [current task]
+3. Skip it
+```
+
+### Approval Request Format for CLAUDE.md
+
+```
+I noticed [specific learning]. This seems like a good [convention/pattern] to capture.
+
+I suggest adding to [file-path]:
+
+Section: [section-name]
+- [Key point 1]
+- [Key point 2]
+
+Would you like me to:
+1. Do this now
+2. Do this after we finish [current task]
+3. Skip it
+```
+
+**For path-specific rules, include the glob pattern:**
+
+```
+I noticed [specific learning] that applies to files in [directory].
+
+I suggest creating .claude/rules/[name].md:
+
+---
+paths: [glob-pattern]
+---
+
+# [Section Title]
+
+- [Key point 1]
+- [Key point 2]
+
+Would you like me to:
+1. Do this now
+2. Do this after [current task]
 3. Skip it
 ```
 
@@ -178,20 +286,22 @@ Would you like me to:
 - User seems focused or in flow state
 - Learning is trivial or highly specific to current unique task
 
-## Step 5: Implementing the Change
+## Step 6: Implementing the Change
 
-Once approved, execute the skill change promptly and efficiently.
+Once approved, execute the change promptly and efficiently using the appropriate tools.
 
-### For New Skills
+### For Skills
 
-For creating new skills, invoke the /skill-creator skill and refer the the instructions there.
+#### For New Skills
 
-5. **Validate:**
-   ```bash
-   ~/.claude/skills/skill-creator/scripts/quick_validate.py <path-to-skill>
-   ```
+For creating new skills, invoke the /skill-creator skill and refer to the instructions there.
 
-### For Updating Existing Skills
+**Validate:**
+```bash
+~/.claude/skills/skill-creator/scripts/quick_validate.py <path-to-skill>
+```
+
+#### For Updating Existing Skills
 
 1. **Read the current skill:**
    - Use Read tool to examine current SKILL.md
@@ -206,6 +316,82 @@ For creating new skills, invoke the /skill-creator skill and refer the the instr
 
 3. **Validate:**
    - Run quick_validate.py to ensure still valid
+
+### For CLAUDE.md Files
+
+#### Determine File Path
+
+1. **For path-specific rules:**
+   - Create in `.claude/rules/` with descriptive name
+   - Use Write tool if file doesn't exist
+   - Use Edit tool if file exists
+
+2. **For project-level:**
+   - File path: `./CLAUDE.md` or `./.claude/CLAUDE.md`
+   - Use Write tool if file doesn't exist
+   - Use Edit tool if file exists
+
+3. **For user-level:**
+   - File path: `~/.claude/CLAUDE.md`
+   - Use Write tool if file doesn't exist
+   - Use Edit tool if file exists
+
+4. **For project-local:**
+   - File path: `./CLAUDE.local.md`
+   - Use Write tool if file doesn't exist
+   - Use Edit tool if file exists
+
+#### For New Rules Files
+
+When creating new files in `.claude/rules/`:
+
+```markdown
+---
+paths: "pattern/here/**/*.ext"
+---
+
+# Section Title
+
+- Learning point 1
+- Learning point 2
+```
+
+**YAML frontmatter notes:**
+- Always quote glob patterns
+- Use standard glob syntax (**, *, {}, etc.)
+- Multiple patterns: `paths: "src/**/*.ts, tests/**/*.ts"`
+- Validate YAML syntax after writing
+
+#### For Existing Files
+
+1. **Read the current file:**
+   - Use Read tool to examine current content
+   - Identify appropriate section or create new one
+   - Match existing style and structure
+
+2. **Add content maintaining consistency:**
+   - Add to existing section if appropriate
+   - Create new section with ## or ### if needed
+   - Use bullet points for scannable content
+   - Include concrete examples when helpful
+   - Keep additions concise (2-5 bullets typically)
+
+3. **Use Edit tool with targeted changes:**
+   - Match indentation and formatting
+   - Preserve existing section structure
+   - Add content in logical location
+
+#### Validate
+
+After writing to CLAUDE.md or rules files:
+
+1. **Verify file was written successfully** (re-read to confirm)
+2. **For rules files with frontmatter:**
+   - Parse YAML to ensure valid syntax
+   - Validate paths field contains valid glob patterns
+   - Check that markdown content follows frontmatter
+3. **Check file size** (warn if >400 lines, suggest splitting)
+4. **Confirm content placement** (content added to appropriate section)
 
 ### Growth Through Iteration
 

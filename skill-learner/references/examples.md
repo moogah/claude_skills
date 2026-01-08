@@ -155,6 +155,91 @@ User says: "The API is down right now, so let's hardcode this response temporari
 
 ---
 
+### Example 10: Simple Convention → User-Level CLAUDE.md
+
+**Context:**
+User corrects Claude 3 times across 2 sessions: "Use 2-space indentation for TypeScript files, not 4-space"
+
+**Analysis:**
+- Repetition: 3 times ✅
+- Non-obvious: User preference ✅
+- Future applicability: All TypeScript work ✅
+- Complexity: Simple (1-step preference) → CLAUDE.md
+- Scope: Applies to all projects (user preference) → User-level
+
+**Decision:** WRITE to ~/.claude/CLAUDE.md under "Code Style > TypeScript" section
+```markdown
+## Code Style
+
+### TypeScript
+- Use 2-space indentation
+```
+
+**Why NOT a skill:** Too simple - just a formatting preference, no workflow or tool integration needed. This belongs in always-loaded context.
+
+**Why this example matters:** Demonstrates triage from skill to CLAUDE.md based on simplicity. Shows when to use user-level for cross-project preferences.
+
+---
+
+### Example 11: Complex Workflow → Skill
+
+**Context:**
+User walks Claude through deployment process 2 times:
+1. "Deploy to staging with `npm run deploy:staging`"
+2. "Send Slack message to #deployments channel with staging URL"
+3. "Wait for QA team to reply with approval"
+4. "Then run `npm run deploy:prod`"
+
+**Analysis:**
+- Repetition: 2 times (but multi-step process lowers threshold) ✅
+- Non-obvious: Company-specific workflow ✅
+- Complexity: Multi-step with external tool (Slack) and human approval ✅
+- Requires: Decision logic, error handling, Slack integration
+
+**Decision:** CREATE skill: `deployment-approval-workflow` (local to repo)
+
+**Why NOT CLAUDE.md:** Too complex - 4 steps, conditional logic (wait for approval), external tool integration (Slack). Skills are better for procedural workflows.
+
+**Why this example matters:** CRITICAL - shows that complexity and tool integration drive the skill decision. Multi-step workflows with external dependencies belong in skills, not CLAUDE.md.
+
+---
+
+### Example 12: Path-Specific Rule → .claude/rules/
+
+**Context:**
+User corrects Claude 3 times when working in `src/api/` directory:
+- "All API endpoints must validate input using Zod schemas"
+- "Include OpenAPI documentation comments"
+- "Use the standard error response format"
+
+**Analysis:**
+- Repetition: 3 times ✅
+- Non-obvious: Team convention ✅
+- Future applicability: All API development ✅
+- Path-specific: Only applies to src/api/ directory ✅
+- Complexity: Simple conventions (not a workflow)
+
+**Decision:** WRITE to .claude/rules/api-guidelines.md with:
+```markdown
+---
+paths: "src/api/**/*.ts"
+---
+
+# API Development Guidelines
+
+- All endpoints must validate input using Zod schemas
+- Include OpenAPI documentation comments
+- Use standard error response format from libs/shared/errors
+```
+
+**Why NOT skill:** Simple conventions, not a complex workflow. No tool integration or multi-step procedures.
+
+**Why NOT project CLAUDE.md:** Path-specific - only applies when working with files in src/api/. Using .claude/rules/ keeps it contextually loaded only when needed.
+
+**Why this example matters:** Shows when to use path-specific rules with frontmatter. Demonstrates organizing by file patterns rather than putting everything in main CLAUDE.md.
+
+---
+
 ## Summary Patterns
 
 ### Strong Signals for Capturing:
