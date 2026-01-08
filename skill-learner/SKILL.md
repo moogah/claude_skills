@@ -15,7 +15,7 @@ This skill enables Claude to recognize learnings during sessions and incorporate
 - **Extend existing skills when related; create new ones for distinct domains** - Avoid skill proliferation
 - **Always review with user before implementing** - Never assume, always ask
 - **Minimize interruption to current work** - Prefer end-of-task suggestions
-- **Start new skills minimal and concise** - Incorporate only direct observations, grow through iteration
+- **Always be minimal and concise** - Incorporate only direct observations, only solve the immediate problem, grow through iteration
 - **Consider appropriate hierarchy** - Local skills for repo-specific, user-level for broadly applicable
 
 ## Workflow Decision Tree
@@ -184,51 +184,11 @@ Once approved, execute the skill change promptly and efficiently.
 
 ### For New Skills
 
-1. **Initialize structure:**
-   ```bash
-   ~/.claude/skills/skill-creator/scripts/init_skill.py <skill-name> --path <~/.claude/skills OR .claude/skills>
-   ```
+For creating new skills, invoke the /skill-creator skill and refer the the instructions there.
 
-2. **Write minimal SKILL.md:**
-   - Complete frontmatter with clear description (include "Use when..." triggers)
-   - Brief overview (1-2 sentences of what and why)
-   - Core workflow or pattern (the actual learning captured)
-   - One concrete example showing usage
-   - **Avoid:** Extensive background, multiple variations, comprehensive edge cases
-
-3. **Example minimal skill structure:**
-   ```markdown
-   ---
-   name: repo-deployment
-   description: Deployment workflow for repository-name. Use when deploying changes to staging or production environments.
-   ---
-
-   # Deployment Workflow
-
-   ## Overview
-   Standard deployment process for this repository.
-
-   ## Workflow
-   1. Run tests: `npm test`
-   2. Build: `npm run build`
-   3. Deploy to staging: `./deploy.sh staging`
-   4. Verify on staging URL
-   5. Deploy to production: `./deploy.sh production`
-
-   ## Example
-   User: "Deploy my changes to production"
-   → Follow steps 1-5, confirming at step 4 before step 5
-   ```
-
-4. **Clean up template files:**
-   - Delete unused scripts/example.py
-   - Delete unused references/api_reference.md
-   - Delete assets/ directory if not needed
-
-5. **Validate and package:**
+5. **Validate:**
    ```bash
    ~/.claude/skills/skill-creator/scripts/quick_validate.py <path-to-skill>
-   ~/.claude/skills/skill-creator/scripts/package_skill.py <path-to-skill>
    ```
 
 ### For Updating Existing Skills
@@ -244,9 +204,8 @@ Once approved, execute the skill change promptly and efficiently.
    - Keep additions concise and focused
    - Don't restructure unless necessary
 
-3. **Validate and re-package:**
+3. **Validate:**
    - Run quick_validate.py to ensure still valid
-   - Run package_skill.py to update distribution
 
 ### Growth Through Iteration
 

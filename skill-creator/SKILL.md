@@ -332,13 +332,15 @@ When editing the (newly-generated or existing) skill, remember that the skill is
 
 **Critical principle**: Start with the minimum needed for the skill to provide value.
 
+New skills should typically be very small.  Unless there are a significant number of unique and concrete examples for the skill it should easily fit into 50-80 lines.
+
 **For v1, include only:**
-- SKILL.md with core workflow (50-80 lines)
-- minimal concrete example showing usage, remember **Claude is smart**
+- SKILL.md with core workflow.
+- minimal concrete example(s) showing usage, remember **Claude is smart**
 - Essential scripts/references/assets IF they're required for the skill to function at all
 
 **Save for later versions:**
-- Multiple variations or advanced techniques
+- Multiple variations or advanced techniques which are not essential to the concrete examples.
 - Comprehensive edge case handling
 - Detailed reference documentation
 - Workflow templates or checklists
@@ -347,8 +349,6 @@ When editing the (newly-generated or existing) skill, remember that the skill is
 **Ask yourself**: "What's the smallest version that would help with the concrete examples identified in Step 1?" That's your v1.
 
 Let skills grow naturally through iteration rather than anticipating every need upfront.
-
-To establish the skill's v1 contents, analyze each concrete example to identify the absolute minimum reusable resources needed to provide value.
 
 **Delete unnecessary resources:**
 - If no scripts needed: Delete `scripts/` directory
@@ -395,7 +395,15 @@ Do not include any other fields in YAML frontmatter.
 
 Write instructions for using the skill and its bundled resources.
 
-### Step 7: Packaging a Skill
+### Step 7: Validate the Skill
+
+Once the user has reviewed and approved all changes, run the validation script:
+
+```bash
+~/.claude/skills/skill-creator/scripts/quick_validate.py <path-to-skill>
+```
+
+### Step 8: Packaging a Skill
 
 **This step is optional** it should only be done at the request of the user.
 
@@ -424,7 +432,7 @@ The packaging script will:
 
 If validation fails, the script will report the errors and exit without creating a package. Fix any validation errors and run the packaging command again.
 
-### Step 8: Iterate
+### Step 9: Iterate
 
 After testing the skill, users may request improvements. Often this happens right after using the skill, with fresh context of how the skill performed.
 
