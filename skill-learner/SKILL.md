@@ -1,36 +1,34 @@
 ---
 name: skill-learner
-description: "Helps Claude iteratively capture learnings and patterns from sessions into skills. Use this skill when: (1) User explicitly corrects Claude's approach or provides feedback, (2) Claude notices repeated patterns across multiple tasks in the session, (3) User mentions repo-specific conventions or preferences, (4) Claude struggles with similar tasks multiple times, (5) User requests skill updates or creation, (6) Session reveals gaps in existing skill coverage. This skill operates proactively but asks permission before interrupting current work."
+description: "Reviews conversation context to identify learnings and patterns that should be captured in skills. Use when the user asks to review the session for skill creation or updates."
 ---
 
 # Skill Learner
 
 ## Overview
 
-This skill enables Claude to recognize learnings during sessions and incorporate them into the skills system through updates or new skill creation. It operates proactively but respects the user's workflow, asking permission before making changes.
+This skill reviews the conversation context to identify learnings worth capturing in the skills system. When invoked, it analyzes the session to find patterns, corrections, and insights that should be incorporated through skill updates or new skill creation.
 
 ## Core Principles
 
 - **Capture only non-obvious, repeatable patterns** - Skip trivial one-off tasks
 - **Extend existing skills when related; create new ones for distinct domains** - Avoid skill proliferation
 - **Always review with user before implementing** - Never assume, always ask
-- **Minimize interruption to current work** - Prefer end-of-task suggestions
 - **Start new skills minimal and concise** - Incorporate only direct observations, grow through iteration
 - **Consider appropriate hierarchy** - Local skills for repo-specific, user-level for broadly applicable
 
-## Workflow Decision Tree
+## Workflow
 
-The skill-learning process follows five sequential steps:
+The skill-learning process follows four sequential steps:
 
-1. **Detect** - Recognize learnings worth capturing
+1. **Review** - Analyze conversation context to identify learnings
 2. **Assess** - Evaluate significance and filter out noise
 3. **Determine** - Decide on action type (update/create, local/user-level)
-4. **Approve** - Get user permission at appropriate time
-5. **Implement** - Execute the change using skill-creator tools
+4. **Propose** - Present findings and get user approval to implement
 
-## Step 1: Detecting Learnings Worth Capturing
+## Step 1: Reviewing Context for Learnings
 
-Watch for these signals during sessions:
+When invoked, review the conversation context looking for these patterns:
 
 ### Explicit Corrections
 User directly corrects Claude's approach or provides specific guidance:
@@ -92,7 +90,7 @@ See references/decision-framework.md for flowcharts and references/examples.md f
 
 ## Step 3: Determining Action Type
 
-Make three key decisions about how to capture the learning:
+Make two key decisions about how to capture the learning:
 
 ### Decision 1: Update Existing vs Create New
 
@@ -128,55 +126,42 @@ Make three key decisions about how to capture the learning:
 
 **When uncertain:** Start user-level. It's easier to migrate to local later if needed.
 
-### Decision 3: Timing and Interruption Strategy
+## Step 4: Proposing Changes to User
 
-See decision-framework.md for the timing decision matrix. Quick reference:
+After reviewing the context and identifying learnings, present findings to the user for approval.
 
-- **Interrupt mid-task:** ONLY when learning conflicts with existing skill (active harm)
-- **Defer to end-of-task:** Preferred for most learnings (after task complete, natural stopping point)
-- **Defer to end-of-session:** When user is in urgent/flow state but learning is valuable
+### Proposal Format
 
-## Step 4: Getting User Approval
-
-Always ask before implementing skill changes. Use appropriate timing and clear communication.
-
-### Approval Request Format
+Summarize what was found and propose specific actions:
 
 ```
-I noticed [specific learning]. This seems worth capturing because [reason].
+I reviewed the conversation and identified [number] learnings worth capturing:
 
-I suggest [updating skill-name / creating skill-name] to include:
-- [Key point 1]
-- [Key point 2]
+1. [Learning description] - This seems worth capturing because [reason]
+   → Suggest: [updating skill-name / creating new skill-name]
+   → Key additions:
+     - [Point 1]
+     - [Point 2]
 
-Would you like me to:
-1. Do this now
-2. Do this after we finish [current task]
-3. Skip it
+2. [Learning description] - This seems worth capturing because [reason]
+   → Suggest: [updating skill-name / creating new skill-name]
+   → Key additions:
+     - [Point 1]
+     - [Point 2]
+
+Which of these would you like me to implement?
 ```
 
-### Timing Strategies
+### If No Learnings Found
 
-**During Task (Interrupt Mode) - Use Sparingly**
-- **ONLY when:** User's feedback directly contradicts existing skill, creating active harm
-- **Example:** "The skill tells me to use approach X, but you just said never do X"
-- **Ask:** "I notice this conflicts with [skill-name]. Should I update that skill now or after this task?"
+If the review doesn't reveal significant learnings worth capturing:
 
-**After Task Completion (Deferred Mode) - PREFERRED**
-- **When:** Learning is valuable but not urgent
-- **At natural stopping points:** Task complete, user says "thanks", user pauses
-- **Ask:** "I noticed [pattern] during this session. Would you like me to [action]?"
+```
+I reviewed the conversation but didn't find patterns that meet the criteria for skill creation or updates:
+- [Brief explanation of what was reviewed and why nothing qualified]
 
-**After Session (Observation Mode)**
-- **When:** Pattern emerges across multiple tasks in session
-- **After demonstrating:** Pattern occurs 2-3 times
-- **Say:** "I've noticed we're doing [X] repeatedly. This might be worth capturing in a skill. Should I create one?"
-
-**Never Interrupt When:**
-- User is mid-explanation or asking questions
-- Task has encountered errors or blockers
-- User seems focused or in flow state
-- Learning is trivial or highly specific to current unique task
+The session covered [summary], which [already handled well by existing skills / too specific to generalize / etc.].
+```
 
 ## Step 5: Implementing the Change
 
