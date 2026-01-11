@@ -225,11 +225,15 @@ Once approved, execute the skill change promptly and efficiently.
    - Delete unused references/api_reference.md
    - Delete assets/ directory if not needed
 
-5. **Validate and package:**
+5. **Validate:**
+
+   **Important**: Activate the virtual environment first (required for PyYAML dependency):
    ```bash
+   source ~/.claude/skills/skill-creator/.venv/bin/activate
    ~/.claude/skills/skill-creator/scripts/quick_validate.py <path-to-skill>
-   ~/.claude/skills/skill-creator/scripts/package_skill.py <path-to-skill>
    ```
+
+   **Note**: Only run `package_skill.py` if the user explicitly requests a .skill file for distribution.
 
 ### For Updating Existing Skills
 
@@ -244,9 +248,10 @@ Once approved, execute the skill change promptly and efficiently.
    - Keep additions concise and focused
    - Don't restructure unless necessary
 
-3. **Validate and re-package:**
+3. **Validate:**
+   - Activate virtual environment: `source ~/.claude/skills/skill-creator/.venv/bin/activate`
    - Run quick_validate.py to ensure still valid
-   - Run package_skill.py to update distribution
+   - Only run package_skill.py if user explicitly requests a .skill file for distribution
 
 ### Growth Through Iteration
 
