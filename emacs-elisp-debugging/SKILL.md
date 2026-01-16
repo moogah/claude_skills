@@ -9,6 +9,120 @@ description: Strategies for debugging Emacs Lisp code, especially missing parent
 
 Systematic debugging strategies for Emacs Lisp development, focusing on common error patterns like missing parentheses and Common Lisp vs Emacs Lisp compatibility issues.
 
+## Org-Babel Tangle Bisection Strategy
+
+**Best approach for debugging syntax errors in .org files with elisp code blocks.**
+
+When you encounter "Unmatched bracket or quote" or similar syntax errors in tangled .el files, use this binary search approach to quickly isolate the problem.
+
+### Step 1: Disable All Tangling
+
+Set file-level default to not tangle:
+```org
+#+property: header-args:emacs-lisp :tangle no
+#+auto_tangle: nil
+```
+
+Tangle and verify empty/minimal output:
+```bash
+./bin/tangle-org.sh file.org
+# Should tangle 0 blocks or only explicitly enabled ones
+```
+
+### Step 2: Enable Subtrees Incrementally
+
+Use PROPERTIES drawers at subtree level to enable tangling. Start with foundational code:
+
+```org
+* Helper Functions
+:PROPERTIES:
+:header-args:emacs-lisp: :tangle filename.el
+:END:
+
+** function-1
+#+begin_src emacs-lisp
+(defun function-1 () ...)
+#+end_src
+
+** function-2
+#+begin_src emacs-lisp
+(defun function-2 () ...)
+#+end_src
+```
+
+All code blocks under "Helper Functions" will now tangle.
+
+### Step 3: Validate After Each Addition
+
+After enabling each subtree:
+```bash
+./bin/tangle-org.sh file.org
+emacs --batch --eval "(progn (find-file \"file.el\") (check-parens) (message \"✓ OK\"))"
+```
+
+If validation passes, continue to next subtree. If it fails, the error is in the subtree you just enabled.
+
+### Step 4: Narrow Down Within Subtree
+
+Once you've identified the problematic subtree, you can either:
+- **Binary search within subtree**: Add PROPERTIES drawer to sub-sections
+- **Move to individual blocks**: Add `:tangle filename.el` to specific code blocks
+
+Example of narrowing to individual blocks:
+```org
+* Problematic Section
+:PROPERTIES:
+:header-args:emacs-lisp: :tangle no
+:END:
+
+** tool-1
+#+begin_src emacs-lisp :tangle filename.el
+(gptel-make-tool ...)
+#+end_src
+
+** tool-2
+#+begin_src emacs-lisp
+(gptel-make-tool ...)  ; Not tangling yet
+#+end_src
+```
+
+### Why This Works Better Than Manual Inspection
+
+- **Binary search efficiency**: O(log n) instead of O(n) for checking each block
+- **Immediate validation**: Catch errors right after introducing them
+- **No manual counting**: Eliminates human error in paren matching
+- **Maintainable**: Easy to track which sections are enabled
+- **Reproducible**: Clear state at each validation step
+
+### PROPERTIES Drawer Syntax
+
+Key formats to remember:
+```org
+* Subtree
+:PROPERTIES:
+:header-args:emacs-lisp: :tangle no          # Disable tangling
+:header-args:emacs-lisp: :tangle file.el     # Enable tangling
+:header-args: :tangle file.el                # Works for all languages
+:END:
+```
+
+**Inheritance:** Settings apply to current subtree and all children.
+**Precedence:** Block-level > Subtree PROPERTIES > File-level #+PROPERTY
+
+### Real Example
+
+From treesitter-tools.org debugging session:
+```
+✓ Helper Functions (lines 1-150) - OK
+✓ Basic Tools (lines 151-300) - OK
+✓ Semantic Tools (lines 301-450) - OK
+✗ Query Tools (lines 451-600) - FAILED
+  → Narrowed to query_nodes function
+  → Found missing closing paren on line 1146
+```
+
+Total validation steps: 8 (vs. manually inspecting 1500+ lines)
+
 ## Key Patterns
 
 ### Recognizing Error Symptoms
@@ -35,28 +149,43 @@ This means there are more closing parens than opening parens somewhere earlier i
 
 When you suspect missing parentheses but can't spot them:
 
-1. **Isolate with org-babel** (when using literate programming):
+1. **Org-babel tangle bisection** (for .org files) - See "Org-Babel Tangle Bisection Strategy" section above for the full approach. This binary search method is the most efficient way to isolate syntax errors in literate elisp files.
+
+2. **Isolate with org-babel** (for testing individual functions):
    - Create a test block with `:tangle no`
    - Copy the suspicious function
    - Add inline comments marking nesting levels
    - Evaluate with `C-c C-c` to test in isolation
 
-2. **Manual paren counting**:
-   ```elisp
-   (defun example ()
-     (let (var1)                    ; open 1
-       (dolist (item items)         ; open 2
-         (when condition            ; open 3
-           (something)))            ; close 3,2 - MISSING close for 1!
-     (return result)))              ; this closes defun but not let!
-   ```
+3. **Manual paren counting** - See "Manual Paren Counting" subsection below for details. Use only when working with non-org files or when bisection isn't practical.
 
-3. **Use Emacs built-in checks**:
+4. **Use Emacs built-in checks**:
    ```elisp
    M-x check-parens  ; in the buffer
    ; or batch mode:
    emacs --batch --eval "(progn (find-file \"file.el\") (check-parens))"
    ```
+
+### Manual Paren Counting (Fallback for Non-Literate Files)
+
+**Note:** For org-mode literate elisp files, use "Org-Babel Tangle Bisection Strategy" instead. Manual counting is error-prone for complex nested forms.
+
+When you must manually count parens (non-org files or when bisection isn't practical):
+
+```elisp
+(defun example ()
+  (let (var1)                    ; open 1
+    (dolist (item items)         ; open 2
+      (when condition            ; open 3
+        (something)))            ; close 3,2 - MISSING close for 1!
+  (return result)))              ; this closes defun but not let!
+```
+
+**Tips for manual counting:**
+- Add inline comments marking nesting depth
+- Work from the innermost form outward
+- Use editor commands like `show-paren-mode` and `forward-sexp`
+- Consider using automated validation instead (see "Automated Validation Tools" section)
 
 ### Common Lisp vs Emacs Lisp Gotchas
 
@@ -257,6 +386,14 @@ completing-read: Wrong type argument: sequencep, jf/gptel--load-context-from-pat
 4. **Found issue**: Only 3 closing parens after `push`, need 4
 
 5. **Fix**: Add missing `)`
+
+## Resources
+
+### Org-Babel Tangle Documentation
+- [Using Header Arguments (Org Manual)](https://orgmode.org/manual/Using-Header-Arguments.html)
+- [Property Syntax (Org Manual)](https://orgmode.org/manual/Property-Syntax.html)
+- [Header arguments - Org Babel reference](https://org-babel.readthedocs.io/en/latest/header-args/)
+- [Extracting Source Code (Org Manual)](https://orgmode.org/manual/Extracting-Source-Code.html)
 
 ## When to Use This Skill
 
