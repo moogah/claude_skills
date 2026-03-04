@@ -1,6 +1,6 @@
 ---
 name: bead-implementation
-description: Execute on a Beads issue with proper discovery workflow and mandatory session close protocol. Use when starting work on a bead, during implementation when discovering new work that should be externalized, or when completing a session to ensure all work is properly committed and pushed.
+description: "Execute on a Beads issue with proper discovery workflow and mandatory session close protocol. Use when starting work on a bead, during implementation when discovering new work that should be externalized, or when completing a session to ensure all work is properly committed and pushed."
 ---
 
 # Bead Implementation Workflow
@@ -29,52 +29,15 @@ bd update beads-xxx --status=in_progress
 
 Stay narrowly focused. Externalize any unexpected work by creating new beads.
 
-### Bug Discovered
+**Use the bead-creator skill** for guidance on creating follow-up beads for:
+- Bugs discovered during implementation
+- Unclear requirements needing clarification
+- Related work identified
+- Dependencies and blocking relationships
 
-```bash
-bd create "Fix null check in assignment-day-utils.js" \
-  -t bug -p 1 -l bugfix,follow-up \
-  --deps "discovered-from:beads-abc" \
-  --description "While implementing dual-write, discovered missing null check in assignment-day-utils.js line 47. The getCompanyId() function doesn't handle undefined assignmentDay input, causing crashes in edge cases..."
-```
-
-### Unclear Requirement
-
-```bash
-bd create "Clarify error handling strategy for Apollo failures" \
-  -t task -p 2 -l question,follow-up \
-  --deps "discovered-from:beads-abc" \
-  --description "During implementation, uncertain about: should Apollo failures in dual-write mode fail the entire operation or just log warnings? Need product/architecture decision..."
-```
-
-### Related Work Discovered
-
-```bash
-bd create "Apply dual-write pattern to 3 other Lambdas" \
-  -t task -p 2 -l migration,follow-up \
-  --deps "discovered-from:beads-abc" \
-  --description "Same dual-write pattern needed for:
-- NotifyOnShiftCancel (similar event trigger)
-- CalculateCoveredShift (similar data flow)
-- CreateUnassigned (similar mutation pattern)
-
-Use ShiftUpdateIntegration as reference implementation..."
-```
-
-### Multiple Dependencies
-
-```bash
-bd create "Refactor shared mutation logic" \
-  -t task -p 2 -l refactor,follow-up \
-  --deps "discovered-from:beads-abc,blocks:beads-xyz" \
-  --description "Extract common dual-write pattern into shared utility. Blocks implementation of other Lambda migrations until complete..."
-```
-
-### Key Practices
-
+Key practices:
 - Use `--deps "discovered-from:beads-xxx"` to link follow-up beads to their origin
-- Multiple dependencies: `--deps "discovered-from:beads-abc,blocks:beads-xyz"`
-- Add labels: `follow-up`, `question`, `blocker`, `bugfix`
+- Add appropriate labels: `follow-up`, `question`, `blocker`, `bugfix`
 - `discovered-from` is non-blocking - tracks relationships without affecting execution
 
 ## Completing Work
