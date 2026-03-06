@@ -1,6 +1,6 @@
 ---
 name: github-actions-troubleshooting
-description: Troubleshoot and fix failing GitHub Actions pipeline steps. Use when user reports a failing pipeline with error output.
+description: "Troubleshoot and fix failing GitHub Actions pipeline steps. Use when user reports a failing pipeline with error output."
 ---
 
 # GitHub Actions Troubleshooting

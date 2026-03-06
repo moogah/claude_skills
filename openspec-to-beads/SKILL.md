@@ -1,6 +1,6 @@
 ---
 name: openspec-to-beads
-description: Convert OpenSpec artifacts (proposal.md, design.md, tasks.md, specs/) into self-contained Beads issues for implementation tracking. Use when you have completed OpenSpec planning artifacts and need to create trackable implementation tasks, or when converting any specification or design document into actionable Beads issues.
+description: "Convert OpenSpec artifacts (proposal.md, design.md, tasks.md, specs/) into self-contained Beads issues for implementation tracking. Use when you have completed OpenSpec planning artifacts and need to create trackable implementation tasks, or when converting any specification or design document into actionable Beads issues."
 ---
 
 # OpenSpec to Beads Conversion

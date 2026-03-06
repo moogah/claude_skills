@@ -1,6 +1,6 @@
 ---
 name: github-actions-local-checks
-description: Proactively run GitHub Actions pipeline checks locally before pushing code. Use when making code changes to catch test, lint, and type-check failures early.
+description: "Proactively run GitHub Actions pipeline checks locally before pushing code. Use when making code changes to catch test, lint, and type-check failures early."
 ---
 
 # GitHub Actions Local Checks

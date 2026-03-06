@@ -1,6 +1,6 @@
 ---
 name: bead-implementation
-description: Execute on a Beads issue with proper discovery workflow and mandatory session close protocol. Use when starting work on a bead, during implementation when discovering new work that should be externalized, or when completing a session to ensure all work is properly committed and pushed.
+description: "Execute on a Beads issue with proper discovery workflow and mandatory session close protocol. Use when starting work on a bead, during implementation when discovering new work that should be externalized, or when completing a session to ensure all work is properly committed."
 ---
 
 # Bead Implementation Workflow
@@ -9,7 +9,7 @@ Execute on beads with narrow focus, proper discovery, and mandatory session clos
 
 ## Core Principle
 
-**One bead per session.** Complete only ONE bead per session, then commit and push immediately.
+**One bead per session.** Complete only ONE bead per session, then commit immediately. Work is done on a local branch/worktree - do not push or sync with remote.
 
 ## Finding and Claiming Work
 
@@ -29,52 +29,15 @@ bd update beads-xxx --status=in_progress
 
 Stay narrowly focused. Externalize any unexpected work by creating new beads.
 
-### Bug Discovered
+**Use the bead-creator skill** for guidance on creating follow-up beads for:
+- Bugs discovered during implementation
+- Unclear requirements needing clarification
+- Related work identified
+- Dependencies and blocking relationships
 
-```bash
-bd create "Fix null check in assignment-day-utils.js" \
-  -t bug -p 1 -l bugfix,follow-up \
-  --deps "discovered-from:beads-abc" \
-  --description "While implementing dual-write, discovered missing null check in assignment-day-utils.js line 47. The getCompanyId() function doesn't handle undefined assignmentDay input, causing crashes in edge cases..."
-```
-
-### Unclear Requirement
-
-```bash
-bd create "Clarify error handling strategy for Apollo failures" \
-  -t task -p 2 -l question,follow-up \
-  --deps "discovered-from:beads-abc" \
-  --description "During implementation, uncertain about: should Apollo failures in dual-write mode fail the entire operation or just log warnings? Need product/architecture decision..."
-```
-
-### Related Work Discovered
-
-```bash
-bd create "Apply dual-write pattern to 3 other Lambdas" \
-  -t task -p 2 -l migration,follow-up \
-  --deps "discovered-from:beads-abc" \
-  --description "Same dual-write pattern needed for:
-- NotifyOnShiftCancel (similar event trigger)
-- CalculateCoveredShift (similar data flow)
-- CreateUnassigned (similar mutation pattern)
-
-Use ShiftUpdateIntegration as reference implementation..."
-```
-
-### Multiple Dependencies
-
-```bash
-bd create "Refactor shared mutation logic" \
-  -t task -p 2 -l refactor,follow-up \
-  --deps "discovered-from:beads-abc,blocks:beads-xyz" \
-  --description "Extract common dual-write pattern into shared utility. Blocks implementation of other Lambda migrations until complete..."
-```
-
-### Key Practices
-
+Key practices:
 - Use `--deps "discovered-from:beads-xxx"` to link follow-up beads to their origin
-- Multiple dependencies: `--deps "discovered-from:beads-abc,blocks:beads-xyz"`
-- Add labels: `follow-up`, `question`, `blocker`, `bugfix`
+- Add appropriate labels: `follow-up`, `question`, `blocker`, `bugfix`
 - `discovered-from` is non-blocking - tracks relationships without affecting execution
 
 ## Completing Work
@@ -97,7 +60,7 @@ bd label remove beads-xxx needs-review
 
 ## Session Close Protocol (Mandatory)
 
-**CRITICAL**: Work is NOT complete until `git push` succeeds.
+**CRITICAL**: Work is NOT complete until changes are committed locally.
 
 ### Steps
 
@@ -117,31 +80,19 @@ bash scripts/type-check.sh    # TypeScript validation
 npm test                       # Run tests (if applicable)
 ```
 
-**4. Sync Beads**
-```bash
-bd sync --from-main           # Pull beads updates from main
-```
-
-**5. Commit Changes**
+**4. Commit Changes**
 ```bash
 git status                    # Check what changed
 git add <files>               # Stage code changes
 git commit -m "..."           # Commit with descriptive message
 ```
 
-**6. Push to Remote** (CRITICAL - never skip)
-```bash
-git pull                      # Get latest changes
-git push                      # Push to remote
-git status                    # MUST show "up to date with origin"
-```
-
-**7. Verify Completion**
-- Confirm all changes are committed and pushed
+**5. Verify Completion**
+- Confirm all changes are committed
 - Check `git status` shows clean working tree
-- Verify push succeeded without errors
+- Verify commit succeeded without errors
 
-**8. Hand Off Context**
+**6. Hand Off Context**
 - Provide summary of what was completed
 - Note any issues filed for next session
 - Note any discoveries written to rule files
@@ -149,7 +100,7 @@ git status                    # MUST show "up to date with origin"
 
 ### Critical Rules
 
-- **Never stop before pushing** - Leaves work stranded locally
-- **Never defer pushing** - Execute immediately
-- **Retry if push fails** until successful
-- Push completion is non-negotiable
+- **Never stop before committing** - Leaves work incomplete
+- **Work on local branch/worktree** - Do not push or sync with remote
+- **Commit immediately** - Execute when work is complete
+- Local commit completion is non-negotiable
