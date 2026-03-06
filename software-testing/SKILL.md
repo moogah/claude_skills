@@ -1,6 +1,6 @@
 ---
 name: software-testing
-description: Software testing guidance with decision tree. Use when: (1) Writing or improving tests, (2) User asks about testing approaches, (3) Need guidance on test scope or assertions, (4) Working with specific test frameworks. Routes to specialized testing strategies via reference files.
+description: "Software testing guidance with decision tree. Use when: (1) Writing or improving tests, (2) User asks about testing approaches, (3) Need guidance on test scope or assertions, (4) Working with specific test frameworks. Routes to specialized testing strategies via reference files."
 ---
 
 # Software Testing

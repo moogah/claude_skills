@@ -1,6 +1,6 @@
 ---
 name: characterization-testing
-description: Guide for characterization testing - capturing current system behavior to enable safe refactoring. Use when working with legacy code, undocumented systems, or code that needs modification but lacks tests. Helps create a safety net before making changes by testing what the code actually does (not what it should do).
+description: "Guide for characterization testing - capturing current system behavior to enable safe refactoring. Use when working with legacy code, undocumented systems, or code that needs modification but lacks tests. Helps create a safety net before making changes by testing what the code actually does (not what it should do)."
 ---
 
 # Characterization Testing

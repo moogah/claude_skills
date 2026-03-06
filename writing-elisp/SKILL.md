@@ -1,6 +1,6 @@
 ---
 name: writing-elisp
-description: Guidance for writing valid Emacs Lisp code with incremental validation. Use when writing or modifying elisp functions, especially complex nested forms with cl-loop, multiple let* bindings, or lambdas.
+description: "Guidance for writing valid Emacs Lisp code with incremental validation. Use when writing or modifying elisp functions, especially complex nested forms with cl-loop, multiple let* bindings, or lambdas."
 ---
 
 # Writing Elisp

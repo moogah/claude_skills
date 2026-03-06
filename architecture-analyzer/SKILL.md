@@ -1,6 +1,6 @@
 ---
 name: architecture-analyzer
-description: Perform in-depth architectural analysis of codebases through iterative dialog and visual diagrams. Use when users want to understand their software architecture, explore design patterns and anti-patterns, evaluate potential architectural changes, or gain deep insights into code structure and relationships. Particularly valuable for onboarding to unfamiliar codebases, assessing technical debt, planning refactoring efforts, or understanding how components interact across system boundaries.
+description: "Perform in-depth architectural analysis of codebases through iterative dialog and visual diagrams. Use when users want to understand their software architecture, explore design patterns and anti-patterns, evaluate potential architectural changes, or gain deep insights into code structure and relationships. Particularly valuable for onboarding to unfamiliar codebases, assessing technical debt, planning refactoring efforts, or understanding how components interact across system boundaries."
 ---
 
 # Architecture Analyzer

@@ -1,6 +1,6 @@
 ---
 name: emacs-elisp-debugging
-description: Strategies for debugging Emacs Lisp code, especially missing parentheses and Common Lisp compatibility issues. Use when encountering mysterious elisp errors or when working with literate elisp in org-mode files.
+description: "Strategies for debugging Emacs Lisp code, especially missing parentheses and Common Lisp compatibility issues. Use when encountering mysterious elisp errors or when working with literate elisp in org-mode files."
 ---
 
 # Emacs Elisp Debugging
