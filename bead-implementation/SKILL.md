@@ -99,46 +99,52 @@ bd label remove beads-xxx needs-review
 
 **CRITICAL**: Work is NOT complete until `git push` succeeds.
 
-### Seven Steps
+### Steps
 
 **1. File Issues for Remaining Work**
 - Document follow-up tasks as new beads
 - Close completed issues: `bd close <id1> <id2> ...`
 - Update in-progress issues with current status
 
-**2. Run Quality Gates** (if code was modified)
+**2. Capture Discoveries** (if you encountered surprises)
+- Append findings to the relevant `.claude/rules/` file
+- Tell the user what you added
+- Commit rule file changes in the config repo (see CLAUDE.md for instructions)
+
+**3. Run Quality Gates** (if code was modified)
 ```bash
 bash scripts/type-check.sh    # TypeScript validation
 npm test                       # Run tests (if applicable)
 ```
 
-**3. Sync Beads**
+**4. Sync Beads**
 ```bash
 bd sync --from-main           # Pull beads updates from main
 ```
 
-**4. Commit Changes**
+**5. Commit Changes**
 ```bash
 git status                    # Check what changed
 git add <files>               # Stage code changes
 git commit -m "..."           # Commit with descriptive message
 ```
 
-**5. Push to Remote** (CRITICAL - never skip)
+**6. Push to Remote** (CRITICAL - never skip)
 ```bash
 git pull                      # Get latest changes
 git push                      # Push to remote
 git status                    # MUST show "up to date with origin"
 ```
 
-**6. Verify Completion**
+**7. Verify Completion**
 - Confirm all changes are committed and pushed
 - Check `git status` shows clean working tree
 - Verify push succeeded without errors
 
-**7. Hand Off Context**
+**8. Hand Off Context**
 - Provide summary of what was completed
 - Note any issues filed for next session
+- Note any discoveries written to rule files
 - Highlight any blockers or dependencies
 
 ### Critical Rules
