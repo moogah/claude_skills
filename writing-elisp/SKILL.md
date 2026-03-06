@@ -1,13 +1,22 @@
 ---
 name: writing-elisp
-description: "Guidance for writing valid Emacs Lisp code with incremental validation. Use when writing or modifying elisp functions, especially complex nested forms with cl-loop, multiple let* bindings, or lambdas."
+description: "Comprehensive guidance for writing high-quality, idiomatic, modern Emacs Lisp code with incremental validation. Use when writing or modifying elisp functions, especially complex nested forms with cl-loop, multiple let* bindings, or lambdas. Covers modern features, naming conventions, documentation standards, error handling, code quality, and performance."
 ---
 
 # Writing Elisp
 
 ## Overview
 
-This skill provides proactive guidance for writing syntactically valid Emacs Lisp code, with emphasis on incremental validation to catch errors early. LLMs frequently produce parenthesis errors in complex nested elisp - this skill helps prevent those issues through automated validation during the writing process.
+This skill provides comprehensive guidance for writing high-quality Emacs Lisp code, covering:
+
+1. **Incremental validation** - Catch syntax errors early (especially paren mismatches)
+2. **Modern Elisp features** - Lexical binding, cl-lib, pcase, threading macros
+3. **Idiomatic patterns** - Naming conventions, control flow, looping constructs
+4. **Documentation standards** - Docstrings, package structure, autoloading
+5. **Code quality** - Linting tools, error handling, anti-patterns
+6. **Performance guidelines** - When and how to optimize
+
+LLMs frequently produce parenthesis errors in complex nested elisp - this skill helps prevent those issues through automated validation while also ensuring the code follows modern best practices.
 
 ## When to Use This Skill
 
@@ -190,6 +199,72 @@ def validate_elisp(file_path):
 3. **Test incrementally** - Don't write 100+ lines before first validation
 4. **Use git** - Commit working code frequently so you have rollback points
 5. **Break down complexity** - Helper functions are cheaper than debugging
+
+## Extended Guidance
+
+This skill includes comprehensive reference guides for different aspects of Elisp development:
+
+### references/modern-features.md
+Covers modern Elisp features and requirements:
+- **Lexical binding** (mandatory header)
+- **cl-lib** vs deprecated cl package
+- **pcase** for pattern matching
+- **Named let** for recursive helpers
+- **Threading macros** (dash.el)
+- **Modern hook and advice patterns**
+
+**Consult when:** Starting new code, updating old code, or whenever writing functions with keyword arguments, pattern matching, or recursive logic.
+
+### references/idioms.md
+Covers naming conventions and idiomatic patterns:
+- **Naming conventions** (predicates, internal functions, package prefixes)
+- **Control flow idioms** (when/if/unless/cond/pcase)
+- **Looping constructs** (dolist/dotimes/cl-loop/mapcar)
+- **Common pitfalls** (push/nreverse, string building)
+
+**Consult when:** Writing any Elisp code to ensure it follows community conventions and best practices.
+
+### references/documentation.md
+Covers documentation and package structure:
+- **High-quality docstrings** with examples
+- **Package headers** (Author, Version, Package-Requires)
+- **Autoloading** for lazy loading
+- **Customization groups** (defgroup/defcustom)
+- **Forward declarations**
+
+**Consult when:** Creating packages, writing public APIs, or documenting complex functions.
+
+### references/quality.md
+Covers code quality and error handling:
+- **Linting tools** (checkdoc, package-lint, elisp-lint)
+- **Error handling** (condition-case, ignore-errors, unwind-protect)
+- **Custom error types** (define-error)
+- **Common anti-patterns** and code smells
+
+**Consult when:** Before committing code, when handling errors, or when reviewing/refactoring existing code.
+
+### references/performance.md
+Covers optimization guidelines:
+- **When and how to profile** (built-in profiler, benchmarking)
+- **Common performance issues** (O(n²) operations, repeated calls)
+- **Data structure choices** (lists vs vectors vs hash tables)
+- **Caching patterns** (memoization, buffer-local caches)
+- **Lazy loading strategies**
+
+**Consult when:** Code feels slow, operations take >100ms, or when working with large datasets.
+
+## Quick Reference Decision Tree
+
+```
+Writing Elisp code?
+├─ New file? → Check references/modern-features.md for lexical-binding header
+├─ Naming function? → Check references/idioms.md for conventions
+├─ Complex conditional? → Check references/idioms.md for pcase examples
+├─ Need documentation? → Check references/documentation.md for docstring format
+├─ Handling errors? → Check references/quality.md for error handling patterns
+├─ Code feels slow? → Check references/performance.md for profiling guide
+└─ Ready to commit? → Run validation commands + linting (quality.md)
+```
 
 ## References
 
