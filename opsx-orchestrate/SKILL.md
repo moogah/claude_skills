@@ -1,9 +1,9 @@
 ---
-name: tasks-orchestrator
-description: "Orchestrate batched, agent-driven implementation across a project — planning, executing, and integrating cycles of tasks with role-separated agents (Implementor, Reviewer, Architect, PM). Use when working with a repo that has `.claude/orchestrator/config.yaml` or when the user invokes `/tasks-orchestrator`, `/opsx-tasks generate`, `/architect-audit`, `/pm-digest`, `/curate`. Handles: (1) running plan / execute / integrate phases of a change, (2) spawning role agents in worktrees, (3) author-blind review enforcement, (4) maintaining the interfaces register and reconciling speculated entries against implementation discoveries, (5) producing PM digests with cascade detection, (6) integrate→plan handshake artifacts that close the cycle loop. Skip for ad-hoc one-off edits that don't span a batch — those don't need the orchestrator."
+name: opsx-orchestrate
+description: "Orchestrate batched, agent-driven implementation across a project — planning, executing, and integrating cycles of tasks with role-separated agents (Implementor, Reviewer, Architect, PM). Use when working with a repo that has `.claude/orchestrator/config.yaml` or when the user invokes `/opsx-orchestrate`, `/opsx-tasks generate`, `/architect-audit`, `/pm-digest`, `/curate`. Handles: (1) running plan / execute / integrate phases of a change, (2) spawning role agents in worktrees, (3) author-blind review enforcement, (4) maintaining the interfaces register and reconciling speculated entries against implementation discoveries, (5) producing PM digests with cascade detection, (6) integrate→plan handshake artifacts that close the cycle loop. Skip for ad-hoc one-off edits that don't span a batch — those don't need the orchestrator."
 ---
 
-# tasks-orchestrator
+# opsx-orchestrate
 
 Central skill that runs the **plan / execute / integrate** cycle for batched, agent-driven implementation. Lives globally; reads a per-project overlay at `<repo>/.claude/orchestrator/` for project specifics.
 
