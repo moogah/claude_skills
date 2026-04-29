@@ -18,6 +18,27 @@ The state file's `register_touched[i].status_at_integrate` flips to one of `conf
 
 This is the gate that distinguishes a system that gets smarter from one that keeps rediscovering the same thing.
 
+#### Scaffolding diffs as evidence
+
+For touched entries with a `scaffolding_path` (per `scaffolding.md`), the diff against the merge-base of the scaffolded file is **evidence** for the status transition. The classification is mechanical, not narrative:
+
+| Scaffolding diff during execute | Register entry transitions to | `scaffolding_status_at_integrate` | Reconciliation note carries |
+|---|---|---|---|
+| Untouched + scaffold green at end of cycle | `confirmed` | `untouched` (transient) → set to `promoted` or `archived` below | "Scaffold passed unchanged. Speculation matched." |
+| Modified by Implementor + reviewer accepted | `reconciled` | `modified` | `prior_form` (pre-diff), `new_form` (post-diff), `why_tests_missed` — the diff is the substrate |
+| Modified by Implementor + reviewer rejected | `divergent` | `rejected` | `divergence_evidence` cites the rejected modification; `escalation: architect \| user` |
+| Strict-skip still skipping | (gate failure) | (un-dispositioned) | Integrate refuses to close until disposition is set |
+
+Then for every confirmed/reconciled scaffold, set the **final disposition**:
+
+- **`promoted`** — the scaffold migrates to its permanent home (`test/`, the target module). Integrate generates a follow-up task carrying `discovered_class: scaffolding-promotion` to perform the migration. The task is added to the next cycle's batch unless promoted in-cycle.
+- **`archived`** — enforcement landed via a different mechanism (e.g. a runtime check at file:fn). The reconciliation note records *where* enforcement actually lives.
+- **`rejected`** (already set above for divergent) — speculation was wrong; scaffold is deleted; the divergent entry's resolution path determines next steps.
+
+`scaffolding_status_at_integrate` must be one of `promoted | archived | rejected` for every scaffolded file. Transient `untouched` / `modified` is not a final disposition; the gate enumerates these and refuses to close.
+
+The mandatory `why_tests_missed` line on `reconciled` entries gets concrete substrate — the diff itself — rather than the Architect's narrative reconstruction. Reconciliation moves from judgment to mechanical classification, with the Architect's prose layer reduced to "what pattern does this diff exemplify, for the meta-discoveries field?"
+
 ### 2. Architect end-of-cycle audit
 
 Full signal-class run across all the cycle's diffs + the register. (Not a separate trigger; one of integrate's defining operations. See `roles/architect.md` for the eight signal classes.)
@@ -120,12 +141,13 @@ This is the structural fix for the brainstorm's "learns and forgets" failure mod
 | Check | Condition |
 |---|---|
 | `all_touched_entries_dispositioned` | Every `register_touched[i].status_at_integrate` is set (not null) |
+| `all_scaffolding_dispositioned` | Every `register_touched[i]` with a non-null `scaffolding_path` has `scaffolding_status_at_integrate` set to one of `promoted` / `archived` / `rejected` (transient `untouched` / `modified` is not a final disposition). No-op when `scaffolding.enabled: false` |
 | `blocking_findings_resolved` | Every `architect_findings[i]` with `severity: blocking` has `resolution != pending` |
 | `pm_digest_produced` | `pm-digest.md` exists with non-empty `signals` and `asks` sections |
 | `user_asks_routed` | Every entry in PM digest's `Asks for the user` section has a corresponding entry in `handshake.asks_for_user_open` (so plan picks them up next cycle) |
 | `handshake_artifact_written` | `handshake-<cycle-id>.json` exists with all four required fields populated |
 
-When all five pass, `phase_gates.integrate.passed` flips to `true`. The next plan refuses to start otherwise — that's the loop-closure contract.
+When all six pass, `phase_gates.integrate.passed` flips to `true`. The next plan refuses to start otherwise — that's the loop-closure contract.
 
 ## Cycle archive
 

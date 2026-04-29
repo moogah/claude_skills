@@ -46,6 +46,7 @@ The orchestrator deploys four roles. Read the relevant role file before spawning
 ## Change artifact set
 
 - **Interfaces register** at `<project-root>/interfaces.{org,md}` — lifelong, growing, four tiers: shape / vocabulary / boundary / invariant. Per-entry `status: speculated | confirmed | divergent | reconciled` and `load_bearing` flag. Replaces `architecture.md`. Templates: [templates/register-entry-shape.md](templates/register-entry-shape.md), [-vocabulary.md](templates/register-entry-vocabulary.md), [-boundary.md](templates/register-entry-boundary.md), [-invariant.md](templates/register-entry-invariant.md).
+- **Scaffolding** at `<change>/scaffolding/` — Architect-generated executable contracts (failing tests, mapping function shells, vocabulary `pcase` scaffolds) tied to speculative register entries. Per-tier defaults (invariant / vocabulary / boundary on; shape opt-in); per-project overlay can disable. Reconciled at integrate by treating diffs as evidence. Full contract: **[scaffolding.md](scaffolding.md)**.
 - **`proposal.md`** carries a goal-status header mirroring the register lifecycle: [templates/proposal-status-header.md](templates/proposal-status-header.md).
 - **`design.md`** keeps its current scope: implementation strategy, technical decisions, alternatives considered.
 - **Provenance fields on every follow-up task and reconciliation**: `discovered_from`, `discovered_by`, `discovered_class`, `reconciled_into`. Enforced by [externalisation.md](externalisation.md) and the integrate-phase exit gate.

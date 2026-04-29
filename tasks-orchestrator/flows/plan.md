@@ -20,7 +20,7 @@ If the file is missing or any field is missing (not "empty array" — actually m
 
 This is the brainstorm's loop-closure contract: each cycle's discoveries must update the next cycle's speculations.
 
-### 2. Architect forward-mode — populate / revise speculative register entries
+### 2. Architect forward-mode — populate / revise speculative register entries, then generate scaffolding
 
 The Architect runs in forward mode against the change's `proposal.md` and `design.md`:
 
@@ -34,6 +34,17 @@ New entries land as `status: speculated`. Entries the prior integrate marked `di
 - *Re-stated*: the divergent entry was wrong; rewrite it with a fresh speculation.
 - *Absorbed*: the divergent state has been resolved by an in-flight task or external event; mark `reconciled`.
 - *Escalated*: the divergence is genuine and needs user disposition; carry into the plan as a goal-drift candidate.
+
+**Scaffolding generation runs immediately after each tiered entry is populated**, in the same forward-mode invocation. For every newly populated or re-stated speculative entry whose tier is in the project's `scaffolding.tiers` (defaults: `invariant`, `vocabulary`, `boundary`; `shape` opt-in), the Architect writes a scaffolded file under `<change>/scaffolding/<tier>/<entry-id>.<ext>`:
+
+- A failing test (per `scaffolding.failing-stub-style`) for invariants.
+- A `pcase` / match scaffold listing every speculated value as an `error "TODO"` arm for vocabularies.
+- A canonical mapping function with a TODO body for boundaries.
+- A constructor + destructor exercise for shapes (when shape ∈ tiers).
+
+Each file carries a `scaffolding-of: <entry-id>` header; the entry gains a `scaffolding_path` field. Scaffolded tests must fail loudly until satisfied — green-on-empty is a defect. Full contract: **[../scaffolding.md](../scaffolding.md)**.
+
+If `scaffolding.enabled: false` in the overlay, this sub-step is a no-op and tiered entries retain their `validator` / `test_corpus` YAML fields as today.
 
 ### 3. Batch composition
 
@@ -62,10 +73,11 @@ For each generated task, the orchestrator assembles the brief at agent-spawn tim
 
 - Task body.
 - Cited register entries (full text, with `status` annotations).
+- **Scaffolded files** for each cited entry that has a `scaffolding_path` (full path + revision-licence framing per `scaffolding.md`).
 - Cited `design.md` / `proposal.md` sections.
 - Project standards (overlay's `roles/implementor.md`).
 
-The brief framing is fixed — register entries are *reference material to pressure-test, not authority to defer to*. Speculated entries carry explicit licence to push back.
+The brief framing is fixed — register entries and scaffolding are *reference material to pressure-test, not authority to defer to*. Speculated entries and scaffolded files carry explicit licence to push back. Modifying a scaffolded file is a signal at integrate, not a transgression.
 
 ### 6. PM critical-path read
 
@@ -96,9 +108,10 @@ The cycle does not enter execute until:
 | `prior_integrate_consumed` | Handshake artifact read; all required fields present |
 | `batch_composed` | Batch task list explicit and frozen |
 | `briefs_cite_register` | Every task in batch has at least one entry in `cites_register_entries` |
+| `scaffolding_generated_for_tiered_entries` | Every speculated entry whose tier is in `scaffolding.tiers` has a `scaffolding_path` set and the file exists with a valid `scaffolding-of` header. No-op when `scaffolding.enabled: false` |
 | `user_signed_off_goal_drift` | If prior integrate carried goal-drift recommendations, user has dispositioned them; otherwise no-op |
 
-All four must be `true` in `phase_gates.plan.checks`. The state file's `phase_gates.plan.passed` flips to `true` only when all four pass.
+All five must be `true` in `phase_gates.plan.checks`. The state file's `phase_gates.plan.passed` flips to `true` only when all pass.
 
 Execute refuses to run if `phase_gates.plan.passed` is `false`.
 

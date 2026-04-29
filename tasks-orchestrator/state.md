@@ -106,11 +106,20 @@ Every register entry the cycle's tasks cited or modified.
   "cited_by_tasks": ["setup-module", "wire-validator"],
   "modified_by_tasks": ["wire-validator"],
   "reconciliation_note_path": null,
-  "why_tests_missed": null
+  "why_tests_missed": null,
+  "scaffolding_path": "openspec/changes/<change>/scaffolding/shapes/violation-info.test.el",
+  "scaffolding_diff_status": "untouched | modified | rejected",
+  "scaffolding_status_at_integrate": "untouched | modified | rejected | promoted | archived"
 }
 ```
 
 Integrate's reconciliation exit gate enumerates this list. Every entry whose `status_at_integrate` is null (or `unchanged` when the entry was actually modified) blocks the cycle from closing.
+
+The three `scaffolding_*` fields are null on tiers that opted out of scaffolding for this project (`scaffolding.tiers` in the overlay). Otherwise:
+
+- `scaffolding_path` is set during plan-phase forward-mode when the Architect generates the file.
+- `scaffolding_diff_status` is observed during execute by inspecting the diff against the merge-base for the scaffolding subtree.
+- `scaffolding_status_at_integrate` is set during integrate's reconciliation step. `untouched` / `modified` / `rejected` are the diff-status mirrors; `promoted` (file migrated to a permanent location) and `archived` (enforcement landed elsewhere) are integrate-only dispositions. See `scaffolding.md` for the reconciliation-by-diff table.
 
 ## Architect finding entry
 
@@ -177,6 +186,7 @@ Each gate is a structured record of whether the phase's exit conditions are met.
     "checks": {
       "batch_composed": false,
       "briefs_cite_register": false,
+      "scaffolding_generated_for_tiered_entries": false,
       "user_signed_off_goal_drift": false,
       "prior_integrate_consumed": false
     }
@@ -193,6 +203,7 @@ Each gate is a structured record of whether the phase's exit conditions are met.
     "passed": false,
     "checks": {
       "all_touched_entries_dispositioned": false,
+      "all_scaffolding_dispositioned": false,
       "blocking_findings_resolved": false,
       "pm_digest_produced": false,
       "user_asks_routed": false,

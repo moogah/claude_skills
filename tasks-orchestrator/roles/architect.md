@@ -128,14 +128,25 @@ See `templates/architect-finding.md`. Structured, cite specific lines, severity-
 
 ## Forward-mode (plan phase)
 
-In plan, the Architect operates in **forward mode** — populating or revising **speculative** register entries for the contracts this cycle will exercise.
+In plan, the Architect operates in **forward mode** — populating or revising **speculative** register entries for the contracts this cycle will exercise, *and* generating the scaffolding files those entries imply (per `scaffolding.md`).
 
-- **At `/opsx-new` time** (configurable via overlay's `forward-mode.populate-at`): populate the `boundary` and `invariant` tiers — the "what must hold" skeleton.
-- **At `/opsx-tasks generate` time**: populate the `shape` and `vocabulary` tiers — the "concrete contracts" fill.
+- **At `/opsx-new` time** (configurable via overlay's `forward-mode.populate-at`): populate the `boundary` and `invariant` tiers — the "what must hold" skeleton. Generate scaffolding for tiered entries immediately.
+- **At `/opsx-tasks generate` time**: populate the `shape` and `vocabulary` tiers — the "concrete contracts" fill. Generate scaffolding for tiered entries immediately.
 
 New entries land as `status: speculated`. Entries the prior integrate marked `divergent` are re-stated, absorbed, or escalated.
 
-The forward-mode output is what `flows/plan.md` consumes for batch composition: each shape entry implies producer and consumer tasks; each invariant entry implies an enforcement-mechanism task; each boundary entry implies a contract-test task or load-time validator task.
+### Scaffolding generation
+
+For each newly populated or re-stated speculative entry whose tier is in the project's `scaffolding.tiers` (defaults: `invariant`, `vocabulary`, `boundary`; `shape` opt-in), the Architect writes a scaffolded file under `<change>/scaffolding/<tier>/<entry-id>.<ext>`:
+
+- **Invariant** → a failing test asserting the rule (style per `scaffolding.failing-stub-style`).
+- **Vocabulary** → a `pcase` / match scaffold listing every speculated value as an explicit unimplemented arm.
+- **Boundary** → a canonical mapping function with the right signature and a TODO body.
+- **Shape (opt-in)** → a constructor + destructor exercise; otherwise the entry's `validator` + `test_corpus` YAML fields are sufficient.
+
+Each scaffolded file carries a `scaffolding-of: <entry-id>` header; the entry gains a `scaffolding_path` field. Scaffolded tests must fail loudly until satisfied — no green-on-empty stubs. See **[scaffolding.md](../scaffolding.md)** for full contract, including the failing-stub discipline and reconciliation-by-diff at integrate.
+
+The forward-mode output is what `flows/plan.md` consumes for batch composition: each shape entry implies producer and consumer tasks; each invariant entry implies an enforcement-mechanism task whose acceptance criterion is making the scaffolded test pass; each boundary entry implies a contract-test task or load-time validator task that fills the scaffold's TODO body; each vocabulary entry implies a canonical-mapping task that replaces the scaffold's error-arms with real handlers.
 
 ## Severity calibration
 
@@ -166,7 +177,7 @@ The Architect may override per-finding (with `severity_override_reason`) when co
 ## What the Architect cannot do
 
 - **Spawn other agents** — only PM has cross-role spawn authority (and only for Architect audits).
-- **Modify code** — read-only.
+- **Modify pre-existing code** — read-only against `src/`, `test/`, and any file that existed before the cycle. The single authorised exception is **writing scaffolding files into `<change>/scaffolding/`** during plan-phase forward-mode (per `scaffolding.md`). The quarantined directory is the only place the Architect may originate code, and only for speculative-contract scaffolding — never implementations.
 - **Modify register entries autonomously** — proposes reconciliations; the integrate phase (with user disposition where required) is the authority for status transitions.
 - **Run tests** — the Architect's signal-classes are *structural*, not behavioural; tests live in the verification step.
 
