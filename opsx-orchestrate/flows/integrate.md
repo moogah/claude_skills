@@ -43,11 +43,11 @@ The mandatory `why_tests_missed` line on `reconciled` entries gets concrete subs
 
 Full signal-class run across all the cycle's diffs + the register. (Not a separate trigger; one of integrate's defining operations. See `roles/architect.md` for the eight signal classes.)
 
-Output: zero or more findings written to `<repo>/.orchestrator/cycles/<cycle-id>/findings/`. Each finding has a severity that decides routing:
+Output: zero or more findings written to `<repo>/.orchestrator/cycles/<cycle-id>/findings/`. Each finding has a severity that decides its **routing target** (the actual task-file write, when one is needed, happens in step 7's curation sweep so creation and refinement are unified):
 
 - **`blocking`** with `interface-drift` against an out-of-date design doc → routes to **the user** as an integrate-phase ask.
-- **`blocking`** with any other class → produces a follow-up task in the active batch; merge of the implicated task pauses; integrate gate doesn't close until the finding's `resolution` is no longer `pending`.
-- **`advisory`** → follow-up task with provenance; orchestrator decides this-batch / next-batch / `.tasks/`.
+- **`blocking`** with any other class → routed for follow-up task creation in step 7; merge of the implicated task pauses; integrate gate doesn't close until the finding's `resolution` is no longer `pending`.
+- **`advisory`** → routed for follow-up task creation in step 7 with provenance; orchestrator decides this-batch / next-batch / `.tasks/`.
 - **`informational`** → no task; PM digest's "trends to watch" section.
 
 ### 3. PM digest
@@ -104,7 +104,91 @@ The PM checks: of the externalised tasks, is there a cluster whose `discovered_c
 - Surface as an ask: "promote cluster `vocabulary-mapping` (5 tasks, 3 cycles old) into the active change?"
 - The user dispositions: promote, leave externalised, or open a new change.
 
-### 7. Write the integrate→plan handshake artifact
+### 7. Open-task refinement
+
+The cycle's task list is both an input (what plan produced) and an output (what the next cycle inherits). Without this step, plan-time prose ages: it cites registers in their pre-cycle shape, ignores meta-discoveries that change implementor defaults, and prescribes work that inline fixes already shipped. The next implementor reads stale instructions, the brief overlay only patches what's cited, and the cycle has discovered without integrating *into the work that remains*.
+
+This is the **single curation point** for the open task list. Both shapes of curation happen here:
+
+1. **Refining existing open tasks** — absorbing register-diff, meta-discoveries, user-resolved asks, and inline fixes into the bodies of tasks that remain in `<change>/tasks/open/`.
+2. **Creating new tasks** from this cycle's findings, asks, and discoveries — the conversion of step 2's audit findings, step 4's meta-discoveries, and step 5/6's user routing into actual files in `<change>/tasks/open/` (or `.tasks/` per `externalisation.md`).
+
+Steps 2–6 *identify* what needs to land; step 7 *lands it*. Earlier steps may name file paths in their findings (`producing follow-up task X` etc.) but the file write is here, so a single sweep over the open task list keeps creation and refinement coherent.
+
+Refinement runs **after** externalisation review (so externalised tasks have already left `<change>/tasks/open/`) and **before** the handshake (so the handshake can record what was created and refined).
+
+#### Create new tasks from cycle outputs
+
+Walk the cycle's outputs for new-task triggers:
+
+- **Architect findings** (from step 2). Per the routing in step 2: `blocking` with `interface-drift` → user ask (no task); `blocking` other class → in-batch follow-up task with `discovered_from: <finding-id>`, `discovered_by: architect`, `discovered_class: <finding.class>`; `advisory` → follow-up task, orchestrator decides this-batch vs next-batch vs `.tasks/`; `informational` → no task.
+- **User-asked questions** (`asks_for_user_open`, from steps 2 & 5). Each open ask gets a disposition task in `<change>/tasks/open/` with `status: blocked`, `relations.blocked-by: <task-this-blocks>`, `discovered_from: <finding-id>`, body templated against the ask's options. The task closes when the user resolves the ask in a future cycle's handshake.
+- **User-resolved asks with deferred implementation** (`asks_for_user_resolved[i]` where `applied_via` indicates deferral, e.g. `deferred-to-cycle-N`). If the deferral target is *not* an existing open task, create one carrying the user's decision in its body and `discovered_from: <ask-id>`.
+- **Meta-discoveries with concrete forward-looking work** (`meta_discoveries[i].implication_for_next_plan` names a specific task or rewire). If the implication is concrete enough to be its own task and is not absorbed by an existing open task's refinement, create the task with `discovered_from: meta-discovery/<label>`, `discovered_class: <meta.kind>`.
+
+For each created task, apply the externalisation rule (`externalisation.md`): in-change if it contributes to the active proposal's outcome; `.tasks/` if cross-cutting. Externalised tasks carry the same provenance fields plus `status: externalised`.
+
+Each created task is also added to the handshake's `task_refinements` array (with `modes: ["created"]`) so the create/refine accounting is unified.
+
+#### Compute each open task's impact set
+
+For each task in `<change>/tasks/open/<task-name>.md`, intersect against the cycle's outputs:
+
+- **(a) Register-diff hits.** `task.cites_register_entries ∩ register_diff[].entry_id`. Each hit names a cited entry whose `status` flipped this cycle (`speculated → confirmed | divergent | reconciled`).
+- **(b) Meta-discovery hits.** Any `meta_discoveries[i]` whose `scope` matches one of the task's cited entries, OR whose `evidence` array names this task or any task that cited the same register entries.
+- **(c) User-resolved-ask hits.** Any `asks_for_user_resolved[i]` whose `register_changes` modify a cited entry, OR whose `code_changes` touch a file in the task's "Files to modify" list, OR whose `applied_via` names this task as the deferral target.
+- **(d) Inline-fix hits.** Any `audit_inline_fixed_findings[i]` whose locations overlap the task's "Files to modify" or implicate code paths the task prescribes.
+
+A task with an empty impact set across all four channels is left untouched.
+
+#### Refine: edit-in-place vs append
+
+Two refinement modes, chosen mechanically per impact:
+
+**Edit in place** when the task's existing prose is **demonstrably false or dead** in light of the impact:
+
+- Prose names a register-entry shape, field, or vocabulary member that was reconciled away this cycle (not present in the new shape).
+- Prose prescribes a code change (numbered step, file edit, function add/remove) that an inline fix or a merged in-cycle task already shipped.
+- Prose cites a code path (`file:fn`) that was deleted or renamed by an inline fix this cycle.
+- A verification command references an artifact that no longer exists.
+
+The edit replaces the false text with the corrected statement and leaves a one-line provenance breadcrumb at the top of the edited section: `> Cycle <N>: obviated/corrected by inline fix; see <reconciliation-note-path-or-finding-id>.`. Don't leave dead prose; do leave an audit trail.
+
+**Append a `## Cycle <N> updates (cycle-<ts>)` stanza** otherwise:
+
+- A cited register entry's status flipped but the task's prose still applies (the entry's contract is now firmer or has minor additions; the work remains).
+- A meta-discovery is relevant to how this task should approach its work (e.g., a clustering pattern that changes the implementor's default).
+- A user-resolved ask has implications for this task's verification or implementation choices without invalidating existing prose.
+- A related cycle artifact (inline fix, merged task) provides context the implementor should know about going in.
+- The task may now be **wholly obsolete** — flag for user disposition; do not auto-close. Append a stanza that names the obsolescence claim and invites the user to close the task.
+
+Stanza form: see `templates/task-update-stanza.md`. Tasks may accumulate stanzas across cycles, newest-last.
+
+Both modes preserve the task's frontmatter and any existing `## Observations` / `## Discoveries` (those are execute-phase artifacts and must not be touched).
+
+#### Record the refinement in the handshake
+
+For every refined task, append to the handshake's `task_refinements` array:
+
+```json
+{
+  "task": "openspec/changes/<change>/tasks/open/<name>.md",
+  "modes": ["in-place"] | ["append"] | ["in-place", "append"],
+  "applied_learnings": [
+    { "channel": "register-diff", "ref": "register/<tier>/<id>", "from": "speculated", "to": "reconciled" },
+    { "channel": "meta-discovery", "ref": "<kind>/<label>" },
+    { "channel": "user-resolved-ask", "ref": "<ask-id>" },
+    { "channel": "inline-fix", "ref": "<finding-id>" }
+  ],
+  "obsolescence_flagged": false
+}
+```
+
+`obsolescence_flagged: true` surfaces in the next plan as a candidate-close. Plan does not auto-close; the user (or PM ask) dispositions.
+
+A task that was touched but not modified — i.e. impact set was non-empty but inspection determined no actual prose change is warranted — still gets a refinement entry with `modes: []` and the channel(s) considered. This makes "we looked, we decided nothing was stale" auditable rather than indistinguishable from "we never looked."
+
+### 8. Write the integrate→plan handshake artifact
 
 The cycle's loop-closing artifact. Path: `<repo>/.orchestrator/handshake-<cycle-id>.json`.
 
@@ -119,11 +203,24 @@ The cycle's loop-closing artifact. Path: `<repo>/.orchestrator/handshake-<cycle-
   "meta_discoveries": [...],
   "user_resolved_goal_drift": [...],
   "asks_for_user_open": [],
-  "asks_for_user_resolved": []
+  "asks_for_user_resolved": [],
+  "task_refinements": [
+    {
+      "task": "openspec/changes/<change>/tasks/open/<name>.md",
+      "modes": ["created"] | ["in-place"] | ["append"] | ["in-place", "append"] | [],
+      "applied_learnings": [
+        { "channel": "register-diff | meta-discovery | user-resolved-ask | inline-fix | finding | open-ask | deferred-ask",
+          "ref": "<id>",
+          "from": "<optional, for register-diff>",
+          "to": "<optional, for register-diff>" }
+      ],
+      "obsolescence_flagged": false
+    }
+  ]
 }
 ```
 
-**All four required fields are mandatory.** An empty list is allowed; a missing field is not. The next plan's first operation is to read this file; if any field is missing, plan refuses to start.
+**All five required fields are mandatory** (`register_diff`, `meta_discoveries`, `user_resolved_goal_drift`, `asks_for_user_open` / `asks_for_user_resolved` as a pair, and `task_refinements`). An empty list is allowed; a missing field is not. The next plan's first operation is to read this file; if any field is missing, plan refuses to start.
 
 This is the structural fix for the brainstorm's "learns and forgets" failure mode. Without the handshake, plan degrades into "pull from the top of the backlog" and the orchestrator becomes a queue runner.
 
@@ -145,9 +242,10 @@ This is the structural fix for the brainstorm's "learns and forgets" failure mod
 | `blocking_findings_resolved` | Every `architect_findings[i]` with `severity: blocking` has `resolution != pending` |
 | `pm_digest_produced` | `pm-digest.md` exists with non-empty `signals` and `asks` sections |
 | `user_asks_routed` | Every entry in PM digest's `Asks for the user` section has a corresponding entry in `handshake.asks_for_user_open` (so plan picks them up next cycle) |
-| `handshake_artifact_written` | `handshake-<cycle-id>.json` exists with all four required fields populated |
+| `open_tasks_refined_against_handshake` | Every still-open task in `<change>/tasks/open/` has been considered by step 7. A task either has an entry in `handshake.task_refinements` (with `modes` populated, possibly empty) or has been excluded explicitly because it had no impact-set hits. New tasks created in step 7 are present on disk and have a `task_refinements` entry with `modes: ["created"]`. Findings flagged in step 2 for follow-up task creation each have a corresponding created task. |
+| `handshake_artifact_written` | `handshake-<cycle-id>.json` exists with all five required fields populated |
 
-When all six pass, `phase_gates.integrate.passed` flips to `true`. The next plan refuses to start otherwise — that's the loop-closure contract.
+When all seven pass, `phase_gates.integrate.passed` flips to `true`. The next plan refuses to start otherwise — that's the loop-closure contract.
 
 ## Cycle archive
 

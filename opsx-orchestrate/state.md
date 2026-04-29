@@ -207,6 +207,7 @@ Each gate is a structured record of whether the phase's exit conditions are met.
       "blocking_findings_resolved": false,
       "pm_digest_produced": false,
       "user_asks_routed": false,
+      "open_tasks_refined_against_handshake": false,
       "handshake_artifact_written": false
     }
   }
@@ -234,11 +235,27 @@ When integrate closes successfully, it writes `<repo>/.orchestrator/handshake-<c
     { "decision": "revise | split | abandon | continue", "rationale": "<short>" }
   ],
   "asks_for_user_open": [],
-  "asks_for_user_resolved": []
+  "asks_for_user_resolved": [],
+  "task_refinements": [
+    {
+      "task": "openspec/changes/<change>/tasks/open/<name>.md",
+      "modes": ["created"] | ["in-place"] | ["append"] | ["in-place", "append"] | [],
+      "applied_learnings": [
+        { "channel": "register-diff", "ref": "register/shape/violation-info", "from": "speculated", "to": "reconciled" },
+        { "channel": "meta-discovery", "ref": "vocabulary-cluster/permissive-default-vs-closed-vocabulary" },
+        { "channel": "user-resolved-ask", "ref": "ask-arch-cycle-<id>-2" },
+        { "channel": "inline-fix", "ref": "arch-cycle-<id>-9" },
+        { "channel": "finding", "ref": "arch-cycle-<id>-10" },
+        { "channel": "open-ask", "ref": "ask-arch-cycle-<id>-10A" },
+        { "channel": "deferred-ask", "ref": "ask-arch-cycle-<id>-2" }
+      ],
+      "obsolescence_flagged": false
+    }
+  ]
 }
 ```
 
-Plan reads `register_diff` to know what's now `confirmed` / `divergent` / `reconciled`; reads `meta_discoveries` to update speculation priors; reads `user_resolved_goal_drift` to know whether the proposal was revised. **All four fields are required.** An empty list is allowed; a missing field is not.
+Plan reads `register_diff` to know what's now `confirmed` / `divergent` / `reconciled`; reads `meta_discoveries` to update speculation priors; reads `user_resolved_goal_drift` to know whether the proposal was revised; reads `task_refinements` to know which open tasks already absorbed cycle learning (so plan doesn't re-touch them) and which were flagged as candidate-obsolete for user disposition. **All five fields are required** (`asks_for_user_*` count as a single pair). An empty list is allowed; a missing field is not.
 
 ## Recovery
 
