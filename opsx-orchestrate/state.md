@@ -22,6 +22,7 @@ The file lives at `<repo-root>/.orchestrator/state.json`. It survives the lifeti
   "tasks": [ /* see Task entry */ ],
   "register_touched": [ /* see Register-touched entry */ ],
   "architect_findings": [ /* see Finding entry */ ],
+  "asks_for_user": [ /* see Ask entry */ ],
   "cycle_log": { /* see Cycle log */ },
   "phase_gates": { /* see Phase gates */ }
 }
@@ -73,7 +74,7 @@ The file lives at `<repo-root>/.orchestrator/state.json`. It survives the lifeti
 - **`discovered_*`** fields are mandatory on follow-up tasks. An unset `discovered_*` on a task whose source is another task is a state-file bug; the orchestrator refuses to start the next phase.
 - **`reconciled_into`** points to the register entry ID that absorbed this discovery. An unset `reconciled_into` on a `done` task whose `discovered_class` requires register integration is the integrate-phase exit-gate failure.
 - **`cites_register_entries`** is the list of register-entry IDs the implementor brief cited. Used by the on-touch Architect trigger and by integrate's reconciliation gate to enumerate touched entries.
-- **`blocked_by`** is a list of `task_name`s. `blocker_note` is free-text for non-task blockers (user decisions, external dependencies). Both feed the PM digest's blocked-path-aging signal.
+- **`blocked_by`** is a list of `task_name`s. `blocker_note` is free-text for non-task blockers (external dependencies); when the blocker is a user decision, the value is the ask id (`ask-<cycle-id>-<seq>`, see Ask entry). Both feed the PM digest's blocked-path-aging signal, which re-surfaces an ask id rather than raising a new ask.
 
 ### Status semantics
 
@@ -140,6 +141,26 @@ The three `scaffolding_*` fields are null on tiers that opted out of scaffolding
 ```
 
 `severity: blocking` with `resolution: pending` blocks the integrate exit gate. See `templates/architect-finding.md` for the prose form.
+
+## Ask entry
+
+Every question to the user, whichever role raised it. The schema lives in one place, `templates/ask.md`; this array holds the records for the current cycle, and the handshake copies them out unchanged.
+
+```json
+{
+  "id": "ask-<cycle-id>-<seq>",
+  "kind": "decision | doc-correction | process | environment | confirmation",
+  "raised_by": { "role": "...", "ref": "..." },
+  "question": "...", "about": "...", "observed": { "happened": true, "evidence": "..." },
+  "options": [ { "label": "...", "consequence": "..." } ],
+  "recommendation": { "option": "...", "why": "..." },
+  "default_if_unanswered": "...", "blocks": [],
+  "status": "open | answered | applied | deferred | declined | superseded",
+  "decision": null, "decision_readback": null, "applied_via": null, "revised_from": null
+}
+```
+
+Only `decision` kinds are presented to the user (`flows/integrate.md` § 3a, `flows/execute.md` § 9). A task blocked on an ask carries the ask id in `blocker_note`. Adding this array is additive; `schema_version` stays `1.0`.
 
 ## Cycle log
 
@@ -232,10 +253,10 @@ When integrate closes successfully, it writes `<repo>/.orchestrator/handshake-<c
     { "kind": "vocabulary-cluster", "scope": "scope/bash-parser-boundary", "evidence": ["task-x", "task-y", "task-z"] }
   ],
   "user_resolved_goal_drift": [
-    { "decision": "revise | split | abandon | continue", "rationale": "<short>" }
+    { "ask": "ask-<cycle-id>-<seq>", "decision": "revise | split | abandon | continue", "rationale": "<short>" }
   ],
-  "asks_for_user_open": [],
-  "asks_for_user_resolved": [],
+  "asks_for_user_open": [ /* Ask entries with status open, copied unchanged */ ],
+  "asks_for_user_resolved": [ /* Ask entries with decision, decision_readback, applied_via set */ ],
   "task_refinements": [
     {
       "task": "openspec/changes/<change>/tasks/open/<name>.md",
@@ -262,7 +283,7 @@ Plan reads `register_diff` to know what's now `confirmed` / `divergent` / `recon
 If the state file is missing or schema-mismatched at the start of a phase, the orchestrator does not invent state:
 
 1. Look for the most recent `.orchestrator/state-<ts>.json` archive matching the current `cycle_id`. If found and schema matches, restore.
-2. Otherwise, ask the user whether to recover from the last known-good archive or to abandon the cycle.
+2. Otherwise, ask the user whether to recover from the last known-good archive or to abandon the cycle. This is an `environment`-kind ask (`templates/ask.md`): asked at once, in block form, since there is no state file to record it in.
 3. Never silently start a new cycle — the integrate→plan handshake depends on every cycle being explicitly closed or explicitly abandoned.
 
 ## Cycle archive
@@ -273,6 +294,7 @@ When a cycle closes:
 .orchestrator/cycles/<cycle-id>/
   state.json              # frozen snapshot
   pm-digest.md            # the cycle's digest
+  asks.md                 # the asks as presented, with the decisions (templates/ask.md)
   handshake.json          # the artifact above
   findings/<finding-id>.md
   reconciliations/<entry-id>.md

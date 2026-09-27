@@ -1,6 +1,6 @@
 # PM digest template
 
-The PM digest is **scannable**, **action-oriented**, and **ends with explicit asks**. Three buckets: *facts* (counts), *signals* (interpretation), *asks* (user actions).
+The PM digest is **scannable**, **action-oriented**, and **ends with the asks triage table** (which may be empty). Three buckets: *facts* (counts), *signals* (interpretation), *asks* (the questions the cycle raised, per `templates/ask.md`).
 
 The structure is fixed; the contents are derived. Every count traces to a state-file field; counts never come from the LLM. Only the prose framing the signals and asks is agent-generated.
 
@@ -8,7 +8,7 @@ The structure is fixed; the contents are derived. Every count traces to a state-
 
 `<repo>/.orchestrator/cycles/<cycle-id>/pm-digest.md`
 
-The state file's `phase_gates.integrate.checks.pm_digest_produced` flips to `true` when this file exists with non-empty `signals` and `asks` sections.
+The state file's `phase_gates.integrate.checks.pm_digest_produced` flips to `true` when this file exists with a non-empty `signals` section. A cycle with nothing to ask closes cleanly.
 
 ## Form
 
@@ -33,7 +33,7 @@ drainage         1.00       0.83       0.50       0.57       0.45  ⚠ trending 
 ## Critical path
 
 - on-path active   : 2 / 9 active tasks  ⚠ priority inversion
-- on-path blocked  : 1 (blocked-on: user-decision-on-error-shape)
+- on-path blocked  : 1 (blocked-on: ask-cycle-N-3)
 - on-path complete : 4 / 11 total on-path
 
 ## Signals
@@ -51,9 +51,13 @@ drainage         1.00       0.83       0.50       0.57       0.45  ⚠ trending 
 
 ## Asks for the user
 
-1. Decide T-014 blocker (error-shape question, blocked 4 cycles).
-2. Approve Architect audit on T-042 cascade.
-3. Confirm priority: continue current refactor batch, or pivot back to critical path?
+| # | Question | Blocks | Recommendation |
+|---|---|---|---|
+| 1 | Should a video you fetch by hand be added to the archive? | — | Do nothing to the code |
+| 2 | Keep working through the refactor batch, or return to the critical path first? | next-plan | Return to the critical path |
+
+Full asks, options and defaults: `.orchestrator/cycles/<cycle-id>/asks.md`.
+Applied without asking: 3 (listed there). Process notes: 1.
 
 ## Trends to watch
 
@@ -72,11 +76,11 @@ drainage         1.00       0.83       0.50       0.57       0.45  ⚠ trending 
 
 ## Signal symbols
 
-- ⚠ — actionable signal; warrants either an ask or an Architect audit
+- ⚠ — actionable signal; warrants a disposition: an ask record, an Architect audit, a task, or a listed default
 - ✓ — healthy on this dimension; included so the absence of a ✓ on a tracked dimension reads as missing data
 - ◦ — informational; trend to watch but not yet actionable
 
-PM agent prose is generated only for signal lines and the asks bullets. The throughput table and critical-path readout are rendered from state-file fields.
+PM agent prose is generated only for signal lines and the asks' question column. The throughput table, the critical-path readout and the asks table's other columns are rendered from state-file fields.
 
 ## Determinism boundary
 
@@ -85,12 +89,12 @@ The deterministic pass produces:
 - All counts in the throughput table.
 - The critical-path readout.
 - The list of fired signals (from threshold queries against state).
-- The candidate asks list (from blocked-task aging and cascade detection).
+- Candidate-ask stubs (from blocked-task aging and stale detection): id, kind, `raised_by: pm`, skeleton question, `blocks`. A subject that already carries an open ask id in `blocker_note` re-surfaces that id. Cascade detection produces an Architect audit, not an ask; the PM may spawn it alone.
 
 The agent pass produces:
 
 - The framing prose around each signal (e.g. "this cluster looks like a vocabulary-mapping gap").
-- The user-facing asks language (turning "T-014 blocked >3 cycles" into "Decide T-014 blocker (error-shape question, blocked 4 cycles)").
+- The asks' prose per `templates/ask.md` (a plain question and, when the orchestrator has supplied `about` and `observed`, the options and consequences). Fields that need code or docs are the orchestrator's, not the PM's.
 - The goal-drift recommendation (revise / split / abandon / continue) and its one-line reason.
 
 If the agent pass fails or hallucinates, the deterministic pass output remains in `.orchestrator/cycles/<cycle-id>/pm-signals.json` and is recoverable.

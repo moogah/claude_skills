@@ -28,7 +28,7 @@ When an Implementor commits to a worktree branch and the diff modifies code cite
 - Cheap; runs in parallel with the rest of the batch.
 - Reads: the diff against merge-base; the register entry's full text; immediate call-graph neighbours of the touched code.
 - Output: zero or more findings written to the cycle's findings dir.
-- A `severity: blocking` finding pauses the merge of this task; the orchestrator routes it via the resolution channels (see "Resolution" below).
+- A `severity: blocking` finding pauses the merge of this task; the orchestrator routes it via the resolution channels (see "Resolution" below). An `interface-drift` finding against a stale design doc becomes an ask record (`templates/ask.md`); because it blocks this merge it is asked at once (§ 9).
 
 The on-touch trigger is the cheap-and-narrow Architect mode (per `roles/architect.md`). It is not a substitute for the end-of-cycle audit; it catches drift while still local.
 
@@ -52,7 +52,7 @@ $TEST_CMD > "$REPO_ROOT/.orchestrator/after-${TASK_NAME}-${TS}.txt" 2>&1
 AFTER_STATUS=$?
 ```
 
-If `AFTER_STATUS != 0` and `BASELINE_STATUS == 0`: regression. Stop further merges; keep worktrees; surface to user with the after-file paths.
+If `AFTER_STATUS != 0` and `BASELINE_STATUS == 0`: regression. Stop further merges; keep worktrees; raise an `environment`-kind ask (`templates/ask.md`) with the after-file paths. It blocks the merge chain, so it is asked at once (§ 9).
 
 ### 5. Capture orchestrator-side discoveries
 
@@ -114,11 +114,20 @@ The Reviewer's findings file lands at `<repo>/.orchestrator/cycles/<cycle-id>/re
 |---|---|
 | `blocking` | Apply inline fix OR re-spawn Implementor with fix scope OR revert merge — task does not advance to `done` |
 | `advisory` | Apply inline fix OR file follow-up task with `discovered_by: reviewer`, `discovered_class: <appropriate>` — task can advance to `done` |
-| `spec-signal` | Surface to user via integrate-phase asks — does not block the task itself, but signals that the design may need revision |
+| `spec-signal` | Record an ask (`templates/ask.md`, `raised_by.ref` the finding); presented at integrate unless its `blocks` names a merge in this batch (§ 9). Does not block the task itself; it signals that the design may need revision |
 
 The orchestrator's inline fixes are committed with `Co-Authored-By: <reviewer>` style attribution; follow-up tasks carry the provenance fields.
 
 After processing, the task flips `status: reviewed`, then (when all inline fixes are applied) `done`.
+
+### 9. Asks raised during execute
+
+An `AskUserQuestion` call blocks everything the orchestrator would otherwise do next, and the record shows a 35-minute stall on a question that was not needed until the next wave. So:
+
+- An ask that arises while agents run (a `spec-signal`, an on-touch finding, an Implementor that stops to ask, an orchestrator-side discovery) is **recorded** to `state.json` `asks_for_user` per `templates/ask.md` and **held** until the next natural pause: the merge chain drained, the batch closed, or the user's next prompt. Integrate's § 3a presents it.
+- The exception is an ask whose `blocks` names a merge in this batch or a task not yet spawned: present that one ask **alone**, now, in the template's block form, and keep doing the orchestrator-side work that does not depend on it. `environment` asks (a regression stop, a wedged runner) are always in this case.
+- Never put a non-blocking ask in the same `AskUserQuestion` as a blocking one.
+- An Implementor that stops to ask (`roles/implementor.md` § Escalation contract) leaves its task `blocked` with `blocker_note: <ask-id>` and its worktree retained. `blocked` counts as stopped for the exit gate, so `no_orphan_in_progress` still passes; the task returns to `ready` when the ask is applied.
 
 ### Productive tension resolution
 

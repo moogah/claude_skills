@@ -11,7 +11,7 @@ A cycle that produces follow-up tasks but leaves speculated entries un-dispositi
 Enumerate every speculated entry the cycle touched (from the state file's `register_touched` array). For each:
 
 - **`speculated → confirmed`** if the implementation matched. Write a terse reconciliation note (per `templates/reconciliation-note.md`) recording "speculation matched".
-- **`speculated → divergent`** if the implementation pushed back AND the divergence is unresolved. Write a divergent reconciliation note with `routes_to: architect | user` and `proposed_resolution`. **Divergent entries block merge** of any task that cited them, until resolved.
+- **`speculated → divergent`** if the implementation pushed back AND the divergence is unresolved. Write a divergent reconciliation note with `routes_to: architect | user` and `proposed_resolution`. **Divergent entries block merge** of any task that cited them, until resolved. `routes_to: user` means an ask record exists (`templates/ask.md`; `raised_by.ref` is the note path; `blocks` is the note's `blocks_merge_of`, which names next-cycle work since this cycle's merges have already happened). The note's escalation section carries the ask id and nothing else. The same applies to `escalation: user` on a register entry or in the scaffolding table below.
 - **`speculated → reconciled`** if the entry was updated to match the discovery. Write a reconciliation note with `prior_shape`, `new_shape`, and the **mandatory `why_tests_missed` line**.
 
 The state file's `register_touched[i].status_at_integrate` flips to one of `confirmed` / `divergent` / `reconciled` for every touched entry. An entry whose `status_at_integrate` remains null is a state-file bug; the integrate gate refuses to close.
@@ -45,7 +45,7 @@ Full signal-class run across all the cycle's diffs + the register. (Not a separa
 
 Output: zero or more findings written to `<repo>/.orchestrator/cycles/<cycle-id>/findings/`. Each finding has a severity that decides its **routing target** (the actual task-file write, when one is needed, happens in step 7's curation sweep so creation and refinement are unified):
 
-- **`blocking`** with `interface-drift` against an out-of-date design doc → routes to **the user** as an integrate-phase ask.
+- **`blocking`** with `interface-drift` against an out-of-date design doc → an ask record per `templates/ask.md`, triaged by kind. When the code is right and the document is stale, the kind is `doc-correction`: applied and listed, not asked. Only a `decision` reaches the user as a question.
 - **`blocking`** with any other class → routed for follow-up task creation in step 7; merge of the implicated task pauses; integrate gate doesn't close until the finding's `resolution` is no longer `pending`.
 - **`advisory`** → routed for follow-up task creation in step 7 with provenance; orchestrator decides this-batch / next-batch / `.tasks/`.
 - **`informational`** → no task; PM digest's "trends to watch" section.
@@ -54,10 +54,24 @@ Output: zero or more findings written to `<repo>/.orchestrator/cycles/<cycle-id>
 
 Two passes, per `roles/project-manager.md`:
 
-1. **Deterministic pass** — produces `<repo>/.orchestrator/cycles/<cycle-id>/pm-signals.json` with all counts, ratios, fired-signals list, candidate-asks list.
+1. **Deterministic pass** — produces `<repo>/.orchestrator/cycles/<cycle-id>/pm-signals.json` with all counts, ratios, fired-signals list, and candidate-ask stubs (id, kind, `raised_by: pm`, skeleton question, `blocks`). The orchestrator completes each stub per `templates/ask.md`; a stub whose subject already carries an open ask id in `blocker_note` re-surfaces that id rather than raising a new ask.
 2. **Agent pass** — turns that into the digest prose at `<repo>/.orchestrator/cycles/<cycle-id>/pm-digest.md` (per `templates/pm-digest.md`).
 
 If the agent pass fails, the deterministic output remains and is recoverable.
+
+### 3a. Ask triage, presentation and readback
+
+The one place in the cycle where questions reach the user. Per `templates/ask.md`:
+
+1. Collect every `state.json` `asks_for_user[]` record with `status: open`, including those recorded during execute (`flows/execute.md` § 9) and plan.
+2. Triage by kind. `doc-correction` and `confirmation` are applied and listed; `process` is counted; `environment` should already have been asked. Only `decision` is presented.
+3. Fill any field a stub or finding lacks (`about`, `observed`, `options`) when that is a matter of reading code or docs; send a finding back to its role when it would mean redoing the analysis (`templates/ask.md` § What a finding must carry). A finding that exposes both a stale sentence and a product question yields two records: a `doc-correction` and a `decision`.
+4. Write `<repo>/.orchestrator/cycles/<cycle-id>/asks.md` in the template's rendering: orientation, applied-without-asking, triage table, settle-now blocks, can-wait lines.
+5. Send the chat message: orientation, settle-now blocks, can-wait lines, the path. Asks first; the cycle's results after or in a separate message.
+6. On the user's answer, send the readback (each decision as a consequence) and wait for a yes. Then set `decision`, `decision_readback`, `status: answered`, append to the Decisions section, and apply. `status: applied` only once `applied_via` is set.
+7. Asks the user leaves unanswered keep `status: open`, their default applies at the boundary it names, and they are carried in the handshake.
+
+A cycle with no `decision`-kind asks writes an `asks.md` whose triage table is empty and says so in one line; that is a valid outcome, not a gate failure.
 
 ### 4. Meta-discovery surfacing
 
@@ -91,9 +105,9 @@ Does the gap between "tasks complete" and "proposal.md outcome reachable" sugges
 If the query fires:
 - The PM digest carries a goal-drift recommendation: revise / split / abandon / continue.
 - The proposal status header (per `templates/proposal-status-header.md`) flips to `divergent`.
-- An ask routes to the user with the three structured options.
+- An ask record of kind `decision` is raised (`templates/ask.md`) with the four fixed options revise / split / abandon / continue, and presented in § 3a.
 
-The user's decision lands in the handshake artifact's `user_resolved_goal_drift` field. Plan refuses to start the next cycle until the user has dispositioned (or explicitly chosen `continue`).
+The user's decision lands in the ask record and in the handshake artifact's `user_resolved_goal_drift` field as `{ask, decision, rationale}`. Plan refuses to start the next cycle until the user has dispositioned (or explicitly chosen `continue`).
 
 ### 6. Externalisation review
 
@@ -101,7 +115,7 @@ The user's decision lands in the handshake artifact's `user_resolved_goal_drift`
 
 The PM checks: of the externalised tasks, is there a cluster whose `discovered_class` distribution and modules-touched are coherent enough to constitute a sub-change? If yes:
 
-- Surface as an ask: "promote cluster `vocabulary-mapping` (5 tasks, 3 cycles old) into the active change?"
+- Raise an ask record (kind `decision`; default if unanswered: leave externalised): "promote cluster `vocabulary-mapping` (5 tasks, 3 cycles old) into the active change?"
 - The user dispositions: promote, leave externalised, or open a new change.
 
 ### 7. Open-task refinement
@@ -122,7 +136,7 @@ Refinement runs **after** externalisation review (so externalised tasks have alr
 Walk the cycle's outputs for new-task triggers:
 
 - **Architect findings** (from step 2). Per the routing in step 2: `blocking` with `interface-drift` → user ask (no task); `blocking` other class → in-batch follow-up task with `discovered_from: <finding-id>`, `discovered_by: architect`, `discovered_class: <finding.class>`; `advisory` → follow-up task, orchestrator decides this-batch vs next-batch vs `.tasks/`; `informational` → no task.
-- **User-asked questions** (`asks_for_user_open`, from steps 2 & 5). Each open ask gets a disposition task in `<change>/tasks/open/` with `status: blocked`, `relations.blocked-by: <task-this-blocks>`, `discovered_from: <finding-id>`, body templated against the ask's options. The task closes when the user resolves the ask in a future cycle's handshake.
+- **Open asks** (`asks_for_user` with `status: open`, from steps 1, 2, 5, 6 and execute) create no task. Each task named in an ask's `blocks` carries `status: blocked` and `blocker_note: <ask-id>` (`templates/ask.md` § Blocking without a second artifact); the note is cleared when the ask is applied.
 - **User-resolved asks with deferred implementation** (`asks_for_user_resolved[i]` where `applied_via` indicates deferral, e.g. `deferred-to-cycle-N`). If the deferral target is *not* an existing open task, create one carrying the user's decision in its body and `discovered_from: <ask-id>`.
 - **Meta-discoveries with concrete forward-looking work** (`meta_discoveries[i].implication_for_next_plan` names a specific task or rewire). If the implication is concrete enough to be its own task and is not absorbed by an existing open task's refinement, create the task with `discovered_from: meta-discovery/<label>`, `discovered_class: <meta.kind>`.
 
@@ -136,7 +150,7 @@ For each task in `<change>/tasks/open/<task-name>.md`, intersect against the cyc
 
 - **(a) Register-diff hits.** `task.cites_register_entries ∩ register_diff[].entry_id`. Each hit names a cited entry whose `status` flipped this cycle (`speculated → confirmed | divergent | reconciled`).
 - **(b) Meta-discovery hits.** Any `meta_discoveries[i]` whose `scope` matches one of the task's cited entries, OR whose `evidence` array names this task or any task that cited the same register entries.
-- **(c) User-resolved-ask hits.** Any `asks_for_user_resolved[i]` whose `register_changes` modify a cited entry, OR whose `code_changes` touch a file in the task's "Files to modify" list, OR whose `applied_via` names this task as the deferral target.
+- **(c) User-resolved-ask hits.** Any `asks_for_user_resolved[i]` whose `applied_via` names this task, or names a task or inline fix whose files overlap this task's "Files to modify" list or whose register entries this task cites.
 - **(d) Inline-fix hits.** Any `audit_inline_fixed_findings[i]` whose locations overlap the task's "Files to modify" or implicate code paths the task prescribes.
 
 A task with an empty impact set across all four channels is left untouched.
@@ -160,7 +174,7 @@ The edit replaces the false text with the corrected statement and leaves a one-l
 - A meta-discovery is relevant to how this task should approach its work (e.g., a clustering pattern that changes the implementor's default).
 - A user-resolved ask has implications for this task's verification or implementation choices without invalidating existing prose.
 - A related cycle artifact (inline fix, merged task) provides context the implementor should know about going in.
-- The task may now be **wholly obsolete** — flag for user disposition; do not auto-close. Append a stanza that names the obsolescence claim and invites the user to close the task.
+- The task may now be **wholly obsolete** — flag for user disposition; do not auto-close. Raise an ask record of kind `confirmation` (`default_if_unanswered: leave open`, `blocks: [<task>]`) and append a stanza that names the claim and the ask id.
 
 Stanza form: see `templates/task-update-stanza.md`. Tasks may accumulate stanzas across cycles, newest-last.
 
@@ -184,7 +198,7 @@ For every refined task, append to the handshake's `task_refinements` array:
 }
 ```
 
-`obsolescence_flagged: true` surfaces in the next plan as a candidate-close. Plan does not auto-close; the user (or PM ask) dispositions.
+`obsolescence_flagged: true` surfaces in the next plan as a candidate-close. Plan does not auto-close; the `confirmation` ask carries the disposition.
 
 A task that was touched but not modified — i.e. impact set was non-empty but inspection determined no actual prose change is warranted — still gets a refinement entry with `modes: []` and the channel(s) considered. This makes "we looked, we decided nothing was stale" auditable rather than indistinguishable from "we never looked."
 
@@ -202,8 +216,8 @@ The cycle's loop-closing artifact. Path: `<repo>/.orchestrator/handshake-<cycle-
   "pm_digest_path": ".orchestrator/cycles/<cycle-id>/pm-digest.md",
   "meta_discoveries": [...],
   "user_resolved_goal_drift": [...],
-  "asks_for_user_open": [],
-  "asks_for_user_resolved": [],
+  "asks_for_user_open": [ /* records per templates/ask.md with status open, copied unchanged */ ],
+  "asks_for_user_resolved": [ /* the same records with decision, decision_readback, applied_via set */ ],
   "task_refinements": [
     {
       "task": "openspec/changes/<change>/tasks/open/<name>.md",
@@ -240,8 +254,8 @@ This is the structural fix for the brainstorm's "learns and forgets" failure mod
 | `all_touched_entries_dispositioned` | Every `register_touched[i].status_at_integrate` is set (not null) |
 | `all_scaffolding_dispositioned` | Every `register_touched[i]` with a non-null `scaffolding_path` has `scaffolding_status_at_integrate` set to one of `promoted` / `archived` / `rejected` (transient `untouched` / `modified` is not a final disposition). No-op when `scaffolding.enabled: false` |
 | `blocking_findings_resolved` | Every `architect_findings[i]` with `severity: blocking` has `resolution != pending` |
-| `pm_digest_produced` | `pm-digest.md` exists with non-empty `signals` and `asks` sections |
-| `user_asks_routed` | Every entry in PM digest's `Asks for the user` section has a corresponding entry in `handshake.asks_for_user_open` (so plan picks them up next cycle) |
+| `pm_digest_produced` | `pm-digest.md` exists with a non-empty `signals` section (the asks table may be empty) |
+| `user_asks_routed` | Every `asks_for_user[]` record with `status: open` appears in `handshake.asks_for_user_open`, and every one of kind `decision` appears in `cycles/<cycle-id>/asks.md` (so plan picks them up next cycle) |
 | `open_tasks_refined_against_handshake` | Every still-open task in `<change>/tasks/open/` has been considered by step 7. A task either has an entry in `handshake.task_refinements` (with `modes` populated, possibly empty) or has been excluded explicitly because it had no impact-set hits. New tasks created in step 7 are present on disk and have a `task_refinements` entry with `modes: ["created"]`. Findings flagged in step 2 for follow-up task creation each have a corresponding created task. |
 | `handshake_artifact_written` | `handshake-<cycle-id>.json` exists with all five required fields populated |
 
@@ -255,6 +269,7 @@ When integrate closes successfully, the orchestrator archives the cycle:
 .orchestrator/cycles/<cycle-id>/
   state.json              # frozen snapshot of the cycle's state file
   pm-digest.md
+  asks.md                 # the cycle's asks as presented, with the decisions
   handshake.json
   findings/<finding-id>.md
   reconciliations/<entry-id>.md

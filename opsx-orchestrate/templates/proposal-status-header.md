@@ -23,10 +23,8 @@ confirmed_basis: |
 divergence_signal: <pm-cascade | reviewer-spec-signal | architect-interface-drift | user>
 divergence_evidence: |
   <One paragraph — what the gap looks like.>
-divergence_options:
-  - revise: <one-line — what would the proposal say after revising?>
-  - split: <one-line — what would the two proposals be?>
-  - abandon: <one-line — what would unwinding cost?>
+divergence_ask: ask-<cycle-id>-<seq>   # the ask record (templates/ask.md) that carries the four
+                                       # options revise / split / abandon / continue with their consequences
 decision_pending_on: <user>
 
 # When status: reconciled
@@ -55,8 +53,8 @@ prior_outcome: |
 ## Lifecycle hooks
 
 - **`speculated → confirmed`**: PM digest checks this transition automatically once the integrate→plan handshake has fired ≥2 cycles cleanly. Set programmatically; no user action required.
-- **`speculated/confirmed → divergent`**: PM goal-drift signal fires (default: critical-path completion ratio stagnant or declining for K cycles while non-critical-path completions continue). PM writes the `divergence_signal` and `divergence_evidence` fields; user is asked in the digest.
-- **`divergent → reconciled`**: User chooses revise / split / abandon / continue. The digest captures the choice in the `user_resolved_goal_drift` field of the integrate→plan handshake artifact.
+- **`speculated/confirmed → divergent`**: PM goal-drift signal fires (default: critical-path completion ratio stagnant or declining for K cycles while non-critical-path completions continue). PM writes the `divergence_signal` and `divergence_evidence` fields; integrate raises the `decision`-kind ask and presents it (`flows/integrate.md` § 3a).
+- **`divergent → reconciled`**: User chooses revise / split / abandon / continue. The ask record captures the choice, and the handshake's `user_resolved_goal_drift` carries `{ask, decision, rationale}`.
 - **`reconciled → speculated`**: When `reconciled_choice` is `revise` or `split`, the new proposal text re-enters the lifecycle as `speculated`; the prior reconciliation note is preserved as `prior_outcome`.
 
 ## Cost asymmetry

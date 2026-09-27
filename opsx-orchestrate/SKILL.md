@@ -56,6 +56,7 @@ The orchestrator deploys four roles. Read the relevant role file before spawning
 Output forms — read at the point each is produced:
 
 - [templates/architect-finding.md](templates/architect-finding.md)
+- [templates/ask.md](templates/ask.md) — every question to the user
 - [templates/pm-digest.md](templates/pm-digest.md)
 - [templates/reconciliation-note.md](templates/reconciliation-note.md)
 - [templates/task-body.md](templates/task-body.md)
@@ -66,7 +67,7 @@ In-change vs `.tasks/` rule: **[externalisation.md](externalisation.md)**. Rule 
 
 ## Loop closure: integrate → plan handshake
 
-The keystone transition is **integrate → plan**, not execute → review. Each plan reads `<repo>/.orchestrator/handshake-<prior-cycle-id>.json` as a hard input contract. Required fields: `register_diff`, `pm_digest_path`, `meta_discoveries`, `user_resolved_goal_drift`. Empty list is allowed; missing field is not. Plan refuses to start if the file is missing or any field is unset.
+The keystone transition is **integrate → plan**, not execute → review. Each plan reads `<repo>/.orchestrator/handshake-<prior-cycle-id>.json` as a hard input contract. Required fields: `register_diff`, `pm_digest_path`, `meta_discoveries`, `user_resolved_goal_drift`, the `asks_for_user_open` / `asks_for_user_resolved` pair, and `task_refinements`. Empty list is allowed; missing field is not. Plan refuses to start if the file is missing or any field is unset.
 
 This is the structural fix for "learns and forgets" — without it, the orchestrator becomes a queue runner.
 
@@ -93,4 +94,5 @@ Never silently start a new cycle while a prior cycle is open.
 - **Author-blind review is enforced at the harness level**, not by discipline. The reviewer-spawn helper has no path to the Implementor's report, observations, discoveries, identity, or scratch files.
 - **Phase exit gates are mandatory.** A later phase refuses to start if a prior gate hasn't passed.
 - **Provenance fields are mandatory on follow-up tasks and reconciliations.** The orchestrator refuses to externalise without them.
-- **The integrate→plan handshake artifact is the loop-closure contract.** Without all four required fields, plan refuses to start.
+- **The integrate→plan handshake artifact is the loop-closure contract.** Without every required field (see `state.md`), plan refuses to start.
+- **Every question to the user is an ask record** per `templates/ask.md`, triaged by kind. Only `decision` kinds reach the user as questions, in the template's rendering, and decisions are read back before they are applied. An `AskUserQuestion` raised mid-execute is reserved for asks that block a merge.

@@ -16,7 +16,7 @@ Read `<repo>/.orchestrator/handshake-<prior-cycle-id>.json`. Must have:
 - `user_resolved_goal_drift` — any revise / split / abandon decisions the user made.
 - `asks_for_user_open` (may be empty), `asks_for_user_resolved` (may be empty).
 
-If the file is missing or any field is missing (not "empty array" — actually missing), refuse to start. Direct the user to close the prior cycle properly or to abandon it explicitly.
+If the file is missing or any field is missing (not "empty array" — actually missing), refuse to start. Direct the user to close the prior cycle properly or to abandon it explicitly. This is an `environment`-kind ask (`templates/ask.md`): asked at once, since there is no state to record it in.
 
 This is the brainstorm's loop-closure contract: each cycle's discoveries must update the next cycle's speculations.
 
@@ -33,7 +33,7 @@ New entries land as `status: speculated`. Entries the prior integrate marked `di
 
 - *Re-stated*: the divergent entry was wrong; rewrite it with a fresh speculation.
 - *Absorbed*: the divergent state has been resolved by an in-flight task or external event; mark `reconciled`.
-- *Escalated*: the divergence is genuine and needs user disposition; carry into the plan as a goal-drift candidate.
+- *Escalated*: the divergence is genuine and needs user disposition; raise an ask record of kind `decision` (`templates/ask.md`) and carry it into the plan as a goal-drift candidate.
 
 **Scaffolding generation runs immediately after each tiered entry is populated**, in the same forward-mode invocation. For every newly populated or re-stated speculative entry whose tier is in the project's `scaffolding.tiers` (defaults: `invariant`, `vocabulary`, `boundary`; `shape` opt-in), the Architect writes a scaffolded file under `<change>/scaffolding/<tier>/<entry-id>.<ext>`:
 
@@ -45,6 +45,8 @@ New entries land as `status: speculated`. Entries the prior integrate marked `di
 Each file carries a `scaffolding-of: <entry-id>` header; the entry gains a `scaffolding_path` field. Scaffolded tests must fail loudly until satisfied — green-on-empty is a defect. Full contract: **[../scaffolding.md](../scaffolding.md)**.
 
 If `scaffolding.enabled: false` in the overlay, this sub-step is a no-op and tiered entries retain their `validator` / `test_corpus` YAML fields as today.
+
+Forward-mode also reads `design.md` against the code. Drift it finds becomes an ask record (`templates/ask.md`): `doc-correction` when the code is right and the document is stale (applied and listed, not asked); `decision` when the design itself is in question. A `decision` whose `blocks` names a task in this batch is presented before execute starts, in the template's rendering; the rest wait for integrate's presentation step.
 
 ### 3. Batch composition
 
@@ -87,7 +89,7 @@ Overlay can override via `critical-path.override-tasks` (explicit task list) or 
 
 ### 7. User sign-off on goal-drift recommendations
 
-If the prior integrate's `user_resolved_goal_drift` is empty but the digest carried recommendations, plan blocks until the user signs off. This is the bridge that prevents goal-drift signals from being silently ignored.
+If the prior integrate's `user_resolved_goal_drift` is empty but the digest carried recommendations, plan blocks until the user signs off. This is the bridge that prevents goal-drift signals from being silently ignored. The recommendation is the `decision`-kind ask integrate raised (`templates/ask.md`; four options: revise / split / abandon / continue), presented in block form; the gate is satisfied when its `status` is `answered` or `applied`.
 
 If the prior integrate had no goal-drift recommendations, this step is a no-op.
 

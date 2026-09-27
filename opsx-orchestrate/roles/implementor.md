@@ -74,7 +74,7 @@ The reviewer reads `## Observations` alongside the merge and groups related ones
     :reason]; remove :message and :error from optional_keys.
 ```
 
-`class` must be one of: `shape-fragmentation`, `vocabulary-mismatch`, `responsibility-leakage`, `dead-branch`, `interface-drift`, `mutation`, `invariant-gap`, `spec-signal`, `deviation`, `scope-question`, `duplication`.
+`class` must be one of: `shape-fragmentation`, `vocabulary-mismatch`, `responsibility-leakage`, `dead-branch`, `interface-drift`, `mutation`, `invariant-gap`, `spec-signal`, `deviation`, `scope-question`, `duplication`. A `spec-signal` or `scope-question` discovery that only the user can settle becomes an ask record at integrate (`templates/ask.md`); write what the feature is for, what you observed (or that it is reasoning only), and what it blocks, so the orchestrator can write the ask without re-deriving it.
 
 `affected_register_entry` is optional but strongly preferred — without it the integrate phase can't auto-route the discovery to the right entry.
 
@@ -106,7 +106,7 @@ This report is **for the orchestrator only**. It is held by the orchestrator unt
 The Implementor:
 - **May** create new tasks for **genuinely external findings** (user-visible bug or correctness regression that can't wait for review).
 - **Must not** silently expand scope on the in-progress task.
-- **Must** stop and ask the orchestrator if the task body itself appears to require revision before it can be implemented (rather than implementing a guess).
+- **Must** stop and ask the orchestrator if the task body itself appears to require revision before it can be implemented (rather than implementing a guess). Say what you observed and what it blocks; the orchestrator records it as an ask (`flows/execute.md` § 9) and your task waits as `blocked`.
 - **Must not** modify register entries directly; push-backs are recommendations, the integrate phase is the authority.
 
 ## Failure modes

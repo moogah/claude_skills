@@ -102,6 +102,10 @@ reviewer:
 # OPTIONAL: forward-mode register population timing
 forward-mode:
   populate-at: [opsx-new, opsx-tasks-generate]   # default
+
+# OPTIONAL: who reads the questions the orchestrator puts to the user (templates/ask.md)
+asks:
+  reader: "technical product manager who has not watched development and has a shallow view of the internals"   # default
 ```
 
 ## Resolution rule
@@ -127,6 +131,7 @@ If no overlay is found, the orchestrator warns explicitly and falls back to:
 | `artifacts.register`: `interfaces.md` |
 | `taxonomy`: `[feature, test, doc, refactor, bug, contract, infrastructure]` |
 | `thresholds`: see `templates/pm-digest.md` defaults |
+| `asks.reader`: "technical product manager who has not watched development and has a shallow view of the internals" |
 
 The fallback behaviour exists so the orchestrator can run on a project that hasn't been onboarded yet, but the warning is loud — running without an overlay is not the steady state.
 

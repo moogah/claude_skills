@@ -97,7 +97,7 @@ When an interfaces register exists, diff its declared shapes / contracts against
 
 **Example**: scope's `bash-parser-protocol.org` described handler output shape, but nothing checked it; five handlers were found missing `:confidence` when contract tests were finally written.
 
-**Maps to**: `class: interface-drift`. **Highest-leverage class.** Routes to the user when against an out-of-date design doc — the same logic as the Reviewer's "spec is wrong" direction. These are the findings scope and bash-parser systematically under-weighted.
+**Maps to**: `class: interface-drift`. **Highest-leverage class.** Becomes an ask record when against an out-of-date design doc — the same logic as the Reviewer's "spec is wrong" direction; triage decides whether it is a `doc-correction` (applied, listed) or a `decision` (asked). These are the findings scope and bash-parser systematically under-weighted. The finding is not the ask: the orchestrator writes the ask from it (`templates/ask.md`), so the finding must say what the rule or document is for, whether the drift was observed in a shipped document or is reasoning only, and what it blocks.
 
 ### 8. Mutation scan + invariant-gap check
 
@@ -170,7 +170,7 @@ The Architect may override per-finding (with `severity_override_reason`) when co
 
 - **Read-only against code**: like the Reviewer. Inline fixes belong to the orchestrator; new tasks go through the externalisation channel.
 - **Blocking findings**: produce a follow-up task scoped to the batch and pause merge until resolved.
-- **Interface-drift findings against an out-of-date design doc**: routed **to the user**, not the Implementor — same logic as the Reviewer's "spec is wrong" direction.
+- **Interface-drift findings against an out-of-date design doc**: become an ask record, not Implementor work — same logic as the Reviewer's "spec is wrong" direction. The finding is not the ask: the orchestrator writes the ask from it (`templates/ask.md`), so the finding must say what the rule or document is for, whether the drift was observed in a shipped document or is reasoning only, and what it blocks.
 - **Cleanup proposals**: the Architect can *propose* cleanup tasks, but they land in the follow-up stream and the orchestrator decides whether to schedule them in this batch, the next batch, or as `.tasks/` external backlog.
 - **PM-spawned audits**: when the PM's cascade signal fires, PM has authority to spawn a focused Architect audit on the cluster. The Architect treats this as a between-cycle invocation scoped to the cluster.
 

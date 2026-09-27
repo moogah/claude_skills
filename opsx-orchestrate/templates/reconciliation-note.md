@@ -86,12 +86,12 @@ Divergent reconciliations are merge-blockers. The note must additionally include
 ## Divergence escalation
 
 - routes_to: architect | user
-- blocks_merge_of: [<task names whose merges depend on this contract>]
+- blocks_merge_of: [<task names whose next-cycle work depends on this contract>]
 - proposed_resolution: <update entry | update code | accept divergence with policy note>
-- decision_pending_on: <"user decision on error-shape question" | "architect re-audit" | "follow-up task T-XXX">
+- decision_pending_on: <"architect re-audit" | "follow-up task T-XXX" | ask-<cycle-id>-<seq>>
 ```
 
-A `divergent` entry without a `divergence escalation` section is malformed; the integrate exit gate refuses to close.
+When `routes_to: user`, the question, options and recommendation live in the ask record (`templates/ask.md`), not here; `decision_pending_on` carries the ask id and `blocks_merge_of` becomes the ask's `blocks`. A `divergent` entry without a `divergence escalation` section is malformed; the integrate exit gate refuses to close.
 
 ## When `status_to: confirmed`
 

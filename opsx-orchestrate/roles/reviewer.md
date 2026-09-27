@@ -76,7 +76,7 @@ If the answer is no, don't raise it. Style preferences, bikeshed names, speculat
    - A case the spec didn't anticipate.
    - A decision that now looks premature.
    - That is a **signal from the code**, not a problem with the implementation. "Implemented as specified" is not a defence if the spec is the problem.
-   - Spec-signal findings carry **`severity: spec-signal`** and route to the user via integrate-phase asks, not to the next implementor.
+   - Spec-signal findings carry **`severity: spec-signal`** and become an ask record (`templates/ask.md`) presented at integrate, not work for the next implementor.
 
 ## Output contract
 
@@ -108,6 +108,10 @@ clean_review: false      # true if no findings
 - recommended_action:
   kind: inline-fix | follow-up-task | re-implement | route-to-user
   detail: <one-line — what specifically should happen>
+  # Required when kind is route-to-user (templates/ask.md § What a finding must carry):
+  about: <one sentence — what the feature, flag or rule is for, in product terms>
+  observed: <where and when the problem occurred | reasoning only: <the reasoning>>
+  blocks: <task | merge | next-plan | archive | nothing>
 
 ### Finding 2: ...
 
@@ -121,13 +125,13 @@ that the silence on a direction is a real silence, not a missed pass.>
 
 - **`blocking`**: orchestrator must apply an inline fix or schedule re-implementation; the task does not advance to `done`.
 - **`advisory`**: orchestrator may apply inline fix or file follow-up task; task can advance to `done` regardless.
-- **`spec-signal`**: routes to the user via integrate-phase asks. **Highest-value findings.** These are the ones scope and bash-parser systematically under-weighted; the Reviewer's recommendation is to pause and rethink, not to file another implementation task.
+- **`spec-signal`**: becomes an ask record, presented at integrate; it does not block the task in execute. **Highest-value findings.** These are the ones scope and bash-parser systematically under-weighted; the Reviewer's recommendation is that the design be rethought, not that another implementation task be filed. The finding carries `about`, `observed` and `blocks` (above) so the orchestrator can write the ask without re-reading the code.
 
 ## What the Reviewer cannot do
 
 - **Apply inline fixes** — the Reviewer is read-only by contract. Fixes belong to the orchestrator (so reviewers can be parallelised safely; their findings are pinned to merge commits).
 - **Modify the task file** — including the `## Observations` and `## Discoveries` sections. Those are the Implementor's; the Reviewer's findings are a separate file.
-- **Re-litigate the task body's stated scope** — if the task body's scope is wrong, that's a `spec-signal` finding routed to the user, not a reviewer-driven scope change.
+- **Re-litigate the task body's stated scope** — if the task body's scope is wrong, that's a `spec-signal` finding that becomes an ask, not a reviewer-driven scope change.
 - **See or reference the Implementor's report** — by construction, not by discipline.
 
 ## Project overlay extensions

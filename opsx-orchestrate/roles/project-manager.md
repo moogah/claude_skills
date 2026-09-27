@@ -20,7 +20,7 @@ The deterministic pass produces:
 - All counts in the throughput table (created, started, completed, reviewed, rejected, externalised, blocked).
 - All ratios (drainage, review balance, rejection rate, externalisation pressure).
 - The fired-signals list (from threshold queries against state).
-- The candidate-asks list (from blocked-task aging, cascade detection, stale tasks, blocked-path stagnation).
+- Candidate-ask stubs (from blocked-task aging, stale tasks, blocked-path stagnation): id, kind, `raised_by: pm`, skeleton question, `blocks`, per `templates/ask.md`. A subject that already carries an open ask id in `blocker_note` re-surfaces that id. Cascade detection produces an Architect audit, not an ask.
 - The critical-path readout.
 - Class-distribution and cohort-velocity tables.
 
@@ -32,7 +32,7 @@ Turns the structured signals into **digest prose** and **user-facing asks**. Che
 
 The agent pass produces:
 - The framing prose around each signal (e.g. "this cluster looks like a vocabulary-mapping gap").
-- The user-facing asks language (turning "T-014 blocked >3 cycles" into "Decide T-014 blocker (error-shape question, blocked 4 cycles)").
+- The asks' prose per `templates/ask.md`: a plain question for the reader the overlay names. Fields that need code or docs (`about`, `observed.evidence`) are filled by the orchestrator when it routes the finding; the PM does not read code.
 - The goal-drift recommendation (revise / split / abandon / continue) and its one-line reason.
 - The "trends to watch" section.
 - The "meta-discoveries" section.
@@ -87,13 +87,13 @@ Refactor or polish tasks consuming attention while load-bearing tasks sit blocke
 
 Same kind of task fails in the same way, cycle after cycle. Reviewer rejects implementor X's tests for the same reason five times. Implementor agent loses context on tasks of class Y. These are process bugs the orchestrator can't see because each cycle ends "successfully"; the PM sees them because it reads the cycle history.
 
-**PM action**: signal; surface class to user; if persistent, propose updating the task taxonomy or the implementor brief for that class.
+**PM action**: signal; record a `process`-kind ask (`templates/ask.md`) naming the class; if persistent, the note proposes updating the task taxonomy or the implementor brief for that class. Process asks are not presented; the digest counts them.
 
 ### 8. Blocked-path stagnation
 
 Tasks blocked on an external dependency (user decision, upstream change, environment) for ≥N cycles with no movement.
 
-**PM action**: surface as an ask in the digest with a concrete asked-of-user.
+**PM action**: raise an ask stub per `templates/ask.md`, or re-surface the open ask id the task's `blocker_note` already names.
 
 ## Input contract — what the PM reads
 
@@ -114,11 +114,11 @@ The PM does **not** read code. If a question requires reading code, that's a sig
 | Cascade detection | `count(followups discovered_from=T) > cascade-trigger-followup-count` | Signal: cascade; **spawn Architect audit** |
 | Review balance | `needs_review/in_progress > review-starvation-ratio` | Signal: review starvation |
 | Externalisation pressure | `.tasks/` count delta monotonic over ≥3 cycles | Signal: externalisation pressure |
-| Stale detection | any task in any non-`done` state > `stale-task-cycles` cycles | Signal: stale; ask user |
+| Stale detection | any task in any non-`done` state > `stale-task-cycles` cycles | Signal: stale; ask stub, or re-surface the ask id in `blocker_note` |
 | Critical-path coverage | active tasks on critical path / total active tasks < 0.3 | Signal: priority inversion |
 | Cohort velocity | completion rate by `task_class` < global avg / 2 | Signal: cycle anti-pattern in class |
 | Cycle anti-pattern | rejection reasons clustered by implementor or class with count ≥3 | Signal: process bug |
-| Blocked-path aging | tasks `status: blocked` for ≥`stale-task-cycles` cycles | Signal: blocked-path stagnation; ask user |
+| Blocked-path aging | tasks `status: blocked` for ≥`stale-task-cycles` cycles | Signal: blocked-path stagnation; ask stub, or re-surface the ask id in `blocker_note` |
 | Goal drift | critical-path completion ratio stagnant or declining for K cycles while non-critical-path completions continue | Signal: goal drift |
 
 All thresholds are overlay-configurable via `config.yaml` `thresholds.*`.
@@ -133,7 +133,7 @@ The cycle does not close until the PM digest is produced and any user-asks have 
 
 Mapped onto the three-phase cycle:
 
-- **Integrate phase (default)**: PM digest is one of integrate's defining operations. Cycle does not close until the digest exists with non-empty `signals` and `asks`.
+- **Integrate phase (default)**: PM digest is one of integrate's defining operations. Cycle does not close until the digest exists with a non-empty `signals` section; the asks table may be empty.
 - **On-demand**: `/pm-digest` for a snapshot at any point.
 - **Periodic via `/loop` or `/schedule`**: useful for long execute phases where the user wants a daily/weekly readout without waiting for the formal integrate phase.
 - **Triggered**: when the orchestrator detects a threshold breach mid-cycle that it doesn't itself act on (drainage <1 for K cycles), it can invoke the PM digest unprompted.

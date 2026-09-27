@@ -80,7 +80,7 @@ The overlay's `architect.severity-overrides` field can override per-class. A fin
 
 ## Routing
 
-- **`blocking`** with `interface-drift` against an out-of-date design doc → routes to **the user**, not the implementor. (The reviewer's "spec is wrong" direction; the highest-value findings.)
+- **`blocking`** with `interface-drift` against an out-of-date design doc → an ask record per `templates/ask.md`, triaged: `doc-correction` when the code is right and the document is stale (applied and listed), `decision` when the design is in question (asked). Not implementor work. (The reviewer's "spec is wrong" direction; the highest-value findings.) The finding's `recommended_resolution` must say what the document or rule is for and whether the drift was observed in a shipped document or is reasoning only.
 - **`blocking`** with any other class → routes to a follow-up task in the active batch; merge of the implicated task pauses; integrate gate doesn't close until resolved.
 - **`advisory`** → follow-up task with `discovered_class` set; orchestrator decides this-batch / next-batch / `.tasks/`.
 - **`informational`** → no task; appears in PM digest's "trends to watch" section. PM tracks recurrence; if the same informational class fires three cycles running, PM proposes promoting to advisory.
@@ -93,4 +93,4 @@ The state-file `architect_findings[].resolution` field tracks how each finding w
 - `inline-fixed` — orchestrator applied an inline fix
 - `followup-task-<task-name>` — became a task; field carries the task name
 - `reverted` — the implicated merge was reverted
-- `accepted-with-note` — user explicitly chose to accept the divergence; carries a register `divergent` entry pointing at the rationale
+- `accepted-with-note` — user explicitly chose to accept the divergence; carries the ask id whose `decision_readback` is the rationale
