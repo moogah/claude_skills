@@ -14,15 +14,15 @@ The PM operates as **two passes**:
 
 ### Deterministic pass
 
-Produces the **instrument panel** and **raw signals** from the state file. No LLM involved. Output is structured (JSON), reproducible, auditable.
+`state.py counts --write` produces the **instrument panel** and **raw signals** from the state file. No LLM involved. Output is structured (JSON), reproducible, auditable.
 
-The deterministic pass produces:
-- All counts in the throughput table (created, started, completed, reviewed, rejected, externalised, blocked).
+It produces:
+- All counts in the throughput table (created, started, completed, reviewed, rejected, externalised, blocked, failed, done), derived from task statuses and timestamps, for this cycle and the `history_window` before it.
 - All ratios (drainage, review balance, rejection rate, externalisation pressure).
-- The fired-signals list (from threshold queries against state).
-- Candidate-ask stubs (from blocked-task aging, stale tasks, blocked-path stagnation): id, kind, `raised_by: pm`, skeleton question, `blocks`, per `templates/ask.md`. A subject that already carries an open ask id in `blocker_note` re-surfaces that id. Cascade detection produces an Architect audit, not an ask.
-- The critical-path readout.
-- Class-distribution and cohort-velocity tables.
+- The fired-signals list for the queries it can compute from state: throughput inversion, review starvation, priority inversion, cascade (follow-ups by source task).
+- The critical-path readout, the class-distribution table, follow-ups by source, the open asks and the blocked tasks with their `blocker_note`.
+
+Candidate asks come from the blocked-task list: a `blocker_note` that is an ask id re-surfaces that id; any other blocker is a stub the orchestrator completes per `templates/ask.md`. Cascade detection produces an Architect audit, not an ask.
 
 Output: `<repo>/.orchestrator/cycles/<cycle-id>/pm-signals.json`.
 
@@ -97,7 +97,7 @@ Tasks blocked on an external dependency (user decision, upstream change, environ
 
 ## Input contract — what the PM reads
 
-- The orchestrator state file: every task and its transitions, the `cycle_log` array, `architect_findings`, `register_touched`.
+- The orchestrator state file, through `state.py counts` and `state.py status`: every task and its status, `architect_findings`, `register_touched`, the journal.
 - The change's `proposal.md` — the stated outcome, used to define "done" and to identify the critical path. **One LLM read per plan phase**, not per PM tick.
 - The current `tasks/` tree (in-change tasks) and `.tasks/` store (externalised backlog).
 - Cycle history (last K cycles' counts and transitions; default K=5; overlay-configurable).
@@ -121,7 +121,7 @@ The PM does **not** read code. If a question requires reading code, that's a sig
 | Blocked-path aging | tasks `status: blocked` for ≥`stale-task-cycles` cycles | Signal: blocked-path stagnation; ask stub, or re-surface the ask id in `blocker_note` |
 | Goal drift | critical-path completion ratio stagnant or declining for K cycles while non-critical-path completions continue | Signal: goal drift |
 
-All thresholds are overlay-configurable via `config.yaml` `thresholds.*`.
+All thresholds are overlay-configurable via `config.yaml` `thresholds.*`. `state.py counts` computes the first, second, third and sixth rows; the rows that need per-task cycle age or rejection reasons (stale detection, cohort velocity, cycle anti-pattern, blocked-path aging, goal drift over K cycles) are read by the agent pass from the history table until a cycle shows they are worth computing.
 
 ## Output: the PM digest
 

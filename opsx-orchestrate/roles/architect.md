@@ -16,7 +16,7 @@ When an Implementor diff modifies code cited in a **`load_bearing: true`** regis
 
 - **Scope**: one entry; the diff touching its cited code; immediate neighbours in the call graph.
 - **Cost**: seconds; runs in parallel with the Implementor's own work.
-- **Output**: zero or more findings, written to the cycle's findings dir; state file updated.
+- **Output**: zero or more findings, written to the cycle's findings dir, each indexed with `state.py record add findings '{...}'` (title, severity, class, trigger, locations, `discovered_from`; the file carries the reasoning and the recommended resolution).
 - **Effect**: a `severity: blocking` finding pauses the merge of the implicated task.
 
 ### End-of-cycle (in integrate, default; **a defining operation of integrate**)
@@ -134,6 +134,8 @@ In plan, the Architect operates in **forward mode** — populating or revising *
 - **At `/opsx-tasks generate` time**: populate the `shape` and `vocabulary` tiers — the "concrete contracts" fill. Generate scaffolding for tiered entries immediately.
 
 New entries land as `status: speculated`. Entries the prior integrate marked `divergent` are re-stated, absorbed, or escalated.
+
+Whenever the Architect proposes an entry update, the entry holds current state only: no `status_note`, `amendment*` or cycle-suffixed fields, dated paragraphs, `prior_*` snapshots, or messages to future roles. History lives in the reconciliation-note chain (`reconciliation_note_path` → latest note, each note's `prior_note_path` → the one before), and a note carries an entry diff, not two copies of the entry.
 
 ### Scaffolding generation
 

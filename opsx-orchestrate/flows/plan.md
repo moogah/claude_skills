@@ -8,15 +8,17 @@ A plan that doesn't consume the prior cycle's integrate output isn't planning �
 
 ### 1. Consume the prior integrate's handshake
 
-Read `<repo>/.orchestrator/handshake-<prior-cycle-id>.json`. Must have:
+`state.py init --change <name> --test-command <cmd>` starts the cycle and reads `<repo>/.orchestrator/handshake-<prior-cycle-id>.json` (the newest one, or `--prior-handshake <path>`; `--first-cycle` when none exists). Then read the handshake. It has:
 
 - `register_diff` — what's now `confirmed` / `divergent` / `reconciled` that was `speculated`.
 - `pm_digest_path` — the prior digest, for context.
 - `meta_discoveries` — patterns to update speculation priors against.
 - `user_resolved_goal_drift` — any revise / split / abandon decisions the user made.
 - `asks_for_user_open` (may be empty), `asks_for_user_resolved` (may be empty).
+- `task_refinements` — which open tasks already absorbed cycle learning.
+- `journal` — the prior cycle's discoveries and decisions, one line each.
 
-If the file is missing or any field is missing (not "empty array" — actually missing), refuse to start. Direct the user to close the prior cycle properly or to abandon it explicitly. This is an `environment`-kind ask (`templates/ask.md`): asked at once, since there is no state to record it in.
+If the file is missing or any field is missing (not "empty array" — actually missing), `init` refuses to start. Direct the user to close the prior cycle properly (`state.py close`) or to abandon it explicitly (`state.py close --abandon --why`). This is an `environment`-kind ask (`templates/ask.md`): asked at once, since there is no state to record it in.
 
 This is the brainstorm's loop-closure contract: each cycle's discoveries must update the next cycle's speculations.
 
@@ -44,6 +46,8 @@ New entries land as `status: speculated`. Entries the prior integrate marked `di
 
 Each file carries a `scaffolding-of: <entry-id>` header; the entry gains a `scaffolding_path` field. Scaffolded tests must fail loudly until satisfied — green-on-empty is a defect. Full contract: **[../scaffolding.md](../scaffolding.md)**.
 
+Every entry the batch will cite is registered once: `state.py record add register-touched '{"entry_id": ..., "entry_tier": ..., "load_bearing": ..., "status_at_plan": ..., "cited_by_tasks": [...], "scaffolding_path": ...}'`. This list is what integrate's reconciliation gate enumerates.
+
 If `scaffolding.enabled: false` in the overlay, this sub-step is a no-op and tiered entries retain their `validator` / `test_corpus` YAML fields as today.
 
 Forward-mode also reads `design.md` against the code. Drift it finds becomes an ask record (`templates/ask.md`): `doc-correction` when the code is right and the document is stale (applied and listed, not asked); `decision` when the design itself is in question. A `decision` whose `blocks` names a task in this batch is presented before execute starts, in the template's rendering; the rest wait for integrate's presentation step.
@@ -67,7 +71,7 @@ Project the chosen speculations into units of work via `/opsx-tasks generate` (o
 - Each boundary entry implies a contract-test task or load-time validator task.
 - Each vocabulary entry implies a canonical-mapping-function task plus tests.
 
-Generated tasks land in `<change>/tasks/open/<task-name>.md` with their `cites_register_entries` field populated against the entries they derive from.
+Generated tasks land in `<change>/tasks/open/<task-name>.md` with their `cites_register_entries` field populated against the entries they derive from, and each is registered: `state.py task add <name> --file <path> --class <class> --cites <entry-id,...> [--blocked-by <task,...>]`. A follow-up carries `discovered_from=… discovered_by=… discovered_class=…` on the same command.
 
 ### 5. Implementor brief assembly
 
@@ -83,7 +87,7 @@ The brief framing is fixed — register entries and scaffolding are *reference m
 
 ### 6. PM critical-path read
 
-One LLM read of `proposal.md` to identify which tasks are on the critical path. Sets `on_critical_path` on every task in the batch. Cheap; runs once per plan phase, not per PM tick.
+One LLM read of `proposal.md` to identify which tasks are on the critical path. `state.py task set <name> on_critical_path=true` for each (or `--critical` at `task add`). Cheap; runs once per plan phase, not per PM tick.
 
 Overlay can override via `critical-path.override-tasks` (explicit task list) or `critical-path.override-labels` (task_class values that are always critical-path).
 
@@ -107,15 +111,15 @@ The cycle does not enter execute until:
 
 | Check | Condition |
 |---|---|
-| `prior_integrate_consumed` | Handshake artifact read; all required fields present |
-| `batch_composed` | Batch task list explicit and frozen |
-| `briefs_cite_register` | Every task in batch has at least one entry in `cites_register_entries` |
-| `scaffolding_generated_for_tiered_entries` | Every speculated entry whose tier is in `scaffolding.tiers` has a `scaffolding_path` set and the file exists with a valid `scaffolding-of` header. No-op when `scaffolding.enabled: false` |
-| `user_signed_off_goal_drift` | If prior integrate carried goal-drift recommendations, user has dispositioned them; otherwise no-op |
+| `prior_integrate_consumed` | Handshake artifact present with all required fields (computed) |
+| `batch_composed` | Batch task list explicit and frozen (asserted: `state.py gate set plan batch_composed=true`) |
+| `briefs_cite_register` | Every task in batch has at least one entry in `cites_register_entries` (computed) |
+| `scaffolding_generated_for_tiered_entries` | Every speculated entry whose tier is in `scaffolding.tiers` has a `scaffolding_path` set and the file exists with a valid `scaffolding-of` header. No-op when `scaffolding.enabled: false` (asserted: `gate set plan scaffolding_generated_for_tiered_entries=true`) |
+| `user_signed_off_goal_drift` | If prior integrate carried goal-drift recommendations, user has dispositioned them; otherwise no-op (computed from the goal-drift ask's status) |
 
-All five must be `true` in `phase_gates.plan.checks`. The state file's `phase_gates.plan.passed` flips to `true` only when all pass.
+`state.py gate check plan` shows the computed three with reasons; `state.py gate pass plan` sets the gate when all five are true; `state.py phase set execute` advances.
 
-Execute refuses to run if `phase_gates.plan.passed` is `false`.
+Execute refuses to run if the plan gate has not passed.
 
 ## What this displaces
 

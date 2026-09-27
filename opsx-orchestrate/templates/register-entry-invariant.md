@@ -61,15 +61,16 @@ When `status: reconciled`, add:
 
 ```yaml
 why_tests_missed: <one sentence — typically "tests checked behaviour at sites; no test asserted the invariant directly">
-reconciliation_note_path: register/notes/<entry-id>.md
-prior_statement: |
-  <The earlier wording, so the lineage is traceable>
+reconciliation_note_path: .orchestrator/cycles/<cycle-id>/reconciliations/<tier>-<name>.md
+status_changed_at: <iso-ts>
 ```
+
+The earlier wording lives in the note's entry diff, not here. An entry holds current state only — see *What an entry never carries* in `register-entry-shape.md`.
 
 When `status: divergent`, add:
 
 ```yaml
-divergence_evidence: <where the invariant currently fails>
+divergence_evidence: <where the invariant currently fails — one paragraph at most>
 escalation: architect | user
 ```
 

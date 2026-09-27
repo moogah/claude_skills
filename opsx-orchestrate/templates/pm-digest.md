@@ -8,12 +8,12 @@ The structure is fixed; the contents are derived. Every count traces to a state-
 
 `<repo>/.orchestrator/cycles/<cycle-id>/pm-digest.md`
 
-The state file's `phase_gates.integrate.checks.pm_digest_produced` flips to `true` when this file exists with a non-empty `signals` section. A cycle with nothing to ask closes cleanly.
+`state.py gate check integrate` computes `pm_digest_produced` from this file: it must exist with a non-empty `## Signals` section. A cycle with nothing to ask closes cleanly.
 
 ## Form
 
 ```markdown
-# PM digest — change: <change-name> — cycle <n>
+# PM digest — change: <change-name> — <cycle-id>
 
 **Produced**: <iso-ts>
 **Phase**: integrate
@@ -84,12 +84,12 @@ PM agent prose is generated only for signal lines and the asks' question column.
 
 ## Determinism boundary
 
-The deterministic pass produces:
+The deterministic pass is `state.py counts --write` (`roles/project-manager.md`). It produces:
 
-- All counts in the throughput table.
-- The critical-path readout.
-- The list of fired signals (from threshold queries against state).
-- Candidate-ask stubs (from blocked-task aging and stale detection): id, kind, `raised_by: pm`, skeleton question, `blocks`. A subject that already carries an open ask id in `blocker_note` re-surfaces that id. Cascade detection produces an Architect audit, not an ask; the PM may spawn it alone.
+- All counts in the throughput table, this cycle and the history window.
+- The critical-path readout and the class table.
+- The list of fired signals it can compute (throughput inversion, review starvation, priority inversion, cascade).
+- The open asks and the blocked tasks with their `blocker_note`, from which the orchestrator writes candidate-ask stubs per `templates/ask.md`. A subject that already carries an open ask id in `blocker_note` re-surfaces that id. Cascade detection produces an Architect audit, not an ask; the PM may spawn it alone.
 
 The agent pass produces:
 

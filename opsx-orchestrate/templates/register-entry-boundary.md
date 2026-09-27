@@ -66,9 +66,11 @@ When `status: reconciled`, add:
 
 ```yaml
 why_tests_missed: <typically "stages tested in isolation; no test crossed multiple stages with realistic data">
-reconciliation_note_path: register/notes/<entry-id>.md
-stages_changed: [<which stage indices changed>]
+reconciliation_note_path: .orchestrator/cycles/<cycle-id>/reconciliations/<tier>-<name>.md
+status_changed_at: <iso-ts>
 ```
+
+Which stages changed is read from the note's entry diff, not restated here. An entry holds current state only — see *What an entry never carries* in `register-entry-shape.md`.
 
 When `status: divergent`, add:
 

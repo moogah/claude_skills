@@ -2,7 +2,7 @@
 
 A **reconciliation note** records the lifecycle event when a `speculated` register entry moves to `confirmed`, `divergent`, or `reconciled`. The note is the audit trail that turns one cycle's discoveries into the next cycle's better speculation priors.
 
-Notes live at `<repo>/.orchestrator/cycles/<cycle-id>/reconciliations/<entry-id>.md`. The state file's `register_touched[].reconciliation_note_path` points to the note. Notes are also long-tail: they survive in the cycle archive and are read by the curation cycle (v2) to distill cross-cycle patterns.
+Notes live at `<repo>/.orchestrator/cycles/<cycle-id>/reconciliations/<tier>-<name>.md` (the entry id without `register/`, slashes as dashes; `register/shape/violation-info` → `shape-violation-info.md`). The state file's `register_touched[].reconciliation_note_path` points to the note. Notes are also long-tail: they survive in the cycle archive and are read by the curation cycle (v2) to distill cross-cycle patterns.
 
 ## Form
 
@@ -20,6 +20,7 @@ discovered_by:
   - implementor
   - architect    # for the on-touch finding that produced the task
 recorded_at: <iso-ts>
+prior_note_path: <path of the note this one supersedes, or null>
 ---
 
 ## What changed
@@ -45,23 +46,14 @@ Example:
 error keys; no test crossed the boundary or asserted the union, so
 divergent shapes all passed.">
 
-## Prior shape (verbatim)
+## Entry diff
 
-```yaml
-<the entry's prior fields, exactly as they were before the
-reconciliation, so future readers can diff and so the lineage is
-traceable.>
-```
-
-## New shape (verbatim)
-
-```yaml
-<the entry's new fields. If status_to is `confirmed`, this section
-is identical to what was speculated and can be elided with a
-"unchanged from speculation" note. If `reconciled`, this is the
-patched form. If `divergent`, this section captures the actual
-implementation shape (which the entry has not yet been updated to
-match).>
+```diff
+<unified diff of the entry's YAML block before and after — `diff -u`
+on the two versions, or `git diff <before-commit>..<after-commit> --
+<register file>` restricted to the entry when the register is
+committed. Never two copies of the entry. `confirmed` omits this
+section; `divergent` replaces it with `## Observed shape`.>
 ```
 
 ## Meta-discovery hooks
@@ -80,9 +72,13 @@ single :reason field unless evidence demands more.">
 
 ## When `status_to: divergent`
 
-Divergent reconciliations are merge-blockers. The note must additionally include:
+Divergent reconciliations are merge-blockers. The entry has not been changed, so in place of `## Entry diff` the note carries the actual implementation shape, and must additionally include the escalation:
 
 ```markdown
+## Observed shape
+
+<a fenced yaml block: the implementation's actual shape, no prose>
+
 ## Divergence escalation
 
 - routes_to: architect | user
@@ -100,18 +96,18 @@ Confirmed reconciliations are the cheapest case — the speculation matched. The
 ```markdown
 ## What changed
 
-Speculation matched implementation. No edit to the entry.
+Speculation matched implementation. No edit to the entry beyond `status: confirmed` and `status_changed_at`.
 
 ## Why tests missed it
 
 N/A — speculation held.
 ```
 
-The integrate gate accepts confirmed notes without a `prior shape` / `new shape` section, since they're identical.
+The integrate gate accepts confirmed notes without an `entry diff` section, since there is no diff.
 
 ## Notes vs entries
 
-The reconciliation note is the **event log**. The register entry is the **current state**. Updating an entry without writing a note is a state-file bug; writing a note without updating the entry (when the `status_to` requires it) is also a state-file bug. The integrate gate checks both.
+The register entry is the **current state** and carries no history — no `status_note`, amendment or cycle-suffixed fields, dated paragraphs or `prior_*` snapshots; its `reconciliation_note_path` points at the latest note and each note's `prior_note_path` links the chain. The note is the **event log** and carries an entry diff, never two copies of the entry. Updating an entry without writing a note is a state-file bug; writing a note without updating the entry (when the `status_to` requires it) is also a state-file bug. The integrate gate checks both.
 
 ## Why this is its own artifact
 

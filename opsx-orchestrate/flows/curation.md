@@ -36,7 +36,7 @@ The triggers v2 will use are spec'd in v1 so the state file has the right fields
 - **Time-based** fallback for long-running projects (weekly, monthly — overlay-configurable).
 - **Manual**: `/curate` for an explicit pass.
 
-The state file's `cycle_log.counts` already includes everything these triggers need: closed-task count, externalisation count, time-since-last-curation. V2 reads them; v1 writes them.
+`state.py counts` over the archived states already yields everything these triggers need: closed-task count, externalisation count, time-since-last-curation. V2 reads them; v1 records the states they derive from.
 
 ## Deep archive location (decided in v1 to avoid v2 rework)
 

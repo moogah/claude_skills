@@ -8,13 +8,13 @@ A cycle that produces follow-up tasks but leaves speculated entries un-dispositi
 
 ### 1. Register reconciliation (the load-bearing operation)
 
-Enumerate every speculated entry the cycle touched (from the state file's `register_touched` array). For each:
+Enumerate every speculated entry the cycle touched (`state.py status` lists them under `undispositioned_entries`). For each:
 
 - **`speculated → confirmed`** if the implementation matched. Write a terse reconciliation note (per `templates/reconciliation-note.md`) recording "speculation matched".
 - **`speculated → divergent`** if the implementation pushed back AND the divergence is unresolved. Write a divergent reconciliation note with `routes_to: architect | user` and `proposed_resolution`. **Divergent entries block merge** of any task that cited them, until resolved. `routes_to: user` means an ask record exists (`templates/ask.md`; `raised_by.ref` is the note path; `blocks` is the note's `blocks_merge_of`, which names next-cycle work since this cycle's merges have already happened). The note's escalation section carries the ask id and nothing else. The same applies to `escalation: user` on a register entry or in the scaffolding table below.
-- **`speculated → reconciled`** if the entry was updated to match the discovery. Write a reconciliation note with `prior_shape`, `new_shape`, and the **mandatory `why_tests_missed` line**.
+- **`speculated → reconciled`** if the entry was updated to match the discovery. Write a reconciliation note with the entry diff and the **mandatory `why_tests_missed` line**.
 
-The state file's `register_touched[i].status_at_integrate` flips to one of `confirmed` / `divergent` / `reconciled` for every touched entry. An entry whose `status_at_integrate` remains null is a state-file bug; the integrate gate refuses to close.
+Then record the disposition: `state.py record set register-touched <entry-id> status_at_integrate=<confirmed|divergent|reconciled> reconciliation_note_path=<path>`, adding `why_tests_missed="<one sentence>"` for `reconciled` and `divergent` (not for `confirmed`). The note path is `cycles/<cycle-id>/reconciliations/<tier>-<name>.md` (the entry id without `register/`, slashes as dashes). An entry whose `status_at_integrate` remains null blocks the gate (`all_touched_entries_dispositioned` is computed).
 
 This is the gate that distinguishes a system that gets smarter from one that keeps rediscovering the same thing.
 
@@ -25,7 +25,7 @@ For touched entries with a `scaffolding_path` (per `scaffolding.md`), the diff a
 | Scaffolding diff during execute | Register entry transitions to | `scaffolding_status_at_integrate` | Reconciliation note carries |
 |---|---|---|---|
 | Untouched + scaffold green at end of cycle | `confirmed` | `untouched` (transient) → set to `promoted` or `archived` below | "Scaffold passed unchanged. Speculation matched." |
-| Modified by Implementor + reviewer accepted | `reconciled` | `modified` | `prior_form` (pre-diff), `new_form` (post-diff), `why_tests_missed` — the diff is the substrate |
+| Modified by Implementor + reviewer accepted | `reconciled` | `modified` | the entry diff and `why_tests_missed` — the diff is the substrate |
 | Modified by Implementor + reviewer rejected | `divergent` | `rejected` | `divergence_evidence` cites the rejected modification; `escalation: architect \| user` |
 | Strict-skip still skipping | (gate failure) | (un-dispositioned) | Integrate refuses to close until disposition is set |
 
@@ -35,7 +35,7 @@ Then for every confirmed/reconciled scaffold, set the **final disposition**:
 - **`archived`** — enforcement landed via a different mechanism (e.g. a runtime check at file:fn). The reconciliation note records *where* enforcement actually lives.
 - **`rejected`** (already set above for divergent) — speculation was wrong; scaffold is deleted; the divergent entry's resolution path determines next steps.
 
-`scaffolding_status_at_integrate` must be one of `promoted | archived | rejected` for every scaffolded file. Transient `untouched` / `modified` is not a final disposition; the gate enumerates these and refuses to close.
+`state.py record set register-touched <entry-id> scaffolding_status_at_integrate=<promoted|archived|rejected>` for every scaffolded file. Transient `untouched` / `modified` is not a final disposition; the computed check `all_scaffolding_dispositioned` refuses to close on them.
 
 The mandatory `why_tests_missed` line on `reconciled` entries gets concrete substrate — the diff itself — rather than the Architect's narrative reconstruction. Reconciliation moves from judgment to mechanical classification, with the Architect's prose layer reduced to "what pattern does this diff exemplify, for the meta-discoveries field?"
 
@@ -43,7 +43,7 @@ The mandatory `why_tests_missed` line on `reconciled` entries gets concrete subs
 
 Full signal-class run across all the cycle's diffs + the register. (Not a separate trigger; one of integrate's defining operations. See `roles/architect.md` for the eight signal classes.)
 
-Output: zero or more findings written to `<repo>/.orchestrator/cycles/<cycle-id>/findings/`. Each finding has a severity that decides its **routing target** (the actual task-file write, when one is needed, happens in step 7's curation sweep so creation and refinement are unified):
+Output: zero or more findings written to `<repo>/.orchestrator/cycles/<cycle-id>/findings/`, each indexed with `state.py record add findings '{...}'` (the id comes back); an audit with zero findings is one `state.py note note "end-of-cycle audit: zero findings" --by architect`. Each finding has a severity that decides its **routing target** (the actual task-file write, when one is needed, happens in step 7's curation sweep so creation and refinement are unified); the routing lands as `state.py record set findings <id> resolution=<inline-fixed|followup-task-<name>|reverted|accepted-with-note>`:
 
 - **`blocking`** with `interface-drift` against an out-of-date design doc → an ask record per `templates/ask.md`, triaged by kind. When the code is right and the document is stale, the kind is `doc-correction`: applied and listed, not asked. Only a `decision` reaches the user as a question.
 - **`blocking`** with any other class → routed for follow-up task creation in step 7; merge of the implicated task pauses; integrate gate doesn't close until the finding's `resolution` is no longer `pending`.
@@ -54,7 +54,7 @@ Output: zero or more findings written to `<repo>/.orchestrator/cycles/<cycle-id>
 
 Two passes, per `roles/project-manager.md`:
 
-1. **Deterministic pass** — produces `<repo>/.orchestrator/cycles/<cycle-id>/pm-signals.json` with all counts, ratios, fired-signals list, and candidate-ask stubs (id, kind, `raised_by: pm`, skeleton question, `blocks`). The orchestrator completes each stub per `templates/ask.md`; a stub whose subject already carries an open ask id in `blocker_note` re-surfaces that id rather than raising a new ask.
+1. **Deterministic pass** — `state.py counts --write` produces `<repo>/.orchestrator/cycles/<cycle-id>/pm-signals.json`: counts, ratios, history, by-status, critical-path readout, class table, follow-ups by source, open asks, blocked tasks and the fired signals it can compute. Blocked tasks whose `blocker_note` is an ask id re-surface that id rather than raising a new ask; a blocked task with another kind of blocker is a candidate ask the orchestrator writes per `templates/ask.md`.
 2. **Agent pass** — turns that into the digest prose at `<repo>/.orchestrator/cycles/<cycle-id>/pm-digest.md` (per `templates/pm-digest.md`).
 
 If the agent pass fails, the deterministic output remains and is recoverable.
@@ -63,12 +63,12 @@ If the agent pass fails, the deterministic output remains and is recoverable.
 
 The one place in the cycle where questions reach the user. Per `templates/ask.md`:
 
-1. Collect every `state.json` `asks_for_user[]` record with `status: open`, including those recorded during execute (`flows/execute.md` § 9) and plan.
+1. Collect every ask with `status: open` (`state.py status` lists their ids; the records are in `asks_for_user`), including those recorded during execute (`flows/execute.md` § 9) and plan.
 2. Triage by kind. `doc-correction` and `confirmation` are applied and listed; `process` is counted; `environment` should already have been asked. Only `decision` is presented.
-3. Fill any field a stub or finding lacks (`about`, `observed`, `options`) when that is a matter of reading code or docs; send a finding back to its role when it would mean redoing the analysis (`templates/ask.md` § What a finding must carry). A finding that exposes both a stale sentence and a product question yields two records: a `doc-correction` and a `decision`.
+3. Fill any field a stub or finding lacks (`about`, `observed`, `options`) with `state.py record set asks <id> …` when that is a matter of reading code or docs; send a finding back to its role when it would mean redoing the analysis (`templates/ask.md` § What a finding must carry). A finding that exposes both a stale sentence and a product question yields two records: a `doc-correction` and a `decision`.
 4. Write `<repo>/.orchestrator/cycles/<cycle-id>/asks.md` in the template's rendering: orientation, applied-without-asking, triage table, settle-now blocks, can-wait lines.
 5. Send the chat message: orientation, settle-now blocks, can-wait lines, the path. Asks first; the cycle's results after or in a separate message.
-6. On the user's answer, send the readback (each decision as a consequence) and wait for a yes. Then set `decision`, `decision_readback`, `status: answered`, append to the Decisions section, and apply. `status: applied` only once `applied_via` is set.
+6. On the user's answer, send the readback (each decision as a consequence) and wait for a yes. Then `state.py record set asks <id> decision=<label> decision_readback="<the readback>" status=answered`, append to the Decisions section, and apply. `record set asks <id> status=applied applied_via=<ref>` only once it is applied.
 7. Asks the user leaves unanswered keep `status: open`, their default applies at the boundary it names, and they are carried in the handshake.
 
 A cycle with no `decision`-kind asks writes an `asks.md` whose triage table is empty and says so in one line; that is a valid outcome, not a gate failure.
@@ -92,7 +92,7 @@ Meta-discoveries land in the integrate→plan handshake artifact's `meta_discove
 }
 ```
 
-Per-cycle meta-discoveries surface in this digest and act on the next plan. Recurring meta-discoveries across many cycles distill, via the deferred curation cycle (v2), into durable speculation priors.
+Write them as a JSON array to `<repo>/.orchestrator/cycles/<cycle-id>/meta-discoveries.json`; step 8 passes it to the handshake. Per-cycle meta-discoveries surface in this digest and act on the next plan. Recurring meta-discoveries across many cycles distill, via the deferred curation cycle (v2), into durable speculation priors.
 
 ### 5. Goal-drift check
 
@@ -105,9 +105,9 @@ Does the gap between "tasks complete" and "proposal.md outcome reachable" sugges
 If the query fires:
 - The PM digest carries a goal-drift recommendation: revise / split / abandon / continue.
 - The proposal status header (per `templates/proposal-status-header.md`) flips to `divergent`.
-- An ask record of kind `decision` is raised (`templates/ask.md`) with the four fixed options revise / split / abandon / continue, and presented in § 3a.
+- An ask record of kind `decision` is raised (`templates/ask.md`) with the four fixed options revise / split / abandon / continue, and presented in § 3a. The tool recognises the goal-drift ask by exactly those four option labels.
 
-The user's decision lands in the ask record and in the handshake artifact's `user_resolved_goal_drift` field as `{ask, decision, rationale}`. Plan refuses to start the next cycle until the user has dispositioned (or explicitly chosen `continue`).
+The user's decision lands in the ask record; `state.py handshake` copies it into `user_resolved_goal_drift` as `{ask, decision, rationale}`. Plan refuses to start the next cycle until the user has dispositioned (or explicitly chosen `continue`).
 
 ### 6. Externalisation review
 
@@ -140,9 +140,9 @@ Walk the cycle's outputs for new-task triggers:
 - **User-resolved asks with deferred implementation** (`asks_for_user_resolved[i]` where `applied_via` indicates deferral, e.g. `deferred-to-cycle-N`). If the deferral target is *not* an existing open task, create one carrying the user's decision in its body and `discovered_from: <ask-id>`.
 - **Meta-discoveries with concrete forward-looking work** (`meta_discoveries[i].implication_for_next_plan` names a specific task or rewire). If the implication is concrete enough to be its own task and is not absorbed by an existing open task's refinement, create the task with `discovered_from: meta-discovery/<label>`, `discovered_class: <meta.kind>`.
 
-For each created task, apply the externalisation rule (`externalisation.md`): in-change if it contributes to the active proposal's outcome; `.tasks/` if cross-cutting. Externalised tasks carry the same provenance fields plus `status: externalised`.
+For each created task, apply the externalisation rule (`externalisation.md`): in-change if it contributes to the active proposal's outcome; `.tasks/` if cross-cutting. Each is registered with `state.py task add <name> --file <path> --class <class> discovered_from=<id> discovered_by=<role> discovered_class=<class>`; an externalised one gets `task set <name> externalised` straight after.
 
-Each created task is also added to the handshake's `task_refinements` array (with `modes: ["created"]`) so the create/refine accounting is unified.
+Each created task is also added to the `task_refinements` list (with `modes: ["created"]`) so the create/refine accounting is unified.
 
 #### Compute each open task's impact set
 
@@ -151,7 +151,7 @@ For each task in `<change>/tasks/open/<task-name>.md`, intersect against the cyc
 - **(a) Register-diff hits.** `task.cites_register_entries ∩ register_diff[].entry_id`. Each hit names a cited entry whose `status` flipped this cycle (`speculated → confirmed | divergent | reconciled`).
 - **(b) Meta-discovery hits.** Any `meta_discoveries[i]` whose `scope` matches one of the task's cited entries, OR whose `evidence` array names this task or any task that cited the same register entries.
 - **(c) User-resolved-ask hits.** Any `asks_for_user_resolved[i]` whose `applied_via` names this task, or names a task or inline fix whose files overlap this task's "Files to modify" list or whose register entries this task cites.
-- **(d) Inline-fix hits.** Any `audit_inline_fixed_findings[i]` whose locations overlap the task's "Files to modify" or implicate code paths the task prescribes.
+- **(d) Inline-fix hits.** Any finding with `resolution: inline-fixed` (or `inline-fix` journal entry) whose locations overlap the task's "Files to modify" or implicate code paths the task prescribes.
 
 A task with an empty impact set across all four channels is left untouched.
 
@@ -180,9 +180,9 @@ Stanza form: see `templates/task-update-stanza.md`. Tasks may accumulate stanzas
 
 Both modes preserve the task's frontmatter and any existing `## Observations` / `## Discoveries` (those are execute-phase artifacts and must not be touched).
 
-#### Record the refinement in the handshake
+#### Record the refinement for the handshake
 
-For every refined task, append to the handshake's `task_refinements` array:
+For every refined task, append to `<repo>/.orchestrator/cycles/<cycle-id>/task-refinements.json` (a JSON array; step 8 passes it to the handshake):
 
 ```json
 {
@@ -204,7 +204,14 @@ A task that was touched but not modified — i.e. impact set was non-empty but i
 
 ### 8. Write the integrate→plan handshake artifact
 
-The cycle's loop-closing artifact. Path: `<repo>/.orchestrator/handshake-<cycle-id>.json`.
+The cycle's loop-closing artifact. Path: `<repo>/.orchestrator/handshake-<cycle-id>.json`. Written by
+
+```bash
+state.py handshake --meta-discoveries @.orchestrator/cycles/<cycle-id>/meta-discoveries.json \
+                   --task-refinements @.orchestrator/cycles/<cycle-id>/task-refinements.json
+```
+
+which fills `register_diff`, `pm_digest_path`, `user_resolved_goal_drift`, the two ask lists and the journal from state, and validates the result:
 
 ```json
 {
@@ -234,7 +241,7 @@ The cycle's loop-closing artifact. Path: `<repo>/.orchestrator/handshake-<cycle-
 }
 ```
 
-**All five required fields are mandatory** (`register_diff`, `meta_discoveries`, `user_resolved_goal_drift`, `asks_for_user_open` / `asks_for_user_resolved` as a pair, and `task_refinements`). An empty list is allowed; a missing field is not. The next plan's first operation is to read this file; if any field is missing, plan refuses to start.
+**All seven required fields are mandatory** (`register_diff`, `pm_digest_path`, `meta_discoveries`, `user_resolved_goal_drift`, `asks_for_user_open`, `asks_for_user_resolved`, `task_refinements`; the tool defines the list once). An empty list is allowed; a missing field is not. The next plan's first operation is to read this file; `state.py init` refuses to start if any field is missing.
 
 This is the structural fix for the brainstorm's "learns and forgets" failure mode. Without the handshake, plan degrades into "pull from the top of the backlog" and the orchestrator becomes a queue runner.
 
@@ -244,8 +251,8 @@ This is the structural fix for the brainstorm's "learns and forgets" failure mod
 - All Reviewer findings.
 - All Architect on-touch findings from execute.
 - The set of merged diffs.
-- The set of touched register entries (`state.json` `register_touched`).
-- `phase_gates.execute.passed: true` (mandatory).
+- The set of touched register entries (`register_touched` in state).
+- `phase_gates.execute.passed: true` (mandatory; `state.py phase set integrate` enforces it).
 
 ## Exit gate
 
@@ -256,29 +263,31 @@ This is the structural fix for the brainstorm's "learns and forgets" failure mod
 | `blocking_findings_resolved` | Every `architect_findings[i]` with `severity: blocking` has `resolution != pending` |
 | `pm_digest_produced` | `pm-digest.md` exists with a non-empty `signals` section (the asks table may be empty) |
 | `user_asks_routed` | Every `asks_for_user[]` record with `status: open` appears in `handshake.asks_for_user_open`, and every one of kind `decision` appears in `cycles/<cycle-id>/asks.md` (so plan picks them up next cycle) |
-| `open_tasks_refined_against_handshake` | Every still-open task in `<change>/tasks/open/` has been considered by step 7. A task either has an entry in `handshake.task_refinements` (with `modes` populated, possibly empty) or has been excluded explicitly because it had no impact-set hits. New tasks created in step 7 are present on disk and have a `task_refinements` entry with `modes: ["created"]`. Findings flagged in step 2 for follow-up task creation each have a corresponding created task. |
-| `handshake_artifact_written` | `handshake-<cycle-id>.json` exists with all five required fields populated |
+| `open_tasks_refined_against_handshake` | Every still-open task in `<change>/tasks/open/` has been considered by step 7. A task either has an entry in `handshake.task_refinements` (with `modes` populated, possibly empty) or has been excluded explicitly because it had no impact-set hits. New tasks created in step 7 are present on disk and have a `task_refinements` entry with `modes: ["created"]`. Findings flagged in step 2 for follow-up task creation each have a corresponding created task. **Asserted**: `state.py gate set integrate open_tasks_refined_against_handshake=true` |
+| `handshake_artifact_written` | `handshake-<cycle-id>.json` exists with all seven required fields populated |
 
-When all seven pass, `phase_gates.integrate.passed` flips to `true`. The next plan refuses to start otherwise — that's the loop-closure contract.
+Six of the seven are computed by `state.py gate check integrate`; the seventh is asserted. `state.py gate pass integrate` sets the gate when all pass; then `state.py close`. The next plan refuses to start otherwise — that's the loop-closure contract.
 
 ## Cycle archive
 
-When integrate closes successfully, the orchestrator archives the cycle:
+`state.py close` archives the cycle (state and handshake; the other files were written there during the cycle):
 
 ```
 .orchestrator/cycles/<cycle-id>/
   state.json              # frozen snapshot of the cycle's state file
+  pm-signals.json         # counts --write
   pm-digest.md
   asks.md                 # the cycle's asks as presented, with the decisions
   handshake.json
+  meta-discoveries.json   # step 4 input to the handshake
+  task-refinements.json   # step 7 input to the handshake
   findings/<finding-id>.md
-  reconciliations/<entry-id>.md
+  reconciliations/<tier>-<name>.md
   reviews/<task-name>.md
-  baseline-<ts>.txt
-  after-<task>-<ts>.txt
+  reports/<task-name>.md  # Implementor reports, orchestrator-only
 ```
 
-The active state file at `<repo>/.orchestrator/state.json` is reset for the next cycle (with carried-over `history` window).
+The active state file stays in place, marked `closed_at`; the next cycle's `state.py init` replaces it and carries the counts `history` from the archives.
 
 This archive is what the deferred curation cycle (v2) reads. It is also the audit trail the user can walk through to understand any past decision.
 

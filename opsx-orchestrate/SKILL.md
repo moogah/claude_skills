@@ -18,7 +18,7 @@ Full overlay contract: **[overlay.md](overlay.md)**.
 
 ## What phase am I in?
 
-Read `<repo>/.orchestrator/state.json`. Its `phase` field is one of `plan` | `execute` | `integrate`. Each phase has its own flow doc and exit gate. **A later phase refuses to start if the prior phase's `phase_gates.<prior>.passed` is `false`.**
+Run `state.py status` (the state tool: `python3 ~/.claude/skills/opsx-orchestrate/scripts/state.py`; the flow docs write it `state.py`). It prints the phase (`plan` | `execute` | `integrate`), each gate's failing checks, the task table, open asks and what to resume. Each phase has its own flow doc and exit gate. **A later phase refuses to start if the prior phase's gate has not passed** — `state.py phase set` enforces it.
 
 | Phase | Flow doc | Defining ops |
 |---|---|---|
@@ -26,7 +26,7 @@ Read `<repo>/.orchestrator/state.json`. Its `phase` field is one of `plan` | `ex
 | Execute | [flows/execute.md](flows/execute.md) | Per-task: worktree + Implementor + on-touch Architect + author-blind Reviewer; sequential merge with regression check |
 | Integrate | [flows/integrate.md](flows/integrate.md) | Register reconciliation + end-of-cycle Architect audit + PM digest + meta-discovery + goal-drift check + handshake artifact |
 
-State-file shape and exit gates: **[state.md](state.md)**.
+State-file shape, the state tool's verbs and the exit gates: **[state.md](state.md)**.
 
 If the work is trivially small (one-line edit, single-file doc fix, config tweak), use the inline path: **[flows/inline.md](flows/inline.md)**. Bailout to standard cycle if it grows.
 
@@ -39,7 +39,7 @@ The orchestrator deploys four roles. Read the relevant role file before spawning
 - **[roles/implementor.md](roles/implementor.md)** — does the task at expert level in a worktree; produces diff + structured `## Observations` and `## Discoveries`; reports to orchestrator only (never to reviewer).
 - **[roles/reviewer.md](roles/reviewer.md)** — author-blind review of one merged diff; rigorous-not-contrarian. **The reviewer-spawn helper enforces author-blindness at the substrate level** — see `flows/execute.md` § 7.
 - **[roles/architect.md](roles/architect.md)** — watches structural drift across the batch via 8 signal classes; runs at three triggers (on-touch, end-of-cycle, between-cycle); maintains the interfaces register.
-- **[roles/project-manager.md](roles/project-manager.md)** — hybrid deterministic+thin-agent form; counts come from state file, never from LLM; cascade detection can spawn Architect audits.
+- **[roles/project-manager.md](roles/project-manager.md)** — hybrid deterministic+thin-agent form; the deterministic pass is `state.py counts`, never the LLM; cascade detection can spawn Architect audits.
 
 **Not every step needs an agent.** Triage inline-vs-worktree before spawning.
 
@@ -67,7 +67,7 @@ In-change vs `.tasks/` rule: **[externalisation.md](externalisation.md)**. Rule 
 
 ## Loop closure: integrate → plan handshake
 
-The keystone transition is **integrate → plan**, not execute → review. Each plan reads `<repo>/.orchestrator/handshake-<prior-cycle-id>.json` as a hard input contract. Required fields: `register_diff`, `pm_digest_path`, `meta_discoveries`, `user_resolved_goal_drift`, the `asks_for_user_open` / `asks_for_user_resolved` pair, and `task_refinements`. Empty list is allowed; missing field is not. Plan refuses to start if the file is missing or any field is unset.
+The keystone transition is **integrate → plan**, not execute → review. Each plan reads `<repo>/.orchestrator/handshake-<prior-cycle-id>.json` as a hard input contract. Required fields: `register_diff`, `pm_digest_path`, `meta_discoveries`, `user_resolved_goal_drift`, `asks_for_user_open`, `asks_for_user_resolved` and `task_refinements`. Empty list is allowed; missing field is not. `state.py init` refuses to start a cycle if the file is missing or any field is unset; `state.py handshake` writes it with the mechanical fields filled from state.
 
 This is the structural fix for "learns and forgets" — without it, the orchestrator becomes a queue runner.
 
@@ -81,16 +81,16 @@ This is the structural fix for "learns and forgets" — without it, the orchestr
 
 When invoked without an explicit phase:
 
-1. Read `state.json` — if it exists and `phase_gates.<current_phase>.passed` is false, **resume that phase**.
-2. If `state.json` is absent or `phase_gates.integrate.passed` is true, **start a new plan phase**.
-3. If `state.json`'s `phase_gates.integrate.passed` is false but `phase_gates.execute.passed` is true, **resume integrate**.
-4. If `state.json` exists but its `schema_version` is not recognised, **refuse to run** and direct user to recover or abandon.
+1. Run `state.py status`. Its `resume` line says which of these applies: resume the current phase; advance (`phase set`) because the prior gate passed; `close` because integrate passed; or `init` a new cycle because the last one is closed.
+2. No state file (`not_initialized`): **start a new plan phase** with `state.py init` (it needs the prior handshake, or `--first-cycle`).
+3. A legacy or invalid file: `status` says so; `state.md` § Recovery gives the steps. Do not write it by hand.
 
-Never silently start a new cycle while a prior cycle is open.
+Never silently start a new cycle while a prior cycle is open; `init` refuses, and `close --abandon --why` is the explicit exit.
 
 ## Critical requirements
 
-- **Counts come from the state file, never from the LLM.** The PM digest's deterministic pass is the source of truth for every number; the agent pass only frames prose.
+- **`state.json` is written only through `scripts/state.py`.** A heredoc, `jq`, `sed` or Write against it is a process bug. The tool owns the schema (unknown keys and long text are refused), the transitions, the timestamps, the gate evaluation and the handshake; narrative goes to `state.py note` or to the file that exists for it.
+- **Counts come from the state file, never from the LLM.** `state.py counts` is the PM digest's deterministic pass and the source of truth for every number; the agent pass only frames prose.
 - **Author-blind review is enforced at the harness level**, not by discipline. The reviewer-spawn helper has no path to the Implementor's report, observations, discoveries, identity, or scratch files.
 - **Phase exit gates are mandatory.** A later phase refuses to start if a prior gate hasn't passed.
 - **Provenance fields are mandatory on follow-up tasks and reconciliations.** The orchestrator refuses to externalise without them.

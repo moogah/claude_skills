@@ -64,10 +64,11 @@ When `status: reconciled`, add:
 
 ```yaml
 why_tests_missed: <one sentence — typically "per-call-site tests pinned their own subset; no test covered the full vocabulary or the translation table">
-reconciliation_note_path: register/notes/<entry-id>.md
-members_added: [<list of values that emerged from impl>]
-members_removed: [<list of values that turned out unused>]
+reconciliation_note_path: .orchestrator/cycles/<cycle-id>/reconciliations/<tier>-<name>.md
+status_changed_at: <iso-ts>
 ```
+
+Members added or removed are read from the note's entry diff, not restated here. An entry holds current state only — see *What an entry never carries* in `register-entry-shape.md`.
 
 When `status: divergent`, add:
 

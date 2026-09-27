@@ -52,7 +52,8 @@ build-violation-info in scope-validation.el; have callers in
 scope-shell-tools.el:181 and scope-expansion.el:504 go through it;
 delete the ad-hoc constructions. The shape entry
 register/shape/violation-info should move from speculated to
-reconciled with prior_shape capturing the three divergent forms.">
+reconciled; the reconciliation note's entry diff captures the three
+divergent forms.">
 ```
 
 ## Severity routing

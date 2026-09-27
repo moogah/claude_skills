@@ -61,16 +61,20 @@ When `status: reconciled`, add:
 
 ```yaml
 why_tests_missed: <one sentence — why per-site tests passed while the shape was wrong>
-reconciliation_note_path: register/notes/<entry-id>.md
-prior_shape: <YAML excerpt of what the entry said before>
+reconciliation_note_path: .orchestrator/cycles/<cycle-id>/reconciliations/<tier>-<name>.md
+status_changed_at: <iso-ts>
 ```
 
 When `status: divergent`, add:
 
 ```yaml
-divergence_note: <what's mismatched and where>
+divergence_note: <what's mismatched and where — one paragraph at most>
 escalation: architect | user
 ```
+
+### What an entry never carries
+
+An entry holds current state only. No `status_note`, no `amendment*` fields, no cycle-suffixed keys (`why_tests_missed_cycle_<id>`), no dated history paragraphs, no `prior_*` snapshots, no instructions to future roles. History lives in the note chain: `reconciliation_note_path` points at the *latest* note, and each note's `prior_note_path` links the one it supersedes. `status_changed_at` is a single field, overwritten on each transition — not `confirmed_at` / `reconciled_at` / `retired_*`.
 
 ## When to create one
 
