@@ -20,7 +20,7 @@ It produces:
 - All counts in the throughput table (created, started, completed, reviewed, rejected, externalised, blocked, failed, done), derived from task statuses and timestamps, for this cycle and the `history_window` before it.
 - All ratios (drainage, review balance, rejection rate, externalisation pressure).
 - The fired-signals list for the queries it can compute from state: throughput inversion, review starvation, priority inversion, cascade (follow-ups by source task).
-- The critical-path readout, the class-distribution table, follow-ups by source, the open asks and the blocked tasks with their `blocker_note`.
+- The critical-path readout, the class-distribution table, follow-ups by source, the open asks and the blocked tasks with their `blocker_note`, and the findings count with how many are reasoning-only and `noted`.
 
 Candidate asks come from the blocked-task list: a `blocker_note` that is an ask id re-surfaces that id; any other blocker is a stub the orchestrator completes per `templates/ask.md`. Cascade detection produces an Architect audit, not an ask.
 
@@ -186,7 +186,7 @@ It cannot:
 
 ## Project overlay extensions
 
-The overlay's `roles/project-manager.md` (if present) is appended at spawn time. Typical extensions:
+The overlay's `roles/project-manager.md` (if present) is appended at spawn time, followed by `priors.md` (`overlay.md` § Priors). Typical extensions:
 
 - Project-specific class labels (overlay's `taxonomy` field carries the values; the prose can elaborate).
 - Project-specific "done" criteria (often derivable from `proposal.md`, but the overlay can sharpen).

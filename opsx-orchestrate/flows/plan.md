@@ -22,6 +22,8 @@ If the file is missing or any field is missing (not "empty array" — actually m
 
 This is the brainstorm's loop-closure contract: each cycle's discoveries must update the next cycle's speculations.
 
+Read the overlay's `priors.md` alongside the handshake (`overlay.md` § Priors): the user's standing rules apply to batch composition and go into every brief.
+
 ### 2. Architect forward-mode — populate / revise speculative register entries, then generate scaffolding
 
 The Architect runs in forward mode against the change's `proposal.md` and `design.md`:
@@ -81,7 +83,7 @@ For each generated task, the orchestrator assembles the brief at agent-spawn tim
 - Cited register entries (full text, with `status` annotations).
 - **Scaffolded files** for each cited entry that has a `scaffolding_path` (full path + revision-licence framing per `scaffolding.md`).
 - Cited `design.md` / `proposal.md` sections.
-- Project standards (overlay's `roles/implementor.md`).
+- Project standards (overlay's `roles/implementor.md`) and the project priors (`priors.md`).
 
 The brief framing is fixed — register entries and scaffolding are *reference material to pressure-test, not authority to defer to*. Speculated entries and scaffolded files carry explicit licence to push back. Modifying a scaffolded file is a signal at integrate, not a transgression.
 

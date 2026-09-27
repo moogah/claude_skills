@@ -15,7 +15,7 @@ The orchestrator assembles and hands the Implementor:
 1. **Task body** — `<change>/tasks/open/<task-name>.md`, the full file.
 2. **Cited register entries** — for every entry ID in the task's `cites_register_entries`, the entry's full current text. Each is annotated with its `status` (`speculated` / `confirmed` / `divergent` / `reconciled`) and `load_bearing` flag.
 3. **Cited design / proposal sections** — only the sections referenced by the cited entries or by the task body's "implementation steps".
-4. **Project standards** — the project overlay's `roles/implementor.md` (if present), appended to this core brief at spawn time.
+4. **Project standards** — the project overlay's `roles/implementor.md` (if present), appended to this core brief at spawn time, followed by the project priors (`priors.md`, the user's standing rules; `overlay.md` § Priors).
 5. **Verification command** — resolved from the project overlay's `test.command` field.
 6. **Worktree path & branch name** — pre-created by the orchestrator; the Implementor does not create worktrees.
 
@@ -69,12 +69,15 @@ The reviewer reads `## Observations` alongside the merge and groups related ones
     Collapsed to single :reason in producers; consumers no longer
     need fallback chain.
   affected_register_entry: register/shape/violation-info
+  observed:
+    happened: true
+    evidence: every consumer reads :reason only; :message and :error are null at each (scope-expansion.el:504, scope-shell-tools.el:181)
   recommendation: |
     Reconcile entry: required keys = [:tool, :resource, :command,
     :reason]; remove :message and :error from optional_keys.
 ```
 
-`class` must be one of: `shape-fragmentation`, `vocabulary-mismatch`, `responsibility-leakage`, `dead-branch`, `interface-drift`, `mutation`, `invariant-gap`, `spec-signal`, `deviation`, `scope-question`, `duplication`. A `spec-signal` or `scope-question` discovery that only the user can settle becomes an ask record at integrate (`templates/ask.md`); write what the feature is for, what you observed (or that it is reasoning only), and what it blocks, so the orchestrator can write the ask without re-deriving it.
+`class` must be one of: `shape-fragmentation`, `vocabulary-mismatch`, `responsibility-leakage`, `dead-branch`, `interface-drift`, `mutation`, `invariant-gap`, `spec-signal`, `deviation`, `scope-question`, `duplication`. A `spec-signal` or `scope-question` discovery that only the user can settle becomes an ask record at integrate (`templates/ask.md`); write what the feature is for, fill `observed` (`templates/architect-finding.md` § Observed), and say what it blocks, so the orchestrator can write the ask without re-deriving it. Every discovery carries `observed`; one that rests on reasoning only is recorded, not scheduled (`flows/integrate.md` § 7).
 
 `affected_register_entry` is optional but strongly preferred — without it the integrate phase can't auto-route the discovery to the right entry.
 

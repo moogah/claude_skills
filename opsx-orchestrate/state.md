@@ -180,12 +180,13 @@ The state record is the index line; the finding file (`templates/architect-findi
   "locations": [{ "file": "<path>", "line": 504 }],
   "why_tests_missed": "<one sentence>",
   "discovered_from": "<task or batch>",
-  "resolution": "pending | inline-fixed | followup-task-<task-name> | reverted | accepted-with-note",
+  "observed": { "happened": true, "evidence": "<a line, a run, an output, a shipped sentence | reasoning only: <the reasoning>>" },
+  "resolution": "pending | inline-fixed | followup-task-<task-name> | reverted | accepted-with-note | noted",
   "blocking_merge_until_resolved": true
 }
 ```
 
-`severity: blocking` with `resolution: pending` blocks the integrate exit gate.
+`severity: blocking` with `resolution: pending` blocks the integrate exit gate. `record add findings` refuses a `blocking` or `advisory` finding without `observed` (`templates/architect-finding.md` § Observed); records written before the field existed read as `null`. `resolution: noted` is a reasoning-only finding kept in its file and not scheduled (`flows/integrate.md` § 7); `counts` reports how many.
 
 ## Ask entry
 

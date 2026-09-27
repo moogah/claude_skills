@@ -152,7 +152,8 @@ def test_unknown_field_and_bad_status(run):
 # 7
 def test_record_findings(run):
     init(run, "cycle-1", "--first-cycle")
-    rec = {"trigger": "on-touch", "severity": "advisory", "class": "duplication", "title": "dup"}
+    rec = {"trigger": "on-touch", "severity": "advisory", "class": "duplication", "title": "dup",
+           "observed": {"happened": True, "evidence": "foo.py:10 and bar.py:22 carry the same body"}}
     code, out, _ = run("record", "add", "findings", json.dumps(rec))
     assert code == 0 and out["id"] == "arch-cycle-1-1"
     assert out["record"]["path"] == ".orchestrator/cycles/cycle-1/findings/arch-cycle-1-1.md"
@@ -163,6 +164,65 @@ def test_record_findings(run):
     code, _, err = run("record", "set", "findings", "arch-cycle-1-1", "notes=x")
     assert code == 1 and err["error"] == "unknown_field"
 
+
+# 7a
+def test_finding_requires_observed(run):
+    init(run, "cycle-1", "--first-cycle")
+    base = {"trigger": "end-of-cycle", "class": "duplication", "title": "dup"}
+    code, _, err = run("record", "add", "findings", json.dumps({**base, "severity": "advisory"}))
+    assert code == 1 and err["error"] == "observed_required" and "happened" in err["message"]
+    code, _, err = run("record", "add", "findings", json.dumps({**base, "severity": "blocking"}))
+    assert code == 1 and err["error"] == "observed_required"
+    reasoning = {"happened": False, "evidence": "reasoning only: a third consumer would diverge"}
+    code, out, _ = run("record", "add", "findings", json.dumps({**base, "severity": "advisory", "observed": reasoning}))
+    assert code == 0 and out["record"]["observed"] == reasoning
+    code, out, _ = run("record", "add", "findings", json.dumps({**base, "severity": "informational"}))
+    assert code == 0 and out["record"]["observed"] is None
+
+
+# 7b
+def test_observed_shape(run):
+    init(run, "cycle-1", "--first-cycle")
+    base = {"trigger": "end-of-cycle", "severity": "advisory", "class": "duplication", "title": "dup"}
+    code, _, err = run("record", "add", "findings", json.dumps({**base, "observed": {"happened": "yes"}}))
+    assert code == 1 and err["error"] == "invalid_record"
+    assert any("observed.happened" in e for e in err["errors"])
+    assert any("observed.evidence" in e for e in err["errors"])
+    code, _, err = run("record", "add", "findings",
+                       json.dumps({**base, "observed": {"happened": True, "evidence": "x", "where": "y"}}))
+    assert code == 1 and any("observed.where" in e for e in err["errors"])
+
+
+# 7c
+def test_load_fills_new_record_defaults(run, repo):
+    init(run, "cycle-1", "--first-cycle")
+    st = read_state(repo)
+    st["architect_findings"].append({  # a 1.1 record written before `observed` existed
+        "finding_id": "arch-cycle-1-1", "trigger": "on-touch", "severity": "advisory", "class": None,
+        "title": "old", "path": "x.md", "locations": [], "why_tests_missed": None,
+        "discovered_from": None, "resolution": "pending", "blocking_merge_until_resolved": False})
+    (repo / ".orchestrator" / "state.json").write_text(json.dumps(st))
+    assert run("validate")[0] == 0
+    code, out, _ = run("status")
+    assert code == 0
+    assert run("note", "note", "still fine")[0] == 0
+    assert read_state(repo)["architect_findings"][0]["observed"] is None
+
+
+# 7d
+def test_counts_noted_findings(run, repo):
+    init(run, "cycle-1", "--first-cycle")
+    base = {"trigger": "end-of-cycle", "severity": "advisory", "class": "duplication", "title": "t"}
+    run("record", "add", "findings", json.dumps({**base, "observed": {"happened": True, "evidence": "a.py:1"}}))
+    run("record", "add", "findings", json.dumps({**base, "observed": {"happened": False, "evidence": "reasoning only: later"}}))
+    code, out, _ = run("counts")
+    assert code == 0 and out["findings"] == {"total": 2, "reasoning_only": 1, "reasoning_only_noted": 0}
+    assert run("record", "set", "findings", "arch-cycle-1-2", "resolution=noted")[0] == 0
+    _, out, _ = run("counts")
+    assert out["findings"]["reasoning_only_noted"] == 1
+    (repo / ".orchestrator" / "cycles" / "cycle-1").mkdir(parents=True, exist_ok=True)
+    _, out, _ = run("gate", "check", "integrate")
+    assert out["checks"]["blocking_findings_resolved"]["value"] is True
 
 # 8
 def test_record_asks_and_caps(run):

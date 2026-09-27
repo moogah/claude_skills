@@ -59,7 +59,7 @@ Record the file: `state.py task set <name> after_snapshot=.orchestrator/after-<t
 Before continuing to review, the orchestrator scans for discoveries no individual agent owns. Per the brainstorm and lifted from VCE's §A.7.5:
 
 - **Latent bugs surfaced by a regression** — a test broke not because the merging task was wrong but because it perturbed a pre-existing fragile assumption (e.g. a non-stable sort coupled to insertion order).
-- **Worker observations on the merged task body** — scan `## Observations` and decide whether any single observation rises to the bar for its own follow-up task. Most stay in the body for the reviewer to read in context.
+- **Worker observations on the merged task body** — scan `## Observations`; an observation becomes a follow-up task only if it has happened (a failing run, a wrong output, a defect the observation cites by line) or a project prior asks for that kind of work (`overlay.md` § Priors); a reading of what could go wrong stays in the body. Most stay in the body for the reviewer to read in context.
 - **Manual conflict-resolution decisions** — when the orchestrator dropped, restructured, or regenerated code while reconciling two branches, that decision is an unreviewed structural change. Note it on the merged task body; if it touched a contract or dropped a test, file a follow-up.
 - **Aborted merges where the abort reason is itself the finding** — capture the structural issue (not just the merge failure) as a `ready` task so the next cycle can address it.
 
@@ -97,6 +97,7 @@ reviewer_input:
   task_brief: <full text of <change>/tasks/open/<task-name>.md, EXCLUDING ## Observations and ## Discoveries sections>
   cited_register_entries: <full text of each entry in cites_register_entries, with current status>
   project_standards: <overlay's roles/reviewer.md, if present>
+  project_priors: <overlay's priors.md, if present>
 ```
 
 The helper **must not**:
@@ -122,7 +123,7 @@ The Reviewer's findings file lands at `<repo>/.orchestrator/cycles/<cycle-id>/re
 | Finding severity | Orchestrator action |
 |---|---|
 | `blocking` | Apply inline fix (`state.py note inline-fix "<what>" --ref <task>`) OR re-spawn Implementor with fix scope (`state.py task set <name> in_progress`, which counts a rejection) OR revert merge — task does not advance to `done` |
-| `advisory` | Apply inline fix OR file follow-up task with `discovered_by: reviewer`, `discovered_class: <appropriate>` (`state.py task add … discovered_from=<task> discovered_by=reviewer discovered_class=<class>`) — task can advance to `done` |
+| `advisory` | Apply inline fix OR file follow-up task with `discovered_by: reviewer`, `discovered_class: <appropriate>` (`state.py task add … discovered_from=<task> discovered_by=reviewer discovered_class=<class>`); a task only when the finding's `observed.happened` is true or a project prior asks for that kind of work, otherwise it stays in the review file — task can advance to `done` |
 | `spec-signal` | Record an ask (`templates/ask.md`, `raised_by.ref` the finding); presented at integrate unless its `blocks` names a merge in this batch (§ 9). Does not block the task itself; it signals that the design may need revision |
 
 The orchestrator's inline fixes are committed with `Co-Authored-By: <reviewer>` style attribution; follow-up tasks carry the provenance fields.

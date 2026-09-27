@@ -16,6 +16,9 @@ discovered_from: <task-name | batch-id | "whole-repo">
 discovered_by: architect
 discovered_at: <iso-ts>
 register_entry: <entry-id this finding maps to, if any>
+observed:
+  happened: true | false
+  evidence: <a line, a run, an output, a shipped sentence | reasoning only: <the reasoning>>
 ---
 
 ## Locations
@@ -56,6 +59,10 @@ reconciled; the reconciliation note's entry diff captures the three
 divergent forms.">
 ```
 
+## Observed
+
+`observed` says whether the problem has happened. `happened` is `true` when the finding can point at it: a failing run, a wrong output, a user report, a false statement in a shipped document (the ask's definition, `templates/ask.md` § Record), or a defect present in merged code that the finding cites by line: a function nothing calls, two bodies that are the same today. It is `false` when the harm is what would happen under a future change (a third consumer, a later sweep, a future maintainer); then `evidence` starts with `reasoning only:` and gives the reasoning. Required on `blocking` and `advisory` findings; `state.py record add findings` refuses them without it. `informational` may leave it null. What happens to a reasoning-only finding is decided once, in `flows/integrate.md` § 7: it is `noted`, not scheduled.
+
 ## Severity routing
 
 | Severity | Effect |
@@ -81,9 +88,10 @@ The overlay's `architect.severity-overrides` field can override per-class. A fin
 
 ## Routing
 
-- **`blocking`** with `interface-drift` against an out-of-date design doc → an ask record per `templates/ask.md`, triaged: `doc-correction` when the code is right and the document is stale (applied and listed), `decision` when the design is in question (asked). Not implementor work. (The reviewer's "spec is wrong" direction; the highest-value findings.) The finding's `recommended_resolution` must say what the document or rule is for and whether the drift was observed in a shipped document or is reasoning only.
+- **`blocking`** with `interface-drift` against an out-of-date design doc → an ask record per `templates/ask.md`, triaged: `doc-correction` when the code is right and the document is stale (applied and listed), `decision` when the design is in question (asked). Not implementor work. (The reviewer's "spec is wrong" direction; the highest-value findings.) The finding's `recommended_resolution` must say what the document or rule is for; `observed` says whether the drift is in a shipped document or reasoning only.
 - **`blocking`** with any other class → routes to a follow-up task in the active batch; merge of the implicated task pauses; integrate gate doesn't close until resolved.
 - **`advisory`** → follow-up task with `discovered_class` set; orchestrator decides this-batch / next-batch / `.tasks/`.
+- **Any severity with `observed.happened: false`**, unless a project prior (`overlay.md` § Priors) or the user has asked for that kind of work or the finding states a measured cost → `resolution: noted`; no task, no `.tasks/` item, no `decision` ask; a stale sentence it exposed may still be a `doc-correction` (`flows/integrate.md` § 7). A `blocking` finding that rests on reasoning only is a contradiction; the Architect re-grades it `advisory`.
 - **`informational`** → no task; appears in PM digest's "trends to watch" section. PM tracks recurrence; if the same informational class fires three cycles running, PM proposes promoting to advisory.
 
 ## Resolution states
@@ -95,3 +103,4 @@ The state-file `architect_findings[].resolution` field tracks how each finding w
 - `followup-task-<task-name>` — became a task; field carries the task name
 - `reverted` — the implicated merge was reverted
 - `accepted-with-note` — user explicitly chose to accept the divergence; carries the ask id whose `decision_readback` is the rationale
+- `noted` — reasoning-only finding (`observed.happened: false`) kept in its file and not scheduled; carries no task name. Restored to the routing above if a real cycle later shows the problem happening.

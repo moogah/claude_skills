@@ -93,11 +93,12 @@ SCAFFOLD_DIFF = ["untouched", "modified", "rejected"]
 FINDING_FIELDS = {
     "finding_id": str, "trigger": str, "severity": str, "class": (str, type(None)), "title": str,
     "path": str, "locations": list, "why_tests_missed": (str, type(None)),
-    "discovered_from": (str, type(None)),
+    "discovered_from": (str, type(None)), "observed": (dict, type(None)),
     "resolution": str, "blocking_merge_until_resolved": bool,
 }
 FINDING_DEFAULTS = {"class": None, "locations": [], "why_tests_missed": None, "discovered_from": None,
-                    "resolution": "pending", "blocking_merge_until_resolved": False}
+                    "observed": None, "resolution": "pending", "blocking_merge_until_resolved": False}
+OBSERVED_REQUIRED_SEVERITIES = {"blocking", "advisory"}
 TRIGGERS = ["forward-mode", "on-touch", "end-of-cycle", "between-cycle"]
 SEVERITIES = ["blocking", "advisory", "informational", "spec-signal"]
 FINDING_CLASSES = ["shape-fragmentation", "vocabulary-mismatch", "responsibility-leakage",
@@ -188,7 +189,14 @@ class Store:
         if not self.exists():
             raise Refusal("not_initialized", f"no state file at {self.path}; run `init`", exit_code=2)
         with open(self.path) as f:
-            return json.load(f)
+            state = json.load(f)
+        if isinstance(state, dict):  # a field added to a record schema later defaults on read
+            for key, _fields, defaults, _id in RECORD_LISTS.values():
+                for rec in state.get(key, []) or []:
+                    if isinstance(rec, dict):
+                        for k, v in defaults.items():
+                            rec.setdefault(k, v)
+        return state
 
     def write(self, state):
         os.makedirs(self.dir, exist_ok=True)
@@ -283,6 +291,19 @@ def _validate_record(rec, fields, where, errors, id_field):
     _text_caps(rec, where, errors)
 
 
+def _validate_observed(obs, where, errors):
+    """observed = {happened: bool, evidence: str}; None means not filled (legacy or informational)."""
+    if obs is None:
+        return
+    if not isinstance(obs.get("happened"), bool):
+        errors.append(f"{where}.happened: expected bool")
+    if not isinstance(obs.get("evidence"), str) or not obs["evidence"].strip():
+        errors.append(f"{where}.evidence: expected non-empty string")
+    for k in obs:
+        if k not in ("happened", "evidence"):
+            errors.append(f"{where}.{k}: unknown field (allowed: happened, evidence)")
+
+
 def _enum(value, allowed, where, errors):
     if value is not None and value not in allowed:
         errors.append(f"{where}: {value!r} not one of {allowed}")
@@ -332,6 +353,7 @@ def validate(state):
             _enum(f.get("trigger"), TRIGGERS, f"{where}.trigger", errors)
             _enum(f.get("severity"), SEVERITIES, f"{where}.severity", errors)
             _enum(f.get("class"), FINDING_CLASSES, f"{where}.class", errors)
+            _validate_observed(f.get("observed"), f"{where}.observed", errors)
     for i, a in enumerate(state["asks_for_user"]):
         where = f"asks_for_user[{i}]"
         _validate_record(a, ASK_FIELDS, where, errors, "id")
@@ -547,12 +569,22 @@ def pm_signals(state, repo_root):
         c = classes.setdefault(t["task_class"], {"total": 0, "done": 0})
         c["total"] += 1
         c["done"] += t["status"] == "done"
+    findings = state["architect_findings"]
+    fcounts = {
+        "total": len(findings),
+        "reasoning_only": sum(1 for f in findings
+                              if (f.get("observed") or {}).get("happened") is False),
+        "reasoning_only_noted": sum(1 for f in findings
+                                    if (f.get("observed") or {}).get("happened") is False
+                                    and f.get("resolution") == "noted"),
+    }
     return {
         "cycle_id": state["cycle_id"],
         "change_name": state["change_name"],
         "produced_at": now_iso(),
         "history_window": state["history_window"],
         "counts": counts,
+        "findings": fcounts,
         "ratios": r,
         "by_status": st,
         "history": [{"cycle_id": h["cycle_id"], "counts": h["counts"], "ratios": ratios(h["counts"])}
@@ -959,11 +991,18 @@ def verb_record_add(store, args):
             rec[id_field] = prefix + str(next_seq([r.get(id_field) for r in state[key]], prefix))
         if any(r.get(id_field) == rec[id_field] for r in state[key]):
             raise Refusal("duplicate_id", f"{key} already has {rec[id_field]!r}; use `record set`")
+        if (args.list == "findings" and rec.get("severity") in OBSERVED_REQUIRED_SEVERITIES
+                and rec.get("observed") is None):
+            raise Refusal("observed_required",
+                          f"a {rec.get('severity')} finding must say whether it has happened: "
+                          "observed={\"happened\": true|false, \"evidence\": \"<where | reasoning only: ...>\"}")
         if args.list == "findings" and not rec.get("path"):
             rec["path"] = os.path.relpath(os.path.join(store.cycle_dir(state), "findings",
                                                        rec["finding_id"] + ".md"), store.repo_root)
         errors = []
         _validate_record(rec, fields, f"{key}[new]", errors, id_field)
+        if args.list == "findings":
+            _validate_observed(rec.get("observed"), f"{key}[new].observed", errors)
         if errors:
             raise Refusal("invalid_record", "record does not fit the schema", errors=errors)
         state[key].append(rec)

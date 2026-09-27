@@ -58,7 +58,7 @@ Lives in `state.json` `asks_for_user[]` (see `state.md`) and is copied unchanged
 |---|---|---|
 | `decision` | Only the user can choose, and the choice changes the product | Presented in `asks.md` and in chat. The only kind that becomes a question. |
 | `doc-correction` | The code is right and a document is stale | Applied inline, listed under "Applied without asking" with the path. The user can object. Never a question. |
-| `confirmation` | A default already applied; an obsolescence flag on a task; a PM action the PM may take alone (an Architect audit, a re-rank) | Same list. Never a question. |
+| `confirmation` | A default already applied; an obsolescence flag on a task; a PM action the PM may take alone (an Architect audit, a re-rank); a prior recorded from the user's words (`overlay.md` § Priors) | Same list. Never a question. |
 | `environment` | A licence, a wedged container, a permission, a missing or unreadable `state.json` or handshake | Asked at once, alone, in block form. The only kind that may bypass `state.json`. |
 | `process` | About the orchestration itself: the register lifecycle, the state file, whether to track `.orchestrator/` | Recorded with `status: open`; not presented. The digest says "N process notes in `<path>`". The user pulls them into the process-improvement workspace when reviewing the process. |
 
@@ -133,14 +133,14 @@ When the user answers, the orchestrator sends one message restating every decisi
 >
 > Say yes, or correct any line.
 
-On yes, each record's `decision_readback` is set to that line, `status` becomes `answered`, and the Decisions section of `asks.md` gains the line. Only then is the decision applied and `status` set to `applied` with `applied_via`. A correction at readback edits the record in place; a later reversal creates a new record with `revised_from` and marks the old one `superseded`.
+On yes, each record's `decision_readback` is set to that line, `status` becomes `answered`, and the Decisions section of `asks.md` gains the line. Only then is the decision applied and `status` set to `applied` with `applied_via`. A correction at readback edits the record in place; a later reversal creates a new record with `revised_from` and marks the old one `superseded`. A reply that states a general rule rather than a choice is also appended, in the user's words, to the overlay's `priors.md` (`overlay.md` § Priors), with a `confirmation` record listed under "Applied without asking".
 
 ## What a finding must carry
 
 A role that routes a finding to the user (`roles/reviewer.md` `route-to-user`, `roles/architect.md` interface-drift against a stale doc, `roles/implementor.md` stop-and-ask) writes, in the finding, the three things the orchestrator cannot infer from the diff:
 
 - what the feature, flag or rule is for (a sentence; the orchestrator rewrites it for the reader),
-- whether the problem has been observed, and where, or that it is reasoning only,
+- its `observed` block (every finding now carries one; `templates/architect-finding.md` § Observed),
 - what it blocks: a task, a merge, the next plan, the archive, or nothing.
 
 A finding routed to the user without these is not asked as it stands. When the gap is a matter of reading (the flag's help text, the doc the finding cites, whether the ledger has entries), the orchestrator fills it; when it is a matter of redoing the analysis, the finding goes back to the role. PM stubs are always completed by the orchestrator, since the deterministic pass has no LLM.

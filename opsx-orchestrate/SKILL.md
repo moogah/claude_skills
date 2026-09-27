@@ -11,7 +11,7 @@ Central skill that runs the **plan / execute / integrate** cycle for batched, ag
 
 1. **Walk up from `$cwd`** looking for `.claude/orchestrator/config.yaml`. First hit wins; that directory is `$REPO_ROOT`.
 2. **Parse `config.yaml`** — required fields validated; missing-required = hard error. Optional fields fall through to core defaults.
-3. **Append role overlays** from `<repo>/.claude/orchestrator/roles/*.md` (if present) to the corresponding core role briefs at agent-spawn time.
+3. **Append role overlays** from `<repo>/.claude/orchestrator/roles/*.md` (if present) to the corresponding core role briefs at agent-spawn time, followed by `priors.md` (the user's standing rules, `overlay.md` § Priors) when it exists.
 4. **No overlay found** → warn the user explicitly; fall back to sensible defaults (see `overlay.md`).
 
 Full overlay contract: **[overlay.md](overlay.md)**.
@@ -95,4 +95,5 @@ Never silently start a new cycle while a prior cycle is open; `init` refuses, an
 - **Phase exit gates are mandatory.** A later phase refuses to start if a prior gate hasn't passed.
 - **Provenance fields are mandatory on follow-up tasks and reconciliations.** The orchestrator refuses to externalise without them.
 - **The integrate→plan handshake artifact is the loop-closure contract.** Without every required field (see `state.md`), plan refuses to start.
+- **A finding, discovery or observation becomes a task only on a demonstrated reason**: its `observed.happened` is true, a project prior or the user asked for that kind of work, or it states a measured cost. A reasoning-only finding is `noted`; it never becomes a task, a backlog item or a question to the user (`flows/integrate.md` § 7). The user's own words (a prior, an ask decision, a proposal sentence) outrank a `design.md` sentence.
 - **Every question to the user is an ask record** per `templates/ask.md`, triaged by kind. Only `decision` kinds reach the user as questions, in the template's rendering, and decisions are read back before they are applied. An `AskUserQuestion` raised mid-execute is reserved for asks that block a merge.

@@ -39,13 +39,21 @@ Register vs. whole repo. The consolidation-round-as-a-button — the move scope 
 
 The drift the orchestrator accepts is exactly the **non-load-bearing** register entries between integrate phases. Load-bearing contracts don't get to drift even one diff.
 
+## The bar
+
+The Architect raises findings at the Reviewer's bar (`roles/reviewer.md` § Reviewer mindset):
+
+> Would a thoughtful maintainer, familiar with this codebase, raise this in a PR review — and would the project be meaningfully worse if it shipped unchanged?
+
+A flag from any signal class below becomes a finding only if it clears this bar *and* `observed` is filled (`templates/architect-finding.md` § Observed). A flag that fails the bar is one `state.py note note "<one line>" --by architect` and no file. `severity: informational` is for a finding that clears the bar but blocks nothing. Speculative future-proofing (a third consumer, a future sweep, a future maintainer) fails the bar unless a project prior asks for that kind of work (`overlay.md` § Priors); a defect present in merged code today (a dead function, a present duplication) clears it. The bar decides whether a finding file exists; `observed` decides whether it is scheduled. A flag that clears the bar (a maintainer would raise it; it cites a present line) but rests on reasoning only is a finding with `happened: false`, and integrate marks it `noted`; a flag that fails the bar is the journal line and nothing else. A clean audit is a valid outcome: `note note "end-of-cycle audit: zero findings"`.
+
 ## Eight signal classes
 
 The Architect runs **structural audits**, not tests. They run in seconds and catch things tests can't.
 
 ### 1. Shape-registry diff
 
-Every plist / alist / struct / record shape constructed or destructured in the batch. Flag when ≥2 producers or consumers of "the same concept" have diverging field sets.
+Every plist / alist / struct / record shape constructed or destructured in the batch. Flag when ≥2 producers or consumers of "the same concept" have diverging field sets. A producer nothing calls is one `dead-branch` finding, not a second producer.
 
 **Example**: scope's `violation-info` plist constructed in three modules with three different field sets, forcing `(or :reason :message :error)` fallback chains in consumers.
 
@@ -93,7 +101,7 @@ For any function whose body changes, is it still reachable? For any new implemen
 
 ### 7. Interface-document drift
 
-When an interfaces register exists, diff its declared shapes / contracts against actual code in the batch. Flag every mismatch.
+When an interfaces register exists, diff its declared shapes / contracts against actual code in the batch. Flag every mismatch (then apply the bar).
 
 **Example**: scope's `bash-parser-protocol.org` described handler output shape, but nothing checked it; five handlers were found missing `:confidence` when contract tests were finally written.
 
@@ -103,7 +111,7 @@ When an interfaces register exists, diff its declared shapes / contracts against
 
 Two related audits.
 
-- **Mutation scan**: `setf`, `nconc`, `assq-delete-all`, `delete-dups`, etc. on values that flow across a module boundary. Flag every such operation.
+- **Mutation scan**: `setf`, `nconc`, `assq-delete-all`, `delete-dups`, etc. on values that flow across a module boundary. Flag every such operation (then apply the bar).
 - **Invariant gap**: invariants asserted in `design.md` / `proposal.md` / register `invariant` entries that have **no corresponding test or runtime check**. The Architect can't run tests, but it *can* flag the asymmetry.
 
 **Example for mutation**: bash-parser's chain decomposer used `assq-delete-all` to mutate a shared `var-context` alist; tests passed in isolation but failed when run together.
@@ -119,6 +127,7 @@ Two related audits.
 - **The interfaces register** — the authoritative catalogue of shapes, vocabularies, boundaries, invariants. The protocol the Architect audits patterns 1, 2, 5, 6, 7, 8 against.
 - The change's `design.md` for implementation-strategy context.
 - The state file's `register_touched` array (which entries the cycle has cited or modified).
+- The project priors (`priors.md`, `overlay.md` § Priors): the user's standing rules. A prior can make a finding actionable ("remove leftovers" makes a dead-code finding a task without an ask) or moot (a finding that proposes a self-verification check when a prior calls those overengineering is `noted`).
 
 The Architect does **not** read the Implementor's reports or the Reviewer's findings. Both have their own scope and their own substrate-level isolation; the Architect's job is the cross-cutting view.
 
@@ -173,7 +182,7 @@ The Architect may override per-finding (with `severity_override_reason`) when co
 - **Read-only against code**: like the Reviewer. Inline fixes belong to the orchestrator; new tasks go through the externalisation channel.
 - **Blocking findings**: produce a follow-up task scoped to the batch and pause merge until resolved.
 - **Interface-drift findings against an out-of-date design doc**: become an ask record, not Implementor work — same logic as the Reviewer's "spec is wrong" direction. The finding is not the ask: the orchestrator writes the ask from it (`templates/ask.md`), so the finding must say what the rule or document is for, whether the drift was observed in a shipped document or is reasoning only, and what it blocks.
-- **Cleanup proposals**: the Architect can *propose* cleanup tasks, but they land in the follow-up stream and the orchestrator decides whether to schedule them in this batch, the next batch, or as `.tasks/` external backlog.
+- **Cleanup proposals**: the Architect can *propose* cleanup tasks, but they land in the follow-up stream and the orchestrator decides whether to schedule them in this batch, the next batch, or as `.tasks/` external backlog — and only when `observed.happened` is true or a prior asks for that kind of work; otherwise the finding is `noted`.
 - **PM-spawned audits**: when the PM's cascade signal fires, PM has authority to spawn a focused Architect audit on the cluster. The Architect treats this as a between-cycle invocation scoped to the cluster.
 
 ## What the Architect cannot do
@@ -185,7 +194,7 @@ The Architect may override per-finding (with `severity_override_reason`) when co
 
 ## Project overlay extensions
 
-The overlay's `roles/architect.md` (if present) is appended at spawn time. Typical extensions:
+The overlay's `roles/architect.md` (if present) is appended at spawn time, followed by `priors.md` (`overlay.md` § Priors). Typical extensions:
 
 - The project's interfaces / architecture document path (already in `config.yaml` `architect.interfaces-document`, but the prose can elaborate).
 - Project-specific drift hot spots (for emacs: "literate `.org` vs tangled `.el` drift", "module-system contract", "scope ↔ bash-parser handler shape contract").

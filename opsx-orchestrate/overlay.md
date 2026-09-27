@@ -12,6 +12,7 @@ The core skill is project-agnostic. Each project repo carries its own overlay at
     reviewer.md            # OPTIONAL — language idioms, test idioms
     architect.md           # OPTIONAL — repo-specific drift hot spots
     project-manager.md     # OPTIONAL — project-specific PM conventions
+  priors.md                # OPTIONAL — the user's standing rules, one line each; appended to every role brief
   hooks/
     test-command.sh        # OPTIONAL — wraps the test runner
     pre-commit.sh          # OPTIONAL — tangle, codegen, format
@@ -106,6 +107,9 @@ forward-mode:
 # OPTIONAL: who reads the questions the orchestrator puts to the user (templates/ask.md)
 asks:
   reader: "technical product manager who has not watched development and has a shallow view of the internals"   # default
+
+# OPTIONAL: the user's standing rules (see § Priors); default: this path when the file exists
+priors: priors.md
 ```
 
 ## Resolution rule
@@ -115,7 +119,7 @@ At skill invocation:
 1. The orchestrator resolves the overlay by **walking up from `$cwd`** looking for `.claude/orchestrator/config.yaml`. The first hit wins; record its directory as `$REPO_ROOT`.
 2. If found, parse `config.yaml`. Required fields are validated; missing-required is a hard error (orchestrator refuses to start).
 3. Optional fields fall through to core defaults.
-4. Markdown role overlays referenced by `roles-overlay.*` are read and **appended** to the corresponding core role briefs at agent-spawn time.
+4. Markdown role overlays referenced by `roles-overlay.*` are read and **appended** to the corresponding core role briefs at agent-spawn time, followed by `priors.md` when it exists.
 5. Hook scripts referenced by `build.pre-commit`, `test.command`, `worktree.init` are resolved relative to `$REPO_ROOT`.
 
 If no overlay is found, the orchestrator warns explicitly and falls back to:
@@ -132,6 +136,7 @@ If no overlay is found, the orchestrator warns explicitly and falls back to:
 | `taxonomy`: `[feature, test, doc, refactor, bug, contract, infrastructure]` |
 | `thresholds`: see `templates/pm-digest.md` defaults |
 | `asks.reader`: "technical product manager who has not watched development and has a shallow view of the internals" |
+| `priors`: none appended |
 
 The fallback behaviour exists so the orchestrator can run on a project that hasn't been onboarded yet, but the warning is loud — running without an overlay is not the steady state.
 
@@ -158,7 +163,24 @@ Project overlay `<repo>/.claude/orchestrator/roles/reviewer.md` adds:
 - Flag `nconc` / `assq-delete-all` / shared-mutable-state patterns at module boundaries.
 ```
 
-The orchestrator concatenates: core brief + `\n\n## Project-specific extensions\n\n` + overlay contents.
+The orchestrator concatenates: core brief + `\n\n## Project-specific extensions\n\n` + overlay contents + `\n\n## Project priors\n\n` + `priors.md` contents (when present).
+
+## Priors
+
+`priors.md` holds the user's standing rules for the project, one line each, in the user's own words with the date and where they said it:
+
+```markdown
+- 2026-09-20 session 618fe4f9: "It feels like overengineering to put in place checks in our code which only exist to make sure that we've done our job properly"
+- 2026-09-20 session 89ac5a4d: "In general I'll favor getting this code cleaned up and removing leftovers from prior implementations"
+- 2026-09-24 session c0e9e2a6: "I don't want to keep increasing scope"
+- 2026-09-26 session c0e9e2a6: "Let's punt on this decision, I want to use this a while before we decide on polish like this"
+```
+
+**Write rule.** When a decision or a free-text reply states a general rule rather than a one-off choice ("in general", "I don't want to keep", "overengineering", "use it a while before"), the orchestrator appends the line and records a `confirmation`-kind ask citing it, listed under "Applied without asking" in `asks.md` (`templates/ask.md`). The user can object. The line is the quote, not a paraphrase.
+
+**Read rule.** The file is appended to every role brief after the role overlay, and the orchestrator reads it at plan § 1 and at integrate § 3a and § 7. A role may treat a prior as a user request: "removing leftovers" makes a dead-code finding actionable without an ask. A prior is never re-asked. A finding that a prior already answers is `noted` with the prior cited in `evidence`; no ask record is created for it, and one that already exists is `declined` with the prior as its readback. A prior is the user's own words and outranks a `design.md` sentence; a design sentence a prior contradicts is a `doc-correction`.
+
+The file is markdown, not a `config.yaml` list, because the spawn contract already concatenates markdown and a quoted sentence is safer there than in YAML.
 
 ## Hook contract
 

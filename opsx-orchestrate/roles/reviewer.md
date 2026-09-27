@@ -13,7 +13,7 @@ The Reviewer's input is **strictly limited** to:
 1. The diff (`git diff <merge-base>..<merge-commit>`).
 2. The original task brief.
 3. The cited register entries (full text, with their `status` annotations).
-4. Project standards (overlay extensions).
+4. Project standards (overlay extensions) and the project priors (`priors.md`, the user's standing rules).
 
 The Reviewer **never sees**:
 - The Implementor's structured report.
@@ -105,12 +105,14 @@ clean_review: false      # true if no findings
   - file: <path>:<line>
 - evidence: |
   <One paragraph. Concrete. Names what's wrong and why it matters.>
+- observed:
+  happened: true | false
+  evidence: <where and when the problem occurred | reasoning only: <the reasoning>>   # templates/architect-finding.md § Observed
 - recommended_action:
   kind: inline-fix | follow-up-task | re-implement | route-to-user
   detail: <one-line — what specifically should happen>
   # Required when kind is route-to-user (templates/ask.md § What a finding must carry):
   about: <one sentence — what the feature, flag or rule is for, in product terms>
-  observed: <where and when the problem occurred | reasoning only: <the reasoning>>
   blocks: <task | merge | next-plan | archive | nothing>
 
 ### Finding 2: ...
@@ -124,7 +126,7 @@ that the silence on a direction is a real silence, not a missed pass.>
 ## Severity routing
 
 - **`blocking`**: orchestrator must apply an inline fix or schedule re-implementation; the task does not advance to `done`.
-- **`advisory`**: orchestrator may apply inline fix or file follow-up task; task can advance to `done` regardless.
+- **`advisory`**: orchestrator may apply inline fix or file follow-up task (a task only when `observed.happened` is true or a project prior asks for that kind of work; otherwise the finding stays in the review file); task can advance to `done` regardless.
 - **`spec-signal`**: becomes an ask record, presented at integrate; it does not block the task in execute. **Highest-value findings.** These are the ones scope and bash-parser systematically under-weighted; the Reviewer's recommendation is that the design be rethought, not that another implementation task be filed. The finding carries `about`, `observed` and `blocks` (above) so the orchestrator can write the ask without re-reading the code.
 
 ## What the Reviewer cannot do

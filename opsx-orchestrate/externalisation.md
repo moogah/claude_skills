@@ -9,7 +9,7 @@ The rule, lifted from both existing skills and promoted to core:
 | **In-change** | `<change>/tasks/open/<task-name>.md` | The task contributes to the active change's stated outcome (per `proposal.md`). Discovery happened *in* this change and resolution belongs *with* this change. |
 | **Externalised** | `<repo>/.tasks/<task-name>.md` | The task is genuinely cross-cutting: it surfaced during this change but the work it requires is outside the active scope. Resolving it here would require reopening the proposal. |
 
-When in doubt, externalise. In-change task bloat is what produces "the change never finishes"; externalised task accumulation is what the PM's externalisation-pressure signal exists to manage.
+When in doubt about placement, externalise; when in doubt whether it has happened, note it (`flows/integrate.md` § 7): a reasoning-only finding is never externalised. In-change task bloat is what produces "the change never finishes"; externalised task accumulation is what the PM's externalisation-pressure signal exists to manage.
 
 ## Heuristic: would in-change resolution change the proposal?
 

@@ -58,6 +58,7 @@ drainage         1.00       0.83       0.50       0.57       0.45  ⚠ trending 
 
 Full asks, options and defaults: `.orchestrator/cycles/<cycle-id>/asks.md`.
 Applied without asking: 3 (listed there). Process notes: 1.
+Reasoning-only findings noted, not scheduled: 1.
 
 ## Trends to watch
 
@@ -88,6 +89,7 @@ The deterministic pass is `state.py counts --write` (`roles/project-manager.md`)
 
 - All counts in the throughput table, this cycle and the history window.
 - The critical-path readout and the class table.
+- The findings count and how many are reasoning-only and `noted` (the one line under the asks table).
 - The list of fired signals it can compute (throughput inversion, review starvation, priority inversion, cascade).
 - The open asks and the blocked tasks with their `blocker_note`, from which the orchestrator writes candidate-ask stubs per `templates/ask.md`. A subject that already carries an open ask id in `blocker_note` re-surfaces that id. Cascade detection produces an Architect audit, not an ask; the PM may spawn it alone.
 
