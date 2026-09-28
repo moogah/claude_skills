@@ -1,6 +1,6 @@
 # Plan phase
 
-The forward channel firing. Plan produces the speculations the next execute phase will probe.
+The forward channel firing. Plan turns the design into a batch the next execute phase will implement, after checking that the batch's premises still hold at HEAD.
 
 A plan that doesn't consume the prior cycle's integrate output isn't planning — it's queue-running. The integrate→plan handshake artifact is a hard input contract; plan **refuses to start** if the artifact is missing or any of its required fields are unset.
 
@@ -10,82 +10,64 @@ A plan that doesn't consume the prior cycle's integrate output isn't planning �
 
 `state.py init --change <name> --test-command <cmd>` starts the cycle and reads `<repo>/.orchestrator/handshake-<prior-cycle-id>.json` (the newest one, or `--prior-handshake <path>`; `--first-cycle` when none exists). Then read the handshake. It has:
 
-- `register_diff` — what's now `confirmed` / `divergent` / `reconciled` that was `speculated`.
+- `design_diff` — the seam rows conformance added, amended or retired last cycle.
 - `pm_digest_path` — the prior digest, for context.
-- `meta_discoveries` — patterns to update speculation priors against.
+- `meta_discoveries` — patterns to weigh when drafting this batch.
 - `user_resolved_goal_drift` — any revise / split / abandon decisions the user made.
 - `asks_for_user_open` (may be empty), `asks_for_user_resolved` (may be empty).
 - `task_refinements` — which open tasks already absorbed cycle learning.
 - `journal` — the prior cycle's discoveries and decisions, one line each.
 
-If the file is missing or any field is missing (not "empty array" — actually missing), `init` refuses to start. Direct the user to close the prior cycle properly (`state.py close`) or to abandon it explicitly (`state.py close --abandon --why`). This is an `environment`-kind ask (`templates/ask.md`): asked at once, since there is no state to record it in.
+On a first cycle (`--first-cycle`) there is no handshake and nothing to read. Otherwise, if the file is missing or any field is missing (not "empty array" — actually missing), `init` refuses to start. Direct the user to close the prior cycle properly (`state.py close`) or to abandon it explicitly (`state.py close --abandon --why`). This is an `environment`-kind ask (`templates/ask.md`): asked at once, since there is no state to record it in.
 
-This is the brainstorm's loop-closure contract: each cycle's discoveries must update the next cycle's speculations.
+This is the brainstorm's loop-closure contract: each cycle's discoveries must update the next cycle's plan.
 
 Read the overlay's `priors.md` alongside the handshake (`overlay.md` § Priors): the user's standing rules apply to batch composition and go into every brief.
 
-### 2. Architect forward-mode — populate / revise speculative register entries, then generate scaffolding
+### 2. Read the design and draft the candidate tasks
 
-The Architect runs in forward mode against the change's `proposal.md` and `design.md`:
+The change's `design.md` (`templates/design.md`) is the input: its Seams table and its Scenario coverage table. A change without them has not had its design round (`flows/design.md`); run it before this cycle, not inside it.
 
-- **At `/opsx-new` time**: populate `boundary` and `invariant` tier entries — the "what must hold" skeleton.
-- **At `/opsx-tasks generate` time** (which happens during plan): populate `shape` and `vocabulary` tier entries — the "concrete contracts" fill.
+The orchestrator drafts the candidate task files for this cycle under `<change>/tasks/open/` (per `templates/task-body.md`) from three sources, in this order:
 
-The split is configured by the overlay's `forward-mode.populate-at` (default: both).
+1. Open tasks carried over (refined by the prior integrate § 7, or user-authored on a first cycle); do not re-touch those `task_refinements` lists.
+2. Coverage rows whose test is still pending, grouped by the seam they exercise: one task per seam or per closely coupled pair, never one per test.
+3. The prior cycle's follow-ups and user-resolved asks with deferred implementation, which integrate § 7 already wrote as task files.
 
-New entries land as `status: speculated`. Entries the prior integrate marked `divergent` are **re-stated**, **absorbed**, or **escalated**:
+Each candidate cites the seams it implements (`cites_seams`, also carried in state) and the scenarios it makes pass (`cites_scenarios`, a task-file field only), and its Verification section lists the pending tests it promotes. The orchestrator may read HEAD while drafting, but the premise check is the authority on what holds there. The brief will quote the cited rows verbatim, so a task that cites nothing has no contract to be reviewed against.
 
-- *Re-stated*: the divergent entry was wrong; rewrite it with a fresh speculation.
-- *Absorbed*: the divergent state has been resolved by an in-flight task or external event; mark `reconciled`.
-- *Escalated*: the divergence is genuine and needs user disposition; raise an ask record of kind `decision` (`templates/ask.md`) and carry it into the plan as a goal-drift candidate.
+### 3. Premise check
 
-**Scaffolding generation runs immediately after each tiered entry is populated**, in the same forward-mode invocation. For every newly populated or re-stated speculative entry whose tier is in the project's `scaffolding.tiers` (defaults: `invariant`, `vocabulary`, `boundary`; `shape` opt-in), the Architect writes a scaffolded file under `<change>/scaffolding/<tier>/<entry-id>.<ext>`:
+The Architect runs against the candidate task files (`roles/architect.md` § Premise check): for each task, a `| claim | at HEAD |` table with **Holds** or **Wrong** per claim the task body makes about the code (a function exists and has this signature; a path is reachable from this entry point; a return value has these cases; a defect of the task file's own form, such as a truncated seam quote, is a row too, flagged as such), and a one-line verdict. Output: `<repo>/.orchestrator/cycles/<cycle-id>/premise-check.md` (the orchestrator creates the directory). The check may run the suite and probes read-only in a scratch directory.
 
-- A failing test (per `scaffolding.failing-stub-style`) for invariants.
-- A `pcase` / match scaffold listing every speculated value as an `error "TODO"` arm for vocabularies.
-- A canonical mapping function with a TODO body for boundaries.
-- A constructor + destructor exercise for shapes (when shape ∈ tiers).
+Then:
 
-Each file carries a `scaffolding-of: <entry-id>` header; the entry gains a `scaffolding_path` field. Scaffolded tests must fail loudly until satisfied — green-on-empty is a defect. Full contract: **[../scaffolding.md](../scaffolding.md)**.
+- A task with a **Wrong** premise is rewritten or split by the orchestrator before the batch freezes; the rewrite is the correction, not a stanza.
+- A defect the check finds outside every task's scope is a finding (`state.py record add findings`, `trigger: premise-check`, `discovered_from: batch-<cycle-id>`) at the bar with `observed` filled, routed by `flows/integrate.md` § 7's rules when integrate runs; one with `observed.happened: false` that no prior or user request covers is `record set findings <id> resolution=noted` at once, since its fate is already known. One whose `blocks` names a task in this batch is settled now: a `blocking` finding becomes an in-batch task or a rewrite of the task it blocks; a `decision` it raises is an ask record presented in block form before `batch_composed` (`flows/execute.md` § 9's rule, one ask alone).
+- A seam row the check finds stale (the code or the test tree is right, the row is not) is a `doc-correction` ask (`templates/ask.md`): the orchestrator amends the row, records the ask with `status: applied` and `applied_via: design.md <seam-id>`, and it is listed under "Applied without asking" in `asks.md` at integrate § 3a. The check itself does not edit `design.md`.
 
-Every entry the batch will cite is registered once: `state.py record add register-touched '{"entry_id": ..., "entry_tier": ..., "load_bearing": ..., "status_at_plan": ..., "cited_by_tasks": [...], "scaffolding_path": ...}'`. This list is what integrate's reconciliation gate enumerates.
+The record shows why this step exists: the plan-time review of the batch against HEAD found a three-way return value described as two-way, two contradicting log messages, and a task premise that split a task, none of it inside any task's stated scope, and every one of its outputs was used.
 
-If `scaffolding.enabled: false` in the overlay, this sub-step is a no-op and tiered entries retain their `validator` / `test_corpus` YAML fields as today.
+### 4. Batch composition and registration
 
-Forward-mode also reads `design.md` against the code. Drift it finds becomes an ask record (`templates/ask.md`): `doc-correction` when the code is right and the document is stale (applied and listed, not asked); `decision` when the design itself is in question. A `decision` whose `blocks` names a task in this batch is presented before execute starts, in the template's rendering; the rest wait for integrate's presentation step.
+Select which candidates this cycle will run. The batch composer balances:
 
-### 3. Batch composition
-
-Select which speculated entries this cycle will probe. **Variety is deliberate.** Probing only the safe tier (e.g. only shape entries) produces "tasks complete green; change doesn't converge" — the brainstorm's forward-fail mode.
-
-The batch composer balances:
-- A mix of register tiers (don't skip vocabulary or invariant).
 - Critical-path coverage: ≥1 task on the critical path per cycle, unless the prior integrate explicitly deferred.
-- Load-bearing entries get on-touch attention budget reserved.
-- Total batch size: project-overlay-configurable; default 3–7 tasks.
+- Dependencies: `blocked_by` names the tasks a candidate must follow; execute spawns a task when its `blocked_by` tasks have merged.
+- Total batch size: project-overlay-configurable; default 3–7 tasks, or fewer when the design has fewer seams left to implement.
 
-### 4. Task generation
-
-Project the chosen speculations into units of work via `/opsx-tasks generate` (or the overlay-configured per-project task generator):
-
-- Each shape entry implies producer-and-consumer tasks.
-- Each invariant entry implies an enforcement-mechanism task.
-- Each boundary entry implies a contract-test task or load-time validator task.
-- Each vocabulary entry implies a canonical-mapping-function task plus tests.
-
-Generated tasks land in `<change>/tasks/open/<task-name>.md` with their `cites_register_entries` field populated against the entries they derive from, and each is registered: `state.py task add <name> --file <path> --class <class> --cites <entry-id,...> [--blocked-by <task,...>]`. A follow-up carries `discovered_from=… discovered_by=… discovered_class=…` on the same command.
+Add each: `state.py task add <name> --file <path> --class <class> --cites <seam-id,...> [--blocked-by <task,...>] [--critical]`. A follow-up carries `discovered_from=… discovered_by=… discovered_class=…` on the same command. Then `state.py gate set plan batch_composed=true`.
 
 ### 5. Implementor brief assembly
 
-For each generated task, the orchestrator assembles the brief at agent-spawn time (per `roles/implementor.md`):
+For each task in the batch, the orchestrator assembles the brief at agent-spawn time (per `roles/implementor.md`):
 
 - Task body.
-- Cited register entries (full text, with `status` annotations).
-- **Scaffolded files** for each cited entry that has a `scaffolding_path` (full path + revision-licence framing per `scaffolding.md`).
-- Cited `design.md` / `proposal.md` sections.
+- The cited seam rows and the coverage rows the task promotes, verbatim from `design.md`.
+- Cited `design.md` decisions and `proposal.md` sections.
 - Project standards (overlay's `roles/implementor.md`) and the project priors (`priors.md`).
 
-The brief framing is fixed — register entries and scaffolding are *reference material to pressure-test, not authority to defer to*. Speculated entries and scaffolded files carry explicit licence to push back. Modifying a scaffolded file is a signal at integrate, not a transgression.
+The brief framing is fixed — the seam rows are *reference material to pressure-test, not authority to defer to*. A row that turns out wrong is a push-back in `## Discoveries`; conformance amends the row at integrate.
 
 ### 6. PM critical-path read
 
@@ -102,10 +84,9 @@ If the prior integrate had no goal-drift recommendations, this step is a no-op.
 ## Inputs
 
 - The integrate→plan handshake artifact (mandatory).
-- The interfaces register at the project root (current state).
-- The change's `proposal.md` and `design.md`.
+- The change's `design.md` with its Seams and Scenario coverage sections, `proposal.md`, and the open task files.
 - The prior cycle's PM digest (informational).
-- The project overlay's `config.yaml` (for thresholds, taxonomy, critical-path, forward-mode).
+- The project overlay's `config.yaml` (for thresholds, taxonomy, critical-path).
 
 ## Exit gate
 
@@ -115,11 +96,10 @@ The cycle does not enter execute until:
 |---|---|
 | `prior_integrate_consumed` | Handshake artifact present with all required fields (computed) |
 | `batch_composed` | Batch task list explicit and frozen (asserted: `state.py gate set plan batch_composed=true`) |
-| `briefs_cite_register` | Every task in batch has at least one entry in `cites_register_entries` (computed) |
-| `scaffolding_generated_for_tiered_entries` | Every speculated entry whose tier is in `scaffolding.tiers` has a `scaffolding_path` set and the file exists with a valid `scaffolding-of` header. No-op when `scaffolding.enabled: false` (asserted: `gate set plan scaffolding_generated_for_tiered_entries=true`) |
+| `briefs_cite_seams` | Every task in the batch that is not `externalised` has at least one entry in `cites_seams` (computed; it checks that a citation exists, not that the id is in `design.md`) |
 | `user_signed_off_goal_drift` | If prior integrate carried goal-drift recommendations, user has dispositioned them; otherwise no-op (computed from the goal-drift ask's status) |
 
-`state.py gate check plan` shows the computed three with reasons; `state.py gate pass plan` sets the gate when all five are true; `state.py phase set execute` advances.
+`state.py gate check plan` shows the computed three with reasons; `state.py gate pass plan` sets the gate when all four are true; `state.py phase set execute` advances.
 
 Execute refuses to run if the plan gate has not passed.
 
@@ -140,9 +120,9 @@ Plan is the first; integrate (`flows/integrate.md`) is the second.
 
 ## What plan does **not** do
 
-- Plan does not modify code. (Architect forward-mode modifies the register; that's an artifact, not code.)
-- Plan does not run tests or verifications.
+- Plan does not modify code. (The premise check may run the suite and probes read-only; nothing in plan writes to `src/` or the test tree.)
+- Plan does not redesign. (The one edit it makes to `design.md` is a `doc-correction` the premise check surfaced: one row, applied by the orchestrator and listed.)
 - Plan does not spawn Implementors. (That's execute's job.)
-- Plan does not produce findings. (That's execute's and integrate's jobs.)
+- Plan-time findings are routed by integrate's rules, not acted on ad hoc; only one that blocks a batch task is settled before `batch_composed`.
 
 If a question forces plan to do any of the above, that's a sign the prior cycle wasn't properly integrated. Refuse to advance; route back through integrate.

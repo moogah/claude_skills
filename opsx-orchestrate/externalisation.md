@@ -30,8 +30,8 @@ If the task is a follow-up to an in-change task that just merged, with the same 
 | Reviewer (spec-signal finding) | Becomes an ask record (`templates/ask.md`); if the user's decision needs work, in-change revision tasks carry `discovered_from: <ask-id>`; otherwise no task |
 | Architect (shape-fragmentation, vocabulary-mismatch on touched code) | In-change |
 | Architect (responsibility-leakage on adjacent code) | Externalised — this is the *consolidation round* the Architect exists to make unnecessary; if the adjacent code is in scope, in-change |
-| Architect (interface-drift against design doc) | Becomes an ask record, triaged: `doc-correction` is applied and listed; `decision` is asked |
-| PM (cascade cluster) | Spawns Architect audit; resulting tasks follow Architect rules |
+| Architect (interface-drift against a stale seam row or design sentence) | Becomes an ask record, triaged: `doc-correction` is applied and listed; `decision` is asked |
+| PM (cascade cluster) | Spawns a conformance run scoped to the cluster; resulting tasks follow Architect rules |
 | Orchestrator (manual conflict-resolution) | In-change |
 | User (ad-hoc) | User chooses |
 
@@ -39,7 +39,7 @@ If the task is a follow-up to an in-change task that just merged, with the same 
 
 Externalised tasks at `<repo>/.tasks/<task-name>.md` use the standard task-body template (`templates/task-body.md`) with `status: externalised`. They MUST carry full provenance fields (`discovered_from`, `discovered_by`, `discovered_class`) — without them the PM's externalisation-pressure signal can't cluster.
 
-Externalised tasks **may** still cite register entries; this is what enables PM's cluster-coherence check ("is this cluster ready to be promoted into a change?").
+Externalised tasks **may** still cite seams (`cites_seams`); this is what enables PM's cluster-coherence check ("is this cluster ready to be promoted into a change?").
 
 ## Externalisation pressure (PM's job)
 

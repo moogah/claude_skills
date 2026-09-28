@@ -1,8 +1,8 @@
 # Proposal status header
 
-The proposal is the **outermost speculation** — the change's stated outcome. Like every other speculation in the system (register entries, design decisions), it has a status, and like every other speculation it can be reconciled. Pretending the proposal is immutable once written is what produces the "ship the wrong thing on time" failure.
+The proposal is the **outermost speculation** — the change's stated outcome. Like the seam rows and design decisions in `design.md`, it is written before implementation and checked against what implementation reveals; unlike them it carries a status, because the proposal's lifecycle is a user decision rather than a conformance check. Pretending the proposal is immutable once written is what produces the "ship the wrong thing on time" failure.
 
-This header goes at the top of `proposal.md` (or `proposal.org`), under any title and tags but before the body. It mirrors the register-entry lifecycle.
+This header goes at the top of `proposal.md` (or `proposal.org`), under any title and tags but before the body. It gives the proposal a lifecycle of its own; seam rows in `design.md` have none (they hold current state and are amended in place).
 
 ## Form
 
@@ -20,7 +20,7 @@ confirmed_basis: |
   defensible answer.>
 
 # When status: divergent
-divergence_signal: <pm-cascade | reviewer-spec-signal | architect-interface-drift | user>
+divergence_signal: <pm-cascade | reviewer-spec-signal | architect-conformance | user>
 divergence_evidence: |
   <One paragraph — what the gap looks like.>
 divergence_ask: ask-<cycle-id>-<seq>   # the ask record (templates/ask.md) that carries the four
@@ -32,10 +32,10 @@ reconciled_at: <iso-ts>
 reconciled_choice: revise | split | abandon | continue-with-note
 reconciled_note: |
   <One paragraph — what was the prior outcome statement, what is it
-  now, why did it change. This is the proposal-level analogue of a
-  register reconciliation note.>
+  now, why did it change. This is the proposal-level analogue of
+  amending a seam row in design.md.>
 prior_outcome: |
-  <The proposal's outcome statement before reconciliation, verbatim.
+  <The proposal's outcome statement before `reconciled` was set, verbatim.
   Prefix the body of proposal.md with the new outcome statement;
   this header preserves the prior version.>
 ---
@@ -55,13 +55,13 @@ prior_outcome: |
 - **`speculated → confirmed`**: PM digest checks this transition automatically once the integrate→plan handshake has fired ≥2 cycles cleanly. Set programmatically; no user action required.
 - **`speculated/confirmed → divergent`**: PM goal-drift signal fires (default: critical-path completion ratio stagnant or declining for K cycles while non-critical-path completions continue). PM writes the `divergence_signal` and `divergence_evidence` fields; integrate raises the `decision`-kind ask and presents it (`flows/integrate.md` § 3a).
 - **`divergent → reconciled`**: User chooses revise / split / abandon / continue. The ask record captures the choice, and the handshake's `user_resolved_goal_drift` carries `{ask, decision, rationale}`.
-- **`reconciled → speculated`**: When `reconciled_choice` is `revise` or `split`, the new proposal text re-enters the lifecycle as `speculated`; the prior reconciliation note is preserved as `prior_outcome`.
+- **`reconciled → speculated`**: When `reconciled_choice` is `revise` or `split`, the new proposal text re-enters the lifecycle as `speculated`; the prior outcome statement is preserved as `prior_outcome`.
 
 ## Cost asymmetry
 
-The brainstorm names the cost-asymmetry rule: register reconciliation costs minutes, design.md revision costs hours, proposal.md revision costs days. The system biases toward absorbing discoveries at the lowest level that can hold them, but must not *hide* the expensive option when it's warranted.
+The brainstorm names the cost-asymmetry rule: amending a seam row in `design.md` costs minutes, revising a design decision costs hours, proposal.md revision costs days. The system biases toward absorbing discoveries at the lowest level that can hold them, but must not *hide* the expensive option when it's warranted.
 
-The status header is what makes goal-drift visible. Without it, goal-invalidating signals get silently absorbed as register noise until the gap is too big to ignore — the cleanup-round pattern.
+The status header is what makes goal-drift visible. Without it, goal-invalidating signals get silently absorbed as seam-row amendments until the gap is too big to ignore — the cleanup-round pattern.
 
 ## Where this lives
 

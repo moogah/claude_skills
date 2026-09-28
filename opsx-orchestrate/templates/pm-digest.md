@@ -41,7 +41,7 @@ drainage         1.00       0.83       0.50       0.57       0.45  ⚠ trending 
 ⚠ **THROUGHPUT**: drainage <1.0 for 4 cycles. Queue is growing.
 
 ⚠ **CASCADE**: task `T-042 (operation-section mapping)` has 6 follow-ups discovered across 3 implementors.
-  → recommend Architect audit on the dispatch boundary.
+  → recommend a conformance run scoped to the cluster (the dispatch boundary's seam rows).
 
 ⚠ **INVERSION**: 7 of 9 active tasks are off-critical-path refactors. Critical-path tasks T-019 and T-031 unstarted for 3 cycles.
 
@@ -67,7 +67,7 @@ Reasoning-only findings noted, not scheduled: 1.
 
 ## Meta-discoveries (this cycle)
 
-- Vocabulary unknowns at the bash-parser/scope boundary are systematically under-speculated; future forward speculation in that area should probe vocabulary first.
+- The bash-parser/scope boundary has no seam row stating its vocabulary mapping; the next design round in that area should state the mapping before tasks are drafted.
 
 ## Goal-drift check
 
@@ -77,7 +77,7 @@ Reasoning-only findings noted, not scheduled: 1.
 
 ## Signal symbols
 
-- ⚠ — actionable signal; warrants a disposition: an ask record, an Architect audit, a task, or a listed default
+- ⚠ — actionable signal; warrants a disposition: an ask record, a conformance run, a task, or a listed default
 - ✓ — healthy on this dimension; included so the absence of a ✓ on a tracked dimension reads as missing data
 - ◦ — informational; trend to watch but not yet actionable
 
@@ -91,7 +91,7 @@ The deterministic pass is `state.py counts --write` (`roles/project-manager.md`)
 - The critical-path readout and the class table.
 - The findings count and how many are reasoning-only and `noted` (the one line under the asks table).
 - The list of fired signals it can compute (throughput inversion, review starvation, priority inversion, cascade).
-- The open asks and the blocked tasks with their `blocker_note`, from which the orchestrator writes candidate-ask stubs per `templates/ask.md`. A subject that already carries an open ask id in `blocker_note` re-surfaces that id. Cascade detection produces an Architect audit, not an ask; the PM may spawn it alone.
+- The open asks and the blocked tasks with their `blocker_note`, from which the orchestrator writes candidate-ask stubs per `templates/ask.md`. A subject that already carries an open ask id in `blocker_note` re-surfaces that id. Cascade detection produces an Architect conformance run scoped to the cluster, not an ask; the PM may spawn it alone.
 
 The agent pass produces:
 

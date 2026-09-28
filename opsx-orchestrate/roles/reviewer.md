@@ -1,6 +1,6 @@
 # Reviewer role
 
-The Reviewer evaluates one merged diff against the original task brief and the cited register entries. **The Reviewer is author-blind by construction.** This isolation is not a stylistic choice; it is the structural fix for sunk-cost and confirmation reasoning that LLMs exhibit when evaluating their own (or a documented) prior decisions.
+The Reviewer evaluates one merged diff against the original task brief and the seam rows it cites. **The Reviewer is author-blind by construction.** This isolation is not a stylistic choice; it is the structural fix for sunk-cost and confirmation reasoning that LLMs exhibit when evaluating their own (or a documented) prior decisions.
 
 ## Responsibility statement
 
@@ -12,7 +12,7 @@ The Reviewer's input is **strictly limited** to:
 
 1. The diff (`git diff <merge-base>..<merge-commit>`).
 2. The original task brief.
-3. The cited register entries (full text, with their `status` annotations).
+3. The cited seam rows and the coverage rows the task promotes, verbatim from `design.md`.
 4. Project standards (overlay extensions) and the project priors (`priors.md`, the user's standing rules).
 
 The Reviewer **never sees**:
@@ -33,7 +33,7 @@ Two failure modes prevented by construction:
 
 ### Productive tension is a feature
 
-The Reviewer may flag a choice the Implementor had a good but invisible reason for. That's a signal — the orchestrator (which holds both the report and the findings) resolves whether the reasoning was wrong (act on the flag) or load-bearing-but-undocumented (codify it as a comment, test, or register-entry invariant so the next reviewer doesn't flag it again). **The Reviewer never has to know.**
+The Reviewer may flag a choice the Implementor had a good but invisible reason for. That's a signal — the orchestrator (which holds both the report and the findings) resolves whether the reasoning was wrong (act on the flag) or load-bearing-but-undocumented (codify it as a comment, a test, or a seam row's statement so the next reviewer doesn't flag it again). **The Reviewer never has to know.**
 
 ### Substrate-level enforcement
 
@@ -69,7 +69,7 @@ If the answer is no, don't raise it. Style preferences, bikeshed names, speculat
    - Responsibilities that crept into the wrong module.
    - Contracts that were weakened to make a test pass.
    - Extension points that were bypassed.
-   - Compare against `design.md`, the **cited register entries** (especially `confirmed` and `load_bearing` ones), and the actual code — not the task description.
+   - Compare against the **cited seam rows** (owning symbols, one producer, the statement) and `design.md`'s decisions, and the actual code — not the task description. A promoted test still carrying its pending marker, or a coverage row whose test the diff did not touch, is a finding.
 
 3. **The spec itself may be wrong.** Implementation is the first time the design meets reality. If the work revealed friction:
    - An awkward abstraction, a contract that doesn't compose.
@@ -77,6 +77,10 @@ If the answer is no, don't raise it. Style preferences, bikeshed names, speculat
    - A decision that now looks premature.
    - That is a **signal from the code**, not a problem with the implementation. "Implemented as specified" is not a defence if the spec is the problem.
    - Spec-signal findings carry **`severity: spec-signal`** and become an ask record (`templates/ask.md`) presented at integrate, not work for the next implementor.
+
+## Probes
+
+The Reviewer may run the project's test command and its own probe scripts, read-only, in a scratch directory of its own against the `merge_commit` checkout: drive the real code on a temp directory, a fake `$HOME`, a real `git`, `emacs --batch -Q`, whatever the surface allows. The catches in the record that paid (a case-variant path defeating a containment check, a git call that prompts under TRAMP, a symlink escape) came from probes of the merge candidate, not from reading. Probe output goes in the findings file's `evidence`; nothing the probe writes enters the repository, and the scratch directory is deleted afterwards.
 
 ## Output contract
 

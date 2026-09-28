@@ -25,7 +25,7 @@ import sys
 import time
 from datetime import datetime, timezone
 
-SCHEMA_VERSION = "1.1"
+SCHEMA_VERSION = "1.2"
 TEXT_CAP = 280
 LONG_TEXT_CAP = 600
 LONG_TEXT_FIELDS = {"question", "decision_readback"}
@@ -57,8 +57,8 @@ TASK_FIELDS = {
     "followups_created": list, "dependents_repointed": list,
     "implementor_report_path": (str, type(None)),
     "discovered_from": (str, type(None)), "discovered_by": (str, type(None)),
-    "discovered_class": (str, type(None)), "reconciled_into": (str, type(None)),
-    "cites_register_entries": list, "blocked_by": list, "blocker_note": (str, type(None)),
+    "discovered_class": (str, type(None)),
+    "cites_seams": list, "blocked_by": list, "blocker_note": (str, type(None)),
     "rejections": int,
     "started_at": (str, type(None)), "completed_at": (str, type(None)), "reviewed_at": (str, type(None)),
 }
@@ -68,38 +68,21 @@ TASK_DEFAULTS = {
     "worktree_removed": False,
     "review_mode": None, "findings_path": None, "findings_count": None, "followups_created": [],
     "dependents_repointed": [], "implementor_report_path": None, "discovered_from": None,
-    "discovered_by": None, "discovered_class": None, "reconciled_into": None,
-    "cites_register_entries": [], "blocked_by": [], "blocker_note": None, "rejections": 0,
+    "discovered_by": None, "discovered_class": None,
+    "cites_seams": [], "blocked_by": [], "blocker_note": None, "rejections": 0,
     "started_at": None, "completed_at": None, "reviewed_at": None,
 }
-
-REGISTER_TOUCHED_FIELDS = {
-    "entry_id": str, "entry_tier": str, "load_bearing": bool, "status_at_plan": str,
-    "status_at_integrate": (str, type(None)), "cited_by_tasks": list, "modified_by_tasks": list,
-    "reconciliation_note_path": (str, type(None)), "why_tests_missed": (str, type(None)),
-    "scaffolding_path": (str, type(None)), "scaffolding_diff_status": (str, type(None)),
-    "scaffolding_status_at_integrate": (str, type(None)),
-}
-REGISTER_TOUCHED_DEFAULTS = {
-    "status_at_integrate": None, "modified_by_tasks": [], "reconciliation_note_path": None,
-    "why_tests_missed": None, "scaffolding_path": None, "scaffolding_diff_status": None,
-    "scaffolding_status_at_integrate": None,
-}
-TIERS = ["shape", "vocabulary", "boundary", "invariant"]
-ENTRY_STATUSES = ["speculated", "confirmed", "divergent", "reconciled", "unchanged"]
-SCAFFOLD_FINAL = ["promoted", "archived", "rejected"]
-SCAFFOLD_DIFF = ["untouched", "modified", "rejected"]
 
 FINDING_FIELDS = {
     "finding_id": str, "trigger": str, "severity": str, "class": (str, type(None)), "title": str,
     "path": str, "locations": list, "why_tests_missed": (str, type(None)),
-    "discovered_from": (str, type(None)), "observed": (dict, type(None)),
+    "discovered_from": (str, type(None)), "seam": (str, type(None)), "observed": (dict, type(None)),
     "resolution": str, "blocking_merge_until_resolved": bool,
 }
 FINDING_DEFAULTS = {"class": None, "locations": [], "why_tests_missed": None, "discovered_from": None,
-                    "observed": None, "resolution": "pending", "blocking_merge_until_resolved": False}
+                    "seam": None, "observed": None, "resolution": "pending", "blocking_merge_until_resolved": False}
 OBSERVED_REQUIRED_SEVERITIES = {"blocking", "advisory"}
-TRIGGERS = ["forward-mode", "on-touch", "end-of-cycle", "between-cycle"]
+TRIGGERS = ["premise-check", "conformance"]
 SEVERITIES = ["blocking", "advisory", "informational", "spec-signal"]
 FINDING_CLASSES = ["shape-fragmentation", "vocabulary-mismatch", "responsibility-leakage",
                    "dead-branch", "interface-drift", "mutation", "invariant-gap", "duplication"]
@@ -121,27 +104,27 @@ GOAL_DRIFT_OPTIONS = {"revise", "split", "abandon", "continue"}
 JOURNAL_KINDS = ["discovery", "decision", "inline-fix", "deviation", "push-back", "note"]
 
 GATE_CHECKS = {
-    "plan": ["prior_integrate_consumed", "batch_composed", "briefs_cite_register",
-             "scaffolding_generated_for_tiered_entries", "user_signed_off_goal_drift"],
+    "plan": ["prior_integrate_consumed", "batch_composed", "briefs_cite_seams",
+             "user_signed_off_goal_drift"],
     "execute": ["all_tasks_executed_or_stopped", "all_reviews_completed", "no_orphan_in_progress"],
-    "integrate": ["all_touched_entries_dispositioned", "all_scaffolding_dispositioned",
-                  "blocking_findings_resolved", "pm_digest_produced", "user_asks_routed",
+    "integrate": ["blocking_findings_resolved", "pm_digest_produced", "user_asks_routed",
                   "open_tasks_refined_against_handshake", "handshake_artifact_written"],
 }
 # Checks the tool cannot compute; the orchestrator asserts them with `gate set`.
-ASSERTED_CHECKS = {"batch_composed", "scaffolding_generated_for_tiered_entries",
-                   "open_tasks_refined_against_handshake"}
+ASSERTED_CHECKS = {"batch_composed", "open_tasks_refined_against_handshake"}
 
-HANDSHAKE_REQUIRED = ["register_diff", "pm_digest_path", "meta_discoveries",
+HANDSHAKE_REQUIRED = ["design_diff", "pm_digest_path", "meta_discoveries",
                       "user_resolved_goal_drift", "asks_for_user_open", "asks_for_user_resolved",
                       "task_refinements"]
+# design_diff element: {"seam": "<seam id>", "change": added|amended|retired, "ref": "<finding id>"}
+DESIGN_DIFF_CHANGES = ["added", "amended", "retired"]
 
 TOP_LEVEL = {
     "schema_version": str, "session_id": str, "cycle_id": str, "phase": str, "repo_root": str,
     "change_name": str, "baseline_snapshot": (str, type(None)), "baseline_status": (int, type(None)),
     "current_branch": str, "test_command": str, "history_window": int,
     "prior_handshake": (str, type(None)), "closed_at": (str, type(None)),
-    "tasks": list, "register_touched": list, "architect_findings": list, "asks_for_user": list,
+    "tasks": list, "architect_findings": list, "asks_for_user": list,
     "journal": list, "cycle_log": dict, "phase_gates": dict,
 }
 TOP_LEVEL_SETTABLE = {"baseline_snapshot", "baseline_status", "current_branch", "test_command"}
@@ -316,7 +299,7 @@ def validate(state):
     for k in state:
         if k not in TOP_LEVEL:
             errors.append(f"{k}: unknown top-level key; use `note` for narrative, `record add` "
-                          "for findings/asks/register entries, or a file")
+                          "for findings/asks, or a file")
     for k, typ in TOP_LEVEL.items():
         if k not in state:
             errors.append(f"{k}: missing")
@@ -336,16 +319,6 @@ def validate(state):
             if t.get("task_name") in seen:
                 errors.append(f"{where}: duplicate task_name {t.get('task_name')!r}")
             seen.add(t.get("task_name"))
-    for i, r in enumerate(state["register_touched"]):
-        where = f"register_touched[{i}]"
-        _validate_record(r, REGISTER_TOUCHED_FIELDS, where, errors, "entry_id")
-        if isinstance(r, dict):
-            _enum(r.get("entry_tier"), TIERS, f"{where}.entry_tier", errors)
-            _enum(r.get("status_at_plan"), ENTRY_STATUSES, f"{where}.status_at_plan", errors)
-            _enum(r.get("status_at_integrate"), ENTRY_STATUSES, f"{where}.status_at_integrate", errors)
-            _enum(r.get("scaffolding_diff_status"), SCAFFOLD_DIFF, f"{where}.scaffolding_diff_status", errors)
-            _enum(r.get("scaffolding_status_at_integrate"), SCAFFOLD_DIFF + SCAFFOLD_FINAL,
-                  f"{where}.scaffolding_status_at_integrate", errors)
     for i, f in enumerate(state["architect_findings"]):
         where = f"architect_findings[{i}]"
         _validate_record(f, FINDING_FIELDS, where, errors, "finding_id")
@@ -563,7 +536,7 @@ def pm_signals(state, repo_root):
             followups[src] = followups.get(src, 0) + 1
     for src, n in followups.items():
         if n > th.get("cascade_trigger_followup_count", 3):
-            fired.append({"signal": "cascade", "detail": f"{src} has {n} follow-ups; spawn an Architect audit"})
+            fired.append({"signal": "cascade", "detail": f"{src} has {n} follow-ups; spawn a conformance run scoped to the cluster"})
     classes = {}
     for t in state["tasks"]:
         c = classes.setdefault(t["task_class"], {"total": 0, "done": 0})
@@ -604,7 +577,9 @@ def pm_signals(state, repo_root):
 
 # ---------------------------------------------------------------- gates
 
-def _handshake_errors(path):
+def _handshake_errors(path, prior=False):
+    """Required fields of a handshake. `prior` is the one a plan consumes; the one this cycle
+    writes is checked strictly."""
     if not os.path.exists(path):
         return [f"{path} does not exist"]
     try:
@@ -612,7 +587,32 @@ def _handshake_errors(path):
             h = json.load(f)
     except (json.JSONDecodeError, OSError) as e:
         return [f"{path}: {e}"]
+    # A prior handshake written by the installed checkout before schema 1.2 carries
+    # `register_diff` where `design_diff` now stands; plan accepts it in that place.
+    if prior and "design_diff" not in h and "register_diff" in h:
+        h = {**h, "design_diff": h["register_diff"]}
     return [f"{path}: missing field {k}" for k in HANDSHAKE_REQUIRED if k not in h]
+
+
+def _design_diff_errors(diff, where):
+    if not isinstance(diff, list):
+        return [f"{where}: expected a JSON array"]
+    errors = []
+    for i, e in enumerate(diff):
+        w = f"{where}[{i}]"
+        if not isinstance(e, dict):
+            errors.append(f"{w}: not an object")
+            continue
+        if not isinstance(e.get("seam"), str) or not e["seam"].strip():
+            errors.append(f"{w}.seam: expected non-empty string")
+        if e.get("change") not in DESIGN_DIFF_CHANGES:
+            errors.append(f"{w}.change: {e.get('change')!r} not one of {DESIGN_DIFF_CHANGES}")
+        if not isinstance(e.get("ref"), str):
+            errors.append(f"{w}.ref: expected string")
+        for k in e:
+            if k not in ("seam", "change", "ref"):
+                errors.append(f"{w}.{k}: unknown field (allowed: seam, change, ref)")
+    return errors
 
 
 def _goal_drift_asks(state):
@@ -633,12 +633,13 @@ def evaluate_gate(store, state, phase):
         if hp is None:
             put("prior_integrate_consumed", True, "first cycle: no prior handshake")
         else:
-            errs = _handshake_errors(os.path.join(store.repo_root, hp))
+            errs = _handshake_errors(os.path.join(store.repo_root, hp), prior=True)
             put("prior_integrate_consumed", not errs, "; ".join(errs) or f"{hp} has all required fields")
-        missing = [t["task_name"] for t in tasks if not t["cites_register_entries"]]
-        put("briefs_cite_register", not missing and bool(tasks),
-            f"tasks without cites_register_entries: {missing}" if missing else
-            ("no tasks yet" if not tasks else "every task cites at least one entry"))
+        missing = [t["task_name"] for t in tasks
+                   if t["status"] != "externalised" and not t["cites_seams"]]
+        put("briefs_cite_seams", not missing and bool(tasks),
+            f"tasks without cites_seams: {missing}" if missing else
+            ("no tasks yet" if not tasks else "every non-externalised task cites at least one seam"))
         gd = _goal_drift_asks(state)
         pending = [a["id"] for a in gd if a["status"] not in ("answered", "applied")]
         put("user_signed_off_goal_drift", not pending,
@@ -661,13 +662,6 @@ def evaluate_gate(store, state, phase):
         put("no_orphan_in_progress", not orphans,
             f"in flight: {orphans}" if orphans else "no task in flight")
     elif phase == "integrate":
-        undisp = [r["entry_id"] for r in state["register_touched"] if r["status_at_integrate"] is None]
-        put("all_touched_entries_dispositioned", not undisp,
-            f"no status_at_integrate: {undisp}" if undisp else "every touched entry dispositioned")
-        unscaf = [r["entry_id"] for r in state["register_touched"]
-                  if r["scaffolding_path"] and r["scaffolding_status_at_integrate"] not in SCAFFOLD_FINAL]
-        put("all_scaffolding_dispositioned", not unscaf,
-            f"scaffolds without final disposition: {unscaf}" if unscaf else "all scaffolds dispositioned")
         blocking = [f["finding_id"] for f in state["architect_findings"]
                     if f["severity"] == "blocking" and f["resolution"] == "pending"]
         put("blocking_findings_resolved", not blocking,
@@ -734,7 +728,7 @@ def verb_init(store, args):
             raise Refusal("no_prior_handshake", "no handshake-*.json found; pass --prior-handshake "
                           "or --first-cycle")
     if args.prior_handshake:
-        errs = _handshake_errors(os.path.join(store.repo_root, args.prior_handshake))
+        errs = _handshake_errors(os.path.join(store.repo_root, args.prior_handshake), prior=True)
         if errs:
             raise Refusal("bad_prior_handshake", "plan refuses to start: " + "; ".join(errs))
     ts = int(time.time())
@@ -754,7 +748,6 @@ def verb_init(store, args):
         "prior_handshake": args.prior_handshake,
         "closed_at": None,
         "tasks": [],
-        "register_touched": [],
         "architect_findings": [],
         "asks_for_user": [],
         "journal": [],
@@ -817,7 +810,8 @@ def verb_status(store, args):
     if str(state.get("schema_version")) != SCHEMA_VERSION:
         return {"ok": True, "schema_version": state.get("schema_version"), "legacy": True,
                 "cycle_id": state.get("cycle_id"), "phase": state.get("phase"),
-                "message": "legacy schema; run `migrate` before writing, `validate` to see the diff"}
+                "message": f"schema {state.get('schema_version')} predates {SCHEMA_VERSION}; run "
+                           "`migrate` before writing, `validate` to see the diff"}
     errors = validate(state)
     gates = {}
     for phase in PHASES:
@@ -841,8 +835,6 @@ def verb_status(store, args):
                       for a in state["asks_for_user"] if a["status"] == "open"],
         "pending_blocking_findings": [f["finding_id"] for f in state["architect_findings"]
                                       if f["severity"] == "blocking" and f["resolution"] == "pending"],
-        "undispositioned_entries": [r["entry_id"] for r in state["register_touched"]
-                                    if r["status_at_integrate"] is None],
         "journal_tail": state["journal"][-5:],
         "prior_handshake": state["prior_handshake"],
         "validation_errors": errors,
@@ -880,7 +872,7 @@ def verb_task_add(store, args):
         t = dict(TASK_DEFAULTS)
         t.update({"task_name": args.name, "task_file": args.file, "task_class": args.task_class})
         if args.cites:
-            t["cites_register_entries"] = [c for c in args.cites.split(",") if c]
+            t["cites_seams"] = [c for c in args.cites.split(",") if c]
         if args.blocked_by:
             t["blocked_by"] = [c for c in args.blocked_by.split(",") if c]
         if args.critical:
@@ -973,7 +965,6 @@ def verb_task_remove(store, args):
 RECORD_LISTS = {
     "findings": ("architect_findings", FINDING_FIELDS, FINDING_DEFAULTS, "finding_id"),
     "asks": ("asks_for_user", ASK_FIELDS, ASK_DEFAULTS, "id"),
-    "register-touched": ("register_touched", REGISTER_TOUCHED_FIELDS, REGISTER_TOUCHED_DEFAULTS, "entry_id"),
 }
 
 
@@ -986,7 +977,7 @@ def verb_record_add(store, args):
     def fn(state):
         rec = dict(defaults)
         rec.update(rec_in)
-        if id_field != "entry_id" and not rec.get(id_field):
+        if not rec.get(id_field):
             prefix = {"finding_id": "arch-", "id": "ask-"}[id_field] + state["cycle_id"] + "-"
             rec[id_field] = prefix + str(next_seq([r.get(id_field) for r in state[key]], prefix))
         if any(r.get(id_field) == rec[id_field] for r in state[key]):
@@ -1131,9 +1122,28 @@ def verb_handshake(store, args):
     refinements = load_json_arg(args.task_refinements) if args.task_refinements else []
     if not isinstance(meta, list) or not isinstance(refinements, list):
         raise Refusal("bad_json", "meta-discoveries and task-refinements must be JSON arrays")
+    flag_diff = load_json_arg(args.design_diff) if args.design_diff else None
 
     def fn(state):
         digest = os.path.relpath(os.path.join(store.cycle_dir(state), "pm-digest.md"), store.repo_root)
+        # design_diff: the conformance step's cycles/<id>/design-diff.json when present,
+        # else --design-diff, else empty.
+        diff_file = os.path.join(store.cycle_dir(state), "design-diff.json")
+        if os.path.exists(diff_file):
+            try:
+                with open(diff_file) as f:
+                    diff = json.load(f)
+            except (json.JSONDecodeError, OSError) as e:
+                raise Refusal("bad_design_diff", f"{os.path.relpath(diff_file, store.repo_root)}: {e}")
+            source = os.path.relpath(diff_file, store.repo_root)
+        elif flag_diff is not None:
+            diff, source = flag_diff, "--design-diff"
+        else:
+            diff, source = [], "default"
+        derrs = _design_diff_errors(diff, "design_diff")
+        if derrs:
+            raise Refusal("bad_design_diff", f"design diff from {source} does not fit the shape "
+                          "[{seam, change: added|amended|retired, ref}]", errors=derrs[:20])
         goal = []
         for a in _goal_drift_asks(state):
             if a["status"] in ("answered", "applied"):
@@ -1142,9 +1152,7 @@ def verb_handshake(store, args):
         h = {
             "cycle_id": state["cycle_id"],
             "produced_at": now_iso(),
-            "register_diff": [{"entry_id": r["entry_id"], "from": r["status_at_plan"],
-                               "to": r["status_at_integrate"], "note_path": r["reconciliation_note_path"]}
-                              for r in state["register_touched"]],
+            "design_diff": diff,
             "pm_digest_path": digest,
             "meta_discoveries": meta,
             "user_resolved_goal_drift": goal,
@@ -1159,7 +1167,8 @@ def verb_handshake(store, args):
             json.dump(h, f, indent=2)
         os.replace(p + ".tmp", p)
         return {"ok": True, "path": os.path.relpath(p, store.repo_root),
-                "register_diff": len(h["register_diff"]), "asks_open": len(h["asks_for_user_open"]),
+                "design_diff": len(diff), "design_diff_source": source,
+                "asks_open": len(h["asks_for_user_open"]),
                 "asks_resolved": len(h["asks_for_user_resolved"]), "task_refinements": len(refinements)}
     return store.mutate(fn)
 
@@ -1196,13 +1205,34 @@ LEGACY_STATUS = {
     "fix_pending": "reviewed", "reviewed_blocked": "blocked", "blocked_on_finding": "blocked",
     "in-progress": "in_progress", "needs-review": "needs_review",
 }
+# Task fields renamed across schema versions: old name -> current name (applied when the
+# current name is absent; otherwise the old value is parked).
+LEGACY_TASK_ALIASES = {"branch": "branch_name", "after_test_file": "after_snapshot",
+                       "cites_register_entries": "cites_seams"}
+# Task fields dropped from the schema whose null value carries nothing worth parking.
+LEGACY_TASK_DROP_WHEN_NULL = {"reconciled_into"}
+# Finding triggers before schema 1.2 -> current trigger; the original is kept as _legacy_trigger.
+LEGACY_TRIGGERS = {"on-touch": "conformance", "end-of-cycle": "conformance",
+                   "between-cycle": "conformance", "forward-mode": "premise-check"}
+# The pre-1.2 register list; parked whole, its record count reported.
+LEGACY_REGISTER_KEY = "register_touched"
+
+
+def _legacy_task_extras(t):
+    return sorted(k for k in t
+                  if k not in TASK_FIELDS
+                  and not (k in LEGACY_TASK_ALIASES and LEGACY_TASK_ALIASES[k] not in t)
+                  and not (k in LEGACY_TASK_DROP_WHEN_NULL and t[k] is None))
 
 
 def migration_plan(state):
     """What `migrate` would do to a legacy file. Pure."""
     plan = {"from": state.get("schema_version"), "to": SCHEMA_VERSION,
             "top_level_parked": [], "task_fields_parked": {}, "status_mapped": {},
-            "records_parked": {}, "asks_kept": 0, "asks_parked": 0}
+            "records_parked": {}, "asks_kept": 0, "asks_parked": 0,
+            "register_touched_parked": 0}
+    reg = state.get(LEGACY_REGISTER_KEY)
+    plan["register_touched_parked"] = len(reg) if isinstance(reg, list) else 0
     for k in state:
         kk = LEGACY_ALIASES.get(k, k)
         if kk not in TOP_LEVEL:
@@ -1210,13 +1240,13 @@ def migration_plan(state):
     for t in state.get("tasks") or []:
         if not isinstance(t, dict):
             continue
-        extra = sorted(k for k in t if k not in TASK_FIELDS)
+        extra = _legacy_task_extras(t)
         if extra:
             plan["task_fields_parked"][t.get("task_name", "?")] = extra
         s = t.get("status")
         if s not in TASK_STATUSES:
             plan["status_mapped"][t.get("task_name", "?")] = f"{s} -> {LEGACY_STATUS.get(s, 'ready')}"
-    for key, fields in (("architect_findings", FINDING_FIELDS), ("register_touched", REGISTER_TOUCHED_FIELDS)):
+    for key, fields in (("architect_findings", FINDING_FIELDS),):
         n = 0
         for r in state.get(key) or []:
             if isinstance(r, dict) and any(k not in fields for k in r):
@@ -1241,8 +1271,7 @@ def verb_migrate(store, args):
             if str(old.get("schema_version")) == SCHEMA_VERSION:
                 return {"ok": True, "unchanged": True}
             parked = {"parked_at": now_iso(), "from_schema": old.get("schema_version"), "top_level": {},
-                      "tasks": {}, "architect_findings": [], "register_touched": [], "asks_for_user": [],
-                      "cycle_log": {}}
+                      "tasks": {}, "architect_findings": [], "asks_for_user": [], "cycle_log": {}}
             new = {}
             for k, v in old.items():
                 kk = LEGACY_ALIASES.get(k, k)
@@ -1255,7 +1284,7 @@ def verb_migrate(store, args):
             new.setdefault("closed_at", None)
             new.setdefault("journal", [])
             new.setdefault("asks_for_user", [])
-            for k in ("tasks", "register_touched", "architect_findings"):
+            for k in ("tasks", "architect_findings"):
                 new.setdefault(k, [])
             if not isinstance(new.get("baseline_status"), (int, type(None))):
                 new["baseline_status"] = None
@@ -1273,10 +1302,10 @@ def verb_migrate(store, args):
                 u = dict(TASK_DEFAULTS)
                 extra = {}
                 for k, v in t.items():
-                    if k == "branch" and "branch_name" not in t:
-                        u["branch_name"] = v
-                    elif k == "after_test_file" and "after_snapshot" not in t:
-                        u["after_snapshot"] = v
+                    if k in LEGACY_TASK_ALIASES and LEGACY_TASK_ALIASES[k] not in t:
+                        u[LEGACY_TASK_ALIASES[k]] = v
+                    elif k in LEGACY_TASK_DROP_WHEN_NULL and v is None:
+                        continue
                     elif k in TASK_FIELDS:
                         u[k] = v
                     else:
@@ -1315,7 +1344,6 @@ def verb_migrate(store, args):
                                  "open": "open", "deferred": "deferred", "declined": "declined"}
             for key, fields, defaults, id_field in (
                     ("architect_findings", FINDING_FIELDS, FINDING_DEFAULTS, "finding_id"),
-                    ("register_touched", REGISTER_TOUCHED_FIELDS, REGISTER_TOUCHED_DEFAULTS, "entry_id"),
                     ("asks_for_user", ASK_FIELDS, ASK_DEFAULTS, "id")):
                 kept = []
                 extras_here = parked["record_extras"].setdefault(key, {})
@@ -1336,7 +1364,8 @@ def verb_migrate(store, args):
                         if u.get("severity") not in SEVERITIES:
                             extra["_legacy_severity"], u["severity"] = u.get("severity"), "advisory"
                         if u.get("trigger") not in TRIGGERS:
-                            extra["_legacy_trigger"], u["trigger"] = u.get("trigger"), "on-touch"
+                            extra["_legacy_trigger"] = u.get("trigger")
+                            u["trigger"] = LEGACY_TRIGGERS.get(u.get("trigger"), "conformance")
                         if not isinstance(u.get("resolution"), str):
                             u["resolution"] = "pending"
                     if key == "asks_for_user":
@@ -1382,13 +1411,17 @@ def verb_migrate(store, args):
             for p in PHASES:
                 if new["cycle_log"]["phase_started_at"].get(p, "") == "":
                     new["cycle_log"]["phase_started_at"][p] = None
-            gates = gates_fresh()
+            gates = gates_fresh()  # current check names; a check absent from the old file is false
             for p in PHASES:
                 g = (old.get("phase_gates") or {}).get(p) or {}
                 gates[p]["passed"] = bool(g.get("passed"))
+                old_checks = g.get("checks") if isinstance(g.get("checks"), dict) else {}
                 for c in GATE_CHECKS[p]:
-                    gates[p]["checks"][c] = bool((g.get("checks") or {}).get(c))
+                    gates[p]["checks"][c] = bool(old_checks.get(c))
                 extra = {k: v for k, v in g.items() if k not in ("passed", "checks")}
+                dropped = {c: v for c, v in old_checks.items() if c not in GATE_CHECKS[p]}
+                if dropped:
+                    extra["_dropped_checks"] = dropped
                 if extra:
                     parked["top_level"][f"phase_gates.{p}"] = extra
             new["phase_gates"] = gates
@@ -1404,8 +1437,10 @@ def verb_migrate(store, args):
                 json.dump(parked, f, indent=2)
             backup = store.path + f".pre-migrate-{int(time.time())}"
             shutil.copy(store.path, backup)
-            add_journal(new, "note", f"migrated state from schema {old.get('schema_version')}; "
-                        f"non-schema content parked", by="state.py",
+            reg = parked["top_level"].get(LEGACY_REGISTER_KEY)
+            reg_count = len(reg) if isinstance(reg, list) else 0
+            add_journal(new, "note", f"migrated state from schema {old.get('schema_version')} to "
+                        f"{SCHEMA_VERSION}; non-schema content parked", by="state.py",
                         path=os.path.relpath(parked_path, store.repo_root))
             store.write(new)
             return {"ok": True, "from": old.get("schema_version"), "to": SCHEMA_VERSION,
@@ -1413,9 +1448,10 @@ def verb_migrate(store, args):
                     "backup": os.path.relpath(backup, store.repo_root),
                     "parked_top_level_keys": sorted(parked["top_level"]),
                     "tasks_with_parked_fields": sorted(parked["tasks"]),
+                    "register_touched_parked": reg_count,
                     "records": {k: {"kept": len(new[k]), "parked": len(parked[k]),
                                     "with_extras": len(parked["record_extras"].get(k, {}))}
-                                for k in ("architect_findings", "register_touched", "asks_for_user")}}
+                                for k in ("architect_findings", "asks_for_user")}}
         finally:
             fcntl.flock(lock, fcntl.LOCK_UN)
 
@@ -1431,7 +1467,8 @@ def build_parser():
     s.set_defaults(fn=verb_status)
     s = sub.add_parser("validate", help="schema check; on a legacy file, what migrate would do")
     s.set_defaults(fn=verb_validate)
-    s = sub.add_parser("migrate", help="convert a schema-1.0 file; parks non-schema content in a sidecar")
+    s = sub.add_parser("migrate", help=f"convert an older-schema file to {SCHEMA_VERSION}; "
+                       "parks non-schema content in a sidecar")
     s.set_defaults(fn=verb_migrate)
 
     s = sub.add_parser("init", help="start a new cycle (refuses while one is open)")
@@ -1453,7 +1490,7 @@ def build_parser():
     s.add_argument("name")
     s.add_argument("--file", required=True, help="task file path relative to repo root")
     s.add_argument("--class", dest="task_class", required=True)
-    s.add_argument("--cites", help="comma-separated register entry ids")
+    s.add_argument("--cites", help="comma-separated seam ids (seam/<name>)")
     s.add_argument("--blocked-by", help="comma-separated task names")
     s.add_argument("--critical", action="store_true")
     s.add_argument("fields", nargs="*", metavar="field=value")
@@ -1470,7 +1507,7 @@ def build_parser():
     s.add_argument("--why", required=True)
     s.set_defaults(fn=verb_task_remove)
 
-    r = sub.add_parser("record", help="record add | set  (findings, asks, register-touched)").add_subparsers(dest="sub", required=True)
+    r = sub.add_parser("record", help=f"record add | set  ({', '.join(sorted(RECORD_LISTS))})").add_subparsers(dest="sub", required=True)
     s = r.add_parser("add")
     s.add_argument("list", choices=sorted(RECORD_LISTS))
     s.add_argument("json", help="JSON object, or @file.json; ids are assigned when omitted")
@@ -1484,7 +1521,7 @@ def build_parser():
     s = sub.add_parser("note", help="one journal line (<=280 chars); long form goes in a file via --path")
     s.add_argument("kind", choices=JOURNAL_KINDS)
     s.add_argument("text")
-    s.add_argument("--ref", help="task name, finding id, ask id or entry id")
+    s.add_argument("--ref", help="task name, finding id, ask id or seam id")
     s.add_argument("--path", help="file holding the long form")
     s.add_argument("--by", help="role that produced it")
     s.set_defaults(fn=verb_note)
@@ -1513,6 +1550,8 @@ def build_parser():
     s = sub.add_parser("handshake", help="assemble and write handshake-<cycle>.json from state")
     s.add_argument("--meta-discoveries", help="JSON array or @file")
     s.add_argument("--task-refinements", help="JSON array or @file")
+    s.add_argument("--design-diff", help="JSON array or @file of {seam, change, ref}; ignored when "
+                   "cycles/<id>/design-diff.json exists (default [])")
     s.set_defaults(fn=verb_handshake)
 
     s = sub.add_parser("close", help="archive the cycle to cycles/<id>/ and mark it closed")

@@ -13,27 +13,27 @@ Run `state.py status` before anything else in a session; it is the orientation (
 | Verb | Does |
 |---|---|
 | `status` | Orientation, as above. Read-only. |
-| `validate` | Schema check. On a legacy (1.0) file, prints what `migrate` would do. |
-| `migrate` | Converts a schema-1.0 file; non-schema content is parked in `cycles/<id>/legacy-state-extras.json`, a backup is kept. |
+| `validate` | Schema check. On a file of an older schema, prints what `migrate` would do. |
+| `migrate` | Converts a file of an older schema (1.0 or 1.1) to the current one; non-schema content (the old `register_touched` list among it) is parked in `cycles/<id>/legacy-state-extras.json`, a backup is kept. |
 | `init --change <name> --test-command <cmd> [--prior-handshake <path> \| --first-cycle] [--cycle <id>]` | Starts a cycle in `plan`. Refuses while a cycle is open. Validates the prior handshake's required fields (plan's refusal). Carries `history` from the archived cycles. |
 | `set field=value …` | The four settable scalars: `baseline_snapshot`, `baseline_status`, `current_branch`, `test_command`. |
-| `task add <name> --file <path> --class <class> [--cites a,b] [--blocked-by t1] [--critical] [field=value …]` | Adds a task with spec fields only. |
+| `task add <name> --file <path> --class <class> [--cites seam/a,seam/b] [--blocked-by t1] [--critical] [field=value …]` | Adds a task with spec fields only. |
 | `task set <name> [<status>] [field=value …]` | The transition. Validates the status enum and the transition rules; sets `started_at` / `completed_at` / `reviewed_at`; requires `merge_commit=` for `needs_review`; counts a rejection on `needs_review → in_progress`. `--force --why "<reason>"` allows a non-standard move and records a `deviation` journal entry. |
 | `task remove <name> --why "<reason>"` | Only `ready` / `failed` / `externalised` tasks. |
-| `record add findings\|asks\|register-touched <json \| @file>` | Appends a record. Ids are assigned (`arch-<cycle>-<n>`, `ask-<cycle>-<n>`) when omitted; a finding's `path` defaults to `cycles/<id>/findings/<finding-id>.md`. |
-| `record set <list> <id> field=value …` | Updates fields on a record: ask decisions, finding resolutions, register dispositions. |
+| `record add findings\|asks <json \| @file>` | Appends a record. Ids are assigned (`arch-<cycle>-<n>`, `ask-<cycle>-<n>`) when omitted; a finding's `path` defaults to `cycles/<id>/findings/<finding-id>.md`. |
+| `record set <list> <id> field=value …` | Updates fields on a record: ask decisions, finding resolutions. |
 | `note <kind> "<text>" [--ref <id>] [--path <file>] [--by <role>]` | One journal line (≤ 280 chars). Kinds: `discovery`, `decision`, `inline-fix`, `deviation`, `push-back`, `note`. Longer text goes in a file and `--path` points at it. |
 | `phase set <plan\|execute\|integrate>` | Advances one phase; refuses unless the prior gate passed. |
 | `gate check <phase>` | Evaluates every check that is a function of state or file existence and stores the results; lists the checks it cannot compute. |
-| `gate set <phase> <check>=true …` | Asserts a non-computable check (`batch_composed`, `scaffolding_generated_for_tiered_entries`, `open_tasks_refined_against_handshake`). Computed checks cannot be asserted. |
+| `gate set <phase> <check>=true …` | Asserts a non-computable check (`batch_composed`, `open_tasks_refined_against_handshake`). Computed checks cannot be asserted. |
 | `gate pass <phase>` | Re-evaluates, then sets `passed` and `passed_at` if every check is true; otherwise names the failing checks. |
 | `counts [--write]` | The PM deterministic pass: counts, ratios, by-status, history, critical-path readout, class table, follow-ups by source, fired signals. `--write` saves `cycles/<id>/pm-signals.json`. |
-| `handshake [--meta-discoveries <json\|@file>] [--task-refinements <json\|@file>]` | Assembles `handshake-<cycle-id>.json` from state (register diff, asks, goal-drift decisions, digest path) plus the two judgment fields, and validates it. |
+| `handshake [--meta-discoveries <json\|@file>] [--task-refinements <json\|@file>] [--design-diff <json\|@file>]` | Assembles `handshake-<cycle-id>.json` from state (asks, goal-drift decisions, digest path), the design diff (read from `cycles/<id>/design-diff.json` unless given) and the two judgment fields, and validates it. |
 | `close [--abandon --why "<reason>"]` | Archives state and handshake to `cycles/<id>/` and marks the cycle closed. Requires the integrate gate unless abandoning. |
 
 Every verb prints JSON. A refusal is `{"ok": false, "error": "<slug>", "message": …}` on stderr, exit 1. The rules the tool enforces:
 
-- **Closed schema.** Unknown top-level keys, unknown task fields and unknown record fields are refused. Narrative goes through `note` or into the file that exists for it (findings, reviews, reconciliation notes, `asks.md`, the digest); state holds the path.
+- **Closed schema.** Unknown top-level keys, unknown task fields and unknown record fields are refused. Narrative goes through `note` or into the file that exists for it (findings, reviews, `design.md`, `asks.md`, the digest); state holds the path.
 - **Pointers, enums, timestamps.** Every string field is capped at 280 characters (`question` and `decision_readback`: 600). The one-paragraph fields of a finding live in its file.
 - **Counts are derived**, never stored. `cycle_log.counts` and the ratios do not exist in the file; `counts` computes them from task statuses and timestamps.
 - **Timestamps come from the tool.**
@@ -43,7 +43,7 @@ Every verb prints JSON. A refusal is `{"ok": false, "error": "<slug>", "message"
 
 ```json
 {
-  "schema_version": "1.1",
+  "schema_version": "1.2",
   "session_id": "orch-<unix-ts>",
   "cycle_id": "cycle-<unix-ts>",
   "phase": "plan | execute | integrate",
@@ -57,7 +57,6 @@ Every verb prints JSON. A refusal is `{"ok": false, "error": "<slug>", "message"
   "prior_handshake": ".orchestrator/handshake-<prior-cycle-id>.json",
   "closed_at": null,
   "tasks": [ /* see Task entry */ ],
-  "register_touched": [ /* see Register-touched entry */ ],
   "architect_findings": [ /* see Finding entry */ ],
   "asks_for_user": [ /* see Ask entry */ ],
   "journal": [ /* see Journal entry */ ],
@@ -93,8 +92,7 @@ Every verb prints JSON. A refusal is `{"ok": false, "error": "<slug>", "message"
   "discovered_from": null,
   "discovered_by": null,
   "discovered_class": null,
-  "reconciled_into": null,
-  "cites_register_entries": [],
+  "cites_seams": [],
   "blocked_by": [],
   "blocker_note": null,
   "rejections": 0,
@@ -112,8 +110,7 @@ Every verb prints JSON. A refusal is `{"ok": false, "error": "<slug>", "message"
 - **`merge_commit`** is mandatory before `status` can advance to `needs_review`; the tool refuses otherwise. Reviewer worktrees diff against this.
 - **`implementor_report_path`** stores the implementor's deviations + discoveries report. **This file is read by the orchestrator only — never passed to the reviewer.** See `flows/execute.md` for the author-blind constraint.
 - **`discovered_*`** fields are mandatory on follow-up tasks. An unset `discovered_*` on a task whose source is another task is a state-file bug; the orchestrator refuses to start the next phase.
-- **`reconciled_into`** points to the register entry ID that absorbed this discovery. An unset `reconciled_into` on a `done` task whose `discovered_class` requires register integration is the integrate-phase exit-gate failure.
-- **`cites_register_entries`** is the list of register-entry IDs the implementor brief cited. Used by the on-touch Architect trigger and by integrate's reconciliation gate to enumerate touched entries.
+- **`cites_seams`** is the list of seam ids (`seam/<name>`, rows of the change's `design.md`) the implementor brief cites. The plan gate requires one on every non-externalised task; integrate's conformance check enumerates the cited rows; the task file carries the same list plus `cites_scenarios`, which state does not hold.
 - **`blocked_by`** is a list of `task_name`s. `blocker_note` is free-text for non-task blockers (external dependencies); when the blocker is a user decision, the value is the ask id (`ask-<cycle-id>-<seq>`, see Ask entry); when it is a finding, the finding id. Both feed the PM digest's blocked-path-aging signal, which re-surfaces an ask id rather than raising a new ask. A merge conflict is `blocked` with `blocker_note: merge-conflict`, not a status of its own.
 - **`after_snapshot`** is the path of the post-merge test output for this task (`.orchestrator/after-<task>-<ts>.txt`); `regression_detected` points at it as evidence.
 - **`agent_task_id`** is omitted when the orchestrator implements inline (no agent); `setup_complete` is an optional intermediate the flows do not require, and going `ready → in_progress` directly is the normal move.
@@ -136,35 +133,6 @@ Every verb prints JSON. A refusal is `{"ok": false, "error": "<slug>", "message"
 
 The `completed → needs_review` and `needs_review → reviewed → done` separation enforces author-blind review: the reviewer agent never sees a task whose status is `completed`, only `needs_review`, and the implementor's report is never available to the reviewer.
 
-## Register-touched entry
-
-Every register entry the cycle's tasks cited or modified. `record add register-touched` at plan (or when first cited); `record set register-touched <entry-id> …` at integrate.
-
-```json
-{
-  "entry_id": "register/shape/violation-info",
-  "entry_tier": "shape | vocabulary | boundary | invariant",
-  "load_bearing": true,
-  "status_at_plan": "speculated",
-  "status_at_integrate": "confirmed | divergent | reconciled | unchanged",
-  "cited_by_tasks": ["setup-module", "wire-validator"],
-  "modified_by_tasks": ["wire-validator"],
-  "reconciliation_note_path": null,
-  "why_tests_missed": null,
-  "scaffolding_path": "openspec/changes/<change>/scaffolding/shapes/violation-info.test.el",
-  "scaffolding_diff_status": "untouched | modified | rejected",
-  "scaffolding_status_at_integrate": "untouched | modified | rejected | promoted | archived"
-}
-```
-
-Integrate's reconciliation exit gate enumerates this list. Every entry whose `status_at_integrate` is null (or `unchanged` when the entry was actually modified) blocks the cycle from closing.
-
-The three `scaffolding_*` fields are null on tiers that opted out of scaffolding for this project (`scaffolding.tiers` in the overlay). Otherwise:
-
-- `scaffolding_path` is set during plan-phase forward-mode when the Architect generates the file.
-- `scaffolding_diff_status` is observed during execute by inspecting the diff against the merge-base for the scaffolding subtree.
-- `scaffolding_status_at_integrate` is set during integrate's reconciliation step. `untouched` / `modified` / `rejected` are the diff-status mirrors; `promoted` (file migrated to a permanent location) and `archived` (enforcement landed elsewhere) are integrate-only dispositions. See `scaffolding.md` for the reconciliation-by-diff table.
-
 ## Architect finding entry
 
 The state record is the index line; the finding file (`templates/architect-finding.md`) at `path` carries the locations in full, the recommended resolution and the reasoning.
@@ -172,7 +140,7 @@ The state record is the index line; the finding file (`templates/architect-findi
 ```json
 {
   "finding_id": "arch-<cycle-id>-<seq>",
-  "trigger": "on-touch | end-of-cycle | between-cycle",
+  "trigger": "premise-check | conformance",
   "severity": "blocking | advisory | informational | spec-signal",
   "class": "shape-fragmentation | vocabulary-mismatch | responsibility-leakage | dead-branch | interface-drift | mutation | invariant-gap | duplication",
   "title": "<one-line>",
@@ -180,8 +148,9 @@ The state record is the index line; the finding file (`templates/architect-findi
   "locations": [{ "file": "<path>", "line": 504 }],
   "why_tests_missed": "<one sentence>",
   "discovered_from": "<task or batch>",
+  "seam": "<seam/<name> or null>",
   "observed": { "happened": true, "evidence": "<a line, a run, an output, a shipped sentence | reasoning only: <the reasoning>>" },
-  "resolution": "pending | inline-fixed | followup-task-<task-name> | reverted | accepted-with-note | noted",
+  "resolution": "pending | inline-fixed | design-amended | followup-task-<task-name> | reverted | accepted-with-note | noted",
   "blocking_merge_until_resolved": true
 }
 ```
@@ -215,10 +184,10 @@ The one place for short narrative that has no other home: orchestrator discoveri
 ```json
 { "at": "<iso-ts>", "kind": "discovery | decision | inline-fix | deviation | push-back | note",
   "by": "orchestrator | implementor | reviewer | architect | pm | null",
-  "ref": "<task, finding, ask or entry id, or null>", "text": "<≤ 280 chars>", "path": "<file or null>" }
+  "ref": "<task, finding, ask or seam id, or null>", "text": "<≤ 280 chars>", "path": "<file or null>" }
 ```
 
-The handshake carries the journal; plan reads it for discoveries and decisions. Nothing in state is the paragraph form of a discovery; that is the finding file, the review, the reconciliation note or the digest.
+The handshake carries the journal; plan reads it for discoveries and decisions. Nothing in state is the paragraph form of a discovery; that is the finding file, the review, a seam row or the digest.
 
 ## Cycle log
 
@@ -246,8 +215,7 @@ Each gate is a structured record of whether the phase's exit conditions are met.
     "checks": {
       "prior_integrate_consumed": false,
       "batch_composed": false,
-      "briefs_cite_register": false,
-      "scaffolding_generated_for_tiered_entries": false,
+      "briefs_cite_seams": false,
       "user_signed_off_goal_drift": false
     }
   },
@@ -262,8 +230,6 @@ Each gate is a structured record of whether the phase's exit conditions are met.
   "integrate": {
     "passed": false,
     "checks": {
-      "all_touched_entries_dispositioned": false,
-      "all_scaffolding_dispositioned": false,
       "blocking_findings_resolved": false,
       "pm_digest_produced": false,
       "user_asks_routed": false,
@@ -274,18 +240,18 @@ Each gate is a structured record of whether the phase's exit conditions are met.
 }
 ```
 
-Computed by `gate check` from state and the files on disk: all of execute's checks; plan's `prior_integrate_consumed`, `briefs_cite_register`, `user_signed_off_goal_drift`; integrate's `all_touched_entries_dispositioned`, `all_scaffolding_dispositioned`, `blocking_findings_resolved`, `pm_digest_produced` (a non-empty `## Signals` section), `user_asks_routed` (open asks in the handshake; decision asks in `asks.md`), `handshake_artifact_written` (file present with every required field). Asserted by the orchestrator with `gate set`: `batch_composed`, `scaffolding_generated_for_tiered_entries`, `open_tasks_refined_against_handshake`. The flow docs say what each check means.
+Computed by `gate check` from state and the files on disk: all of execute's checks; plan's `prior_integrate_consumed`, `briefs_cite_seams` (every non-`externalised` task has a non-empty `cites_seams`), `user_signed_off_goal_drift`; integrate's `blocking_findings_resolved`, `pm_digest_produced` (a non-empty `## Signals` section), `user_asks_routed` (open asks in the handshake; decision asks in `asks.md`), `handshake_artifact_written` (file present with every required field). Asserted by the orchestrator with `gate set`: `batch_composed`, `open_tasks_refined_against_handshake`. The flow docs say what each check means.
 
 ## Integrate→plan handshake artifact
 
-`handshake` writes `<repo>/.orchestrator/handshake-<cycle-id>.json` when integrate closes. The next plan phase reads this file as a hard input contract; `init` refuses to start a cycle whose prior handshake lacks any required field.
+`handshake` writes `<repo>/.orchestrator/handshake-<cycle-id>.json` when integrate closes. The next plan phase reads this file as a hard input contract; `init` refuses to start a cycle whose prior handshake lacks any required field (a prior handshake written before schema 1.2, which carries `register_diff` instead of `design_diff`, is accepted once).
 
 ```json
 {
   "cycle_id": "cycle-<ts>",
   "produced_at": "<iso-ts>",
-  "register_diff": [
-    { "entry_id": "register/shape/violation-info", "from": "speculated", "to": "reconciled", "note_path": "..." }
+  "design_diff": [
+    { "seam": "seam/violation-info", "change": "amended", "ref": "arch-cycle-<ts>-3" }
   ],
   "pm_digest_path": ".orchestrator/cycles/<cycle-id>/pm-digest.md",
   "meta_discoveries": [
@@ -301,7 +267,7 @@ Computed by `gate check` from state and the files on disk: all of execute's chec
       "task": "openspec/changes/<change>/tasks/open/<name>.md",
       "modes": ["created"] | ["in-place"] | ["append"] | ["in-place", "append"] | [],
       "applied_learnings": [
-        { "channel": "register-diff", "ref": "register/shape/violation-info", "from": "speculated", "to": "reconciled" },
+        { "channel": "design-diff", "ref": "seam/violation-info" },
         { "channel": "meta-discovery", "ref": "vocabulary-cluster/permissive-default-vs-closed-vocabulary" },
         { "channel": "user-resolved-ask", "ref": "ask-arch-cycle-<id>-2" },
         { "channel": "inline-fix", "ref": "arch-cycle-<id>-9" },
@@ -316,13 +282,13 @@ Computed by `gate check` from state and the files on disk: all of execute's chec
 }
 ```
 
-`register_diff`, `pm_digest_path`, `user_resolved_goal_drift` and the two `asks_for_user_*` lists are assembled from state; `meta_discoveries` and `task_refinements` are the orchestrator's judgment, passed as JSON (usually `@file`). **The seven fields are required** (`register_diff`, `pm_digest_path`, `meta_discoveries`, `user_resolved_goal_drift`, `asks_for_user_open`, `asks_for_user_resolved`, `task_refinements`); the tool defines the list once. An empty list is allowed; a missing field is not. Plan reads `register_diff` to know what's now `confirmed` / `divergent` / `reconciled`; `meta_discoveries` to update speculation priors; `user_resolved_goal_drift` to know whether the proposal was revised; `task_refinements` to know which open tasks already absorbed cycle learning (so plan doesn't re-touch them) and which were flagged as candidate-obsolete for user disposition; `journal` for the discoveries and decisions the cycle recorded.
+`pm_digest_path`, `user_resolved_goal_drift` and the two `asks_for_user_*` lists are assembled from state; `design_diff` is read from `cycles/<cycle-id>/design-diff.json` (integrate § 1) or passed as `--design-diff`; `meta_discoveries` and `task_refinements` are the orchestrator's judgment, passed as JSON (usually `@file`). **The seven fields are required** (`design_diff`, `pm_digest_path`, `meta_discoveries`, `user_resolved_goal_drift`, `asks_for_user_open`, `asks_for_user_resolved`, `task_refinements`); the tool defines the list once. An empty list is allowed; a missing field is not. Plan reads `design_diff` to know which seam rows moved; `meta_discoveries` to weigh when drafting the batch; `user_resolved_goal_drift` to know whether the proposal was revised; `task_refinements` to know which open tasks already absorbed cycle learning (so plan doesn't re-touch them) and which were flagged as candidate-obsolete for user disposition; `journal` for the discoveries and decisions the cycle recorded.
 
 ## Recovery
 
 `status` on a missing, legacy or invalid state file says which, and the orchestrator does not invent state:
 
-1. Legacy schema (`1.0`): `validate` shows the migration plan; `migrate` converts it, parks every non-schema key and field in `cycles/<id>/legacy-state-extras.json` (nothing is deleted) and keeps a `state.json.pre-migrate-<ts>` backup.
+1. Older schema (`1.0` or `1.1`): `validate` shows the migration plan; `migrate` converts it, renames `cites_register_entries` to `cites_seams`, maps old finding triggers to the current two (the original kept as `_legacy_trigger` in the extras), parks every other non-schema key and field, `register_touched` included, in `cycles/<id>/legacy-state-extras.json` (nothing is deleted) and keeps a `state.json.pre-migrate-<ts>` backup. A cycle migrated while at integrate re-runs `handshake` before `gate pass integrate`, since the handshake it wrote earlier carries the old field.
 2. Invalid current-schema file (someone wrote it by hand): `validate` lists the offending keys; fix them by hand, then continue through the tool.
 3. Missing file mid-cycle: restore `cycles/<cycle-id>/state.json` if an archive exists for the cycle; otherwise ask the user whether to recover or to abandon the cycle. This is an `environment`-kind ask (`templates/ask.md`): asked at once, in block form, since there is no state file to record it in.
 4. Never silently start a new cycle — `init` refuses while a cycle is open; `close --abandon --why` is the explicit way out.
@@ -335,11 +301,12 @@ Computed by `gate check` from state and the files on disk: all of execute's chec
 .orchestrator/cycles/<cycle-id>/
   state.json              # frozen snapshot, closed_at set
   handshake.json          # the artifact above
+  premise-check.md        # plan § 3
+  design-diff.json        # integrate § 1
   pm-signals.json         # counts --write
   pm-digest.md            # the cycle's digest
   asks.md                 # the asks as presented, with the decisions (templates/ask.md)
   findings/<finding-id>.md
-  reconciliations/<tier>-<name>.md   # the entry id without "register/", slashes as dashes
   reviews/<task-name>.md
   reports/<task-name>.md             # the Implementor's structured report, orchestrator-only
   legacy-state-extras.json           # only when migrate ran in this cycle

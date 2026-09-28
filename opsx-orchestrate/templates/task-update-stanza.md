@@ -13,8 +13,8 @@ Append at the bottom of the task body, after `## Out-of-scope` and before `## Ob
 ```markdown
 ## Cycle <N> updates (cycle-<ts>)
 
-### Cited register entries
-- `register/<tier>/<entry-id>`: <prior status> → <new status>. <One-line of what changed>. See `<reconciliation-note-path>`.
+### Cited seams amended this cycle
+- `seam/<id>` — <one line of what changed>, design commit `<sha>`.
 
 ### User-resolved decisions
 - `<ask-id>`: <the ask's `decision_readback`, verbatim>. **Implication for this task**: <one sentence>.
@@ -41,7 +41,7 @@ If a later cycle determines that a prior stanza's claim is itself now stale (e.g
 
 When prose is **demonstrably false or dead**, edit in place instead of appending. Triggers:
 
-- Prose names a register-entry shape, field, or vocabulary member that was reconciled away this cycle (not present in the new shape).
+- Prose names a seam row's statement or owning symbols that were amended this cycle (no longer present in the row).
 - Prose prescribes a code change (numbered step, file edit, function add/remove) that an inline fix or merged in-cycle task already shipped.
 - Prose cites a `file:fn` that was deleted or renamed by an inline fix this cycle.
 - A verification command references an artifact that no longer exists.
@@ -49,7 +49,7 @@ When prose is **demonstrably false or dead**, edit in place instead of appending
 Replace the false text with the corrected statement. At the top of the section that was edited, leave a single-line breadcrumb:
 
 ```markdown
-> Cycle <N>: obviated/corrected by inline fix; see <reconciliation-note-path-or-finding-id>.
+> Cycle <N>: obviated/corrected by inline fix; see <finding-id-or-design-commit>.
 ```
 
 Don't leave dead prose; do leave an audit trail. If a numbered step is *fully* obviated (the work shipped elsewhere with no remaining residue), delete the step rather than striking it through, and reflect the deletion in the breadcrumb: `> Cycle <N>: original step <K> ('<short summary>') shipped via <ref>; removed.`.
@@ -60,6 +60,6 @@ Append-only is safer (preserves user-tuned prose, easy to audit) but accumulates
 
 ## What this template does NOT do
 
-- It does not replace the cited register entries' own reconciliation notes (`templates/reconciliation-note.md`) — those are the authoritative event log per entry.
+- It does not replace the authoritative log of a cited seam's changes — that is the git history of `design.md` plus the journal.
 - It does not capture findings the implementor discovered mid-task — those go in `## Observations` / `## Discoveries` per `templates/task-body.md`.
 - It does not record cycle-N learnings into a closed task. Tasks in `<change>/tasks/closed/` are frozen at merge time and integrate does not touch them.

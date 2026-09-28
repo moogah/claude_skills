@@ -6,7 +6,7 @@ The PM is a **counting and trending** role first, a categorisation role second, 
 
 ## Responsibility statement
 
-Watch overall progress, queue health, blocked paths, externalised work, and goal-drift. Produce the PM digest each cycle. Detect cascade signals and spawn focused Architect audits. Surface user-decisions on blocked items. Maintain task taxonomy by labelling new tasks with their `task_class`.
+Watch overall progress, queue health, blocked paths, externalised work, and goal-drift. Produce the PM digest each cycle. Detect cascade signals and spawn focused Architect conformance runs. Surface user-decisions on blocked items. Maintain task taxonomy by labelling new tasks with their `task_class`.
 
 ## Hybrid form: deterministic + thin agent
 
@@ -22,7 +22,7 @@ It produces:
 - The fired-signals list for the queries it can compute from state: throughput inversion, review starvation, priority inversion, cascade (follow-ups by source task).
 - The critical-path readout, the class-distribution table, follow-ups by source, the open asks and the blocked tasks with their `blocker_note`, and the findings count with how many are reasoning-only and `noted`.
 
-Candidate asks come from the blocked-task list: a `blocker_note` that is an ask id re-surfaces that id; any other blocker is a stub the orchestrator completes per `templates/ask.md`. Cascade detection produces an Architect audit, not an ask.
+Candidate asks come from the blocked-task list: a `blocker_note` that is an ask id re-surfaces that id; any other blocker is a stub the orchestrator completes per `templates/ask.md`. Cascade detection produces an Architect conformance run, not an ask.
 
 Output: `<repo>/.orchestrator/cycles/<cycle-id>/pm-signals.json`.
 
@@ -57,7 +57,7 @@ The split fixes the failure mode of "agent hallucinating counts": counts come fr
 
 A single completed task generates a disproportionate number of follow-ups, repeatedly, across different implementors. Strong signal of a design or contract gap.
 
-**PM action**: **spawn an Architect audit scoped to the cluster of tasks doing the cascading.** This is the cross-role authority the brainstorm called out — PM is the only role that can task another role *as an investigation*, not as implementation work.
+**PM action**: **spawn an Architect conformance run scoped to the cluster of tasks doing the cascading.** This is the cross-role authority the brainstorm called out — PM is the only role that can task another role *as an investigation*, not as implementation work.
 
 ### 3. Review starvation
 
@@ -97,12 +97,12 @@ Tasks blocked on an external dependency (user decision, upstream change, environ
 
 ## Input contract — what the PM reads
 
-- The orchestrator state file, through `state.py counts` and `state.py status`: every task and its status, `architect_findings`, `register_touched`, the journal.
+- The orchestrator state file, through `state.py counts` and `state.py status`: every task and its status, `architect_findings`, the journal.
 - The change's `proposal.md` — the stated outcome, used to define "done" and to identify the critical path. **One LLM read per plan phase**, not per PM tick.
 - The current `tasks/` tree (in-change tasks) and `.tasks/` store (externalised backlog).
 - Cycle history (last K cycles' counts and transitions; default K=5; overlay-configurable).
 - Provenance metadata on every task (`discovered_from`, `discovered_by`, `discovered_class`).
-- Architect findings register (informational findings feed the digest's "trends to watch").
+- Architect findings (informational findings feed the digest's "trends to watch").
 
 The PM does **not** read code. If a question requires reading code, that's a signal to spawn an Architect.
 
@@ -111,7 +111,7 @@ The PM does **not** read code. If a question requires reading code, that's a sig
 | Query | Threshold | Action |
 |---|---|---|
 | Drainage trend | `completed/created < drainage-trigger-ratio` for ≥`drainage-trigger-consecutive-cycles` cycles | Signal: throughput inversion |
-| Cascade detection | `count(followups discovered_from=T) > cascade-trigger-followup-count` | Signal: cascade; **spawn Architect audit** |
+| Cascade detection | `count(followups discovered_from=T) > cascade-trigger-followup-count` | Signal: cascade; **spawn conformance run** |
 | Review balance | `needs_review/in_progress > review-starvation-ratio` | Signal: review starvation |
 | Externalisation pressure | `.tasks/` count delta monotonic over ≥3 cycles | Signal: externalisation pressure |
 | Stale detection | any task in any non-`done` state > `stale-task-cycles` cycles | Signal: stale; ask stub, or re-surface the ask id in `blocker_note` |
@@ -140,10 +140,10 @@ Mapped onto the three-phase cycle:
 
 ## Cross-role authority: spawning the Architect
 
-When the cascade signal fires, the PM can spawn an Architect audit. The handshake template:
+When the cascade signal fires, the PM can spawn an Architect conformance run (`trigger: conformance`) scoped to the cluster. The handshake template:
 
 ```
-Architect audit — cascade investigation
+Architect conformance run — cascade investigation
 
 Cluster: <cluster name>
 Source task: <T-XXX> (<title>)
@@ -151,16 +151,18 @@ Follow-ups (N): <T-YYY-1>, <T-YYY-2>, ..., <T-YYY-N>
 Discovered classes: <distribution of discovered_class values>
 Implicated modules (inferred from diffs): <module list>
 
-Mission: investigate whether this cluster is a design gap. If yes,
-identify which register tier(s) need entries (or which existing
-entries need refinement), and propose specific reconciliations.
+Mission: which seam rows in the change's design.md do the cluster's
+tasks cite (their `cites_seams`)? Does the merged code match those
+rows (owning symbols exist and remain the single producer or
+mapping; the coverage rows' tests exist and pass)? Which rows need
+amending, and is any seam missing from the design?
 Produce structured findings per templates/architect-finding.md.
 
 Severity should bias to blocking: cascades that aren't gaps are
-rare; the cost of running this audit on a non-gap is small.
+rare; the cost of running this check on a non-gap is small.
 ```
 
-The Architect treats this as a between-cycle invocation scoped to the cluster.
+The answer is routed through `flows/integrate.md` § 1's rules: code right, row stale is amended in place and recorded as an applied `doc-correction`; a design in question is a `decision` ask; other findings go to the bar.
 
 ## Escalation contract
 
@@ -168,7 +170,7 @@ The PM is **read-only against code**, **write-only against the queue** (it can a
 
 It can:
 - **Recommend** re-prioritisation. Apply at the user's nod.
-- **Spawn an Architect audit** when the cascade signal fires.
+- **Spawn an Architect conformance run** when the cascade signal fires.
 - **Surface user-decisions** on blocked items in the asks section.
 - **Recommend pause** of the change when signals indicate the design is wrong (cascade + drainage inversion + critical-path starvation in the same cycle). PM recommends; user decides.
 - **Promote externalised tasks** back into the active change when `.tasks/` pressure crosses threshold and the cluster has grown coherent.
@@ -176,7 +178,7 @@ It can:
 It cannot:
 - **Spawn Implementor or Reviewer agents** — that's the orchestrator's job. PM influences *what* runs, not *that* something runs.
 - **Modify task bodies** — only metadata (labels, priority, blocker notes).
-- **Make merge decisions** — that's Architect (blocking findings) or orchestrator (mechanical gates).
+- **Make merge decisions** — that's the Reviewer (verdict) or the orchestrator (mechanical gates); an Architect `blocking` finding holds the integrate gate, not a merge.
 
 ## Form-factor open questions
 

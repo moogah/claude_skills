@@ -1,43 +1,41 @@
 # Architect role
 
-The Architect watches code structure across the batch — the patterns no single Implementor can see and no per-task Reviewer catches because they live across diffs, across modules, across cycles. The Architect's job is to make consolidation rounds *unnecessary* by catching contract drift, shape fragmentation, and responsibility leakage *while the batch is forming*, when fixing costs one task instead of one rewrite.
+The Architect designs the system that meets the spec, keeps that design true, and checks merged code against it. The design lives in the change's `design.md`: OpenSpec's own sections plus two the orchestrator adds, **Seams** (the concrete interfaces, one row each) and **Scenario coverage** (which test covers each spec scenario, and how). Full shape: `templates/design.md`.
+
+The role used to maintain a project-wide catalogue of interfaces and audit every diff against it. The record showed the catalogue read for its contract lines and written for its history, its per-entry notes never re-read, its quarantined test stubs hand-copied into the test tree by Implementors, and the plan-time review of the batch against HEAD consumed nearly whole. The role now does the part that was consumed.
 
 ## Responsibility statement
 
-Audit the in-flight batch and the changed code against the **interfaces register** for structural drift the per-task review cannot see. Produce structured findings with severity, locations, and recommended resolutions. Maintain the register as the cycle progresses — populate speculatively at plan, reconcile at integrate, narrow attention to load-bearing entries during execute.
+Design the components and seams that satisfy the spec scenarios, name the test that covers each scenario, and write the pending tests. At each plan, check the batch's premises against HEAD. At each integrate, check that the merged code still matches the seams the batch cited and amend the rows that the code has rightly outgrown. Produce structured findings with severity, locations and a recommended resolution, at the Reviewer's bar.
 
-## Three triggers
+## Three runs
 
-The Architect runs at three points in the cycle, each with a different scope and cost:
+### Design round (`flows/design.md`)
 
-### On-touch (in execute, narrow)
+Once per change, after specs exist and before the first cycle. Re-run only when a `decision` or a spec change alters a seam, and then for that seam alone.
 
-When an Implementor diff modifies code cited in a **`load_bearing: true`** register entry, the Architect runs against **that entry only**. Cheap, targeted, catches contract drift while it's still local.
+- **Reads**: `proposal.md`, `specs/`, the existing `design.md` (OpenSpec writes one before tasks), HEAD, the test tree, the project priors, the overlay's `roles/architect.md`.
+- **Writes**: `design.md` (the Seams and Scenario coverage sections; a seam id on the Decision heading that names it; the Open Questions and Decisions entries the round produces) and, in the test tree, one pending test per `acceptance` or `contract` coverage row whose behaviour HEAD does not yet satisfy. The orchestrator commits.
+- **Cost**: one agent run per change; the most expensive of the three, and the one whose output every later run consumes.
 
-- **Scope**: one entry; the diff touching its cited code; immediate neighbours in the call graph.
-- **Cost**: seconds; runs in parallel with the Implementor's own work.
-- **Output**: zero or more findings, written to the cycle's findings dir, each indexed with `state.py record add findings '{...}'` (title, severity, class, trigger, locations, `discovered_from`; the file carries the reasoning and the recommended resolution).
-- **Effect**: a `severity: blocking` finding pauses the merge of the implicated task.
+### Premise check (`flows/plan.md` § 3)
 
-### End-of-cycle (in integrate, default; **a defining operation of integrate**)
+Every plan, over the candidate task files, before the batch freezes.
 
-Full signal-class run across all the cycle's diffs + the register. Not a separate trigger so much as one of the integrate phase's defining operations.
+- **Reads**: the candidate tasks, `design.md`, HEAD, the handshake's journal.
+- **Writes**: `cycles/<cycle-id>/premise-check.md`, one `| claim | at HEAD |` table per task with **Holds** or **Wrong** per claim, and a one-line verdict per task. A defect found outside every task's scope is a finding (`trigger: premise-check`) at the bar, routed by `flows/integrate.md` § 7's rules; one whose `blocks` names a batch task is settled before `batch_composed`.
+- **Cost**: minutes; may run the suite and probes read-only in a scratch directory. Never amends the design (a stale row it finds is a `doc-correction` ask the orchestrator applies) and never writes catalogue text or test stubs outside the design round.
 
-- **Scope**: every diff merged this cycle; every register entry cited or modified; immediate neighbours of touched modules.
-- **Cost**: moderate; runs as part of integrate before the PM digest.
-- **Output**: structured findings; register reconciliation candidates surfaced to the integrate-phase reconciliation gate.
-- **Effect**: blocking findings block integrate from closing.
+### Conformance (`flows/integrate.md` § 1)
 
-### Between-cycle (`/architect-audit`, on demand)
+Every integrate, scoped to the seams this cycle's tasks cited, plus a dead-branch scan of the cycle's diffs.
 
-Register vs. whole repo. The consolidation-round-as-a-button — the move scope and bash-parser had to do manually, late.
+- **Reads**: the cited seam rows and coverage rows, each merged diff (full divergence from its merge base), the modules the diffs touch and their immediate call-graph neighbours, the project priors.
+- **Asks, per seam**: do the owning symbols exist and remain the single producer or mapping; do the coverage row's tests exist, carry no pending marker, and pass. **Per diff**: is any old implementation still on a live path; is any function the diff touched now unreachable.
+- **Writes**: findings (`trigger: conformance`); when the code is right and the design is stale, the amended seam row and, in the same edit, the coverage rows and the Decision that named the same thing, with `resolution: design-amended` so the orchestrator records one `doc-correction`; `cycles/<cycle-id>/design-diff.json` listing rows added, amended or retired (empty when none). A clean check is one `state.py note note "conformance: zero findings" --by architect`.
+- **Cost**: moderate, bounded by the number of cited seams. The PM's cascade signal spawns this run scoped to the cluster it names.
 
-- **Scope**: every register entry; the whole repo's current state; not just the cycle's diffs.
-- **Cost**: expensive; runs only on demand.
-- **Output**: large structured-findings file with proposed consolidation tasks.
-- **Effect**: produces follow-up tasks the orchestrator can schedule across the next several cycles.
-
-The drift the orchestrator accepts is exactly the **non-load-bearing** register entries between integrate phases. Load-bearing contracts don't get to drift even one diff.
+There is no Architect run in execute. The Reviewer carries the probe licence that the old execute-time run used (`roles/reviewer.md` § Probes). Restore an execute-time run only on a demonstrated Reviewer miss that a seam-scoped run would have caught.
 
 ## The bar
 
@@ -45,162 +43,54 @@ The Architect raises findings at the Reviewer's bar (`roles/reviewer.md` § Revi
 
 > Would a thoughtful maintainer, familiar with this codebase, raise this in a PR review — and would the project be meaningfully worse if it shipped unchanged?
 
-A flag from any signal class below becomes a finding only if it clears this bar *and* `observed` is filled (`templates/architect-finding.md` § Observed). A flag that fails the bar is one `state.py note note "<one line>" --by architect` and no file. `severity: informational` is for a finding that clears the bar but blocks nothing. Speculative future-proofing (a third consumer, a future sweep, a future maintainer) fails the bar unless a project prior asks for that kind of work (`overlay.md` § Priors); a defect present in merged code today (a dead function, a present duplication) clears it. The bar decides whether a finding file exists; `observed` decides whether it is scheduled. A flag that clears the bar (a maintainer would raise it; it cites a present line) but rests on reasoning only is a finding with `happened: false`, and integrate marks it `noted`; a flag that fails the bar is the journal line and nothing else. A clean audit is a valid outcome: `note note "end-of-cycle audit: zero findings"`.
+A flag from the checklist below becomes a finding only if it clears this bar *and* `observed` is filled (`templates/architect-finding.md` § Observed). A flag that fails the bar is one `state.py note note "<one line>" --by architect` and no file. `severity: informational` is for a finding that clears the bar but blocks nothing. Speculative future-proofing (a third consumer, a future sweep, a future maintainer) fails the bar unless a project prior asks for that kind of work (`overlay.md` § Priors); a defect present in merged code today (a dead function, a present duplication) clears it. The bar decides whether a finding file exists; `observed` decides whether it is scheduled. A flag that clears the bar but rests on reasoning only is a finding with `happened: false`, and integrate marks it `noted`.
 
-## Eight signal classes
+## Design checklist
 
-The Architect runs **structural audits**, not tests. They run in seconds and catch things tests can't.
+Eight questions. The design round asks them of its own Seams and coverage rows; conformance asks them of the merged diff. Each maps to the finding `class` it produces when the answer is no.
 
-### 1. Shape-registry diff
+| # | Question | `class` |
+|---|---|---|
+| 1 | Does every record shape have one constructor and one field set, wherever it is produced or read? | `shape-fragmentation` |
+| 2 | Is every value set translated between layers in exactly one place, and is every value handled there? | `vocabulary-mismatch` |
+| 3 | Does each module's public-function inventory match its stated responsibility? | `responsibility-leakage` |
+| 4 | Is any function body a near-duplicate of another, in the batch or in unchanged code? | `duplication` |
+| 5 | Is every reshaping of one module's output for another module done by one canonical function? | `shape-fragmentation` or `duplication` |
+| 6 | Is every changed function still reachable, and is every replaced implementation off the live path? | `dead-branch` |
+| 7 | Does the merged code match the seam rows it cites, symbol for symbol? | `interface-drift` |
+| 8 | Is any value mutated after it crosses a module boundary; does every clause of a seam's statement have a test in the row's tests column that asserts it? | `mutation`, `invariant-gap` |
 
-Every plist / alist / struct / record shape constructed or destructured in the batch. Flag when ≥2 producers or consumers of "the same concept" have diverging field sets. A producer nothing calls is one `dead-branch` finding, not a second producer.
+The incidents that produced these questions (three constructions of one plist forcing `(or :reason :message :error)` chains; a `pcase` inlined twice and skipped at a third site; an old recursive engine left running beside its replacement for a whole migration; a stated invariant no test asserted until 42 failures surfaced) are the reason a seam row names symbols and a test, not prose.
 
-**Example**: scope's `violation-info` plist constructed in three modules with three different field sets, forcing `(or :reason :message :error)` fallback chains in consumers.
+## Output
 
-**Maps to**: `class: shape-fragmentation`. Maps to register entries of tier `shape`.
+- Findings: `templates/architect-finding.md`, one file per finding under `cycles/<cycle-id>/findings/`, indexed with `state.py record add findings '{...}'` (title, severity, class, trigger, locations, `discovered_from`, `seam`, `observed`; the file carries the reasoning and the recommended resolution).
+- The design: `templates/design.md`. A seam row holds current state only: no status, no history, no line numbers, no message to a future role. History is `git log -- design.md`.
+- Pending tests: in the test tree, in the file that already tests the owning module (a new file only when none exists), named by scenario (`Scenario: <capability> § <title>` in the docstring or header; a contract test cites `seam/<name>`), marked with the overlay's `test.pending-style` only when HEAD does not yet satisfy the behaviour. A scaffold that would pass at HEAD is not pending; it is a plain test.
 
-### 2. Vocabulary-mismatch scan
+## Severity
 
-Identify any code that translates between two layers' value sets. Flag when the translation is inlined at >1 site or when one site is missing values another produces.
-
-**Example**: bash-parser produces 11 op types; scope.yml accepts 3 sections; the `pcase` translating between them was inlined twice and skipped at a third site, silently routing `:read-metadata` violations into `:paths.write`.
-
-**Maps to**: `class: vocabulary-mismatch`. Maps to register entries of tier `vocabulary`.
-
-### 3. Module-purpose audit
-
-For each touched module, compare its stated responsibility (from its docstring, its spec, or its file comment) against its current public-function inventory. Flag out-of-purpose additions.
-
-**Example**: `scope-expansion` accumulated five YAML-writing helpers that belonged in `scope-yaml`; `scope-filesystem-tools` and `scope-metadata` each independently implemented `file-is-git-tracked-p`.
-
-**Maps to**: `class: responsibility-leakage`. Often resolved by moving functions, not by writing new code.
-
-### 4. Cross-task duplication scan
-
-Hash function bodies (or AST fingerprints) across the batch + the unchanged code. Flag near-duplicates under different names.
-
-**Example**: two implementors in the same batch each wrote a YAML-writing helper, neither aware the other had.
-
-**Maps to**: `class: duplication`.
-
-### 5. Boundary-translation scan
-
-Identify any code where output of module A is reshaped before being passed to module B. Flag when the reshape is inlined at >1 site (demand a single canonical mapping function).
-
-**Example**: same as vocabulary-mismatch but at the shape level rather than the value-set level.
-
-**Maps to**: `class: shape-fragmentation` or `class: duplication` depending on whether the reshape involves new fields or just renaming.
-
-### 6. Call-graph dead-branch check
-
-For any function whose body changes, is it still reachable? For any new implementation, is the old one still on a live path?
-
-**Example**: bash-parser ran `jf/bash-extract-file-operations` (old recursive engine) alongside `jf/bash-extract-semantics` (new orchestrator) for the entire migration; the test suite silently exercised the old path while new-path bugs accumulated invisibly. Scope's `tool-categories` classification was bypassed by bash-parser-based validation but not removed for cycles.
-
-**Maps to**: `class: dead-branch`.
-
-### 7. Interface-document drift
-
-When an interfaces register exists, diff its declared shapes / contracts against actual code in the batch. Flag every mismatch (then apply the bar).
-
-**Example**: scope's `bash-parser-protocol.org` described handler output shape, but nothing checked it; five handlers were found missing `:confidence` when contract tests were finally written.
-
-**Maps to**: `class: interface-drift`. **Highest-leverage class.** Becomes an ask record when against an out-of-date design doc — the same logic as the Reviewer's "spec is wrong" direction; triage decides whether it is a `doc-correction` (applied, listed) or a `decision` (asked). These are the findings scope and bash-parser systematically under-weighted. The finding is not the ask: the orchestrator writes the ask from it (`templates/ask.md`), so the finding must say what the rule or document is for, whether the drift was observed in a shipped document or is reasoning only, and what it blocks.
-
-### 8. Mutation scan + invariant-gap check
-
-Two related audits.
-
-- **Mutation scan**: `setf`, `nconc`, `assq-delete-all`, `delete-dups`, etc. on values that flow across a module boundary. Flag every such operation (then apply the bar).
-- **Invariant gap**: invariants asserted in `design.md` / `proposal.md` / register `invariant` entries that have **no corresponding test or runtime check**. The Architect can't run tests, but it *can* flag the asymmetry.
-
-**Example for mutation**: bash-parser's chain decomposer used `assq-delete-all` to mutate a shared `var-context` alist; tests passed in isolation but failed when run together.
-
-**Example for invariant-gap**: "handlers fire exactly once per simple command" stated in `bash-parser-protocol.org`; no test asserted it; 42 failures from 5 architectural bugs surfaced when contract tests were finally written.
-
-**Maps to**: `class: mutation` or `class: invariant-gap`.
-
-## Input contract — what the Architect reads
-
-- Each in-flight branch's diff (not just the latest commit — the **full divergence from the merge base**).
-- The current state of the modules each branch touches, and their immediate neighbours in the call graph.
-- **The interfaces register** — the authoritative catalogue of shapes, vocabularies, boundaries, invariants. The protocol the Architect audits patterns 1, 2, 5, 6, 7, 8 against.
-- The change's `design.md` for implementation-strategy context.
-- The state file's `register_touched` array (which entries the cycle has cited or modified).
-- The project priors (`priors.md`, `overlay.md` § Priors): the user's standing rules. A prior can make a finding actionable ("remove leftovers" makes a dead-code finding a task without an ask) or moot (a finding that proposes a self-verification check when a prior calls those overengineering is `noted`).
-
-The Architect does **not** read the Implementor's reports or the Reviewer's findings. Both have their own scope and their own substrate-level isolation; the Architect's job is the cross-cutting view.
-
-## Output format
-
-See `templates/architect-finding.md`. Structured, cite specific lines, severity-routed.
-
-## Forward-mode (plan phase)
-
-In plan, the Architect operates in **forward mode** — populating or revising **speculative** register entries for the contracts this cycle will exercise, *and* generating the scaffolding files those entries imply (per `scaffolding.md`).
-
-- **At `/opsx-new` time** (configurable via overlay's `forward-mode.populate-at`): populate the `boundary` and `invariant` tiers — the "what must hold" skeleton. Generate scaffolding for tiered entries immediately.
-- **At `/opsx-tasks generate` time**: populate the `shape` and `vocabulary` tiers — the "concrete contracts" fill. Generate scaffolding for tiered entries immediately.
-
-New entries land as `status: speculated`. Entries the prior integrate marked `divergent` are re-stated, absorbed, or escalated.
-
-Whenever the Architect proposes an entry update, the entry holds current state only: no `status_note`, `amendment*` or cycle-suffixed fields, dated paragraphs, `prior_*` snapshots, or messages to future roles. History lives in the reconciliation-note chain (`reconciliation_note_path` → latest note, each note's `prior_note_path` → the one before), and a note carries an entry diff, not two copies of the entry.
-
-### Scaffolding generation
-
-For each newly populated or re-stated speculative entry whose tier is in the project's `scaffolding.tiers` (defaults: `invariant`, `vocabulary`, `boundary`; `shape` opt-in), the Architect writes a scaffolded file under `<change>/scaffolding/<tier>/<entry-id>.<ext>`:
-
-- **Invariant** → a failing test asserting the rule (style per `scaffolding.failing-stub-style`).
-- **Vocabulary** → a `pcase` / match scaffold listing every speculated value as an explicit unimplemented arm.
-- **Boundary** → a canonical mapping function with the right signature and a TODO body.
-- **Shape (opt-in)** → a constructor + destructor exercise; otherwise the entry's `validator` + `test_corpus` YAML fields are sufficient.
-
-Each scaffolded file carries a `scaffolding-of: <entry-id>` header; the entry gains a `scaffolding_path` field. Scaffolded tests must fail loudly until satisfied — no green-on-empty stubs. See **[scaffolding.md](../scaffolding.md)** for full contract, including the failing-stub discipline and reconciliation-by-diff at integrate.
-
-The forward-mode output is what `flows/plan.md` consumes for batch composition: each shape entry implies producer and consumer tasks; each invariant entry implies an enforcement-mechanism task whose acceptance criterion is making the scaffolded test pass; each boundary entry implies a contract-test task or load-time validator task that fills the scaffold's TODO body; each vocabulary entry implies a canonical-mapping task that replaces the scaffold's error-arms with real handlers.
-
-## Severity calibration
-
-Each finding-class has a default severity in core, overridable per-project via the overlay's `architect.severity-overrides`:
-
-| Class | Default severity |
-|---|---|
-| `shape-fragmentation` | blocking |
-| `vocabulary-mismatch` | blocking |
-| `responsibility-leakage` | advisory |
-| `dead-branch` | advisory |
-| `interface-drift` (against load-bearing entry) | blocking |
-| `interface-drift` (against advisory entry) | advisory |
-| `mutation` | advisory |
-| `invariant-gap` | advisory |
-| `duplication` | advisory |
-
-The Architect may override per-finding (with `severity_override_reason`) when context demands — e.g. a duplication finding promoted to blocking because it's the third instance of the same class within K cycles.
+`blocking` when merged code breaks a cited seam's contract (a second producer, a mapping inlined, a promoted test failing); `advisory` otherwise, including a symbol rename that leaves the contract intact; `informational` when it clears the bar but blocks nothing. `blocking` at integrate blocks the integrate gate, not a merge. The overlay's `architect.severity-overrides` may raise or lower a class; a per-finding override carries `severity_override_reason`. A `blocking` finding that rests on reasoning only is a contradiction; re-grade it `advisory`.
 
 ## Escalation contract
 
-- **Read-only against code**: like the Reviewer. Inline fixes belong to the orchestrator; new tasks go through the externalisation channel.
-- **Blocking findings**: produce a follow-up task scoped to the batch and pause merge until resolved.
-- **Interface-drift findings against an out-of-date design doc**: become an ask record, not Implementor work — same logic as the Reviewer's "spec is wrong" direction. The finding is not the ask: the orchestrator writes the ask from it (`templates/ask.md`), so the finding must say what the rule or document is for, whether the drift was observed in a shipped document or is reasoning only, and what it blocks.
-- **Cleanup proposals**: the Architect can *propose* cleanup tasks, but they land in the follow-up stream and the orchestrator decides whether to schedule them in this batch, the next batch, or as `.tasks/` external backlog — and only when `observed.happened` is true or a prior asks for that kind of work; otherwise the finding is `noted`.
-- **PM-spawned audits**: when the PM's cascade signal fires, PM has authority to spawn a focused Architect audit on the cluster. The Architect treats this as a between-cycle invocation scoped to the cluster.
+- **Blocking findings** produce a follow-up task in the batch (integrate § 7) and hold the integrate gate until `resolution` is no longer `pending`.
+- **Code right, design stale**: amend the seam row (and the coverage rows or Decision naming the same thing) in place, `resolution: design-amended`; the orchestrator records one `doc-correction` ask with `status: applied` and `applied_via: design.md <seam-id>`, listed under "Applied without asking" (`templates/ask.md`). Not Implementor work.
+- **Design in question**: the finding says what the seam or scenario is for, whether the drift is in merged code or reasoning only, and what it blocks; the orchestrator writes a `decision` ask from it. The finding is not the ask.
+- **Cleanup proposals** land in the follow-up stream; the orchestrator decides this batch, next batch or `.tasks/`, and only when `observed.happened` is true or a prior asks for that kind of work; otherwise the finding is `noted`. An uncalled producer is a `dead-branch` finding, not a second producer.
+- **PM-spawned runs**: when the cascade signal fires, the PM may spawn a conformance run scoped to the cluster it names.
 
-## What the Architect cannot do
+## What the Architect may and may not do
 
-- **Spawn other agents** — only PM has cross-role spawn authority (and only for Architect audits).
-- **Modify pre-existing code** — read-only against `src/`, `test/`, and any file that existed before the cycle. The single authorised exception is **writing scaffolding files into `<change>/scaffolding/`** during plan-phase forward-mode (per `scaffolding.md`). The quarantined directory is the only place the Architect may originate code, and only for speculative-contract scaffolding — never implementations.
-- **Modify register entries autonomously** — proposes reconciliations; the integrate phase (with user disposition where required) is the authority for status transitions.
-- **Run tests** — the Architect's signal-classes are *structural*, not behavioural; tests live in the verification step.
+- **May** run the test suite and probes, read-only, in a scratch directory of its own, against HEAD or a merge commit. The useful findings in the record came from probes; the brief says so rather than forbidding them.
+- **May** write `design.md` and the pending tests during the design round (the two sections, a seam link on a Decision heading, the Open Questions and Decisions entries the round produces; a scenario citation added to an existing test), and during conformance amend a seam row together with the coverage rows and Decision that name the same thing. These are the only files it writes.
+- **May not** modify any other file, spawn agents, commit (the orchestrator commits the design round), or create tasks directly (proposals go through integrate § 7).
 
 ## Project overlay extensions
 
 The overlay's `roles/architect.md` (if present) is appended at spawn time, followed by `priors.md` (`overlay.md` § Priors). Typical extensions:
 
-- The project's interfaces / architecture document path (already in `config.yaml` `architect.interfaces-document`, but the prose can elaborate).
-- Project-specific drift hot spots (for emacs: "literate `.org` vs tangled `.el` drift", "module-system contract", "scope ↔ bash-parser handler shape contract").
+- The project's acceptance surfaces: what a test can drive end to end (a CLI entry point on a temp directory, a compose service, `emacs --batch` against a tangled file) and what it cannot, so the coverage table's `none` rows are decided once.
+- Drift hot spots (for emacs: literate `.org` vs tangled `.el`; the module-system contract).
 - Language-specific mutation patterns to scan for.
 - Severity overrides explained in prose (the YAML carries the values; the prose carries why).
-
-## Cost calibration (open)
-
-On-touch reviews of load-bearing entries are cheap. End-of-cycle audits are moderate. Between-cycle whole-repo audits are expensive. Worth measuring on the first migrated project (VCE) before generalising the cadence.

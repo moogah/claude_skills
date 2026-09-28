@@ -15,7 +15,7 @@ The triage criteria (lifted from older emacs skill §4 and promoted to core):
 | Editing one config value | Yes |
 | Fixing a typo in a comment or docstring | Yes |
 | Anything touching ≥2 files | **No** — go to standard cycle |
-| Anything touching code cited in a `load_bearing: true` register entry | **No** — load-bearing entries deserve the full Architect on-touch path |
+| Anything touching a seam's owning symbols (a `## Seams` row in the change's `design.md`) | **No** — a seam edit deserves the full Reviewer path and integrate's conformance check |
 | Anything that requires running tests with state setup | **No** — needs a worktree |
 | Anything where the verification command's output isn't trivially predictable | **No** |
 
@@ -27,7 +27,7 @@ In the inline path, plan / execute / integrate collapse into the orchestrator's 
 
 - **Plan** = "is this trivial enough?" (the triage above).
 - **Execute** = the inline edit + verification.
-- **Integrate** = "did the trivial edit reveal anything register-worthy?"
+- **Integrate** = "does the trivial edit change a seam row in `design.md`?"
 
 The integrate question is **not skipped** — that's what catches the case where a "trivial" edit surfaces a contract issue. Most inline tasks integrate to "no; close." But the question still gets asked.
 
@@ -35,7 +35,7 @@ The integrate question is **not skipped** — that's what catches the case where
 
 1. **Make the edit** in the orchestrator's own checkout (no worktree).
 2. **Run the verification command** (overlay's `test.command`, or a narrower command if obviously sufficient).
-3. **Check for register-worthy discoveries**: did this edit modify code cited in any register entry? If yes, run the Architect on-touch trigger against that entry. A finding that routes to the user is recorded as an ask (`templates/ask.md`) and presented at the next integrate, unless it blocks this inline commit.
+3. **Check the seam rows**: does this edit change a seam row in the change's `design.md` (its statement or owning symbols)? If yes, amend the row in place and record a `doc-correction` ask (`templates/ask.md`) with `status: applied`, listed under "Applied without asking" at the next integrate. A design in question is a `decision` ask, presented at the next integrate unless it blocks this inline commit.
 4. **Update the task file**'s `status` to `done` directly (skipping `needs_review` / `reviewed`). Inline path skips formal review because the orchestrator IS the reviewer. If a cycle is open, the task is in state too: `state.py task add <name> …` if it was not, then `state.py task set <name> done`; between cycles the task file is the record.
 5. **Commit** with the standard task-name commit message.
 
@@ -49,7 +49,7 @@ Specifically: if any of these happen during the inline edit, bail out:
 - The verification command fails in a way that isn't trivially fixable.
 - An adjacent issue surfaces that warrants its own fix.
 - The change requires re-reading more than a paragraph of context.
-- The change modifies code cited in a `load_bearing: true` register entry.
+- The change touches a seam's owning symbols.
 
 Bail-out procedure:
 1. `git checkout .` to revert the working tree (no commit was made yet — inline path commits last).
@@ -63,7 +63,7 @@ If a commit was already made and bail-out is needed, revert via `git revert <com
 
 The brainstorm names this explicitly. Even trivial edits can surface contract issues; pretending they can't is what produces silent contract drift. The integrate question is cheap to ask:
 
-- Did this edit touch code cited in any register entry? → check `cites_register_entries` of the implicit "task".
+- Did this edit touch a seam's owning symbols? → check `cites_seams` of the implicit "task" against the `## Seams` rows in `design.md`.
 - Did the verification command's output reveal anything new? → grep the after-file.
 - Was there an adjacent observation worth recording? → write it down in the task body's `## Observations`.
 

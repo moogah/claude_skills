@@ -10,7 +10,7 @@ The core skill is project-agnostic. Each project repo carries its own overlay at
   roles/
     implementor.md         # OPTIONAL — appended to core implementor brief
     reviewer.md            # OPTIONAL — language idioms, test idioms
-    architect.md           # OPTIONAL — repo-specific drift hot spots
+    architect.md           # OPTIONAL — acceptance surfaces, drift hot spots
     project-manager.md     # OPTIONAL — project-specific PM conventions
   priors.md                # OPTIONAL — the user's standing rules, one line each; appended to every role brief
   hooks/
@@ -34,12 +34,12 @@ build:
 test:
   command: ./bin/run-tests.sh       # REQUIRED
   parser: emacs-results-txt | exit-code | junit-xml | tap   # default: exit-code
+  pending-style: xfail-strict | xit | <project value>   # how the design round marks a pending test; must be a style the runner reports as pending, never as failing (a red baseline disables regression detection). Default: xfail-strict for pytest, xit for buttercup
 
 # Required: artifact roots — where the orchestrator finds tasks
 artifacts:
   tasks-root: openspec/changes/<change>/tasks   # in-change tasks; <change> is a placeholder
   externalised-root: .tasks                      # cross-cutting backlog
-  register: interfaces.org                       # path to project's interfaces register
   proposal-pattern: openspec/changes/<change>/proposal.md
   design-pattern: openspec/changes/<change>/design.md
 
@@ -91,7 +91,6 @@ architect:
     mutation: informational       # demoted from advisory; this project tolerates it
   drift-hotspots:
     - <module name>: <one-line — what to watch>
-  interfaces-document: interfaces.org
 
 # OPTIONAL: Reviewer language-specific extensions
 reviewer:
@@ -99,10 +98,6 @@ reviewer:
     - cl-lib-vs-seq
     - lexical-binding-headers
     - tangle-source-vs-tangled-output
-
-# OPTIONAL: forward-mode register population timing
-forward-mode:
-  populate-at: [opsx-new, opsx-tasks-generate]   # default
 
 # OPTIONAL: who reads the questions the orchestrator puts to the user (templates/ask.md)
 asks:
@@ -132,7 +127,8 @@ If no overlay is found, the orchestrator warns explicitly and falls back to:
 | `worktree.needs-submodules`: false |
 | `artifacts.tasks-root`: `tasks` (flat) |
 | `artifacts.externalised-root`: `.tasks` |
-| `artifacts.register`: `interfaces.md` |
+| `artifacts.design-pattern`: `openspec/changes/<change>/design.md` |
+| `test.pending-style`: `xfail-strict` (pytest) or `xit` (buttercup), else error when the design round needs it |
 | `taxonomy`: `[feature, test, doc, refactor, bug, contract, infrastructure]` |
 | `thresholds`: see `templates/pm-digest.md` defaults |
 | `asks.reader`: "technical product manager who has not watched development and has a shallow view of the internals" |
@@ -200,7 +196,6 @@ The orchestrator validates `config.yaml` at start of every phase:
 
 - All required fields present.
 - Hook scripts exist and are executable.
-- `artifacts.register` resolves to a real file (warn if missing — register may be brand-new).
 - `taxonomy` values match what's in flight on existing tasks.
 - `thresholds.*` numerical fields are positive numbers.
 

@@ -4,7 +4,7 @@ This file is a **placeholder**. The curation cycle is specified in the brainstor
 
 ## Why deferred
 
-The curation cycle is the slower-tempo loop that maintains the read-model projection of the corpus (register, indices, distilled meta-discoveries) so the prose corpus can grow without polluting plan-phase context.
+The curation cycle is the slower-tempo loop that maintains the read-model projection of the corpus (the design documents, one `design.md` per change; indices; distilled meta-discoveries) so the prose corpus can grow without polluting plan-phase context.
 
 It only fires once corpus pollution is real. Specifying it against a hypothetical corpus produced none of the discrimination the design needs:
 
@@ -18,13 +18,13 @@ V1 ships, projects accumulate corpora through some cycles, and **then** v2 speci
 
 Where v1 needs a curation hook, it does the cheapest thing:
 
-- **Distill**: not done. Discoveries surfaced by integrate's reconciliation lifecycle remain in their reconciliation notes; the register is not edited beyond what reconciliation produces.
+- **Distill**: not done. Discoveries surfaced by integrate's conformance check remain in their findings and journal lines; a change's `design.md` is not edited beyond what conformance amends.
 - **Cluster**: PM does the simplest cluster detection (cascade signal: `discovered_from` clustering). No cross-cycle clustering.
 - **Compress**: not done. Cycle archives remain verbatim.
-- **Index**: not done. The register itself is the only index v1 has.
+- **Index**: not done. The per-change `design.md` seam tables are the only index v1 has.
 - **Prune**: not done. Default to keep.
 
-The cost: plan phase reads the full register. As the register grows, this cost grows. V2 curation distills the register hot path; v1 lives with the linear growth.
+The cost: plan phase reads the change's full `design.md`. As a change's seams grow, this cost grows. V2 curation distills the design hot path; v1 lives with the linear growth.
 
 ## Triggers (specified now to avoid v2 painting itself into a corner)
 
@@ -68,12 +68,12 @@ These are spec'd here so v2 implementation has them at hand.
 - **Scope**: regular cycle's integrate operates on this cycle's outputs. Curation operates on the **historical corpus** (closed tasks, accumulated review notes, aged externalised entries, cumulative PM-digest stream).
 - **Tempo**: regular cycle runs once per batch. Curation runs threshold-triggered, possibly weeks apart.
 
-The two cycles communicate through shared artifacts (the register, the index, the externalised backlog), never by synchronous handoff. **Curation never blocks a regular cycle from proceeding; a regular cycle never blocks curation from running.**
+The two cycles communicate through shared artifacts (the design documents, the index, the externalised backlog), never by synchronous handoff. **Curation never blocks a regular cycle from proceeding; a regular cycle never blocks curation from running.**
 
 ## When to revisit v2 spec
 
 Revisit when:
-1. The register at any project exceeds 50 entries AND has not been pruned.
+1. A change whose seams outgrow one `design.md`, or two changes sharing a seam.
 2. The cycle archive at any project exceeds 20 cycles.
 3. PM's cascade detection consistently fires on the same cluster across ≥5 cycles (suggests durable speculation prior is needed; that's a curation operation).
 4. The user asks for it.

@@ -15,7 +15,7 @@ Lives in `state.json` `asks_for_user[]` (see `state.md`) and is copied unchanged
   "id": "ask-<cycle-id>-<seq>",
   "kind": "decision | doc-correction | process | environment | confirmation",
   "raised_by": { "role": "architect | reviewer | implementor | pm | orchestrator",
-                 "ref": "<finding-id | discovery-id | reconciliation-note path | signal name>" },
+                 "ref": "<finding-id | discovery-id | review file path | premise-check path | design commit | signal name>" },
   "question": "<one plain sentence, ending in a question mark>",
   "about": "<one or two sentences: what the feature, flag, file or rule is FOR, in product terms>",
   "observed": { "happened": true, "evidence": "<where and when> | reasoning only: <the reasoning>" },
@@ -50,7 +50,7 @@ Lives in `state.json` `asks_for_user[]` (see `state.md`) and is copied unchanged
 | `decision_readback` | The decision restated as a consequence, in the words the user said yes to. Copied verbatim into task-update stanzas. |
 | `revised_from` | On a reversal, the id of the ask whose decision this one replaces. The old record becomes `superseded`. |
 
-**Plain-language rule.** Any term in `question`, `about` or `options` that does not appear in the change's `proposal.md` is explained in `about`, which the rendering always places directly under the question; the question itself may use the term unglossed. If that takes more than three terms, the ask is not plain yet: rewrite it. Process vocabulary (register, tier, speculated, reconciled, scaffold, on-touch, load-bearing, disposition, and the `arch-` / `disc-` / `eoc-` id families) never appears in these three fields.
+**Plain-language rule.** Any term in `question`, `about` or `options` that does not appear in the change's `proposal.md` is explained in `about`, which the rendering always places directly under the question; the question itself may use the term unglossed. If that takes more than three terms, the ask is not plain yet: rewrite it. Process vocabulary (seam, speculated, reconciled, disposition, and the `arch-` / `disc-` / `eoc-` id families) never appears in these three fields; a `seam/<name>` id appears only in `raised_by.ref` and `applied_via`.
 
 ## Kinds and routing
 
@@ -58,9 +58,9 @@ Lives in `state.json` `asks_for_user[]` (see `state.md`) and is copied unchanged
 |---|---|---|
 | `decision` | Only the user can choose, and the choice changes the product | Presented in `asks.md` and in chat. The only kind that becomes a question. |
 | `doc-correction` | The code is right and a document is stale | Applied inline, listed under "Applied without asking" with the path. The user can object. Never a question. |
-| `confirmation` | A default already applied; an obsolescence flag on a task; a PM action the PM may take alone (an Architect audit, a re-rank); a prior recorded from the user's words (`overlay.md` § Priors) | Same list. Never a question. |
+| `confirmation` | A default already applied; an obsolescence flag on a task; a PM action the PM may take alone (a conformance run, a re-rank); a prior recorded from the user's words (`overlay.md` § Priors) | Same list. Never a question. |
 | `environment` | A licence, a wedged container, a permission, a missing or unreadable `state.json` or handshake | Asked at once, alone, in block form. The only kind that may bypass `state.json`. |
-| `process` | About the orchestration itself: the register lifecycle, the state file, whether to track `.orchestrator/` | Recorded with `status: open`; not presented. The digest says "N process notes in `<path>`". The user pulls them into the process-improvement workspace when reviewing the process. |
+| `process` | About the orchestration itself: the design round, the state file, whether to track `.orchestrator/` | Recorded with `status: open`; not presented. The digest says "N process notes in `<path>`". The user pulls them into the process-improvement workspace when reviewing the process. |
 
 Triage happens when the orchestrator writes the record, not when the digest is rendered. A finding routed "to the user" by a role brief is a candidate; the kind decides whether it is asked. One finding can yield two records, each with one kind: the stale sentence is a `doc-correction` applied now, and the product question it exposed is a separate `decision`. The record shows this pairing is the common case.
 
@@ -159,7 +159,7 @@ Three asks from the record, each shown as it was asked and as this template woul
 
 As asked (Project A, cycle 3, 2026-09-23 17:47, `AskUserQuestion`):
 
-> Audit finding (blocking, verified): `--download-video` calls the downloader directly and never registers, so fetching a `dead` video by hand does NOT release its ledger line (and never indexes the file). The register/spec/docs text will be corrected either way. Do you also want the code fixed?
+> Conformance finding (blocking, verified): `--download-video` calls the downloader directly and never records the fetch, so fetching a `dead` video by hand does NOT release its ledger line (and never indexes the file). The design/spec/docs text will be corrected either way. Do you also want the code fixed?
 > Options: Text fix + .tasks (Recommended) / Text fix + in-change task / Text fix only.
 
 The user chose the in-change code fix, a critical-path task was created, and eleven minutes later the user reversed it: the flag is for one-off downloads that are not part of the archive. The question never said what the flag was for.
@@ -173,7 +173,7 @@ As this template asks it:
   "raised_by": { "role": "architect", "ref": "arch-cycle-1790026644-1" },
   "question": "Should a video you fetch by hand with --download-video be added to the archive?",
   "about": "--download-video fetches one YouTube video by URL; it is not tied to any Reddit post. The archive is the set of videos the scraper has indexed from posts; each has a record, and a video YouTube has removed gets a 'dead' mark so scrape runs stop retrying it.",
-  "observed": { "happened": true, "evidence": "The register, the spec and the docs all say a hand fetch clears the dead mark. The code does not: it calls the downloader and never touches the index. Verified against the code at the cycle-3 audit." },
+  "observed": { "happened": true, "evidence": "The seam row in design.md, the spec and the docs all say a hand fetch clears the dead mark. The code does not: it calls the downloader and never touches the index. Verified against the code at the cycle-3 conformance check." },
   "options": [
     { "label": "Fix the docs and the code", "consequence": "Every hand fetch is indexed into the archive and clears the dead mark. Videos you fetch for reasons unrelated to the archive are indexed too." },
     { "label": "Do nothing to the code", "consequence": "--download-video stays a plain fetch: the file lands on disk and the archive does not know about it. The docs are corrected to say so." }
@@ -191,7 +191,7 @@ Rendered, it is a "can wait" line with the do-nothing default. With `about` in f
 
 As asked (Project B, cycle 1 plan, seven asks of this shape, each with the recommendation "apply"):
 
-> ask-cycle-1789334430-1 — design.md D4 numbers the removed scaffold stages "4–6"; the live pipeline (`config/workspaces/scaffold.org:157-224`) has five stages and the removed ones are 3–5. Doc fix; register entry `workspace-scaffold-pipeline` already records the correct numbering.
+> ask-cycle-1789334430-1 — design.md D4 numbers the removed scaffold stages "4–6"; the live pipeline (`config/workspaces/scaffold.org:157-224`) has five stages and the removed ones are 3–5. Doc fix; the seam row `seam/workspace-scaffold-pipeline` in the same design.md already records the correct numbering.
 
 As this template handles it: `kind: doc-correction`, `observed.happened: true` (the code is the evidence), `status: applied`, `applied_via: design.md D4, edited at plan`. It is never a question. In `asks.md` it is one line:
 
@@ -213,7 +213,7 @@ As this template asks it:
 {
   "id": "ask-cycle-1789935943-3",
   "kind": "decision",
-  "raised_by": { "role": "architect", "ref": "forward-mode cycle-1789935943" },
+  "raised_by": { "role": "architect", "ref": "cycles/cycle-1789935943/premise-check.md" },
   "question": "Should each bookmark stamp carry a format version number from the start?",
   "about": "A stamp is the small set of properties written into a bookmark so it can be found again after its repository moves: which repository, and the file's path inside it. Every bookmark the feature touches gets one.",
   "observed": { "happened": false, "evidence": "reasoning only: if the meaning of the path property ever changed, old stamps could not be told from new ones. No stamp has been written yet and no change of meaning is planned." },
@@ -232,7 +232,7 @@ Rendered, it is a "can wait" line whose default is the answer the user gave. Und
 
 ## What this template does not do
 
-- It does not replace the finding templates. A finding is the evidence; the ask is the question. The finding keeps its severity, locations and `why_tests_missed`; the ask carries none of them.
+- It does not replace the finding templates. A finding is the evidence; the ask is the question. The finding keeps its severity, class and `discovered_from`; the ask carries none of them.
 - It does not put the record in the digest. The digest carries the triage table and the path to `asks.md` (`templates/pm-digest.md`).
 - It does not create disposition tasks (see "Blocking without a second artifact").
 - It does not count ask quality. Answers outside the offered options, reversals and clarification requests are visible in the records; counting them as a PM signal is deferred until a cycle shows the need.

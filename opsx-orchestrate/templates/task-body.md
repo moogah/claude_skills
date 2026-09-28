@@ -1,6 +1,6 @@
 # Task body template
 
-A task body is the unit-of-work document the implementor reads. It carries: what to build, what register entries it derives from, what counts as a discovery, and the provenance that makes the meta-discovery loop possible.
+A task body is the unit-of-work document the implementor reads. It carries: what to build, which seam rows and scenarios it implements, which pending tests it promotes, what counts as a discovery, and the provenance that makes the meta-discovery loop possible.
 
 Tasks live at `<change>/tasks/open/<task-name>.md` (active) or `<change>/tasks/closed/<task-name>.md` (after merge), or `.tasks/<task-name>.md` (externalised — out of scope for the active change).
 
@@ -8,16 +8,18 @@ Tasks live at `<change>/tasks/open/<task-name>.md` (active) or `<change>/tasks/c
 
 ```yaml
 ---
-name: <task-slug>
+task_name: <task-slug>
 description: <one-line>
 change: <change-name>
 status: ready | blocked | needs_review | done | failed | externalised
 task_class: feature | test | doc | refactor | bug | contract | infrastructure
 on_critical_path: true | false
 
-cites_register_entries:
-  - register/shape/violation-info
-  - register/invariant/canonical-constructor
+cites_seams:                       # rows of design.md § Seams; also held in state
+  - seam/violation-info
+  - seam/canonical-constructor
+cites_scenarios:                   # rows of design.md § Scenario coverage; task file only
+  - scope § A violation names its resource
 
 relations:
   blocked_by:
@@ -31,10 +33,6 @@ discovered_by: implementor | reviewer | architect | pm | user
 discovered_class: shape-fragmentation | vocabulary-mismatch | responsibility-leakage
                   | dead-branch | interface-drift | mutation | invariant-gap
                   | spec-signal | deviation | scope-question | duplication
-
-# Set by integrate phase when this task's discovery is reconciled into
-# a register entry. Unset on a closed task is a state-file bug.
-reconciled_into: <register-entry-id>
 
 # Filled by execute phase
 merge_commit: <SHA>
@@ -53,16 +51,14 @@ reviewed_at: <iso-ts>
 ### Summary
 One paragraph. What this task accomplishes.
 
-### Cited register entries
-For each entry in `cites_register_entries`, a short paragraph explaining what the implementor should pressure-test about this entry. Per the brainstorm: register entries are *reference material to pressure-test, not authority to defer to*.
-
-If the entry is `speculated`, say so explicitly: "This entry is speculated; if implementation reveals it's wrong, push back via the deviations section."
+### Cited seams
+For each id in `cites_seams`, the row from `design.md` quoted verbatim and a short paragraph on what the implementor should pressure-test about it. Seam rows are *reference material to pressure-test, not authority to defer to*: "This row was written before the code existed; if implementation reveals it's wrong, push back in `## Discoveries`."
 
 ### Implementation steps
 Numbered list. Concrete. Names files, functions, signatures.
 
 ### Verification
-The exact command(s) to run. The implementor must run these and report the last 10 lines of output.
+The exact command(s) to run, and the list of pending tests this task promotes (from the coverage rows in `cites_scenarios`): the implementor removes their pending marker in the implementation commit and reports the last 10 lines of output.
 
 ### Out-of-scope
 What's deliberately not in this task. Reduces the "while I was there I also fixed Y" surface.
@@ -75,7 +71,7 @@ What belongs in `## Observations`:
 - Latent issues noticed in adjacent code while implementing
 - Tests that pass but are weakly asserted; mocks that diverge from production
 - Spec/design contradictions or ambiguities the implementation forced you to resolve
-- Push-backs against `speculated` register entries the brief cited
+- Push-backs against seam rows the brief cited
 
 What does NOT belong in `## Observations` and DOES merit a new task:
 - A user-visible bug or correctness regression that genuinely can't wait for review
@@ -87,22 +83,25 @@ The structured form of significant findings. Implementor fills this when discove
 - discovery_id: disc-<task-name>-<seq>
   class: <one of the discovered_class values>
   description: <one paragraph>
-  affected_register_entry: <entry-id, if any>
-  recommendation: <one sentence — "should reconcile entry X to add field Y" or "should split entry Z into two">
+  affected_seam: <seam-id, if any>
+  observed:
+    happened: true | false
+    evidence: <where it happened | reasoning only: <the reasoning>>
+  recommendation: <one sentence — "amend seam/X to name Y as the constructor" or "split seam/Z into two">
 ```
 
-Discoveries are read by the orchestrator in integrate phase to drive register reconciliation. They are **not passed to the reviewer** (author-blind constraint).
+Discoveries are read by the orchestrator in integrate phase alongside the conformance check. They are **not passed to the reviewer** (author-blind constraint).
 
 ## Implementor brief assembly
 
 The orchestrator assembles the implementor's prompt by concatenating:
 
 1. The task body (this file).
-2. The cited register entries' current text (in full).
-3. The change's `design.md` sections that are referenced by the cited entries.
-4. The project standards (from overlay's `roles/implementor.md` if present).
+2. The cited seam rows and the coverage rows the task promotes, verbatim from `design.md`.
+3. The `design.md` decisions those rows link to.
+4. The project standards (from overlay's `roles/implementor.md` if present) and the project priors.
 
-The implementor sees all of this **before starting work**. The brief framing is fixed and lives in `roles/implementor.md`: register entries are reference material to pressure-test, not authority to defer to.
+The implementor sees all of this **before starting work**. The brief framing is fixed and lives in `roles/implementor.md`: seam rows are reference material to pressure-test, not authority to defer to.
 
 ## Externalisation
 

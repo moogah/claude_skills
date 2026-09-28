@@ -1,6 +1,6 @@
 # Execute phase
 
-The bridge. Forward speculation becomes diff; diff becomes discovery.
+The bridge. Design becomes diff; diff becomes discovery.
 
 A task is "executed" only when **both** implement and review have completed on it. Implement-without-review is in-flight, not done.
 
@@ -15,26 +15,21 @@ For each task in the batch, the orchestrator:
    - Uses `git worktree add "$WORKTREE_PATH" -b "$BRANCH_NAME"`.
    - Always from main repo root; never from within an existing worktree.
 3. Runs the overlay's `worktree.init` hook if defined.
-4. Spawns an Implementor agent (`Agent` tool, `subagent_type: general-purpose`, `run_in_background: false`).
-5. Hands the agent the assembled brief (per `roles/implementor.md`).
+4. Spawns an Implementor agent (`Agent` tool, `subagent_type: general-purpose`). The call returns at once and the agent runs concurrently with the orchestrator and the other agents; its completion arrives as a notification. No polling, no `sleep`.
+5. Hands the agent the assembled brief (per `roles/implementor.md`), saved as `.orchestrator/cycles/<cycle-id>/briefs/<task-name>.md` so the review and the audit trail can see what the Implementor saw.
 6. `state.py task set <name> in_progress agent_task_id=<id> worktree_path=<path> branch_name=<branch>` (the tool sets `started_at`).
 
 When an agent completes, the orchestrator verifies at least one commit landed on the worktree branch. No commits → `state.py task set <name> failed` (worktree retained for debugging).
 
-### 2. On-touch Architect (during implement, against load-bearing entries)
+While agents run, the orchestrator does the work that does not depend on the ones still running: verify each completed commit, save its report, merge whatever has landed (§ 3), spawn Reviewers (§ 7). A task whose `blocked_by` tasks have not all merged is spawned when they have.
 
-When an Implementor commits to a worktree branch and the diff modifies code cited in a `load_bearing: true` register entry, the orchestrator triggers an Architect on-touch run **scoped to that entry only**.
+### 2. No Architect run in execute
 
-- Cheap; runs in parallel with the rest of the batch.
-- Reads: the diff against merge-base; the register entry's full text; immediate call-graph neighbours of the touched code.
-- Output: zero or more findings written to the cycle's findings dir, each indexed with `state.py record add findings '{...}'` (title, severity, class, trigger, locations; the file at `path` carries the rest).
-- A `severity: blocking` finding pauses the merge of this task (`state.py task set <name> blocked blocker_note=<finding-id>`); the orchestrator routes it via the resolution channels (see "Resolution" below). An `interface-drift` finding against a stale design doc becomes an ask record (`templates/ask.md`); because it blocks this merge it is asked at once (§ 9).
+Nothing runs between an Implementor's commit and its merge. The Reviewer (§ 7) reads the cited seam rows and may probe the merge candidate; that is the check the old execute-time Architect run performed, and the useful catches in the record came from the probes, not the trigger. Restore an execute-time Architect run only on a demonstrated Reviewer miss that a seam-scoped run would have caught (`roles/architect.md` § Three runs).
 
-The on-touch trigger is the cheap-and-narrow Architect mode (per `roles/architect.md`). It is not a substitute for the end-of-cycle audit; it catches drift while still local.
+### 3. Merge each task as it lands
 
-### 3. Sequential merge to integration branch
-
-When all Implementors have completed (or failed / been stopped), the orchestrator merges in completion order:
+Merges are not held for the batch. When an Implementor completes with a commit, its task joins the merge queue at once. The queue merges one task at a time, in the order tasks landed, while the other Implementors keep running; the chain is serial because there is one integration branch. A task that merges and passes § 4 goes straight on through § 5-7 (its Reviewer is spawned), and the chain moves to the next queued task without waiting for that review. A task held by a blocking ask (§ 9) stays out of the queue; the tasks behind it merge. The record shows why: a batch that waited for all seven Implementors made the first-finished task wait 10 minutes for its merge and 12 for its Reviewer, where batches merged as they landed spawned each Reviewer 0-3 minutes after its Implementor ended.
 
 ```bash
 REPO_ROOT=$(git rev-parse --show-toplevel)
@@ -52,11 +47,11 @@ $TEST_CMD > "$REPO_ROOT/.orchestrator/after-${TASK_NAME}-${TS}.txt" 2>&1
 AFTER_STATUS=$?
 ```
 
-Record the file: `state.py task set <name> after_snapshot=.orchestrator/after-<task>-<ts>.txt`. If `AFTER_STATUS != 0` and `BASELINE_STATUS == 0`: regression. `state.py task set <name> regression_detected=true`; stop further merges; keep worktrees; raise an `environment`-kind ask (`templates/ask.md`) with the after-file paths. It blocks the merge chain, so it is asked at once (§ 9).
+Record the file: `state.py task set <name> after_snapshot=.orchestrator/after-<task>-<ts>.txt`. If `AFTER_STATUS != 0` and `BASELINE_STATUS == 0`: regression. `state.py task set <name> regression_detected=true`; stop further merges; keep worktrees; raise an `environment`-kind ask (`templates/ask.md`) with the after-file paths. It blocks the merge chain, so it is asked at once (§ 9). Only merging stops: Implementors still running finish and join the queue, and Reviewers already spawned carry on.
 
 ### 5. Capture orchestrator-side discoveries
 
-Before continuing to review, the orchestrator scans for discoveries no individual agent owns. Per the brainstorm and lifted from VCE's §A.7.5:
+After each merge, before that task's review, the orchestrator scans for discoveries no individual agent owns. Per the brainstorm and lifted from VCE's §A.7.5:
 
 - **Latent bugs surfaced by a regression** — a test broke not because the merging task was wrong but because it perturbed a pre-existing fragile assumption (e.g. a non-stable sort coupled to insertion order).
 - **Worker observations on the merged task body** — scan `## Observations`; an observation becomes a follow-up task only if it has happened (a failing run, a wrong output, a defect the observation cites by line) or a project prior asks for that kind of work (`overlay.md` § Priors); a reading of what could go wrong stays in the body. Most stay in the body for the reviewer to read in context.
@@ -95,7 +90,8 @@ The helper builds the Reviewer's input from a **fixed set of sources**, none of 
 reviewer_input:
   diff: $(git diff <merge-base>..<merge_commit>)
   task_brief: <full text of <change>/tasks/open/<task-name>.md, EXCLUDING ## Observations and ## Discoveries sections>
-  cited_register_entries: <full text of each entry in cites_register_entries, with current status>
+  cited_seams: <the design.md Seams rows named in cites_seams, verbatim>
+  coverage_rows: <the design.md Scenario coverage rows the task's Verification section promotes, verbatim>
   project_standards: <overlay's roles/reviewer.md, if present>
   project_priors: <overlay's priors.md, if present>
 ```
@@ -104,7 +100,7 @@ The helper **must not**:
 - Read or pass the Implementor's structured report.
 - Read or pass the `## Observations` or `## Discoveries` sections.
 - Pass any indicator of the Implementor's identity.
-- Allow the Reviewer's worktree to contain any file other than the clean merge-base checkout.
+- Allow the Reviewer's worktree to contain any file other than the clean checkout of `merge_commit`.
 - Pass any other in-flight diffs.
 
 The helper is the load-bearing piece that makes the author-blind constraint structural rather than a discipline. Modifying it to violate any of the above is a bug, not a feature request.
@@ -114,7 +110,7 @@ The helper is the load-bearing piece that makes the author-blind constraint stru
 - **Inline review**: orchestrator runs review itself in its main context. Useful for small batches where the orchestrator wants to ride along closely. Default: when batch size ≤ 2.
 - **Delegated review**: spawn a separate general-purpose Agent per task. Default when batch size ≥ 3, or when the orchestrator's context is bloated.
 
-Either way, the input contract is identical and author-blind.
+Either way, the input contract is identical and author-blind. The Reviewer may run the test command and its own probes read-only in a scratch directory against the `merge_commit` checkout (`roles/reviewer.md` § Probes); the probes' output goes in the findings file, never into the repository.
 
 ### 8. Handle review findings
 
@@ -134,8 +130,8 @@ When all inline fixes are applied: `state.py task set <name> done`. Follow-up ta
 
 An `AskUserQuestion` call blocks everything the orchestrator would otherwise do next, and the record shows a 35-minute stall on a question that was not needed until the next wave. So:
 
-- An ask that arises while agents run (a `spec-signal`, an on-touch finding, an Implementor that stops to ask, an orchestrator-side discovery) is **recorded** with `state.py record add asks '{...}'` per `templates/ask.md` (the id comes back) and **held** until the next natural pause: the merge chain drained, the batch closed, or the user's next prompt. Integrate's § 3a presents it.
-- The exception is an ask whose `blocks` names a merge in this batch or a task not yet spawned: present that one ask **alone**, now, in the template's block form, and keep doing the orchestrator-side work that does not depend on it. `environment` asks (a regression stop, a wedged runner) are always in this case.
+- An ask that arises while agents run (a `spec-signal`, an Implementor that stops to ask, an orchestrator-side discovery) is **recorded** with `state.py record add asks '{...}'` per `templates/ask.md` (the id comes back) and **held** until the next natural pause: the merge chain drained, the batch closed, or the user's next prompt. Integrate's § 3a presents it.
+- The exception is an ask whose `blocks` names a merge in this batch or a task not yet spawned: present that one ask **alone**, now, in the template's block form. Because the call blocks until answered, first start the orchestrator-side work that does not depend on it (spawn Reviewers for merged tasks, report filing), then ask. `environment` asks (a regression stop, a wedged runner) are always in this case.
 - Never put a non-blocking ask in the same `AskUserQuestion` as a blocking one.
 - An Implementor that stops to ask (`roles/implementor.md` § Escalation contract) leaves its task blocked (`state.py task set <name> blocked blocker_note=<ask-id>`) and its worktree retained. `blocked` counts as stopped for the exit gate, so `no_orphan_in_progress` still passes; `task set <name> ready` when the ask is applied.
 
@@ -144,14 +140,14 @@ An `AskUserQuestion` call blocks everything the orchestrator would otherwise do 
 Per `roles/reviewer.md`, the Reviewer may flag a choice the Implementor had a good but invisible reason for. The orchestrator (which holds the Implementor's report and the Reviewer's findings) resolves:
 
 - If the reasoning was wrong: act on the flag (treat as ordinary finding).
-- If the reasoning was load-bearing-but-undocumented: codify it as a comment, test, or register-entry invariant — so the next reviewer doesn't flag it again. `state.py note push-back "<one line>" --ref <task>` records that it happened.
+- If the reasoning was load-bearing-but-undocumented: codify it as a comment, a test, or a seam row's statement — so the next reviewer doesn't flag it again. `state.py note push-back "<one line>" --ref <task>` records that it happened.
 
 The Reviewer never has to know which path was taken.
 
 ## Inputs (from plan)
 
 - The composed batch and its tasks with briefs.
-- The current state of the register (cited entries with their `status`).
+- The change's `design.md` (the cited seam rows and coverage rows).
 - `phase_gates.plan.passed: true` (mandatory; `state.py phase set execute` enforces it).
 
 ## Exit gate
@@ -166,9 +162,9 @@ All three are computed: `state.py gate check execute` shows them with reasons, `
 
 ## What execute does **not** do
 
-- Execute does not run the end-of-cycle Architect audit. (That's integrate's job; on-touch is execute's only Architect mode.)
+- Execute does not run the Architect. (Conformance is integrate's job; the premise check is plan's.)
 - Execute does not produce the PM digest. (Integrate.)
-- Execute does not reconcile register entries. (Integrate.)
+- Execute does not amend `design.md`. (Integrate's conformance check.)
 - Execute does not modify the proposal status header. (Integrate, via goal-drift handling.)
 
 These are all integrate-phase operations; conflating them into execute is what the brainstorm's three-phase model exists to prevent.
