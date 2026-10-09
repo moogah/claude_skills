@@ -17,7 +17,7 @@ Append at the bottom of the task body, after `## Out-of-scope` and before `## Ob
 - `seam/<id>` — <one line of what changed>, design commit `<sha>`.
 
 ### User-resolved decisions
-- `<ask-id>`: <the ask's `decision_readback`, verbatim>. **Implication for this task**: <one sentence>.
+- `<ask-id>` (`cycles/<cycle-id>/asks/<ask-id>.org`): <the ask file's readback, or the matched option label, verbatim>. **Implication for this task**: <one sentence>.
 
 ### Meta-discoveries
 - `<kind>` / `<label>`: <implication-for-next-plan, reframed concretely for this task — one sentence>.
@@ -26,7 +26,7 @@ Append at the bottom of the task body, after `## Out-of-scope` and before `## Ob
 - `<finding-id>`: <one-line of what was fixed and where>. **Implication for this task**: <usually "step X is now no-op", "verify the fix held", or "this task no longer needs subtask Y">.
 
 ### Obsolescence flag
-> Cycle <N> claims this task may now be wholly obsolete because <one-sentence reason>. Ask `ask-<cycle-id>-<seq>` (kind `confirmation`; default: leave open) carries the disposition: close, refine, or rescope. Do not start work until it is answered.
+> Cycle <N> claims this task may now be wholly obsolete because <one-sentence reason>. The ask file `ask-<cycle-id>-<seq>` (kind `decision`; options close, refine, rescope, do nothing; `:BLOCKS:` this task; default: leave open) carries the disposition. Do not start work until it is answered.
 ```
 
 Each H3 subsection is optional; omit empty subsections. The "Obsolescence flag" subsection appears only when integrate's refinement set `obsolescence_flagged: true` on the task's `task_refinements` entry.

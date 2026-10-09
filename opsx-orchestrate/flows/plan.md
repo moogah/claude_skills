@@ -14,7 +14,7 @@ A plan that doesn't consume the prior cycle's integrate output isn't planning �
 - `pm_digest_path` — the prior digest, for context.
 - `meta_discoveries` — patterns to weigh when drafting this batch.
 - `user_resolved_goal_drift` — any revise / split / abandon decisions the user made.
-- `asks_for_user_open` (may be empty), `asks_for_user_resolved` (may be empty).
+- `asks_for_user_open` (may be empty; each entry's `path` names the file in `.orchestrator/inbox/`, read the ask there), `asks_for_user_resolved` (may be empty).
 - `task_refinements` — which open tasks already absorbed cycle learning.
 - `journal` — the prior cycle's discoveries and decisions, one line each.
 
@@ -24,13 +24,15 @@ This is the brainstorm's loop-closure contract: each cycle's discoveries must up
 
 Read the overlay's `priors.md` alongside the handshake (`overlay.md` § Priors): the user's standing rules apply to batch composition and go into every brief.
 
+`init` indexes every file left in `inbox/` into the new cycle (`inbox_carried`) and is a sync point (`SKILL.md` § Sync points): an inbox file with an answer is handled before the batch is drafted (`templates/ask.md` § Answer protocol).
+
 ### 2. Read the design and draft the candidate tasks
 
 The change's `design.md` (`templates/design.md`) is the input: its Seams table and its Scenario coverage table. A change without them has not had its design round (`flows/design.md`); run it before this cycle, not inside it.
 
 The orchestrator drafts the candidate task files for this cycle under `<change>/tasks/open/` (per `templates/task-body.md`) from three sources, in this order:
 
-1. Open tasks carried over (refined by the prior integrate § 7, or user-authored on a first cycle); do not re-touch those `task_refinements` lists.
+1. Open tasks carried over (refined by the prior integrate § 7, or user-authored on a first cycle); do not re-touch those `task_refinements` lists. A task named in the `:BLOCKS:` of an open ask file (`state.py inbox`) stays out of the batch until the ask is applied.
 2. Coverage rows whose test is still pending, grouped by the seam they exercise: one task per seam or per closely coupled pair, never one per test.
 3. The prior cycle's follow-ups and user-resolved asks with deferred implementation, which integrate § 7 already wrote as task files.
 
@@ -43,8 +45,8 @@ The Architect runs against the candidate task files (`roles/architect.md` § Pre
 Then:
 
 - A task with a **Wrong** premise is rewritten or split by the orchestrator before the batch freezes; the rewrite is the correction, not a stanza.
-- A defect the check finds outside every task's scope is a finding (`state.py record add findings`, `trigger: premise-check`, `discovered_from: batch-<cycle-id>`) at the bar with `observed` filled, routed by `flows/integrate.md` § 7's rules when integrate runs; one with `observed.happened: false` that no prior or user request covers is `record set findings <id> resolution=noted` at once, since its fate is already known. One whose `blocks` names a task in this batch is settled now: a `blocking` finding becomes an in-batch task or a rewrite of the task it blocks; a `decision` it raises is an ask record presented in block form before `batch_composed` (`flows/execute.md` § 9's rule, one ask alone).
-- A seam row the check finds stale (the code or the test tree is right, the row is not) is a `doc-correction` ask (`templates/ask.md`): the orchestrator amends the row, records the ask with `status: applied` and `applied_via: design.md <seam-id>`, and it is listed under "Applied without asking" in `asks.md` at integrate § 3a. The check itself does not edit `design.md`.
+- A defect the check finds outside every task's scope is a finding (`state.py record add findings`, `trigger: premise-check`, `discovered_from: batch-<cycle-id>`) at the bar with `observed` filled, routed by `flows/integrate.md` § 7's rules when integrate runs; one with `observed.happened: false` that no prior or user request covers is `record set findings <id> resolution=noted` at once, since its fate is already known. One whose `blocks` names a task in this batch is settled now: a `blocking` finding becomes an in-batch task or a rewrite of the task it blocks; a `decision` it raises is an ask file (`state.py record add asks`), presented inline before `batch_composed` only under the inline rule (`templates/ask.md` § The inline rule: the user present, one question per call); otherwise the task it blocks is `blocked` with `blocker_note: <ask-id>`, left out of the batch, and the plan goes on.
+- A seam row the check finds stale (the code or the test tree is right, the row is not) is a `doc-correction` ask (`templates/ask.md`): the orchestrator amends the row and writes the ask file with `status: applied` and `applied_via: design.md <seam-id>` straight into `cycles/<cycle-id>/asks/`, committed with the amended row; integrate § 3a counts it. The check itself does not edit `design.md`.
 
 The record shows why this step exists: the plan-time review of the batch against HEAD found a three-way return value described as two-way, two contradicting log messages, and a task premise that split a task, none of it inside any task's stated scope, and every one of its outputs was used.
 
@@ -77,7 +79,7 @@ Overlay can override via `critical-path.override-tasks` (explicit task list) or 
 
 ### 7. User sign-off on goal-drift recommendations
 
-If the prior integrate's `user_resolved_goal_drift` is empty but the digest carried recommendations, plan blocks until the user signs off. This is the bridge that prevents goal-drift signals from being silently ignored. The recommendation is the `decision`-kind ask integrate raised (`templates/ask.md`; four options: revise / split / abandon / continue), presented in block form; the gate is satisfied when its `status` is `answered` or `applied`.
+If the prior integrate's `user_resolved_goal_drift` is empty but the digest carried recommendations, plan blocks until the user signs off. This is the bridge that prevents goal-drift signals from being silently ignored. The recommendation is the `decision`-kind ask file integrate wrote (`templates/ask.md`; four options: revise / split / abandon / continue). Plan reads the file's `* Answer`: an option label matched exactly satisfies the gate (`status` `answered` or `applied`); a free-text answer is read back first and the gate reports it as not signed off until the user confirms. The file is presented inline only under the inline rule (`templates/ask.md` § The inline rule); otherwise plan stops with a one-line pointer to it.
 
 If the prior integrate had no goal-drift recommendations, this step is a no-op.
 
@@ -100,6 +102,8 @@ The cycle does not enter execute until:
 | `user_signed_off_goal_drift` | If prior integrate carried goal-drift recommendations, user has dispositioned them; otherwise no-op (computed from the goal-drift ask's status) |
 
 `state.py gate check plan` shows the computed three with reasons; `state.py gate pass plan` sets the gate when all four are true; `state.py phase set execute` advances.
+
+**Commit** at plan close: `git add .orchestrator openspec/changes/<change>` (the batch's task files, `premise-check.md`, `state.json`, any `doc-correction` file with the row it amended) and commit `Orchestrator: <cycle-id> plan closed`. Ask files written during plan were committed when created (`templates/ask.md` § Commit rule).
 
 Execute refuses to run if the plan gate has not passed.
 

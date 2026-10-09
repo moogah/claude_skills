@@ -76,7 +76,7 @@ If the answer is no, don't raise it. Style preferences, bikeshed names, speculat
    - A case the spec didn't anticipate.
    - A decision that now looks premature.
    - That is a **signal from the code**, not a problem with the implementation. "Implemented as specified" is not a defence if the spec is the problem.
-   - Spec-signal findings carry **`severity: spec-signal`** and become an ask record (`templates/ask.md`) presented at integrate, not work for the next implementor.
+   - Spec-signal findings carry **`severity: spec-signal`** and become an ask file in the inbox (`templates/ask.md`), listed at integrate, not work for the next implementor.
 
 ## Probes
 
@@ -131,7 +131,7 @@ that the silence on a direction is a real silence, not a missed pass.>
 
 - **`blocking`**: orchestrator must apply an inline fix or schedule re-implementation; the task does not advance to `done`.
 - **`advisory`**: orchestrator may apply inline fix or file follow-up task (a task only when `observed.happened` is true or a project prior asks for that kind of work; otherwise the finding stays in the review file); task can advance to `done` regardless.
-- **`spec-signal`**: becomes an ask record, presented at integrate; it does not block the task in execute. **Highest-value findings.** These are the ones scope and bash-parser systematically under-weighted; the Reviewer's recommendation is that the design be rethought, not that another implementation task be filed. The finding carries `about`, `observed` and `blocks` (above) so the orchestrator can write the ask without re-reading the code.
+- **`spec-signal`**: becomes an ask file in the inbox at once, listed at integrate; it does not block the task in execute. **Highest-value findings.** These are the ones scope and bash-parser systematically under-weighted; the Reviewer's recommendation is that the design be rethought, not that another implementation task be filed. The finding carries `about`, `observed` and `blocks` (above) so the orchestrator can write the ask without re-reading the code.
 
 ## What the Reviewer cannot do
 

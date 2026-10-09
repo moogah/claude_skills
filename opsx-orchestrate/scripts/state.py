@@ -15,17 +15,19 @@ Usage: python3 state.py [--repo PATH] <verb> ...   (state.py help lists the verb
 """
 
 import argparse
+import difflib
 import fcntl
 import glob
 import json
 import os
 import re
 import shutil
+import subprocess
 import sys
 import time
 from datetime import datetime, timezone
 
-SCHEMA_VERSION = "1.2"
+SCHEMA_VERSION = "1.3"
 TEXT_CAP = 280
 LONG_TEXT_CAP = 600
 LONG_TEXT_FIELDS = {"question", "decision_readback"}
@@ -87,19 +89,33 @@ SEVERITIES = ["blocking", "advisory", "informational", "spec-signal"]
 FINDING_CLASSES = ["shape-fragmentation", "vocabulary-mismatch", "responsibility-leakage",
                    "dead-branch", "interface-drift", "mutation", "invariant-gap", "duplication"]
 
-ASK_FIELDS = {
-    "id": str, "kind": str, "raised_by": dict, "question": str, "about": (str, type(None)),
+# An ask is one org file (templates/ask.md); state.json keeps only this index entry.
+ASK_FIELDS = {"id": str, "kind": str, "status": str, "blocks": list, "path": str}
+ASK_DEFAULTS = {"blocks": [], "status": "open"}
+# The rest of the record lives in the file; accepted on input to `record add` / `record set`.
+ASK_FILE_FIELDS = {
+    "raised_by": dict, "question": str, "about": (str, type(None)),
     "observed": (dict, type(None)), "options": list, "recommendation": (dict, type(None)),
-    "default_if_unanswered": (str, type(None)), "blocks": list, "status": str,
+    "default_if_unanswered": (str, type(None)),
     "decision": (str, type(None)), "decision_readback": (str, type(None)),
     "applied_via": (str, type(None)), "revised_from": (str, type(None)),
 }
-ASK_DEFAULTS = {"about": None, "observed": None, "options": [], "recommendation": None,
-                "default_if_unanswered": None, "blocks": [], "status": "open", "decision": None,
-                "decision_readback": None, "applied_via": None, "revised_from": None}
+ASK_FILE_DEFAULTS = {"about": None, "observed": None, "options": [], "recommendation": None,
+                     "default_if_unanswered": None, "decision": None, "decision_readback": None,
+                     "applied_via": None, "revised_from": None}
 ASK_KINDS = ["decision", "doc-correction", "process", "environment", "confirmation"]
 ASK_STATUSES = ["open", "answered", "applied", "deferred", "declined", "superseded"]
+ASK_TERMINAL = {"applied", "declined", "superseded"}
+ASK_ANSWERED = {"answered", "applied", "declined", "deferred"}  # statuses that need an answer
 GOAL_DRIFT_OPTIONS = {"revise", "split", "abandon", "continue"}
+ORCHESTRATOR_GITIGNORE = """# Written by state.py init. Test outputs and scratch stay out of git; every other
+# orchestration artifact (inbox, cycles, state.json, handshakes) is tracked.
+baseline-*.txt
+after-*.txt
+*.tmp
+state.lock
+state.json.pre-migrate-*
+"""
 
 JOURNAL_KINDS = ["discovery", "decision", "inline-fix", "deviation", "push-back", "note"]
 
@@ -183,13 +199,7 @@ class Store:
 
     def write(self, state):
         os.makedirs(self.dir, exist_ok=True)
-        tmp = self.path + ".tmp"
-        with open(tmp, "w") as f:
-            json.dump(state, f, indent=2)
-            f.write("\n")
-            f.flush()
-            os.fsync(f.fileno())
-        os.replace(tmp, self.path)
+        _atomic_write(self.path, json.dumps(state, indent=2) + "\n")
 
     def mutate(self, fn):
         """fn(state) -> result. Validates before and after; holds the lock throughout."""
@@ -218,6 +228,16 @@ class Store:
 
     def handshake_path(self, cycle_id):
         return os.path.join(self.dir, f"handshake-{cycle_id}.json")
+
+
+def _atomic_write(path, text):
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    tmp = path + ".tmp"
+    with open(tmp, "w", encoding="utf-8") as f:
+        f.write(text)
+        f.flush()
+        os.fsync(f.fileno())
+    os.replace(tmp, path)
 
 
 def require_current_schema(state):
@@ -432,6 +452,405 @@ def gates_fresh():
     return {p: {"passed": False, "checks": {c: False for c in cs}} for p, cs in GATE_CHECKS.items()}
 
 
+# ---------------------------------------------------------------- ask files (org)
+#
+# One ask is one org file: a file-level :PROPERTIES: drawer (the tool's), #+TITLE: (the
+# question), level-1 sections. The tool edits line by line so everything a person wrote
+# survives: unknown sections, ** subheadings, re-wrapped prose, reordered sections.
+
+ASK_SECTIONS = ["About", "What happened", "Options", "Recommendation", "If unanswered",
+                "Answer", "Readback", "Discussion"]
+ASK_SECTION_SYNONYMS = {"observed": "What happened", "default": "If unanswered", "decision": "Answer"}
+ASK_PROPS = ["ID", "KIND", "STATUS", "RAISED_BY", "REF", "HAPPENED", "BLOCKS", "APPLIED_VIA", "REVISED_FROM"]
+ASK_ANSWER_HINT = ("# An option label from above, or your own words; everything below this line "
+                   "is read as your answer.")
+ASK_ID_RE = re.compile(r"\bask-[A-Za-z0-9-]*\d\b")
+ORG_COMMENT_RE = re.compile(r"\s*#(\s|$)")
+
+
+def _canon_section(name):
+    key = re.sub(r"\s+", " ", name.strip()).lower()
+    for s in ASK_SECTIONS:
+        if key == s.lower():
+            return s
+    return ASK_SECTION_SYNONYMS.get(key)
+
+
+class AskDoc:
+    """An ask file as lines plus indices into them."""
+
+    def __init__(self, text=""):
+        self.lines = text.lstrip("﻿").replace("\r\n", "\n").split("\n")
+        self._index()
+
+    def _index(self):
+        self.drawer, self.props, self.title_line, self.sections = None, {}, None, []
+        for i, l in enumerate(self.lines):
+            s = l.strip()
+            if s.upper() == ":PROPERTIES:":
+                for j in range(i + 1, len(self.lines)):
+                    sj = self.lines[j].strip()
+                    if sj.upper() == ":END:":
+                        self.drawer = (i, j)
+                        break
+                    m = re.fullmatch(r":([A-Za-z_]+):\s*(.*)", sj)
+                    if m:
+                        self.props[m.group(1).upper()] = j
+                break
+            if s.startswith("* "):
+                break
+        for i, l in enumerate(self.lines):
+            if self.title_line is None and re.match(r"#\+title:", l, re.I):
+                self.title_line = i
+            if l.startswith("* "):
+                self.sections.append((i, _canon_section(l[2:]), l[2:].strip()))
+
+    def text(self):
+        return "\n".join(self.lines).rstrip("\n") + "\n"
+
+    # -- drawer
+    def prop(self, key):
+        i = self.props.get(key.upper())
+        if i is None:
+            return None
+        v = re.fullmatch(r"\s*:[A-Za-z_]+:\s*(.*)", self.lines[i]).group(1).strip()
+        return v or None
+
+    def set_prop(self, key, value):
+        key = key.upper()
+        i = self.props.get(key)
+        if value is None or value == "" or value == []:
+            if i is not None and key in ("ID", "KIND", "STATUS"):
+                self.lines[i] = f":{key}:"
+            elif i is not None:
+                del self.lines[i]
+                self._index()
+            return
+        if isinstance(value, list):
+            value = ", ".join(str(v) for v in value)
+        line = f":{key}: {value}"
+        if i is not None:
+            self.lines[i] = line
+            return
+        if self.drawer is None:
+            self.lines[0:0] = [":PROPERTIES:", line, ":END:"]
+        else:
+            order = ASK_PROPS.index(key) if key in ASK_PROPS else len(ASK_PROPS)
+            pos = self.drawer[1]
+            for k, li in self.props.items():
+                if (ASK_PROPS.index(k) if k in ASK_PROPS else len(ASK_PROPS)) > order:
+                    pos = min(pos, li)
+            self.lines.insert(pos, line)
+        self._index()
+
+    # -- title
+    def title(self):
+        if self.title_line is None:
+            return None
+        return re.match(r"#\+title:\s*(.*)$", self.lines[self.title_line], re.I).group(1).strip() or None
+
+    def set_title(self, value):
+        line = f"#+TITLE: {value}"
+        if self.title_line is not None:
+            self.lines[self.title_line] = line
+        else:
+            self.lines.insert(self.drawer[1] + 1 if self.drawer else 0, line)
+            self._index()
+
+    # -- sections
+    def _bounds(self, canon):
+        for k, (i, c, _raw) in enumerate(self.sections):
+            if c == canon:
+                end = self.sections[k + 1][0] if k + 1 < len(self.sections) else len(self.lines)
+                return i, end
+        return None
+
+    def section_lines(self, canon):
+        b = self._bounds(canon)
+        return self.lines[b[0] + 1:b[1]] if b else None
+
+    def section_text(self, canon):
+        ls = self.section_lines(canon)
+        if ls is None:
+            return None
+        return "\n".join(l for l in ls if not ORG_COMMENT_RE.match(l)).strip() or None
+
+    def set_section(self, canon, text):
+        body = [""] + (text.split("\n") if text else []) + [""]
+        b = self._bounds(canon)
+        if b:
+            self.lines[b[0] + 1:b[1]] = body
+        else:
+            order = ASK_SECTIONS.index(canon)
+            pos = len(self.lines)
+            for i, c, _raw in self.sections:
+                if c is not None and ASK_SECTIONS.index(c) > order:
+                    pos = i
+                    break
+            lead = [""] if pos > 0 and self.lines[pos - 1].strip() else []
+            self.lines[pos:pos] = lead + [f"* {canon}"] + body
+        self._index()
+
+
+def _desc_items(lines):
+    """`- label :: text` items; indented lines continue the previous item."""
+    items = []
+    for l in lines or []:
+        m = re.match(r"\s*[-+]\s+(.+?)\s+::\s*(.*)$", l)
+        if m:
+            items.append([m.group(1).strip(), m.group(2).strip()])
+        elif re.match(r"\s*[-+]\s+\S", l):
+            items.append([re.sub(r"^\s*[-+]\s+", "", l).strip(), ""])
+        elif items and re.match(r"\s+\S", l):
+            items[-1][1] = (items[-1][1] + " " + l.strip()).strip()
+    return items
+
+
+def ask_to_org(rec):
+    """A fresh file from a full record (index fields plus file fields)."""
+    d = AskDoc("")
+    d.lines = [":PROPERTIES:", f":ID: {rec['id']}", f":KIND: {rec['kind']}",
+               f":STATUS: {rec.get('status') or 'open'}", ":END:"]
+    d._index()
+    rb = rec.get("raised_by") or {}
+    d.set_prop("RAISED_BY", rb.get("role"))
+    d.set_prop("REF", rb.get("ref"))
+    obs = rec.get("observed")
+    if isinstance(obs, dict):
+        d.set_prop("HAPPENED", "yes" if obs.get("happened") else "no")
+    d.set_prop("BLOCKS", rec.get("blocks") or [])
+    d.set_prop("APPLIED_VIA", rec.get("applied_via"))
+    d.set_prop("REVISED_FROM", rec.get("revised_from"))
+    d.set_title(rec.get("question") or rec["id"])
+    if rec.get("about"):
+        d.set_section("About", rec["about"])
+    if isinstance(obs, dict) and obs.get("evidence"):
+        d.set_section("What happened", obs["evidence"])
+    if rec.get("options"):
+        d.set_section("Options", "\n".join(
+            f"- {o.get('label')} :: {o.get('consequence') or ''}".rstrip(" :") for o in rec["options"]))
+    r = rec.get("recommendation")
+    if isinstance(r, dict) and r.get("option"):
+        d.set_section("Recommendation", f"- {r['option']} :: {r.get('why') or ''}".rstrip(" :"))
+    if rec.get("default_if_unanswered"):
+        d.set_section("If unanswered", rec["default_if_unanswered"])
+    d.set_section("Answer", rec["decision"] if rec.get("decision") else ASK_ANSWER_HINT)
+    if rec.get("decision_readback"):
+        d.set_section("Readback", rec["decision_readback"])
+    return d.text()
+
+
+def ask_from_org(doc, fallback_id=None):
+    """The full record a file holds. Missing parts are None / empty."""
+    opts = _desc_items(doc.section_lines("Options"))
+    recs = _desc_items(doc.section_lines("Recommendation"))
+    happened = doc.prop("HAPPENED")
+    obs = None
+    if happened is not None:
+        obs = {"happened": happened.strip().lower() in ("yes", "true", "t", "1"),
+               "evidence": doc.section_text("What happened") or ""}
+    blocks = [b.strip() for b in (doc.prop("BLOCKS") or "").split(",") if b.strip()]
+    return {
+        "id": doc.prop("ID") or fallback_id, "kind": doc.prop("KIND"),
+        "status": doc.prop("STATUS") or "open", "blocks": blocks,
+        "raised_by": {"role": doc.prop("RAISED_BY") or "orchestrator", "ref": doc.prop("REF")},
+        "question": doc.title(), "about": doc.section_text("About"), "observed": obs,
+        "options": [{"label": l, "consequence": c} for l, c in opts],
+        "recommendation": {"option": recs[0][0], "why": recs[0][1]} if recs else None,
+        "default_if_unanswered": doc.section_text("If unanswered"),
+        "decision": doc.section_text("Answer"), "decision_readback": doc.section_text("Readback"),
+        "applied_via": doc.prop("APPLIED_VIA"), "revised_from": doc.prop("REVISED_FROM"),
+    }
+
+
+def _norm(s):
+    return re.sub(r"\s+", " ", (s or "").casefold()).strip().rstrip(".!?;:,")
+
+
+def analyse_answer(rec):
+    """None when the Answer section is empty; else the text, the option it names and how surely."""
+    text = rec.get("decision")
+    if not text:
+        return None
+    labels = {_norm(o.get("label")): o.get("label") for o in rec.get("options") or [] if o.get("label")}
+    nt = _norm(text)
+    if nt in labels:
+        return {"text": text, "label": labels[nt], "match": "exact"}
+    close = difflib.get_close_matches(nt, list(labels), n=2, cutoff=0.8)
+    if len(close) == 1:
+        return {"text": text, "label": labels[close[0]], "match": "fuzzy"}
+    return {"text": text, "label": None, "match": "none"}
+
+
+def _answer_candidate(doc, rec):
+    """An option label written as a line somewhere other than under * Answer."""
+    labels = {_norm(o.get("label")) for o in rec.get("options") or [] if o.get("label")}
+    if not labels:
+        return None
+    for k, (i, c, raw) in enumerate(doc.sections):
+        if c in ASK_SECTIONS and c not in ("Discussion",):
+            continue
+        end = doc.sections[k + 1][0] if k + 1 < len(doc.sections) else len(doc.lines)
+        for l in doc.lines[i + 1:end]:
+            if _norm(l) in labels:
+                return {"section": raw, "text": l.strip()}
+    return None
+
+
+def validate_ask_full(rec, where, errors):
+    """A full ask record (index + file fields) as `record add` / `record set` receive it."""
+    fields = {**ASK_FIELDS, **ASK_FILE_FIELDS}
+    if not isinstance(rec, dict):
+        errors.append(f"{where}: not an object")
+        return
+    for k in rec:
+        if k not in fields:
+            errors.append(f"{where}.{k}: unknown field (allowed: {', '.join(fields)})")
+    for k, typ in fields.items():
+        if k == "path":
+            continue
+        if k not in rec:
+            errors.append(f"{where}.{k}: missing")
+        elif not _check_type(rec[k], typ):
+            errors.append(f"{where}.{k}: expected {_tname(typ)}, got {type(rec[k]).__name__}")
+    for k in ("id", "kind", "status", "applied_via", "revised_from", "question", "decision_readback"):
+        v = rec.get(k)
+        cap = LONG_TEXT_CAP if k in LONG_TEXT_FIELDS else TEXT_CAP
+        if isinstance(v, str) and len(v) > cap:
+            errors.append(f"{where}.{k}: {len(v)} chars exceeds the {cap}-char cap")
+    q = rec.get("question")
+    if isinstance(q, str) and (not q.strip() or "\n" in q.strip()):
+        errors.append(f"{where}.question: one non-empty line (it is the file's #+TITLE)")
+    _enum(rec.get("kind"), ASK_KINDS, f"{where}.kind", errors)
+    _enum(rec.get("status"), ASK_STATUSES, f"{where}.status", errors)
+    if isinstance(rec.get("observed"), dict):
+        _validate_observed(rec["observed"], f"{where}.observed", errors)
+    opts = rec.get("options") if isinstance(rec.get("options"), list) else []
+    for i, o in enumerate(opts):
+        if not isinstance(o, dict) or not isinstance(o.get("label"), str) or not o["label"].strip():
+            errors.append(f"{where}.options[{i}]: expected {{label, consequence}}")
+    if rec.get("kind") == "decision" and rec.get("status") == "open":
+        if not rec.get("about"):
+            errors.append(f"{where}.about: a decision says what the thing is for (templates/ask.md)")
+        if rec.get("observed") is None:
+            errors.append(f"{where}.observed: a decision says whether it has happened")
+        if not 2 <= len(opts) <= 4:
+            errors.append(f"{where}.options: a decision offers two to four options, do-nothing last")
+    if rec.get("status") in ASK_ANSWERED and not rec.get("decision"):
+        errors.append(f"{where}.decision: status {rec.get('status')} needs an answer")
+    if rec.get("status") == "applied" and not rec.get("applied_via"):
+        errors.append(f"{where}.applied_via: status applied says what applied it")
+
+
+def _cycle_of(ask_id, fallback):
+    m = re.fullmatch(r"ask-(cycle-.+)-\d+", ask_id or "")
+    return m.group(1) if m else fallback
+
+
+def ask_path(ask_id, status, fallback_cycle):
+    """Relative to the repo root; a pure function of id and status."""
+    if status in ASK_TERMINAL:
+        return f".orchestrator/cycles/{_cycle_of(ask_id, fallback_cycle)}/asks/{ask_id}.org"
+    return f".orchestrator/inbox/{ask_id}.org"
+
+
+def read_ask_file(store, rel):
+    p = os.path.join(store.repo_root, rel)
+    if not os.path.exists(p):
+        return None, None
+    with open(p, encoding="utf-8") as f:
+        doc = AskDoc(f.read())
+    return doc, ask_from_org(doc, os.path.basename(rel)[:-4])
+
+
+def _git(repo_root, *args):
+    try:
+        r = subprocess.run(["git", "-C", repo_root, *args], capture_output=True, text=True)
+        return r.returncode, r.stdout
+    except OSError:
+        return None, ""
+
+
+def _git_tracked(repo_root, rel_dir):
+    rc, out = _git(repo_root, "ls-files", "--", rel_dir)
+    return {l for l in out.split("\n") if l} if rc == 0 else set()
+
+
+def _git_ignores(repo_root, rel):
+    rc, _ = _git(repo_root, "check-ignore", "-q", "--", rel)
+    return rc == 0
+
+
+def _move_ask_file(store, old_rel, new_rel):
+    src, dst = os.path.join(store.repo_root, old_rel), os.path.join(store.repo_root, new_rel)
+    os.makedirs(os.path.dirname(dst), exist_ok=True)
+    rc, _ = _git(store.repo_root, "ls-files", "--error-unmatch", "--", old_rel)
+    if rc == 0:
+        rc2, _ = _git(store.repo_root, "mv", "--", old_rel, new_rel)
+        if rc2 == 0 and os.path.exists(dst):
+            return "git mv"
+    os.replace(src, dst)
+    return "rename"
+
+
+def scan_inbox(store, state):
+    """Every inbox file joined with the index, plus index entries whose file is wrong or gone."""
+    index = {a["id"]: a for a in (state or {}).get("asks_for_user", [])}
+    tracked = _git_tracked(store.repo_root, ".orchestrator")
+    asks, problems, seen = [], [], set()
+    for p in sorted(glob.glob(os.path.join(store.dir, "inbox", "*.org"))):
+        rel = os.path.relpath(p, store.repo_root)
+        fid = os.path.basename(p)[:-4]
+        doc, rec = read_ask_file(store, rel)
+        entry = index.get(rec["id"]) or index.get(fid)
+        probs = []
+        if rec["id"] != fid:
+            probs.append(f"{rel}: :ID: {rec['id']} differs from the file name")
+        if doc.drawer is None:
+            probs.append(f"{rel}: no properties drawer (`record set` restores it from the index)")
+        if entry is None:
+            probs.append(f"{rel}: not in the index (`init` carries it into the next cycle; "
+                         f"`record add asks @{rel}` indexes it now)")
+        else:
+            seen.add(entry["id"])
+            if doc.drawer is not None and rec["status"] != entry["status"]:
+                probs.append(f"{rel}: :STATUS: {rec['status']} but the index says {entry['status']}; "
+                             f"`record set asks {entry['id']} status={rec['status']}` reconciles")
+            if entry["status"] in ASK_TERMINAL:
+                probs.append(f"{rel}: status {entry['status']} belongs under cycles/<id>/asks/")
+            if entry["path"] != rel:
+                probs.append(f"{rel}: the index points at {entry['path']}")
+        if not rec["question"]:
+            probs.append(f"{rel}: no #+TITLE")
+        elif len(rec["question"]) > LONG_TEXT_CAP:
+            probs.append(f"{rel}: #+TITLE is {len(rec['question'])} chars; cap {LONG_TEXT_CAP}")
+        status = entry["status"] if entry else rec["status"]
+        answer = analyse_answer(rec)
+        readback = rec.get("decision_readback")
+        rb_lines = [l for l in (doc.section_lines("Readback") or []) if l.strip()]
+        asks.append({
+            "id": entry["id"] if entry else rec["id"], "kind": rec["kind"] or (entry or {}).get("kind"),
+            "status": status, "blocks": (entry or rec)["blocks"], "path": rel,
+            "indexed": entry is not None, "tracked": rel in tracked,
+            "question": rec["question"], "answer": answer,
+            "readback": {"present": bool(readback),
+                         "confirmed": any(_norm(l) in ("yes", "confirmed", "ok") for l in rb_lines)},
+            "mentions": sorted({m for m in ASK_ID_RE.findall(rec.get("decision") or "")
+                                if m != (entry or rec)["id"]}),
+            "answer_candidate": None if answer else _answer_candidate(doc, rec),
+            "problems": probs,
+        })
+        problems += probs
+    for a in index.values():
+        if a["id"] in seen:
+            continue
+        if not os.path.exists(os.path.join(store.repo_root, a["path"])):
+            problems.append(f"{a['id']}: file {a['path']} is missing (restore it from git)")
+        elif a["status"] not in ASK_TERMINAL:
+            problems.append(f"{a['id']}: status {a['status']} but its file is not in the inbox")
+    return asks, problems
+
+
 # ---------------------------------------------------------------- counts
 
 def derive_counts(tasks):
@@ -615,9 +1034,16 @@ def _design_diff_errors(diff, where):
     return errors
 
 
-def _goal_drift_asks(state):
-    return [a for a in state["asks_for_user"]
-            if {o.get("label") for o in a.get("options", []) if isinstance(o, dict)} >= GOAL_DRIFT_OPTIONS]
+def _goal_drift_asks(store, state):
+    """[(index entry, file record, answer analysis)] for every decision whose options are the four."""
+    out = []
+    for a in state["asks_for_user"]:
+        if a["kind"] != "decision":
+            continue
+        _doc, rec = read_ask_file(store, a["path"])
+        if rec and {_norm(o.get("label")) for o in rec["options"]} >= GOAL_DRIFT_OPTIONS:
+            out.append((a, rec, analyse_answer(rec)))
+    return out
 
 
 def evaluate_gate(store, state, phase):
@@ -640,11 +1066,18 @@ def evaluate_gate(store, state, phase):
         put("briefs_cite_seams", not missing and bool(tasks),
             f"tasks without cites_seams: {missing}" if missing else
             ("no tasks yet" if not tasks else "every non-externalised task cites at least one seam"))
-        gd = _goal_drift_asks(state)
-        pending = [a["id"] for a in gd if a["status"] not in ("answered", "applied")]
-        put("user_signed_off_goal_drift", not pending,
-            f"goal-drift asks unanswered: {pending}" if pending else
-            ("no goal-drift ask this cycle" if not gd else "goal-drift ask answered"))
+        gd = _goal_drift_asks(store, state)
+        pending, vague = [], []
+        for a, _rec, ans in gd:
+            if a["status"] not in ("answered", "applied"):
+                pending.append(a["id"])
+            elif not ans or ans["match"] != "exact" or _norm(ans["label"]) not in GOAL_DRIFT_OPTIONS:
+                vague.append(a["id"])
+        why = "; ".join(filter(None, [
+            f"goal-drift asks unanswered: {pending}" if pending else "",
+            f"answer does not name revise/split/abandon/continue: {vague}" if vague else ""]))
+        put("user_signed_off_goal_drift", not pending and not vague,
+            why or ("no goal-drift ask this cycle" if not gd else "goal-drift ask answered"))
     elif phase == "execute":
         not_stopped = [t["task_name"] for t in tasks if t["status"] not in STOPPED]
         put("all_tasks_executed_or_stopped", not not_stopped and bool(tasks),
@@ -684,16 +1117,19 @@ def evaluate_gate(store, state, phase):
             h = json.load(open(hpath))
             open_ids = {a["id"] for a in state["asks_for_user"] if a["status"] == "open"}
             in_h = {a.get("id") for a in h.get("asks_for_user_open", [])}
-            asks_md = os.path.join(store.cycle_dir(state), "asks.md")
-            md = open(asks_md).read() if os.path.exists(asks_md) else ""
-            decisions = [a["id"] for a in state["asks_for_user"] if a["kind"] == "decision"]
+            entries, file_problems = scan_inbox(store, state)
             missing = sorted(open_ids - in_h)
-            unlisted = [i for i in decisions if i not in md]
+            # An answer the orchestrator has not acted on fails the gate; one that has been read
+            # back and awaits the user's yes does not (the cycle can close with it open).
+            unread = [e["id"] for e in entries if e["indexed"] and e["status"] == "open"
+                      and e["answer"] and not e["readback"]["present"]]
             problems = []
             if missing:
                 problems.append(f"open asks not in handshake: {missing}")
-            if unlisted:
-                problems.append(f"decision asks not in asks.md: {unlisted}")
+            if unread:
+                problems.append(f"answered in the file but not acted on (apply, or write the readback): {unread}")
+            if file_problems:
+                problems.append("inbox problems: " + "; ".join(file_problems[:5]))
             put("user_asks_routed", not problems, "; ".join(problems) or "asks routed")
     for c in GATE_CHECKS[phase]:
         if c not in out:
@@ -731,8 +1167,24 @@ def verb_init(store, args):
         errs = _handshake_errors(os.path.join(store.repo_root, args.prior_handshake), prior=True)
         if errs:
             raise Refusal("bad_prior_handshake", "plan refuses to start: " + "; ".join(errs))
+    if _git_ignores(store.repo_root, ".orchestrator"):
+        raise Refusal("orchestrator_ignored", ".orchestrator/ is ignored by this repository's "
+                      ".gitignore; process artifacts are tracked (SKILL.md). Delete that line "
+                      "and run `init` again (an environment ask)")
+    os.makedirs(store.dir, exist_ok=True)
+    gi = os.path.join(store.dir, ".gitignore")
+    wrote_gitignore = not os.path.exists(gi)
+    if wrote_gitignore:
+        _atomic_write(gi, ORCHESTRATOR_GITIGNORE)
     ts = int(time.time())
     cycle_id = args.cycle or f"cycle-{ts}"
+    carried = []
+    for p in sorted(glob.glob(os.path.join(store.dir, "inbox", "*.org"))):
+        rel = os.path.relpath(p, store.repo_root)
+        _doc, rec = read_ask_file(store, rel)
+        if rec["kind"] not in ASK_KINDS or rec["status"] not in ASK_STATUSES:
+            continue  # reported by `inbox` as a problem, not silently indexed
+        carried.append(_index_entry(rec, rel))
     state = {
         "schema_version": SCHEMA_VERSION,
         "session_id": f"orch-{ts}",
@@ -749,7 +1201,7 @@ def verb_init(store, args):
         "closed_at": None,
         "tasks": [],
         "architect_findings": [],
-        "asks_for_user": [],
+        "asks_for_user": carried,
         "journal": [],
         "cycle_log": {"started_at": now_iso(), "phase_started_at": {"plan": now_iso(), "execute": None,
                                                                     "integrate": None},
@@ -761,7 +1213,8 @@ def verb_init(store, args):
         raise Refusal("invalid_state", "init produced an invalid state (bug)", errors=errors)
     store.write(state)
     return {"ok": True, "cycle_id": cycle_id, "path": store.path,
-            "history_cycles": [h["cycle_id"] for h in state["cycle_log"]["history"]]}
+            "history_cycles": [h["cycle_id"] for h in state["cycle_log"]["history"]],
+            "inbox_carried": [a["id"] for a in carried], "gitignore_written": wrote_gitignore}
 
 
 def _git_branch(repo_root):
@@ -818,21 +1271,40 @@ def verb_status(store, args):
         ev = evaluate_gate(store, state, phase)
         gates[phase] = {"passed": state["phase_gates"][phase]["passed"],
                         "failing": [c for c, r in ev.items() if not r["value"]]}
+    entries, problems = scan_inbox(store, state)
+    answered = {e["id"]: e for e in entries if e["indexed"] and e["answer"] and not e["readback"]["present"]}
+    confirming = {e["id"]: e for e in entries if e["indexed"] and e["answer"] and e["readback"]["present"]
+                  and not e["readback"]["confirmed"]}
+    confirmed = {e["id"]: e for e in entries if e["indexed"] and e["status"] == "open"
+                 and e["readback"]["present"] and e["readback"]["confirmed"]}
+    resume = resume_hint(state)
+    if confirmed:
+        resume = f"{len(confirmed)} readback(s) confirmed ({', '.join(confirmed)}): apply; then " + resume
+    if answered:
+        resume = f"{len(answered)} answer(s) waiting in the inbox ({', '.join(answered)}): run `inbox`; then " + resume
     out = {
         "ok": True,
         "cycle_id": state["cycle_id"],
         "change_name": state["change_name"],
         "phase": state["phase"],
         "closed_at": state["closed_at"],
-        "resume": resume_hint(state),
+        "resume": resume,
         "gates": gates,
         "counts": derive_counts(state["tasks"]),
         "tasks": [{"name": t["task_name"], "status": t["status"],
                    "merge": (t["merge_commit"] or "")[:10] or None,
                    "blocked_by": t["blocked_by"], "blocker_note": t["blocker_note"],
                    "critical": t["on_critical_path"]} for t in state["tasks"]],
-        "open_asks": [{"id": a["id"], "kind": a["kind"], "blocks": a["blocks"]}
+        "open_asks": [{"id": a["id"], "kind": a["kind"], "blocks": a["blocks"], "path": a["path"],
+                       "answered_in_file": a["id"] in answered}
                       for a in state["asks_for_user"] if a["status"] == "open"],
+        "inbox": {"open": sum(1 for a in state["asks_for_user"] if a["status"] == "open"),
+                  "answered_in_file": len(answered),
+                  "awaiting_confirmation": len(confirming),
+                  "readback_confirmed": len(confirmed),
+                  "deferred": sum(1 for a in state["asks_for_user"] if a["status"] == "deferred"),
+                  "unindexed_files": sum(1 for e in entries if not e["indexed"]),
+                  "problems": len(problems)},
         "pending_blocking_findings": [f["finding_id"] for f in state["architect_findings"]
                                       if f["severity"] == "blocking" and f["resolution"] == "pending"],
         "journal_tail": state["journal"][-5:],
@@ -840,6 +1312,17 @@ def verb_status(store, args):
         "validation_errors": errors,
     }
     return out
+
+
+def verb_inbox(store, args):
+    """Read-only: every inbox file with its answer analysis; works on a closed cycle too."""
+    state = store.load() if store.exists() else None
+    if state is not None and str(state.get("schema_version")) != SCHEMA_VERSION:
+        state = None
+    entries, problems = scan_inbox(store, state)
+    return {"ok": True, "cycle_id": (state or {}).get("cycle_id"),
+            "answered": [e["id"] for e in entries if e["answer"]],
+            "asks": entries, "problems": problems}
 
 
 def resume_hint(state):
@@ -862,7 +1345,8 @@ def verb_validate(store, args):
         plan = migration_plan(state)
         return {"ok": False, "schema_version": state.get("schema_version"), "migration": plan}
     errors = validate(state)
-    return {"ok": not errors, "errors": errors}
+    _entries, file_problems = scan_inbox(store, state)
+    return {"ok": not errors and not file_problems, "errors": errors, "file_problems": file_problems}
 
 
 def verb_task_add(store, args):
@@ -968,7 +1452,173 @@ RECORD_LISTS = {
 }
 
 
+def _ask_input(raw):
+    """A JSON object, @file.json, or @draft.org -> (record, draft AskDoc or None, draft path)."""
+    if raw.startswith("@") and raw.lower().endswith(".org"):
+        path = raw[1:]
+        if not os.path.exists(path):
+            raise Refusal("no_such_file", f"{path} does not exist")
+        with open(path, encoding="utf-8") as f:
+            doc = AskDoc(f.read())
+        return ask_from_org(doc, None), doc, path  # no :ID: in the draft -> the tool assigns one
+    rec = load_json_arg(raw)
+    if not isinstance(rec, dict):
+        raise Refusal("bad_record", "record must be a JSON object")
+    return rec, None, None
+
+
+def _ask_ids_on_disk(store, state):
+    pats = [os.path.join(store.dir, "inbox", "*.org"),
+            os.path.join(store.cycle_dir(state), "asks", "*.org")]
+    return [os.path.basename(p)[:-4] for pat in pats for p in glob.glob(pat)]
+
+
+def _index_entry(rec, path):
+    return {"id": rec["id"], "kind": rec["kind"], "status": rec["status"],
+            "blocks": list(rec.get("blocks") or []), "path": path}
+
+
+def _supersede(store, state, old_id, new_id):
+    old = next((a for a in state["asks_for_user"] if a["id"] == old_id), None)
+    if old is None:
+        raise Refusal("no_such_record", f"revised_from names {old_id!r}, which is not an ask of this cycle")
+    doc, _rec = read_ask_file(store, old["path"])
+    if doc is None:
+        raise Refusal("ask_file_missing", f"{old['path']} is missing (restore it from git)")
+    doc.set_prop("STATUS", "superseded")
+    _atomic_write(os.path.join(store.repo_root, old["path"]), doc.text())
+    new_path = ask_path(old_id, "superseded", state["cycle_id"])
+    moved = _move_ask_file(store, old["path"], new_path) if new_path != old["path"] else None
+    old.update({"status": "superseded", "path": new_path})
+    add_journal(state, "decision", f"{old_id} superseded by {new_id}", by="orchestrator", ref=new_id)
+    return moved
+
+
+def verb_ask_add(store, args):
+    rec_in, draft, draft_path = _ask_input(args.json)
+
+    def fn(state):
+        rec = {**ASK_DEFAULTS, **ASK_FILE_DEFAULTS, **{k: v for k, v in rec_in.items() if k != "path"}}
+        if not rec.get("id"):
+            prefix = "ask-" + state["cycle_id"] + "-"
+            rec["id"] = prefix + str(next_seq(
+                [a["id"] for a in state["asks_for_user"]] + _ask_ids_on_disk(store, state), prefix))
+        if any(a["id"] == rec["id"] for a in state["asks_for_user"]):
+            raise Refusal("duplicate_id", f"asks_for_user already has {rec['id']!r}; use `record set`")
+        errors = []
+        validate_ask_full(rec, "asks[new]", errors)
+        if errors:
+            raise Refusal("invalid_record", "ask does not fit templates/ask.md", errors=errors)
+        path = ask_path(rec["id"], rec["status"], state["cycle_id"])
+        abs_path = os.path.join(store.repo_root, path)
+        in_place = draft_path and os.path.abspath(draft_path) == os.path.abspath(abs_path)
+        if os.path.exists(abs_path) and not in_place:
+            raise Refusal("file_exists", f"{path} already exists; `record add asks @{path}` indexes it, "
+                          "or remove the stray file")
+        moved = _supersede(store, state, rec["revised_from"], rec["id"]) if rec.get("revised_from") else None
+        if draft is not None:
+            for k in ("ID", "KIND", "STATUS"):
+                draft.set_prop(k, rec[k.lower()])
+            draft.set_prop("BLOCKS", rec["blocks"])
+            if draft.section_lines("Answer") is None:
+                draft.set_section("Answer", ASK_ANSWER_HINT)
+            text = draft.text()
+        else:
+            text = ask_to_org(rec)
+        _atomic_write(abs_path, text)
+        state["asks_for_user"].append(_index_entry(rec, path))
+        out = {"ok": True, "list": "asks_for_user", "id": rec["id"], "path": path, "status": rec["status"],
+               "record": rec}
+        if moved:
+            out["superseded"] = {"id": rec["revised_from"], "moved_via": moved}
+        return out
+    return store.mutate(fn)
+
+
+def verb_ask_set(store, args):
+    updates = parse_assignments(args.fields)
+    allowed = set(ASK_FILE_FIELDS) | {"kind", "status", "blocks"}
+    for k in updates:
+        if k not in allowed:
+            raise Refusal("unknown_field" if k not in ("id", "path") else "not_settable",
+                          f"{k!r} cannot be set on an ask", allowed=sorted(allowed))
+
+    def fn(state):
+        entry = next((a for a in state["asks_for_user"] if a["id"] == args.id), None)
+        if entry is None:
+            raise Refusal("no_such_record", f"asks_for_user has no {args.id!r}",
+                          ids=[a["id"] for a in state["asks_for_user"]])
+        doc, rec = read_ask_file(store, entry["path"])
+        if doc is None:
+            raise Refusal("ask_file_missing", f"{entry['path']} is missing (restore it from git)")
+        if doc.drawer is None:  # the file wins for everything it still says; the index fills the rest
+            for k in ("ID", "KIND", "STATUS"):
+                doc.set_prop(k, entry[k.lower()])
+            doc.set_prop("BLOCKS", entry["blocks"])
+            rec.update({"id": entry["id"], "kind": entry["kind"], "status": entry["status"],
+                        "blocks": list(entry["blocks"])})
+        rec["id"] = entry["id"]
+        new = {**rec, **updates}
+        if new.get("status") in ASK_ANSWERED and not new.get("decision"):
+            raise Refusal("answer_required", f"status {new['status']} needs an answer under * Answer "
+                          "(or decision=<text> in this command)")
+        if new.get("status") == "applied" and not new.get("applied_via"):
+            raise Refusal("applied_via_required", "status applied needs applied_via=<what applied it>")
+        errors = []
+        validate_ask_full(new, f"asks[{args.id}]", errors)
+        if errors:
+            raise Refusal("invalid_record", "the change does not fit templates/ask.md", errors=errors)
+        for k, v in updates.items():
+            if k == "kind":
+                doc.set_prop("KIND", v)
+            elif k == "status":
+                doc.set_prop("STATUS", v)
+            elif k == "blocks":
+                doc.set_prop("BLOCKS", v)
+            elif k == "raised_by":
+                doc.set_prop("RAISED_BY", (v or {}).get("role"))
+                doc.set_prop("REF", (v or {}).get("ref"))
+            elif k == "question":
+                doc.set_title(v)
+            elif k == "observed":
+                doc.set_prop("HAPPENED", None if v is None else ("yes" if v.get("happened") else "no"))
+                doc.set_section("What happened", (v or {}).get("evidence") or "")
+            elif k == "options":
+                doc.set_section("Options", "\n".join(
+                    f"- {o.get('label')} :: {o.get('consequence') or ''}".rstrip(" :") for o in v))
+            elif k == "recommendation":
+                doc.set_section("Recommendation",
+                                f"- {v['option']} :: {v.get('why') or ''}".rstrip(" :") if v else "")
+            elif k == "about":
+                doc.set_section("About", v or "")
+            elif k == "default_if_unanswered":
+                doc.set_section("If unanswered", v or "")
+            elif k == "decision":
+                doc.set_section("Answer", v or ASK_ANSWER_HINT)
+            elif k == "decision_readback":
+                doc.set_section("Readback", v or "")
+            elif k == "applied_via":
+                doc.set_prop("APPLIED_VIA", v)
+            elif k == "revised_from":
+                doc.set_prop("REVISED_FROM", v)
+        old_path = entry["path"]
+        _atomic_write(os.path.join(store.repo_root, old_path), doc.text())
+        final = ask_from_org(doc, entry["id"])
+        final["id"] = entry["id"]
+        new_path = ask_path(entry["id"], final["status"], state["cycle_id"])
+        moved = _move_ask_file(store, old_path, new_path) if new_path != old_path else None
+        entry.update(_index_entry(final, new_path))
+        out = {"ok": True, "list": "asks_for_user", "id": entry["id"], "changed": sorted(updates),
+               "status": entry["status"], "path": new_path}
+        if moved:
+            out["moved_via"] = moved
+        return out
+    return store.mutate(fn)
+
+
 def verb_record_add(store, args):
+    if args.list == "asks":
+        return verb_ask_add(store, args)
     key, fields, defaults, id_field = RECORD_LISTS[args.list]
     rec_in = load_json_arg(args.json)
     if not isinstance(rec_in, dict):
@@ -1002,6 +1652,8 @@ def verb_record_add(store, args):
 
 
 def verb_record_set(store, args):
+    if args.list == "asks":
+        return verb_ask_set(store, args)
     key, fields, defaults, id_field = RECORD_LISTS[args.list]
     updates = parse_assignments(args.fields)
 
@@ -1145,10 +1797,22 @@ def verb_handshake(store, args):
             raise Refusal("bad_design_diff", f"design diff from {source} does not fit the shape "
                           "[{seam, change: added|amended|retired, ref}]", errors=derrs[:20])
         goal = []
-        for a in _goal_drift_asks(state):
+        for a, rec, ans in _goal_drift_asks(store, state):
             if a["status"] in ("answered", "applied"):
-                goal.append({"ask": a["id"], "decision": a["decision"],
-                             "rationale": a["decision_readback"]})
+                goal.append({"ask": a["id"],
+                             "decision": ans["label"] if ans and ans["match"] == "exact" else (ans or {}).get("text"),
+                             "rationale": rec["decision_readback"]})
+
+        def clip(s):
+            return s if s is None or len(s) <= LONG_TEXT_CAP else s[:LONG_TEXT_CAP - 1] + "…"
+
+        resolved = []
+        for a in state["asks_for_user"]:
+            if a["status"] in ("answered", "applied", "deferred"):
+                _doc, rec = read_ask_file(store, a["path"])
+                resolved.append({**a, "decision": clip((rec or {}).get("decision")),
+                                 "decision_readback": clip((rec or {}).get("decision_readback")),
+                                 "applied_via": (rec or {}).get("applied_via")})
         h = {
             "cycle_id": state["cycle_id"],
             "produced_at": now_iso(),
@@ -1157,8 +1821,7 @@ def verb_handshake(store, args):
             "meta_discoveries": meta,
             "user_resolved_goal_drift": goal,
             "asks_for_user_open": [a for a in state["asks_for_user"] if a["status"] == "open"],
-            "asks_for_user_resolved": [a for a in state["asks_for_user"]
-                                       if a["status"] in ("answered", "applied", "deferred")],
+            "asks_for_user_resolved": resolved,
             "task_refinements": refinements,
             "journal": state["journal"],
         }
@@ -1194,7 +1857,9 @@ def verb_close(store, args):
             copied.append("handshake.json")
         return {"ok": True, "cycle_id": state["cycle_id"], "archived_to": os.path.relpath(d, store.repo_root),
                 "copied": copied, "abandoned": bool(args.abandon),
-                "counts": derive_counts(state["tasks"])}
+                "counts": derive_counts(state["tasks"]),
+                "inbox_left": {s: sum(1 for a in state["asks_for_user"] if a["status"] == s)
+                               for s in ("open", "answered", "deferred")}}
     return store.mutate(fn)
 
 
@@ -1340,11 +2005,16 @@ def verb_migrate(store, args):
                             extra[k + "_full"] = v
                             u[k] = v[:cap - 1] + "…"
 
-            LEGACY_ASK_STATUS = {"resolved": "answered", "answered": "answered", "applied": "applied",
-                                 "open": "open", "deferred": "deferred", "declined": "declined"}
+            # A legacy "resolved" ask was acted on in its cycle: it is applied history, archived
+            # under its cycle's asks/, not an answer waiting in the inbox.
+            LEGACY_ASK_STATUS = {"resolved": "applied", "answered": "answered", "applied": "applied",
+                                 "open": "open", "deferred": "deferred", "declined": "declined",
+                                 "superseded": "superseded"}
+            ask_files = {"written": [], "existing": []}
             for key, fields, defaults, id_field in (
                     ("architect_findings", FINDING_FIELDS, FINDING_DEFAULTS, "finding_id"),
-                    ("asks_for_user", ASK_FIELDS, ASK_DEFAULTS, "id")):
+                    ("asks_for_user", {**ASK_FIELDS, **ASK_FILE_FIELDS},
+                     {**ASK_DEFAULTS, **ASK_FILE_DEFAULTS}, "id")):
                 kept = []
                 extras_here = parked["record_extras"].setdefault(key, {})
                 for r in old.get(key) or []:
@@ -1380,18 +2050,64 @@ def verb_migrate(store, args):
                         if u.get("status") not in ASK_STATUSES:
                             extra["_legacy_status"], u["status"] = u.get("status"), \
                                 LEGACY_ASK_STATUS.get(str(u.get("status")), "open")
-                        if u["status"] != "open" and not u.get("decision_readback") and extra.get("resolution"):
-                            u["decision_readback"] = str(extra["resolution"])
-                            u["decision"] = u.get("decision") or "see readback"
+                        if u["status"] == "applied" and not u.get("applied_via"):
+                            u["applied_via"] = str(extra.get("applied_via") or "legacy: resolved in its cycle")
+                        if u["status"] in ASK_ANSWERED and not u.get("decision"):
+                            # The legacy `resolution` text is the only record of what was decided;
+                            # it becomes the Answer. Nothing else is invented.
+                            u["decision"] = (u.get("decision_readback") or
+                                             (str(extra["resolution"]) if extra.get("resolution") else None)
+                                             or (f"Applied without asking: {u['applied_via']}."
+                                                 if u["status"] == "applied" and u["kind"] in ("doc-correction", "confirmation")
+                                                 else "(no answer recorded)"))
+                        if not isinstance(u.get("options"), list):
+                            u["options"] = []
+                        u["options"] = [o if isinstance(o, dict) and o.get("label") else {"label": str(o)}
+                                        for o in u["options"]]
+                        if isinstance(u.get("observed"), dict) and not isinstance(
+                                u["observed"].get("happened"), bool):
+                            extra["_legacy_observed"], u["observed"] = u["observed"], None
+                        for k in ("about", "default_if_unanswered", "decision", "decision_readback",
+                                  "applied_via", "revised_from"):
+                            if u.get(k) is not None and not isinstance(u[k], str):
+                                extra[k], u[k] = u[k], None
+                        if not isinstance(u.get("recommendation"), (dict, type(None))):
+                            extra["recommendation"], u["recommendation"] = u["recommendation"], None
+                        if isinstance(u.get("question"), str):
+                            u["question"] = re.sub(r"\s+", " ", u["question"]).strip() or str(u.get("id"))
+                        u["blocks"] = [str(b) for b in u.get("blocks") or []] if isinstance(u.get("blocks"), list) else []
                     cap_strings(u, extra, fields)
                     errs = []
-                    _validate_record(u, fields, key, errs, id_field)
+                    if key == "asks_for_user":
+                        # Prose has no cap in the file; keep the full text where cap_strings clipped it.
+                        for k in ("about", "default_if_unanswered", "decision"):
+                            if k + "_full" in extra:
+                                u[k] = extra.pop(k + "_full")
+                        if u.get("kind") == "decision" and u.get("status") == "open":
+                            # Legacy decisions rarely carry about/observed/options; keep them as open
+                            # files for the orchestrator to complete rather than refuse the migration.
+                            probe = []
+                            validate_ask_full(u, key, probe)
+                            errs = [e for e in probe if not any(f in e for f in (".about:", ".observed:", ".options:"))]
+                        else:
+                            validate_ask_full(u, key, errs)
+                    else:
+                        _validate_record(u, fields, key, errs, id_field)
                     if errs:
                         r["_migration_errors"] = errs
                         parked[key].append(r)
                         continue
                     if extra:
                         extras_here[str(u[id_field])] = extra
+                    if key == "asks_for_user":
+                        path = ask_path(u["id"], u["status"], new.get("cycle_id") or old.get("cycle_id"))
+                        abs_path = os.path.join(store.repo_root, path)
+                        if os.path.exists(abs_path):
+                            ask_files["existing"].append(path)
+                        else:
+                            _atomic_write(abs_path, ask_to_org(u))
+                            ask_files["written"].append(path)
+                        u = _index_entry(u, path)
                     kept.append(u)
                 new[key] = kept
             cl = old.get("cycle_log")
@@ -1449,6 +2165,7 @@ def verb_migrate(store, args):
                     "parked_top_level_keys": sorted(parked["top_level"]),
                     "tasks_with_parked_fields": sorted(parked["tasks"]),
                     "register_touched_parked": reg_count,
+                    "ask_files": ask_files,
                     "records": {k: {"kept": len(new[k]), "parked": len(parked[k]),
                                     "with_extras": len(parked["record_extras"].get(k, {}))}
                                 for k in ("architect_findings", "asks_for_user")}}
@@ -1463,8 +2180,10 @@ def build_parser():
     p.add_argument("--repo", help="repo root (default: walk up to .claude/orchestrator/config.yaml)")
     sub = p.add_subparsers(dest="verb", required=True)
 
-    s = sub.add_parser("status", help="orientation: phase, gates, tasks, open asks (run first)")
+    s = sub.add_parser("status", help="orientation: phase, gates, tasks, open asks and inbox answers (run first)")
     s.set_defaults(fn=verb_status)
+    s = sub.add_parser("inbox", help="every .orchestrator/inbox/*.org with its answer, if any (read-only)")
+    s.set_defaults(fn=verb_inbox)
     s = sub.add_parser("validate", help="schema check; on a legacy file, what migrate would do")
     s.set_defaults(fn=verb_validate)
     s = sub.add_parser("migrate", help=f"convert an older-schema file to {SCHEMA_VERSION}; "
@@ -1510,7 +2229,8 @@ def build_parser():
     r = sub.add_parser("record", help=f"record add | set  ({', '.join(sorted(RECORD_LISTS))})").add_subparsers(dest="sub", required=True)
     s = r.add_parser("add")
     s.add_argument("list", choices=sorted(RECORD_LISTS))
-    s.add_argument("json", help="JSON object, or @file.json; ids are assigned when omitted")
+    s.add_argument("json", help="JSON object, @file.json, or (asks) @draft.org; ids are assigned when omitted; "
+                   "an ask is written to .orchestrator/inbox/<id>.org")
     s.set_defaults(fn=verb_record_add)
     s = r.add_parser("set")
     s.add_argument("list", choices=sorted(RECORD_LISTS))
@@ -1572,7 +2292,7 @@ def main(argv=None):
         err.update(r.extra)
         print(json.dumps(err, indent=2), file=sys.stderr)
         return r.exit_code
-    print(json.dumps(result, indent=2 if args.verb in ("status", "counts", "validate", "migrate") else None))
+    print(json.dumps(result, indent=2 if args.verb in ("status", "counts", "validate", "migrate", "inbox") else None))
     return 0 if result.get("ok", True) else 1
 
 

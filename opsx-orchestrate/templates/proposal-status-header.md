@@ -23,7 +23,7 @@ confirmed_basis: |
 divergence_signal: <pm-cascade | reviewer-spec-signal | architect-conformance | user>
 divergence_evidence: |
   <One paragraph — what the gap looks like.>
-divergence_ask: ask-<cycle-id>-<seq>   # the ask record (templates/ask.md) that carries the four
+divergence_ask: ask-<cycle-id>-<seq>   # the ask file inbox/<id>.org (templates/ask.md) that carries the four
                                        # options revise / split / abandon / continue with their consequences
 decision_pending_on: <user>
 
@@ -54,7 +54,7 @@ prior_outcome: |
 
 - **`speculated → confirmed`**: PM digest checks this transition automatically once the integrate→plan handshake has fired ≥2 cycles cleanly. Set programmatically; no user action required.
 - **`speculated/confirmed → divergent`**: PM goal-drift signal fires (default: critical-path completion ratio stagnant or declining for K cycles while non-critical-path completions continue). PM writes the `divergence_signal` and `divergence_evidence` fields; integrate raises the `decision`-kind ask and presents it (`flows/integrate.md` § 3a).
-- **`divergent → reconciled`**: User chooses revise / split / abandon / continue. The ask record captures the choice, and the handshake's `user_resolved_goal_drift` carries `{ask, decision, rationale}`.
+- **`divergent → reconciled`**: User chooses revise / split / abandon / continue. The ask file's `* Answer` captures the choice, and the handshake's `user_resolved_goal_drift` carries `{ask, decision, rationale}`.
 - **`reconciled → speculated`**: When `reconciled_choice` is `revise` or `split`, the new proposal text re-enters the lifecycle as `speculated`; the prior outcome statement is preserved as `prior_outcome`.
 
 ## Cost asymmetry

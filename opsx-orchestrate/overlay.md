@@ -163,7 +163,7 @@ The orchestrator concatenates: core brief + `\n\n## Project-specific extensions\
 
 ## Priors
 
-`priors.md` holds the user's standing rules for the project, one line each, in the user's own words with the date and where they said it:
+`priors.md` holds the user's standing rules for the project, one line each, in the user's own words with the date and where they said it (a session id, or the ask id when the words came from an ask file):
 
 ```markdown
 - 2026-09-20 session 618fe4f9: "It feels like overengineering to put in place checks in our code which only exist to make sure that we've done our job properly"
@@ -172,9 +172,9 @@ The orchestrator concatenates: core brief + `\n\n## Project-specific extensions\
 - 2026-09-26 session c0e9e2a6: "Let's punt on this decision, I want to use this a while before we decide on polish like this"
 ```
 
-**Write rule.** When a decision or a free-text reply states a general rule rather than a one-off choice ("in general", "I don't want to keep", "overengineering", "use it a while before"), the orchestrator appends the line and records a `confirmation`-kind ask citing it, listed under "Applied without asking" in `asks.md` (`templates/ask.md`). The user can object. The line is the quote, not a paraphrase.
+**Write rule.** When a decision or a free-text reply states a general rule rather than a one-off choice ("in general", "I don't want to keep", "overengineering", "use it a while before"), the orchestrator appends the line and writes a `confirmation`-kind ask file citing it, applied, into `cycles/<cycle-id>/asks/` (`templates/ask.md`). The user can object. The line is the quote, not a paraphrase.
 
-**Read rule.** The file is appended to every role brief after the role overlay, and the orchestrator reads it at plan § 1 and at integrate § 3a and § 7. A role may treat a prior as a user request: "removing leftovers" makes a dead-code finding actionable without an ask. A prior is never re-asked. A finding that a prior already answers is `noted` with the prior cited in `evidence`; no ask record is created for it, and one that already exists is `declined` with the prior as its readback. A prior is the user's own words and outranks a `design.md` sentence; a design sentence a prior contradicts is a `doc-correction`.
+**Read rule.** The file is appended to every role brief after the role overlay, and the orchestrator reads it at plan § 1 and at integrate § 3a and § 7. A role may treat a prior as a user request: "removing leftovers" makes a dead-code finding actionable without an ask. A prior is never re-asked. A finding that a prior already answers is `noted` with the prior cited in `evidence`; no ask file is written for it, and one that already exists is `declined` with the prior as its readback. A prior is the user's own words and outranks a `design.md` sentence; a design sentence a prior contradicts is a `doc-correction`.
 
 The file is markdown, not a `config.yaml` list, because the spawn contract already concatenates markdown and a quoted sentence is safer there than in YAML.
 

@@ -18,8 +18,14 @@ _spec.loader.exec_module(state)
 
 REAL_FILES = [
     "/Users/jefffarr/src/reddit_scraper/.orchestrator/cycles/cycle-1790187401/state.json",
-    "/Users/jefffarr/emacs-workspaces/emacs-workspace-bookmarks/emacs/.orchestrator/state.json",
+    "/Users/jefffarr/emacs-workspaces/emacs-workspace-bookmarks/emacs/.orchestrator/cycles/cycle-1790453714/state.json",
 ]
+FIX = HERE / "fixtures" / "asks"
+# A complete decision ask as templates/ask.md requires one: about, observed, two to four options.
+ASK = {"kind": "decision", "raised_by": {"role": "pm", "ref": None}, "question": "Which way?",
+       "about": "A thing the user sees.", "observed": {"happened": True, "evidence": "seen in a run"},
+       "options": [{"label": "Do it", "consequence": "it is done"},
+                   {"label": "Do nothing", "consequence": "stays as is"}]}
 
 
 def _parse(text):
@@ -237,17 +243,27 @@ def test_counts_noted_findings(run, repo):
     assert out["checks"]["blocking_findings_resolved"]["value"] is True
 
 # 8
-def test_record_asks_and_caps(run):
+def test_record_asks_and_caps(run, repo):
     init(run, "cycle-1", "--first-cycle")
-    ask = {"kind": "decision", "raised_by": {"role": "pm"}, "question": "which?"}
-    code, out, _ = run("record", "add", "asks", json.dumps(ask))
-    assert code == 0 and out["id"] == "ask-cycle-1-1"
-    code, out, _ = run("record", "add", "asks", json.dumps(ask))
-    assert code == 0 and out["id"] == "ask-cycle-1-2"
-    code, _, err = run("record", "add", "asks", json.dumps({**ask, "about": "x" * 281}))
-    assert code == 1 and err["error"] == "invalid_record" and "280-char cap" in err["errors"][0]
-    code, out, _ = run("record", "add", "asks", json.dumps({**ask, "question": "q" * 600}))
+    code, out, _ = run("record", "add", "asks", json.dumps(ASK))
+    assert code == 0 and out["id"] == "ask-cycle-1-1" and out["path"] == ".orchestrator/inbox/ask-cycle-1-1.org"
+    assert (repo / out["path"]).exists()
+    assert read_state(repo)["asks_for_user"][0] == {"id": "ask-cycle-1-1", "kind": "decision", "status": "open",
+                                                    "blocks": [], "path": out["path"]}
+    code, out, _ = run("record", "add", "asks", json.dumps({**ASK, "about": "x" * 2000}))
+    assert code == 0 and out["id"] == "ask-cycle-1-2"  # prose lives in the file and has no cap
+    code, out, _ = run("record", "add", "asks", json.dumps({**ASK, "question": "q" * 600}))
     assert code == 0 and out["id"] == "ask-cycle-1-3"
+    code, _, err = run("record", "add", "asks", json.dumps({**ASK, "question": "q" * 601}))
+    assert code == 1 and err["error"] == "invalid_record" and "600-char cap" in err["errors"][0]
+    code, _, err = run("record", "add", "asks", json.dumps({**ASK, "question": "two\nlines"}))
+    assert code == 1 and "one non-empty line" in err["errors"][0]
+    stub = {"kind": "decision", "raised_by": {"role": "pm"}, "question": "which?"}
+    code, _, err = run("record", "add", "asks", json.dumps(stub))
+    fields = {e.split(":")[0].rsplit(".", 1)[1] for e in err["errors"]}
+    assert code == 1 and fields >= {"about", "observed", "options"}
+    code, out, _ = run("record", "add", "asks", json.dumps({**stub, "kind": "process"}))
+    assert code == 0 and out["id"] == "ask-cycle-1-4"  # a process note needs no options
 
 
 # 9
@@ -386,12 +402,12 @@ def test_handshake(run, repo, tmp_path):
     init(run, "cycle-1", "--first-cycle")
     code, _, err = run("record", "add", "register-touched", "{}")
     assert code == 2 and err is None  # argparse: not a record list any more
-    base = {"kind": "decision", "raised_by": {"role": "pm"}, "question": "q?"}
-    run("record", "add", "asks", json.dumps(base))  # ask-cycle-1-1 open
-    drift = {**base, "options": [{"label": o} for o in ("revise", "split", "abandon", "continue")],
-             "status": "answered", "decision": "continue", "decision_readback": "keep going"}
-    run("record", "add", "asks", json.dumps(drift))  # ask-cycle-1-2 answered
-    run("record", "add", "asks", json.dumps({**base, "status": "declined"}))  # ask-cycle-1-3
+    run("record", "add", "asks", json.dumps(ASK))  # ask-cycle-1-1 open
+    drift = {**ASK, "options": [{"label": o, "consequence": o} for o in ("revise", "split", "abandon", "continue")],
+             "status": "answered", "decision": "Continue", "decision_readback": "keep going"}
+    run("record", "add", "asks", json.dumps(drift))  # ask-cycle-1-2 answered in the file
+    code, out, _ = run("record", "add", "asks", json.dumps({**ASK, "status": "declined", "decision": "no"}))
+    assert code == 0 and out["path"] == ".orchestrator/cycles/cycle-1/asks/ask-cycle-1-3.org"  # terminal
     ref = tmp_path / "refinements.json"
     ref.write_text(json.dumps([{"task": "t9", "refinement": "narrow scope"}]))
     code, out, _ = run("handshake", "--task-refinements", f"@{ref}")
@@ -401,9 +417,12 @@ def test_handshake(run, repo, tmp_path):
     assert h["design_diff"] == [] and "register_diff" not in h
     assert out["design_diff"] == 0 and out["design_diff_source"] == "default"
     assert [a["id"] for a in h["asks_for_user_open"]] == ["ask-cycle-1-1"]
-    assert [a["id"] for a in h["asks_for_user_resolved"]] == ["ask-cycle-1-2"]
+    assert set(h["asks_for_user_open"][0]) == set(state.ASK_FIELDS)
+    r = h["asks_for_user_resolved"]
+    assert [a["id"] for a in r] == ["ask-cycle-1-2"] and r[0]["decision"] == "Continue"
+    assert r[0]["decision_readback"] == "keep going" and r[0]["path"].endswith("ask-cycle-1-2.org")
     assert h["user_resolved_goal_drift"] == [{"ask": "ask-cycle-1-2", "decision": "continue",
-                                              "rationale": "keep going"}]
+                                              "rationale": "keep going"}]  # the matched option label
     assert h["task_refinements"] == [{"task": "t9", "refinement": "narrow scope"}]
 
 
@@ -482,7 +501,7 @@ def test_init_accepts_prior_handshake_with_register_diff(run, repo):
 # 16
 def test_integrate_gate(run, repo):
     init(run, "cycle-1", "--first-cycle")
-    run("record", "add", "asks", json.dumps({"kind": "decision", "raised_by": {"role": "pm"}, "question": "q?"}))
+    run("record", "add", "asks", json.dumps(ASK))
     cyc = repo / ".orchestrator" / "cycles" / "cycle-1"
     cyc.mkdir(parents=True)
     _, out, _ = run("gate", "check", "integrate")
@@ -497,8 +516,23 @@ def test_integrate_gate(run, repo):
     _, out, _ = run("gate", "check", "integrate")
     c = out["checks"]
     assert c["pm_digest_produced"]["value"] is True and c["handshake_artifact_written"]["value"] is True
-    assert c["user_asks_routed"]["value"] is False and "ask-cycle-1-1" in c["user_asks_routed"]["reason"]
-    (cyc / "asks.md").write_text("## ask-cycle-1-1\nq?\n")
+    assert c["user_asks_routed"]["value"] is True  # the open ask is in the handshake and in the inbox
+    p = repo / ".orchestrator" / "inbox" / "ask-cycle-1-1.org"
+    p.write_text(p.read_text().replace("* Answer\n", "* Answer\n\nDo it\n"))  # the user answers in the file
+    _, out, _ = run("gate", "check", "integrate")
+    r = out["checks"]["user_asks_routed"]
+    assert r["value"] is False and "ask-cycle-1-1" in r["reason"] and "answered in the file" in r["reason"]
+    # A readback written and awaiting the user's yes does not hold the gate (the cycle can close with it open).
+    assert run("record", "set", "asks", "ask-cycle-1-1", "decision_readback=It will be done.")[0] == 0
+    _, out, _ = run("gate", "check", "integrate")
+    assert out["checks"]["user_asks_routed"]["value"] is True
+    _, st, _ = run("status")
+    assert st["inbox"]["answered_in_file"] == 0 and st["inbox"]["awaiting_confirmation"] == 1
+    assert "waiting" not in st["resume"]
+    p.write_text(p.read_text().replace("It will be done.\n", "It will be done.\n\nyes\n"))
+    _, st, _ = run("status")
+    assert st["inbox"]["readback_confirmed"] == 1 and st["resume"].startswith("1 readback(s) confirmed")
+    assert run("record", "set", "asks", "ask-cycle-1-1", "status=answered")[0] == 0
     _, out, _ = run("gate", "check", "integrate")
     assert out["checks"]["user_asks_routed"]["value"] is True
 
@@ -570,7 +604,7 @@ def test_migrate_legacy(run, repo):
     assert code == 1 and out["migration"]["register_touched_parked"] == 1
     assert out["migration"]["task_fields_parked"] == {"a": ["merge_order"]}
     code, out, _ = run("migrate")
-    assert code == 0 and out["ok"] and out["from"] == "1.0" and out["to"] == "1.2"
+    assert code == 0 and out["ok"] and out["from"] == "1.0" and out["to"] == "1.3"
     assert sorted(out["parked_top_level_keys"]) == ["orchestrator_discoveries", "phase_gates.integrate",
                                                     "phase_gates.plan", "plan_note", "register_touched"]
     assert out["register_touched_parked"] == 1 and sorted(out["records"]) == ["architect_findings", "asks_for_user"]
@@ -588,8 +622,12 @@ def test_migrate_legacy(run, repo):
     assert "register_touched" not in s
     assert s["tasks"][0]["status"] == "completed"
     ask = s["asks_for_user"][0]
-    assert ask["kind"] == "decision" and ask["raised_by"] == {"role": "pm", "ref": None}
-    assert ask["status"] == "open" and out["records"]["asks_for_user"] == {"kept": 1, "parked": 0, "with_extras": 1}
+    assert ask == {"id": "ask-1", "kind": "decision", "status": "open", "blocks": [],
+                   "path": ".orchestrator/inbox/ask-1.org"}
+    assert out["ask_files"] == {"written": [ask["path"]], "existing": []}
+    assert out["records"]["asks_for_user"] == {"kept": 1, "parked": 0, "with_extras": 1}
+    text = (repo / ask["path"]).read_text()
+    assert ":RAISED_BY: pm" in text and "#+TITLE: q?" in text and "* Answer" in text and "* Readback" not in text
     assert s["architect_findings"][0]["path"].endswith("findings/arch-1.md")
     g = s["phase_gates"]
     assert g["plan"] == {"passed": True, "checks": {"prior_integrate_consumed": True, "batch_composed": True,
@@ -670,7 +708,7 @@ def test_migrate_maps_legacy_triggers(run, repo):
 # 21
 @pytest.mark.parametrize("src", REAL_FILES)
 def test_replay_real_data(run, repo, capsys, src):
-    """Project A's archived cycle (index 0) and Project B's live state (index 1), both schema 1.0."""
+    """Project A's archived cycle-4 (index 0) and Project B's archived cycle-2 (index 1), both schema 1.0."""
     if not os.path.exists(src):
         pytest.skip(f"{src} absent")
     shutil.copy(src, repo / ".orchestrator" / "state.json")
@@ -695,7 +733,17 @@ def test_replay_real_data(run, repo, capsys, src):
     assert parked["top_level"]["register_touched"] == original["register_touched"]
     with_scaffold = [r["entry_id"] for r in parked["top_level"]["register_touched"] if r.get("scaffolding_path")]
     is_a = "reddit_scraper" in src
-    assert (n_reg, len(with_scaffold)) == ((7, 3) if is_a else (14, 0))
+    assert (n_reg, len(with_scaffold)) == ((7, 3) if is_a else (15, 0))
+    # Every legacy ask becomes a file; "resolved" ones are applied history under their cycle's asks/.
+    n_asks = len(original.get("asks_for_user") or [])
+    assert len(out["ask_files"]["written"]) == n_asks == out["records"]["asks_for_user"]["kept"]
+    assert all("/asks/" in p for p in out["ask_files"]["written"])
+    assert not glob.glob(str(repo / ".orchestrator" / "inbox" / "*.org"))
+    if n_asks:
+        text = (repo / out["ask_files"]["written"][0]).read_text()
+        assert ":STATUS: applied" in text and ":APPLIED_VIA:" in text and "* Answer" in text
+    code, res, _ = run("validate")
+    assert code == 0 and res["file_problems"] == []
     for verb in (("status",), ("counts",), ("gate", "check", read_state(repo)["phase"]),
                  ("gate", "check", "plan")):
         code, res, err = run(*verb)
@@ -726,3 +774,224 @@ def test_replay_real_data(run, repo, capsys, src):
 
 if __name__ == "__main__":
     sys.exit(pytest.main([__file__, "-q", *sys.argv[1:]]))
+
+
+# 22
+def test_ask_org_roundtrip_matches_golden():
+    rec = json.loads((FIX / "download-video.json").read_text())
+    text = (FIX / "download-video.org").read_text()
+    assert state.ask_to_org(rec) == text
+    assert state.ask_from_org(state.AskDoc(text)) == rec
+
+
+# 23
+def test_record_add_asks_from_org_draft_keeps_prose(run, repo):
+    init(run, "cycle-1", "--first-cycle")
+    draft = repo / "draft.org"
+    text = (FIX / "download-video.org").read_text()
+    text = text.replace(":ID: ask-cycle-1790026644-9\n", "").replace("* About\n", "* About\n\nMy own words.\n")
+    draft.write_text(text)
+    code, out, err = run("record", "add", "asks", f"@{draft}")
+    assert code == 0, err
+    assert out["id"] == "ask-cycle-1-1" and out["path"] == ".orchestrator/inbox/ask-cycle-1-1.org"
+    body = (repo / out["path"]).read_text()
+    assert ":ID: ask-cycle-1-1" in body and "My own words." in body and body.count("* Answer") == 1
+    assert read_state(repo)["asks_for_user"][0]["kind"] == "decision"
+
+
+# 24
+def test_record_add_asks_terminal_lands_in_cycle_dir_and_seq_skips_orphans(run, repo):
+    init(run, "cycle-1", "--first-cycle")
+    doc = {"kind": "doc-correction", "raised_by": {"role": "orchestrator", "ref": None}, "question": "Fix D4?",
+           "status": "applied", "decision": "Applied without asking: stage numbers corrected.",
+           "applied_via": "design.md D4"}
+    code, out, _ = run("record", "add", "asks", json.dumps(doc))
+    assert code == 0 and out["path"] == ".orchestrator/cycles/cycle-1/asks/ask-cycle-1-1.org"
+    assert (repo / out["path"]).exists() and not (repo / ".orchestrator" / "inbox").exists()
+    (repo / ".orchestrator" / "inbox").mkdir()
+    (repo / ".orchestrator" / "inbox" / "ask-cycle-1-2.org").write_text("stray\n")
+    code, out, _ = run("record", "add", "asks", json.dumps(ASK))
+    assert code == 0 and out["id"] == "ask-cycle-1-3"  # an orphan file is never overwritten
+    code, _, err = run("record", "add", "asks", json.dumps({**ASK, "id": "ask-cycle-1-2"}))
+    assert code == 1 and err["error"] == "file_exists"
+
+
+# 25
+def test_record_set_asks_updates_drawer_index_and_moves(run, repo):
+    init(run, "cycle-1", "--first-cycle")
+    run("record", "add", "asks", json.dumps(ASK))
+    code, _, err = run("record", "set", "asks", "ask-cycle-1-1", "status=answered")
+    assert code == 1 and err["error"] == "answer_required"
+    code, out, _ = run("record", "set", "asks", "ask-cycle-1-1", "decision=Do it", 'blocks=["t1"]')
+    assert code == 0 and out["status"] == "open" and out["changed"] == ["blocks", "decision"]
+    text = (repo / out["path"]).read_text()
+    assert ":BLOCKS: t1" in text and "\nDo it\n" in text and "# An option label" not in text
+    code, _, err = run("record", "set", "asks", "ask-cycle-1-1", "status=applied")
+    assert code == 1 and err["error"] == "applied_via_required"
+    code, out, _ = run("record", "set", "asks", "ask-cycle-1-1", "status=applied", "applied_via=commit abc")
+    assert code == 0 and out["moved_via"] == "rename"
+    assert out["path"] == ".orchestrator/cycles/cycle-1/asks/ask-cycle-1-1.org"
+    assert not (repo / ".orchestrator" / "inbox" / "ask-cycle-1-1.org").exists()
+    idx = read_state(repo)["asks_for_user"][0]
+    assert idx["status"] == "applied" and idx["path"] == out["path"] and idx["blocks"] == ["t1"]
+    assert ":APPLIED_VIA: commit abc" in (repo / out["path"]).read_text()
+    code, _, err = run("record", "set", "asks", "ask-cycle-1-1", "path=x")
+    assert code == 1 and err["error"] == "not_settable"
+
+
+# 26
+def test_record_set_asks_git_mv_when_tracked(run, repo):
+    if shutil.which("git") is None:
+        pytest.skip("no git")
+    init(run, "cycle-1", "--first-cycle")
+    run("record", "add", "asks", json.dumps(ASK))
+
+    def g(*a):
+        return subprocess.run(["git", "-C", str(repo), "-c", "user.email=t@t", "-c", "user.name=t", *a],
+                              capture_output=True, text=True)
+    g("init", "-q")
+    g("add", ".")
+    g("commit", "-qm", "x")
+    assert ".orchestrator/state.lock" not in g("ls-files").stdout  # init's .gitignore keeps it out
+    code, out, _ = run("record", "set", "asks", "ask-cycle-1-1", "decision=Do nothing", "status=declined")
+    assert code == 0 and out["moved_via"] == "git mv"
+    tracked = g("ls-files").stdout
+    assert out["path"] in tracked and ".orchestrator/inbox/ask-cycle-1-1.org" not in tracked
+
+
+# 27
+def test_record_add_asks_revised_from_supersedes(run, repo):
+    init(run, "cycle-1", "--first-cycle")
+    run("record", "add", "asks", json.dumps(ASK))
+    code, out, _ = run("record", "add", "asks", json.dumps({**ASK, "revised_from": "ask-cycle-1-1"}))
+    assert code == 0 and out["id"] == "ask-cycle-1-2" and out["superseded"]["id"] == "ask-cycle-1-1"
+    old = read_state(repo)["asks_for_user"][0]
+    assert old["status"] == "superseded" and old["path"] == ".orchestrator/cycles/cycle-1/asks/ask-cycle-1-1.org"
+    assert ":STATUS: superseded" in (repo / old["path"]).read_text()
+    assert ":REVISED_FROM: ask-cycle-1-1" in (repo / out["path"]).read_text()
+    code, _, err = run("record", "add", "asks", json.dumps({**ASK, "revised_from": "ask-cycle-1-7"}))
+    assert code == 1 and err["error"] == "no_such_record"
+
+
+# 28
+def test_inbox_reports_answers_and_tolerates_edits(run, repo):
+    init(run, "cycle-1", "--first-cycle")
+    for _ in range(4):
+        run("record", "add", "asks", json.dumps(ASK))
+    inbox = repo / ".orchestrator" / "inbox"
+
+    def answer(n, text):
+        p = inbox / f"ask-cycle-1-{n}.org"
+        p.write_text(p.read_text().replace("* Answer\n", f"* Answer\n\n{text}\n"))
+    answer(1, "do it.")  # exact after normalisation
+    answer(2, "Do nothin")  # fuzzy
+    answer(3, "Half of it; see ask-cycle-1-4 for the rest")  # free text that names another ask
+    # 4: lowercase title before the drawer, wrapped prose, a Discussion with a ** turn placed
+    # before Answer, the answer written in the discussion, CRLF line ends
+    p = inbox / "ask-cycle-1-4.org"
+    t = p.read_text()
+    t = t.replace("* About\n\nA thing the user sees.\n", "* About\n\nA thing\nthe user sees.\n")
+    t = t.replace("* Answer\n\n# An option", "* Discussion\n\n** 2026-10-09 user\n\nDo it\n\n* Answer\n\n# An option")
+    t = "#+title: Which way?\n" + t.replace("#+TITLE: Which way?\n", "")
+    p.write_text(t.replace("\n", "\r\n"))
+    code, out, _ = run("inbox")
+    assert code == 0 and out["answered"] == ["ask-cycle-1-1", "ask-cycle-1-2", "ask-cycle-1-3"]
+    by = {e["id"]: e for e in out["asks"]}
+    assert by["ask-cycle-1-1"]["answer"] == {"text": "do it.", "label": "Do it", "match": "exact"}
+    a2 = by["ask-cycle-1-2"]["answer"]
+    assert a2["match"] == "fuzzy" and a2["label"] == "Do nothing"
+    a3 = by["ask-cycle-1-3"]
+    assert a3["answer"]["match"] == "none" and a3["mentions"] == ["ask-cycle-1-4"]
+    e4 = by["ask-cycle-1-4"]
+    assert e4["answer"] is None and e4["problems"] == [] and e4["question"] == "Which way?"
+    assert e4["answer_candidate"] == {"section": "Discussion", "text": "Do it"}
+    assert out["problems"] == [] and all(e["indexed"] and not e["tracked"] for e in out["asks"])
+    _, st, _ = run("status")
+    assert st["inbox"] == {"open": 4, "answered_in_file": 3, "awaiting_confirmation": 0, "readback_confirmed": 0,
+                           "deferred": 0, "unindexed_files": 0, "problems": 0}
+    assert st["resume"].startswith("3 answer(s) waiting in the inbox")
+    assert [a["answered_in_file"] for a in st["open_asks"]] == [True, True, True, False]
+    # record set on the hand-edited file keeps every edit
+    code, out, _ = run("record", "set", "asks", "ask-cycle-1-4", "decision=Do it", "status=answered")
+    assert code == 0
+    kept = (repo / out["path"]).read_text()
+    assert "** 2026-10-09 user" in kept and "A thing\nthe user sees." in kept and "\r" not in kept
+
+
+# 29
+def test_validate_reports_index_file_mismatches_and_set_reconciles(run, repo):
+    init(run, "cycle-1", "--first-cycle")
+    run("record", "add", "asks", json.dumps(ASK))
+    run("record", "add", "asks", json.dumps(ASK))
+    inbox = repo / ".orchestrator" / "inbox"
+    p1 = inbox / "ask-cycle-1-1.org"
+    p1.write_text(p1.read_text().replace(":STATUS: open", ":STATUS: deferred").replace("* Answer\n", "* Answer\n\nlater\n"))
+    (inbox / "ask-cycle-1-2.org").unlink()
+    (inbox / "ask-cycle-1-9.org").write_text(
+        (FIX / "download-video.org").read_text().replace("ask-cycle-1790026644-9", "ask-cycle-1-9"))
+    code, out, _ = run("validate")
+    assert code == 1 and out["errors"] == []
+    probs = "\n".join(out["file_problems"])
+    assert ":STATUS: deferred but the index says open" in probs
+    assert "ask-cycle-1-2.org is missing" in probs and "ask-cycle-1-9.org: not in the index" in probs
+    code, _, err = run("record", "set", "asks", "ask-cycle-1-2", "about=x")
+    assert code == 1 and err["error"] == "ask_file_missing"
+    code, out, _ = run("record", "set", "asks", "ask-cycle-1-1", "status=deferred")  # the file wins
+    assert code == 0 and read_state(repo)["asks_for_user"][0]["status"] == "deferred"
+    t = p1.read_text()
+    p1.write_text(t[t.index("#+TITLE"):])  # the drawer deleted by hand
+    code, out, _ = run("inbox")
+    assert any("no properties drawer" in p for p in out["problems"])
+    code, out, _ = run("record", "set", "asks", "ask-cycle-1-1", "about=Restored")
+    assert code == 0
+    t = p1.read_text()
+    assert t.startswith(":PROPERTIES:\n:ID: ask-cycle-1-1\n") and ":STATUS: deferred" in t and "Restored" in t
+    code, out, _ = run("record", "add", "asks", f"@{inbox / 'ask-cycle-1-9.org'}")  # index the stray file
+    assert code == 0 and out["id"] == "ask-cycle-1-9"
+
+
+# 30
+def test_init_carries_inbox_writes_gitignore_refuses_when_ignored(run, repo):
+    init(run, "cycle-1", "--first-cycle")
+    gi = repo / ".orchestrator" / ".gitignore"
+    assert gi.exists() and "after-*.txt" in gi.read_text() and "state.lock" in gi.read_text()
+    run("record", "add", "asks", json.dumps(ASK))
+    run("record", "add", "asks", json.dumps({**ASK, "status": "deferred", "decision": "later"}))
+    code, out, _ = run("close", "--abandon", "--why", "test")
+    assert code == 0 and out["inbox_left"] == {"open": 1, "answered": 0, "deferred": 1}
+    code, out, err = init(run, "cycle-2", "--first-cycle")
+    assert code == 0, err
+    assert out["inbox_carried"] == ["ask-cycle-1-1", "ask-cycle-1-2"] and out["gitignore_written"] is False
+    assert [a["status"] for a in read_state(repo)["asks_for_user"]] == ["open", "deferred"]
+    code, out, _ = run("record", "set", "asks", "ask-cycle-1-1", "decision=Do it", "status=applied",
+                       "applied_via=cycle-2 task")
+    assert code == 0 and out["path"] == ".orchestrator/cycles/cycle-1/asks/ask-cycle-1-1.org"
+    if shutil.which("git"):
+        subprocess.run(["git", "-C", str(repo), "init", "-q"])
+        (repo / ".gitignore").write_text(".orchestrator/\n")
+        run("close", "--abandon", "--why", "test")
+        code, _, err = init(run, "cycle-3", "--first-cycle")
+        assert code == 1 and err["error"] == "orchestrator_ignored"
+
+
+# 31
+def test_migrate_1_2_asks_to_files(run, repo):
+    src = json.loads((FIX / "state-1.2.json").read_text())
+    src["repo_root"] = str(repo)
+    (repo / ".orchestrator" / "state.json").write_text(json.dumps(src))
+    code, out, err = run("migrate")
+    assert code == 0, err
+    assert out["from"] == "1.2" and out["ask_files"]["existing"] == []
+    written = out["ask_files"]["written"]
+    assert written[0] == ".orchestrator/inbox/ask-cycle-1790604160-1.org" and len(written) == 4
+    assert all(w.startswith(".orchestrator/cycles/cycle-1790604160/asks/") for w in written[1:])
+    s = read_state(repo)
+    assert [set(a) for a in s["asks_for_user"]] == [set(state.ASK_FIELDS)] * 4
+    text = (repo / written[1]).read_text()
+    assert ":STATUS: applied" in text and ":APPLIED_VIA: " in text and "Applied without asking" in text
+    code, out, _ = run("validate")
+    assert code == 0 and out["file_problems"] == []
+    code, out, _ = run("migrate")
+    assert out["unchanged"] is True
+    code, out, _ = run("inbox")
+    assert [e["id"] for e in out["asks"]] == ["ask-cycle-1790604160-1"] and out["asks"][0]["kind"] == "process"

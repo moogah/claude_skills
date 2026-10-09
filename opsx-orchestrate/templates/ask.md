@@ -1,139 +1,134 @@
 # Ask template
 
-An **ask** is a question the orchestrator needs the user to answer. It is the only artifact whose reader is the user, so it has the strictest form in the skill: one persisted record, one rendering, and a plain-language rule.
+An **ask** is a question the orchestrator needs the user to answer. It is one org file, `<repo>/.orchestrator/inbox/<ask-id>.org`, written the moment the ask is raised, in any phase. The file is the record: the user answers in it, git carries its history, and the orchestrator reads it at its sync points. `state.json` keeps only an index entry `{id, kind, status, blocks, path}` (`state.md`) so `status`, `counts` and the gates can read the inbox without parsing it; when the two disagree the file wins and `record set` rewrites the index from it.
 
-Any role can raise one: a Reviewer `spec-signal`, an Architect `interface-drift` finding against a stale design doc, an Implementor push-back that only the user can settle, a PM blocked-path or goal-drift signal, a plan-time escalation. None of them writes the ask. **The orchestrator writes the ask** from the finding, because the PM does not read code and the finding roles do not know the reader. The finding must give the orchestrator what the record needs (see "What a finding must carry").
+Any role can raise one: a Reviewer `spec-signal`, an Architect `interface-drift` finding against a stale design doc, an Implementor push-back that only the user can settle, a PM blocked-path or goal-drift signal, a plan-time escalation. None of them writes the ask. **The orchestrator writes the ask** from the finding, because the PM does not read code and the finding roles do not know the reader. The finding must give the orchestrator what the file needs (see "What a finding must carry").
 
 The reader is whoever the overlay's `asks.reader` names (`overlay.md`). Default: a technical product manager who has not watched the development and has a shallow view of the internals.
 
-## Record
+The record shows why the unit is a file and not a chat turn: every dropped or re-asked question was free text inside a status message, every tool-form question was answered but one such call sat open 950 minutes overnight on a question that blocked nothing, and in every cycle of one project the orchestrator invented files of its own to hold open threads across sessions.
 
-Lives in `state.json` `asks_for_user[]` (see `state.md`) and is copied unchanged into the handshake's `asks_for_user_open` / `asks_for_user_resolved`. This is the only schema; `state.md` and the flows point here.
+## The file
 
-```json
-{
-  "id": "ask-<cycle-id>-<seq>",
-  "kind": "decision | doc-correction | process | environment | confirmation",
-  "raised_by": { "role": "architect | reviewer | implementor | pm | orchestrator",
-                 "ref": "<finding-id | discovery-id | review file path | premise-check path | design commit | signal name>" },
-  "question": "<one plain sentence, ending in a question mark>",
-  "about": "<one or two sentences: what the feature, flag, file or rule is FOR, in product terms>",
-  "observed": { "happened": true, "evidence": "<where and when> | reasoning only: <the reasoning>" },
-  "options": [
-    { "label": "<short>", "consequence": "<what the user would notice if this is chosen>" },
-    { "label": "Do nothing", "consequence": "<what stays as it is>" }
-  ],
-  "recommendation": { "option": "<label>", "why": "<one sentence; cites observed>" },
-  "default_if_unanswered": "<what happens, and at which boundary: this integrate | next plan | archive>",
-  "blocks": [],
-  "status": "open | answered | applied | deferred | declined | superseded",
-  "decision": null,
-  "decision_readback": null,
-  "applied_via": null,
-  "revised_from": null
-}
+```org
+:PROPERTIES:
+:ID: ask-cycle-1790026644-9
+:KIND: decision
+:STATUS: open
+:RAISED_BY: architect
+:REF: arch-cycle-1790026644-1
+:HAPPENED: yes
+:END:
+#+TITLE: Should a video you fetch by hand with --download-video be added to the archive?
+
+* About
+
+--download-video fetches one YouTube video by URL; it is not tied to any Reddit post. The archive is the set of videos the scraper has indexed from posts; each has a record, and a video YouTube has removed gets a 'dead' mark so scrape runs stop retrying it.
+
+* What happened
+
+The seam row in design.md, the spec and the docs all say a hand fetch clears the dead mark. The code does not: it calls the downloader and never touches the index. Verified against the code at the cycle-3 conformance check.
+
+* Options
+
+- Fix the docs and the code :: Every hand fetch is indexed into the archive and clears the dead mark. Videos you fetch for reasons unrelated to the archive are indexed too.
+- Do nothing to the code :: --download-video stays a plain fetch: the file lands on disk and the archive does not know about it. The docs are corrected to say so.
+
+* Recommendation
+
+- Do nothing to the code :: What has been observed is a false sentence in the docs; nothing has been observed to need hand fetches in the archive.
+
+* If unanswered
+
+Docs corrected at this integrate; code untouched.
+
+* Answer
+
+# An option label from above, or your own words; everything below this line is read as your answer.
 ```
 
-| Field | Rule |
-|---|---|
-| `id` | `ask-<cycle-id>-<seq>`. The only key for the id (not `ask_id`). |
-| `kind` | One of five; decides routing (table below). |
-| `raised_by.ref` | The artifact that raised it. Tasks and notes point back with `discovered_from: <id>` or `ask: <id>`; the ask does not list them. |
-| `question` | One sentence a reader who has not seen the code can answer. Ends in `?`. Not a title. |
-| `about` | What the thing is *for*. Written by the orchestrator from the code and docs, not copied from the finding. |
-| `observed.happened` | `true` only if the problem has occurred: a failing run, a wrong output, a user report, a false statement in a shipped document. An agent's reading of what *could* go wrong is `false`, with the reasoning in `evidence`. |
-| `options` | Two to four. Each `consequence` says what the user would notice, not what the code would do. The do-nothing option is always present and always last. |
-| `recommendation.why` | Must say whether it rests on something observed. A recommendation that rests on reasoning only defaults to the do-nothing option unless the user has asked for that work. |
-| `default_if_unanswered` | Every ask has one, so a cycle can close with open asks. A default never creates a task or backlog item; if the default would need work, the default is do nothing. |
-| `blocks` | Task names, `merge:<task>`, `next-plan`, `archive`. Empty means nothing waits on this. Decides "settle now" versus "can wait" and the mid-execute routing in `flows/execute.md`. |
-| `status` | `open` → `answered` (user confirmed the readback) → `applied` (`applied_via` set). `deferred` and `declined` carry the user's words in `decision`. `superseded` points at the newer ask in `revised_from`'s counterpart. |
-| `decision_readback` | The decision restated as a consequence, in the words the user said yes to. Copied verbatim into task-update stanzas. |
-| `revised_from` | On a reversal, the id of the ask whose decision this one replaces. The old record becomes `superseded`. |
+**Drawer.** A file-level `:PROPERTIES:` drawer in the org-roam shape; `:ID:` makes every ask an `[[id:…]]` link target. The drawer is the tool's: `state.py record add asks` writes it and `record set asks` updates it; a hand-edited `:STATUS:` is reconciled by the next `record set`. Keys, written only when set except the first three:
 
-**Plain-language rule.** Any term in `question`, `about` or `options` that does not appear in the change's `proposal.md` is explained in `about`, which the rendering always places directly under the question; the question itself may use the term unglossed. If that takes more than three terms, the ask is not plain yet: rewrite it. Process vocabulary (seam, speculated, reconciled, disposition, and the `arch-` / `disc-` / `eoc-` id families) never appears in these three fields; a `seam/<name>` id appears only in `raised_by.ref` and `applied_via`.
+| Key | Rule |
+|---|---|
+| `:ID:` | `ask-<cycle-id>-<seq>`, the file's basename. The cycle is in the id; there is no `CYCLE` key. |
+| `:KIND:` | One of five; decides routing (table below). |
+| `:STATUS:` | `open` → `answered` → `applied`; or `deferred`, `declined`, `superseded`. Decides the path (below). |
+| `:RAISED_BY:` | `architect | reviewer | implementor | pm | orchestrator`. |
+| `:REF:` | The artifact that raised it: a finding id, a discovery id, a review file path, the premise check, a signal name. Tasks and notes point back with `discovered_from: <id>` or `ask: <id>`; the ask does not list them. |
+| `:HAPPENED:` | `yes` only if the problem has occurred: a failing run, a wrong output, a user report, a false statement in a shipped document. An agent's reading of what *could* go wrong is `no`. With the first sentence of `* What happened` this is the finding's `observed`. |
+| `:BLOCKS:` | Task names, `merge:<task>`, `next-plan`, `archive`. Absent means nothing waits on this. Decides the inline rule below and the routing in `flows/execute.md` § 9. |
+| `:APPLIED_VIA:` | Set with `status=applied`: the edit, task or commit that applied the decision. |
+| `:REVISED_FROM:` | On a reversal, the id of the ask whose decision this one replaces; the old file becomes `superseded`. |
+
+No timestamps: git has them.
+
+**Path.** A pure function of id and status. `inbox/<id>.org` while `open`, `answered` or `deferred`; `cycles/<cycle-from-id>/asks/<id>.org` once `applied`, `declined` or `superseded`. `record set` moves the file when the status crosses that line (`git mv` when tracked); `validate` reports a file in the wrong directory for its status, an index entry with no file, and an inbox file with no index entry.
+
+**Title.** `#+TITLE:` is the question: one plain sentence a reader who has not seen the code can answer, ending in `?`, one line, 600 characters at most. Not a title.
+
+**Prose.** One paragraph per line, so a field change is a one-line diff; the parser joins what the user re-wraps. Sections are matched by their level-1 heading, case-insensitively, in any order. `Observed` is accepted for `What happened`, `Default` for `If unanswered`, `Decision` for `Answer`. Unknown sections and `** ` subheadings pass through untouched. `# ` comment lines are stripped on read, which is how the Answer hint disappears.
+
+**Who writes which section.**
+
+| Section | Writer | Rule |
+|---|---|---|
+| `* About` | orchestrator | What the thing is *for*, in product terms, written from the code and docs, not copied from the finding. Any term in the title, `* About` or `* Options` that is not in the change's `proposal.md` is glossed here; more than three glosses means the ask is not plain yet. Process vocabulary (seam, speculated, reconciled, disposition, the `arch-` / `disc-` / `eoc-` id families) never appears in these sections; a `seam/<name>` id appears only in `:REF:` and `:APPLIED_VIA:`. |
+| `* What happened` | orchestrator | What happened, or what the reasoning is, and what the user would notice. One paragraph. Its first sentence is the evidence `:HAPPENED:` rests on. |
+| `* Options` | orchestrator | Two to four `- label :: consequence` items; a consequence says what the user would notice, not what the code would do. The do-nothing option is always present and always last. |
+| `* Recommendation` | orchestrator | One item: the label and why, and the why says whether it rests on something observed. A recommendation that rests on reasoning only defaults to the do-nothing option unless the user has asked for that work. |
+| `* If unanswered` | orchestrator | Every ask has one, so a cycle can close with open asks: what happens and at which boundary (this integrate, next plan, archive). A default never creates a task or backlog item; if it would need work, the default is do nothing. |
+| `* Answer` | user | An option label or free text. |
+| `* Readback` | orchestrator | Exists only when needed (free text or a rule): the answer restated as a consequence, 600 characters at most. |
+| `* Discussion` | anyone | Created when first needed; one `** <date> <who>` subheading per turn; preserved byte for byte by the tool. The orchestrator appends the turns of a discussion held in chat. |
+
+`record add asks` takes the JSON fields (`question`, `about`, `observed`, `options`, `recommendation`, `default_if_unanswered`, `raised_by`, `blocks`, …) or `@draft.org`, a file in this shape whose prose it keeps; `record set asks <id> field=value …` edits one field in place (`about=…`, `status=…`, `applied_via=…`, `decision_readback=…`).
 
 ## Kinds and routing
 
 | Kind | What it is | What happens |
 |---|---|---|
-| `decision` | Only the user can choose, and the choice changes the product | Presented in `asks.md` and in chat. The only kind that becomes a question. |
-| `doc-correction` | The code is right and a document is stale | Applied inline, listed under "Applied without asking" with the path. The user can object. Never a question. |
-| `confirmation` | A default already applied; an obsolescence flag on a task; a PM action the PM may take alone (a conformance run, a re-rank); a prior recorded from the user's words (`overlay.md` § Priors) | Same list. Never a question. |
-| `environment` | A licence, a wedged container, a permission, a missing or unreadable `state.json` or handshake | Asked at once, alone, in block form. The only kind that may bypass `state.json`. |
-| `process` | About the orchestration itself: the design round, the state file, whether to track `.orchestrator/` | Recorded with `status: open`; not presented. The digest says "N process notes in `<path>`". The user pulls them into the process-improvement workspace when reviewing the process. |
+| `decision` | Only the user can choose, and the choice changes the product | A file in the inbox. The only kind that becomes a question. |
+| `doc-correction` | The code is right and a document is stale | Written with `:STATUS: applied` straight into `cycles/<cycle-id>/asks/`; never in the inbox. Its `* Answer` says "Applied without asking: <what>. Object if the document was right." Never a question. |
+| `confirmation` | A default already applied; a PM action the PM may take alone (a conformance run, a re-rank); a prior recorded from the user's words (`overlay.md` § Priors) | The same: written applied into `cycles/<cycle-id>/asks/`, with `* About` and `* What happened` and no options; its `* Answer` says "Applied without asking: <what>. Object if that is not what you meant." Never a question. |
+| `environment` | A licence, a wedged container, a permission, a missing or unreadable `state.json` or handshake | The blocking call, at once, alone. Also a file when the user is absent, so the next session finds it. The only kind that may bypass `state.json`. |
+| `process` | About the orchestration itself: the design round, the state file, the skill text | A file in the inbox with no options; never presented. The digest counts them. The user copies the file into the process-improvement workspace when reviewing the process. |
 
-Triage happens when the orchestrator writes the record, not when the digest is rendered. A finding routed "to the user" by a role brief is a candidate; the kind decides whether it is asked. One finding can yield two records, each with one kind: the stale sentence is a `doc-correction` applied now, and the product question it exposed is a separate `decision`. The record shows this pairing is the common case.
+Triage happens when the orchestrator writes the file, not when the digest is rendered. A finding routed "to the user" by a role brief is a candidate; the kind decides whether it is asked. One finding can yield two files, each with one kind: the stale sentence is a `doc-correction` applied now, and the product question it exposed is a separate `decision`. The record shows this pairing is the common case.
 
-## Rendering: `.orchestrator/cycles/<cycle-id>/asks.md`
+## Answer protocol
 
-Written once from the records at integrate's presentation step (`flows/integrate.md` § 3a) and appended to at readback. Plan-time and execute-time asks that were presented earlier are appended when presented, so this file is the cycle's complete ask trail.
+The user writes under `* Answer` either an option's label or free text. The orchestrator writes a chat answer ("ask-3: narrow the clause") into the file the same way; chat is the fallback, the file is the channel.
 
-```markdown
-# Asks — change: <change-name> — cycle <n>
+- `state.py inbox` (and `status`, in short) reports every open file whose `* Answer` is non-empty, with the option label it names and how surely: `exact` (the label, matched case-insensitively, whitespace folded, trailing punctuation ignored), `fuzzy` (one label is close), or `none` (free text). It also lists other ask ids the answer mentions, and an option label written under some other heading as an `answer_candidate`.
+- An `exact` match is applied at the next sync point with no readback: `record set asks <id> status=answered`, apply it, then `record set asks <id> status=applied applied_via=<ref>`. The file moves to `cycles/<cycle-id>/asks/`.
+- Free text, a `fuzzy` match, a candidate under another heading, or any reply that states a rule, gets a `* Readback` paragraph restating it as a consequence (`record set asks <id> decision_readback="…"`), and `:STATUS:` becomes `answered` only when the user writes "yes" (or a correction) under `* Readback` or says so in chat. The file stays `open` meanwhile and does not hold the integrate gate; `status` counts it under `awaiting_confirmation` and reports `readback_confirmed` once the yes is there. A reply that states a general rule rather than a choice is also appended, in the user's words, to the overlay's `priors.md` (`overlay.md` § Priors) at readback time, with a `confirmation` file written applied; a correction at readback edits the prior line in place.
+- Applying a decision means doing what the chosen option's consequence names, and nothing more. A seam or coverage row the decision moves is amended at integrate § 1 with the ask id as the `ref` in `design-diff.json`; an open task the decision contradicts is handled at integrate § 7.
+- A reversal is a new file with `:REVISED_FROM: <old-id>` (`"revised_from": "<old-id>"` in the JSON given to `record add asks`); the old file becomes `superseded` and moves in the same command.
+- `deferred` and `declined` carry the user's words in `* Answer`.
 
-## What this change is about
+## Sync points
 
-<Two or three short paragraphs for the reader named in the overlay: what the change
-does in product terms, what shipped this cycle, and one paragraph defining any term the
-asks below cannot avoid. From the two rewrites the record shows worked: lead with the
-product, not the phase.>
+Where the orchestrator reads the inbox, named once in `SKILL.md` and pointed at from the flows: `state.py status` at session start; each phase boundary (`phase set`, `gate pass`); every `ScheduleWakeup` firing; the user's next prompt. `status` prints `inbox: N open, M answered (ids)` and its `resume` hint says when answers are waiting. An answered file is handled before any other work at that point: readback if free text; apply; `record set … status=applied applied_via=…`; the move; the commit.
 
-## Applied without asking
+## The inline rule
 
-- <path>: <one line, what was corrected and why the code is taken as right>. Object if the document was right.
-- <task-name>: <default applied>.
+For every phase. The blocking call (`AskUserQuestion`) is for an `environment` ask, and for an ask whose `:BLOCKS:` is non-empty while the user is present, where present means the user acted within the last 15 minutes of the session (by the timestamps of their messages; a session with no message from the user at all counts as absent). Otherwise, in every phase including integrate, the ask is the file: each task it blocks is set `blocked` with `blocker_note: <ask-id>`, the orchestrator finishes everything that does not wait on it, passes the phase gate if it can (`blocked` counts as stopped) and moves on, and stops with a one-line pointer to the file only when the gate cannot pass. It never waits for the answer. One question per call, always. The record shows the 950-minute call was made at integrate, two hours after the user's last action, about a sentence in a spec that nothing waited on.
 
-## Triage
+## Commit rule
 
-| # | Question | Blocks | Recommendation |
-|---|---|---|---|
-| 1 | <question> | <task or boundary> | <option label> |
-| 2 | <question> | — | <option label> |
+`.orchestrator/` is tracked. `state.py init` writes `.orchestrator/.gitignore` (the test outputs `baseline-*.txt` and `after-*.txt`, `*.tmp`, the lock file, the migration backups) when absent and refuses to start when the repo ignores the directory (an `environment` ask: delete the line). The orchestrator commits:
 
-Blocking asks first. Process notes: N (in `state.json` `asks_for_user`, kind `process`).
+- an ask file when it is created (`git add .orchestrator/inbox/<id>.org`; the subject names the id, so `git log --grep=ask-` finds the trail);
+- a readback when it is written, together with the user's answer it restates (one commit, the subject naming the id), and with it any `priors.md` line and `confirmation` file the answer produced;
+- an applied ask alongside the change that applies it (the moved file and the edit or merge in one commit, as the `--download-video` reversal was);
+- everything else, `state.json` included, at phase close (`Orchestrator: <cycle-id> <phase> closed`). Between those commits the index at HEAD may lag the files; the files are the record.
 
-## Settle now
+A new ask is then a new file in `git status`; an answer is a diff of one section; a reversal is a second commit on the file. The record shows the project that gitignored `.orchestrator/` lost its handshakes to removed worktrees three times.
 
-### 1. <question>
+## Chat
 
-<`about`.>
-
-<What happened, or what the reasoning is, and what you would notice. One paragraph.>
-
-- **<label>** — <consequence>.
-- **<label>** — <consequence>.
-- **Do nothing** — <consequence>.
-
-Recommendation: **<label>**. <why>. This has happened: <evidence> | This has not happened; the reasoning is <evidence>.
-If unanswered: <default>.
-
-## Can wait
-
-- **2.** <question> Default: <default>. Ask for the full version if you want it.
-
-## Decisions
-
-<Appended at readback. One line per ask: "<id>: <decision_readback>. Confirmed <date>. Applied via <applied_via>.">
-```
-
-A "settle now" block is one whose `blocks` is non-empty, or whose default would be wrong to apply silently. Everything else is a "can wait" line; the user can ask for any of them in full.
-
-## The chat message
-
-The orchestrator's message to the user is the "What this change is about" section, the "Settle now" blocks in full, the "Can wait" lines, and the path to `asks.md`. **Asks come first**; phase results follow, or go in a separate message. The record shows the user answered when the text was in front of them and skipped a third of the questions put through the tool form alone, so the text is pasted, not linked.
-
-A merge-blocking ask raised mid-execute (`flows/execute.md`) is one block in this shape, sent alone, and appended to `asks.md`.
-
-## Readback
-
-When the user answers, the orchestrator sends one message restating every decision as a consequence:
-
-> 1. Hand-fetched videos will not be added to the archive; the docs will say so.
-> 2. …
->
-> Say yes, or correct any line.
-
-On yes, each record's `decision_readback` is set to that line, `status` becomes `answered`, and the Decisions section of `asks.md` gains the line. Only then is the decision applied and `status` set to `applied` with `applied_via`. A correction at readback edits the record in place; a later reversal creates a new record with `revised_from` and marks the old one `superseded`. A reply that states a general rule rather than a choice is also appended, in the user's words, to the overlay's `priors.md` (`overlay.md` § Priors), with a `confirmation` record listed under "Applied without asking".
+The chat still carries: a new inbox file (one line: the id, the question, the path); a readback when one is needed; an `environment` call; a stop with the one-line pointer. Asks come first; phase results follow, or go in a separate message. Narration is unchanged.
 
 ## What a finding must carry
 
@@ -143,49 +138,28 @@ A role that routes a finding to the user (`roles/reviewer.md` `route-to-user`, `
 - its `observed` block (every finding now carries one; `templates/architect-finding.md` § Observed),
 - what it blocks: a task, a merge, the next plan, the archive, or nothing.
 
-A finding routed to the user without these is not asked as it stands. When the gap is a matter of reading (the flag's help text, the doc the finding cites, whether the ledger has entries), the orchestrator fills it; when it is a matter of redoing the analysis, the finding goes back to the role. PM stubs are always completed by the orchestrator, since the deterministic pass has no LLM.
+A finding routed to the user without these is not asked as it stands. When the gap is a matter of reading (the flag's help text, the doc the finding cites, whether the ledger has entries), the orchestrator fills it; when it is a matter of redoing the analysis, the finding goes back to the role. PM stubs are inbox files with the fields the PM can fill; the orchestrator always completes them, since the deterministic pass has no LLM.
 
 ## Blocking without a second artifact
 
-An ask that blocks tasks does not get a disposition task. The orchestrator sets `status: blocked` and `blocker_note: <ask-id>` on each task named in `blocks` (the field `state.md` already defines for user decisions). The PM's stale and blocked-path queries read `blocker_note` and re-surface the existing ask id; they do not raise a new ask for a decision that is already open. When the ask is applied, the note is cleared and the task returns to `ready`.
+An ask that blocks tasks does not get a disposition task. The orchestrator sets `status: blocked` and `blocker_note: <ask-id>` on each task named in `:BLOCKS:` (the field `state.md` already defines for user decisions). The PM's stale and blocked-path queries read `blocker_note` and re-surface the existing ask id; they do not raise a new ask for a decision that is already open. When the ask is applied, the note is cleared and the task returns to `ready`.
 
-The alternative, a disposition task whose body is one paragraph and a pointer to `asks.md#ask-<id>`, was considered and left out because it writes the same text a second time; restore it if a real cycle shows the task tree needs the placeholder.
+The alternative, a disposition task whose body is one paragraph and a pointer to `inbox/<id>.org`, was considered and left out because it writes the same text a second time; restore it if a real cycle shows the task tree needs the placeholder.
 
 ## Worked examples
 
-Three asks from the record, each shown as it was asked and as this template would ask it.
+Three asks from the record, each shown as it was asked and as this template writes it.
 
 ### 1. A decision that was reversed within eleven minutes
 
-As asked (Project A, cycle 3, 2026-09-23 17:47, `AskUserQuestion`):
+As asked (Project A, cycle 3, 2026-09-23 17:47, in the blocking call):
 
 > Conformance finding (blocking, verified): `--download-video` calls the downloader directly and never records the fetch, so fetching a `dead` video by hand does NOT release its ledger line (and never indexes the file). The design/spec/docs text will be corrected either way. Do you also want the code fixed?
 > Options: Text fix + .tasks (Recommended) / Text fix + in-change task / Text fix only.
 
 The user chose the in-change code fix, a critical-path task was created, and eleven minutes later the user reversed it: the flag is for one-off downloads that are not part of the archive. The question never said what the flag was for.
 
-As this template asks it:
-
-```json
-{
-  "id": "ask-cycle-1790026644-9",
-  "kind": "decision",
-  "raised_by": { "role": "architect", "ref": "arch-cycle-1790026644-1" },
-  "question": "Should a video you fetch by hand with --download-video be added to the archive?",
-  "about": "--download-video fetches one YouTube video by URL; it is not tied to any Reddit post. The archive is the set of videos the scraper has indexed from posts; each has a record, and a video YouTube has removed gets a 'dead' mark so scrape runs stop retrying it.",
-  "observed": { "happened": true, "evidence": "The seam row in design.md, the spec and the docs all say a hand fetch clears the dead mark. The code does not: it calls the downloader and never touches the index. Verified against the code at the cycle-3 conformance check." },
-  "options": [
-    { "label": "Fix the docs and the code", "consequence": "Every hand fetch is indexed into the archive and clears the dead mark. Videos you fetch for reasons unrelated to the archive are indexed too." },
-    { "label": "Do nothing to the code", "consequence": "--download-video stays a plain fetch: the file lands on disk and the archive does not know about it. The docs are corrected to say so." }
-  ],
-  "recommendation": { "option": "Do nothing to the code", "why": "What has been observed is a false sentence in the docs; nothing has been observed to need hand fetches in the archive." },
-  "default_if_unanswered": "Docs corrected at this integrate; code untouched.",
-  "blocks": [],
-  "status": "open"
-}
-```
-
-Rendered, it is a "can wait" line with the do-nothing default. With `about` in front of them, the user would have recognised the one-off use at once; the reversal turned on exactly that sentence.
+As this template writes it: the file under "The file" above, at `.orchestrator/inbox/ask-cycle-1790026644-9.org`, committed when written. With `* About` in front of them, the user would have recognised the one-off use at once; the reversal turned on exactly that sentence. The answer `do nothing to the code` matches the label and is applied at the next sync point with no readback; the file moves to `cycles/cycle-1790026644/asks/` in the commit that corrects the docs.
 
 ### 2. A doc correction that was asked seven times
 
@@ -193,9 +167,32 @@ As asked (Project B, cycle 1 plan, seven asks of this shape, each with the recom
 
 > ask-cycle-1789334430-1 — design.md D4 numbers the removed scaffold stages "4–6"; the live pipeline (`config/workspaces/scaffold.org:157-224`) has five stages and the removed ones are 3–5. Doc fix; the seam row `seam/workspace-scaffold-pipeline` in the same design.md already records the correct numbering.
 
-As this template handles it: `kind: doc-correction`, `observed.happened: true` (the code is the evidence), `status: applied`, `applied_via: design.md D4, edited at plan`. It is never a question. In `asks.md` it is one line:
+As this template writes it, at `cycles/cycle-1789334430/asks/ask-cycle-1789334430-1.org`, never in the inbox, committed with the edit:
 
-> - `design.md` D4: stage numbers corrected from 4–6 to 3–5 to match the code (`scaffold.org:157-224`). Object if the document was right.
+```org
+:PROPERTIES:
+:ID: ask-cycle-1789334430-1
+:KIND: doc-correction
+:STATUS: applied
+:RAISED_BY: architect
+:REF: cycles/cycle-1789334430/premise-check.md
+:HAPPENED: yes
+:APPLIED_VIA: design.md D4, edited at plan
+:END:
+#+TITLE: Should design.md D4 number the removed scaffold stages 3–5, as the pipeline does?
+
+* About
+
+D4 is the design decision that removed three stages from the workspace scaffold pipeline. The pipeline has five stages; the decision text numbers the removed ones 4–6.
+
+* What happened
+
+The live pipeline (scaffold.org:157-224) has five stages and the removed ones are 3–5. The seam row for the pipeline in the same design.md already records the correct numbering.
+
+* Answer
+
+Applied without asking: stage numbers in design.md D4 corrected from 4–6 to 3–5 to match the code (scaffold.org:157-224). Object if the document was right.
+```
 
 This is the user's standing rule of 2026-09-26, which until now lived in one task file's `## Observations`.
 
@@ -207,36 +204,59 @@ As asked (Project B, cycle 2, design question OD-3, 2026-09-24):
 
 The user answered: "Let's punt on this decision, I want to use this a while before we decide on polish like this."
 
-As this template asks it:
+As this template writes it, at `.orchestrator/inbox/ask-cycle-1789935943-3.org`, shown after that answer and the orchestrator's readback:
 
-```json
-{
-  "id": "ask-cycle-1789935943-3",
-  "kind": "decision",
-  "raised_by": { "role": "architect", "ref": "cycles/cycle-1789935943/premise-check.md" },
-  "question": "Should each bookmark stamp carry a format version number from the start?",
-  "about": "A stamp is the small set of properties written into a bookmark so it can be found again after its repository moves: which repository, and the file's path inside it. Every bookmark the feature touches gets one.",
-  "observed": { "happened": false, "evidence": "reasoning only: if the meaning of the path property ever changed, old stamps could not be told from new ones. No stamp has been written yet and no change of meaning is planned." },
-  "options": [
-    { "label": "Add a version property now", "consequence": "Every stamp carries one more property that nothing reads today." },
-    { "label": "Do nothing", "consequence": "Stamps have two properties. If the meaning ever changes, a one-off migration rewrites them; old stamps are recognisable by the missing version." }
-  ],
-  "recommendation": { "option": "Do nothing", "why": "Nothing has happened that a version would have helped with, and the migration cost, if it ever comes, is bounded." },
-  "default_if_unanswered": "No version property. Revisit only if the stamp's meaning changes.",
-  "blocks": [],
-  "status": "open"
-}
+```org
+:PROPERTIES:
+:ID: ask-cycle-1789935943-3
+:KIND: decision
+:STATUS: open
+:RAISED_BY: architect
+:REF: cycles/cycle-1789935943/premise-check.md
+:HAPPENED: no
+:END:
+#+TITLE: Should each bookmark stamp carry a format version number from the start?
+
+* About
+
+A stamp is the small set of properties written into a bookmark so it can be found again after its repository moves: which repository, and the file's path inside it. Every bookmark the feature touches gets one.
+
+* What happened
+
+Nothing yet; the reasoning is that if the meaning of the path property ever changed, old stamps could not be told from new ones. No stamp has been written and no change of meaning is planned.
+
+* Options
+
+- Add a version property now :: Every stamp carries one more property that nothing reads today.
+- Do nothing :: Stamps have two properties. If the meaning ever changes, a one-off migration rewrites them; old stamps are recognisable by the missing version.
+
+* Recommendation
+
+- Do nothing :: Nothing has happened that a version would have helped with, and the migration cost, if it ever comes, is bounded.
+
+* If unanswered
+
+No version property. Revisit only if the stamp's meaning changes.
+
+* Answer
+
+Let's punt on this decision, I want to use this a while before we decide on polish like this.
+
+* Readback
+
+No version property; the question is reopened only if the stamp's meaning changes. Say yes here or in chat.
 ```
 
-Rendered, it is a "can wait" line whose default is the answer the user gave. Under the plain-language rule it needed one gloss (stamp), given in `about`.
+The answer is free text that states a rule, so it gets the readback and the line goes to `priors.md`; on yes the status becomes `answered`, then `applied` with `:APPLIED_VIA: design.md § Decisions`. Under the plain-language rule it needed one gloss (stamp), given in `* About`.
 
 ## What this template does not do
 
 - It does not replace the finding templates. A finding is the evidence; the ask is the question. The finding keeps its severity, class and `discovered_from`; the ask carries none of them.
-- It does not put the record in the digest. The digest carries the triage table and the path to `asks.md` (`templates/pm-digest.md`).
+- It does not put the file in the digest. The digest carries the open decisions with their paths and the counts (`templates/pm-digest.md`).
+- It does not render a per-cycle page. The index is `state.py status`; the applied-without-asking list is the set of files in `cycles/<cycle-id>/asks/`; the decisions are the files' `* Answer` and `* Readback` sections. Restore a page if a live cycle shows the reader wants one.
 - It does not create disposition tasks (see "Blocking without a second artifact").
-- It does not count ask quality. Answers outside the offered options, reversals and clarification requests are visible in the records; counting them as a PM signal is deferred until a cycle shows the need.
+- It does not count ask quality. Answers outside the offered options, reversals and clarification requests are visible in the files; counting them as a PM signal is deferred until a cycle shows the need.
 
 ## Measurement
 
-`findings/tools/ask-inventory.py` in the process-improvement workspace reads every handshake's ask records and keys on `question`, `options`, `recommendation` and `raised_by`. It is the before/after measure for this template: the 2026-09-26 baseline is 62 asks, 14 with options, 26 with a recommendation, 39 with no source.
+Two tools in the process-improvement workspace. `findings/tools/chat-channels.py` reads the session transcripts: expect no blocking call open longer than 15 minutes unless its kind is `environment`, and one question per call. `findings/tools/ask-inventory.py` keys on the files: every ask with a `path`, and in git every ask file added in a commit naming it and every applied ask with two or more commits on its file. The 2026-09-26 baseline is 62 asks, 14 with options, 26 with a recommendation, 39 with no source.

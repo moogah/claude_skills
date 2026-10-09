@@ -12,8 +12,8 @@ The Architect runs against the seams this cycle's tasks cited (`roles/architect.
 
 Output: zero or more findings written to `<repo>/.orchestrator/cycles/<cycle-id>/findings/`, each indexed with `state.py record add findings '{...}'` (`trigger: conformance`; the id comes back); a check with zero findings is one `state.py note note "conformance: zero findings" --by architect`. Each finding has a severity that decides its **routing target** (the actual task-file write, when one is needed, happens in step 7's curation sweep so creation and refinement are unified); the routing lands as `state.py record set findings <id> resolution=<inline-fixed|followup-task-<name>|reverted|accepted-with-note|noted>`:
 
-- **Code right, row stale** (`interface-drift` where the merged code is what the change wanted): the Architect amends the seam row in place, and with it the coverage rows and the Decision that named the same thing, and sets `resolution: design-amended`; the orchestrator records one `doc-correction` ask (`templates/ask.md`) with `status: applied`, `applied_via: design.md <seam-id>`, listed in § 3a under "Applied without asking". Not Implementor work. `design-diff.json` lists the seam row only.
-- **Design in question** (the code and the row disagree and the row may be right): a `decision` ask, written by the orchestrator from the finding (which says what the seam is for, whether the drift is in merged code or reasoning only, and what it blocks), presented in § 3a.
+- **Code right, row stale** (`interface-drift` where the merged code is what the change wanted): the Architect amends the seam row in place, and with it the coverage rows and the Decision that named the same thing, and sets `resolution: design-amended`; the orchestrator writes one `doc-correction` ask file (`templates/ask.md`) with `status: applied`, `applied_via: design.md <seam-id>`, straight into `cycles/<cycle-id>/asks/`, counted in § 3a, and commits it with the amended row. The correction reaches whatever the row cites: when the scenario heading moves, the spec scenario under `specs/` is corrected in the same commit (the archive's sync carries it into the main specs). Not Implementor work. `design-diff.json` lists the seam row only, with the finding or ask id as `ref` (one per row; the first finding when two amended the same row).
+- **Design in question** (the code and the row disagree and the row may be right): a `decision` ask file, written to the inbox by the orchestrator from the finding (which says what the seam is for, whether the drift is in merged code or reasoning only, and what it blocks), listed in § 3a.
 - **`blocking`** with any other class → routed for follow-up task creation in step 7; the integrate gate doesn't close until the finding's `resolution` is no longer `pending`. (`blocking` at integrate holds the gate; there is no merge left to pause.)
 - **`advisory`** → routed for follow-up task creation in step 7 with provenance; orchestrator decides this-batch / next-batch / `.tasks/`.
 - **Any severity with `observed.happened: false`**, unless a project prior (`overlay.md` § Priors) or the user has asked for that kind of work or the finding states a measured cost → `state.py record set findings <id> resolution=noted`: no task, no `.tasks/` item, no `decision` ask. A stale sentence the finding exposed is still a `doc-correction`, applied and listed, so the next plan does not re-derive the work from it. A `blocking` finding that rests on reasoning only is a contradiction; the Architect re-grades it `advisory`.
@@ -36,19 +36,17 @@ Two passes, per `roles/project-manager.md`:
 
 If the agent pass fails, the deterministic output remains and is recoverable.
 
-### 3a. Ask triage, presentation and readback
+### 3a. Inbox and readback
 
-The one place in the cycle where questions reach the user. Per `templates/ask.md`:
+The integrate sync point (`SKILL.md` § Sync points). Per `templates/ask.md`:
 
-1. Collect every ask with `status: open` (`state.py status` lists their ids; the records are in `asks_for_user`), including those recorded during execute (`flows/execute.md` § 9) and plan.
-2. Triage by kind. `doc-correction` and `confirmation` are applied and listed; `process` is counted; `environment` should already have been asked. Only `decision` is presented. A finding that a line in `priors.md` already answers gets no ask record: it is `noted` with the prior cited in `evidence` (`overlay.md` § Priors). If an ask record already exists (raised mid-execute, or carried in the handshake), it is `declined` with the prior as `decision_readback` and listed under "Applied without asking".
-3. Fill any field a stub or finding lacks (`about`, `observed`, `options`) with `state.py record set asks <id> …` when that is a matter of reading code or docs; send a finding back to its role when it would mean redoing the analysis (`templates/ask.md` § What a finding must carry). A finding that exposes both a stale sentence and a product question yields two records: a `doc-correction` and a `decision`.
-4. Write `<repo>/.orchestrator/cycles/<cycle-id>/asks.md` in the template's rendering: orientation, applied-without-asking, triage table, settle-now blocks, can-wait lines.
-5. Send the chat message: orientation, settle-now blocks, can-wait lines, the path. Asks first; the cycle's results after or in a separate message.
-6. On the user's answer, send the readback (each decision as a consequence) and wait for a yes. Then `state.py record set asks <id> decision=<label> decision_readback="<the readback>" status=answered`, append to the Decisions section, and apply. `record set asks <id> status=applied applied_via=<ref>` only once it is applied. A reply that states a general rule rather than a choice is also appended, in the user's words, to the overlay's `priors.md` (`overlay.md` § Priors), with a `confirmation` record listed under "Applied without asking".
-7. Asks the user leaves unanswered keep `status: open`, their default applies at the boundary it names, and they are carried in the handshake.
+1. Run `state.py inbox`. Answered files are handled before anything else: a matched option label is applied (`state.py record set asks <id> status=answered`, apply, then `record set asks <id> status=applied applied_via=<ref>`; the file moves to `cycles/<cycle-id>/asks/` and is committed with the change that applies it); free text gets a `* Readback` paragraph in the file (`record set asks <id> decision_readback="<the readback>"`) and stays `open` until the user confirms it there or in chat. A reply that states a general rule rather than a choice is also appended, in the user's words, to the overlay's `priors.md` (`overlay.md` § Priors), with a `confirmation` file written applied.
+2. Collect every open file (`inbox` lists them with their paths), including those written during execute (`flows/execute.md` § 9) and plan. Triage by kind. `doc-correction` and `confirmation` were written applied into `cycles/<cycle-id>/asks/` when raised; `process` files sit in the inbox and are counted, never presented; `environment` should already have been asked. Only `decision` is presented. A finding that a line in `priors.md` or a sentence the user wrote in `proposal.md` already answers gets no ask file: it is `noted` with the prior or sentence cited in `evidence` (`overlay.md` § Priors; the user's words outrank a `design.md` sentence, so the contradicted design sentence is a `doc-correction`). If an ask file already exists (raised mid-execute, or carried in the handshake), it is `declined` with the prior as `decision_readback`.
+3. Fill any field a stub or finding lacks (`about`, `observed`, `options`) with `state.py record set asks <id> …` when that is a matter of reading code or docs; send a finding back to its role when it would mean redoing the analysis (`templates/ask.md` § What a finding must carry). A finding that exposes both a stale sentence and a product question yields two files: a `doc-correction` and a `decision`.
+4. Send the chat message: one line per open decision (the id, the question, its path `inbox/<id>.org`), blocking ones first; the count of files applied without asking and of process notes. Asks first; the cycle's results after or in a separate message. Nothing blocks on an unanswered decision: the blocking call is for a `blocks`-non-empty ask while the user is present, one question per call (`templates/ask.md` § The inline rule).
+5. Asks the user leaves unanswered keep `status: open`, their default applies at the boundary the file names, and they are carried in the handshake.
 
-A cycle with no `decision`-kind asks writes an `asks.md` whose triage table is empty and says so in one line; that is a valid outcome, not a gate failure.
+A cycle with no `decision`-kind asks has nothing to present and says so in one line; that is a valid outcome, not a gate failure.
 
 ### 4. Meta-discovery surfacing
 
@@ -82,9 +80,9 @@ Does the gap between "tasks complete" and "proposal.md outcome reachable" sugges
 If the query fires:
 - The PM digest carries a goal-drift recommendation: revise / split / abandon / continue.
 - The proposal status header (per `templates/proposal-status-header.md`) flips to `divergent`.
-- An ask record of kind `decision` is raised (`templates/ask.md`) with the four fixed options revise / split / abandon / continue, and presented in § 3a. The tool recognises the goal-drift ask by exactly those four option labels.
+- An ask file of kind `decision` is written to the inbox (`templates/ask.md`) with the four fixed options revise / split / abandon / continue, and listed in § 3a. The tool recognises the goal-drift ask by exactly those four option labels in the file.
 
-The user's decision lands in the ask record; `state.py handshake` copies it into `user_resolved_goal_drift` as `{ask, decision, rationale}`. Plan refuses to start the next cycle until the user has dispositioned (or explicitly chosen `continue`).
+The user's decision lands in the file's `* Answer`; `state.py handshake` reads it into `user_resolved_goal_drift` as `{ask, decision, rationale}`, with `decision` the exact-matched label. Plan refuses to start the next cycle until the user has dispositioned (or explicitly chosen `continue`).
 
 ### 6. Externalisation review
 
@@ -92,7 +90,7 @@ The user's decision lands in the ask record; `state.py handshake` copies it into
 
 The PM checks: of the externalised tasks, is there a cluster whose `discovered_class` distribution and modules-touched are coherent enough to constitute a sub-change? If yes:
 
-- Raise an ask record (kind `decision`; default if unanswered: leave externalised): "promote cluster `vocabulary-mapping` (5 tasks, 3 cycles old) into the active change?"
+- Write an ask file (kind `decision`; default if unanswered: leave externalised): "promote cluster `vocabulary-mapping` (5 tasks, 3 cycles old) into the active change?"
 - The user dispositions: promote, leave externalised, or open a new change.
 
 ### 7. Open-task refinement
@@ -113,7 +111,7 @@ Refinement runs **after** externalisation review (so externalised tasks have alr
 Walk the cycle's outputs for new-task triggers:
 
 - **Architect findings** (from step 1, and from plan's premise check). A task is created only on a demonstrated reason: `observed.happened` is true, or a project prior (`overlay.md` § Priors) or the user asked for that kind of work, or the finding states a measured cost. "The user asked" means the user's words: a prior, an ask decision, or a proposal sentence the user wrote; a `design.md` sentence is an agent's plan and a prior outranks it, so a design sentence a prior contradicts is a `doc-correction`. Otherwise `record set findings <id> resolution=noted`: no task, no `.tasks/` item, no `decision` ask (a `doc-correction` may still be applied); the digest lists the noted count in one line. Per the routing in step 1: `interface-drift` → a `doc-correction` (applied) or a `decision` ask (no task); `blocking` other class → in-batch follow-up task with `discovered_from: <finding-id>`, `discovered_by: architect`, `discovered_class: <finding.class>`; `advisory` → follow-up task, orchestrator decides this-batch vs next-batch vs `.tasks/`; `informational` → no task. The same test applies to Reviewer findings and Implementor `## Discoveries` that reach this step: each carries `observed`. Implementor `## Observations` were triaged in execute § 5 and are not re-read here; the conformance check finds what an observation pointed at on its own.
-- **Open asks** (`asks_for_user` with `status: open`, from steps 1, 5, 6, plan and execute) create no task. Each task named in an ask's `blocks` carries `status: blocked` and `blocker_note: <ask-id>` (`templates/ask.md` § Blocking without a second artifact); the note is cleared when the ask is applied.
+- **Open asks** (the inbox files with `status: open`, indexed in `asks_for_user`, from steps 1, 5, 6, plan and execute) create no task. Each task named in an ask's `blocks` carries `status: blocked` and `blocker_note: <ask-id>` (`templates/ask.md` § Blocking without a second artifact); the note is cleared when the ask is applied.
 - **User-resolved asks with deferred implementation** (`asks_for_user_resolved[i]` where `applied_via` indicates deferral, e.g. `deferred-to-cycle-N`). If the deferral target is *not* an existing open task, create one carrying the user's decision in its body and `discovered_from: <ask-id>`.
 - **Meta-discoveries with concrete forward-looking work** (`meta_discoveries[i].implication_for_next_plan` names a specific task or rewire). If the implication is concrete enough to be its own task and is not absorbed by an existing open task's refinement, create the task with `discovered_from: meta-discovery/<label>`, `discovered_class: <meta.kind>`.
 
@@ -151,7 +149,7 @@ The edit replaces the false text with the corrected statement and leaves a one-l
 - A meta-discovery is relevant to how this task should approach its work (e.g., a clustering pattern that changes the implementor's default).
 - A user-resolved ask has implications for this task's verification or implementation choices without invalidating existing prose.
 - A related cycle artifact (inline fix, merged task) provides context the implementor should know about going in.
-- The task may now be **wholly obsolete** — flag for user disposition; do not auto-close. Raise an ask record of kind `confirmation` (`default_if_unanswered: leave open`, `blocks: [<task>]`) and append a stanza that names the claim and the ask id.
+- The task may now be **wholly obsolete** — flag for user disposition; do not auto-close. Write a `decision` ask file (options: close, refine, rescope, do nothing; `blocks: [<task>]`; `default_if_unanswered: leave open`) in the inbox and append a stanza that names the claim and the ask id. If the task is in this cycle's state, set it `blocked` with `blocker_note: <ask-id>`; an open task that was never batched has no state entry, and the next plan's § 2 leaves it out of the batch while the ask is open.
 
 Stanza form: see `templates/task-update-stanza.md`. Tasks may accumulate stanzas across cycles, newest-last.
 
@@ -175,7 +173,7 @@ For every refined task, append to `<repo>/.orchestrator/cycles/<cycle-id>/task-r
 }
 ```
 
-`obsolescence_flagged: true` surfaces in the next plan as a candidate-close. Plan does not auto-close; the `confirmation` ask carries the disposition.
+`obsolescence_flagged: true` surfaces in the next plan as a candidate-close. Plan does not auto-close; a `decision` ask file (options: close, refine, rescope, do nothing; `:BLOCKS:` the task) carries the disposition.
 
 A task that was touched but not modified — i.e. impact set was non-empty but inspection determined no actual prose change is warranted — still gets a refinement entry with `modes: []` and the channel(s) considered. This makes "we looked, we decided nothing was stale" auditable rather than indistinguishable from "we never looked."
 
@@ -200,8 +198,8 @@ which reads `design_diff` from `cycles/<cycle-id>/design-diff.json` (step 1; `--
   "pm_digest_path": ".orchestrator/cycles/<cycle-id>/pm-digest.md",
   "meta_discoveries": [...],
   "user_resolved_goal_drift": [...],
-  "asks_for_user_open": [ /* records per templates/ask.md with status open, copied unchanged */ ],
-  "asks_for_user_resolved": [ /* the same records with decision, decision_readback, applied_via set */ ],
+  "asks_for_user_open": [ /* index entries {id, kind, status, blocks, path}; the file at path is the ask (templates/ask.md) */ ],
+  "asks_for_user_resolved": [ /* the same entries for answered, applied and deferred asks, plus decision and decision_readback read from the file */ ],
   "task_refinements": [
     {
       "task": "openspec/changes/<change>/tasks/open/<name>.md",
@@ -235,7 +233,7 @@ This is the structural fix for the brainstorm's "learns and forgets" failure mod
 |---|---|
 | `blocking_findings_resolved` | Every `architect_findings[i]` with `severity: blocking` has `resolution != pending` |
 | `pm_digest_produced` | `pm-digest.md` exists with a non-empty `signals` section (the asks table may be empty) |
-| `user_asks_routed` | Every `asks_for_user[]` record with `status: open` appears in `handshake.asks_for_user_open`, and every one of kind `decision` appears in `cycles/<cycle-id>/asks.md` (so plan picks them up next cycle) |
+| `user_asks_routed` | Every open ask is in `handshake.asks_for_user_open` (so plan picks them up next cycle); no index/file mismatch and no missing file; no `open` ask has an answer the orchestrator has not acted on (an exact label is applied; anything else has its `* Readback` written, and may stay open awaiting the user's yes); every non-terminal file is in `inbox/` and every terminal one under `cycles/<cycle-id>/asks/`. Git tracking is reported per file by `state.py inbox`, not gated |
 | `open_tasks_refined_against_handshake` | Every still-open task in `<change>/tasks/open/` has been considered by step 7. A task either has an entry in `handshake.task_refinements` (with `modes` populated, possibly empty) or has been excluded explicitly because it had no impact-set hits. New tasks created in step 7 are present on disk and have a `task_refinements` entry with `modes: ["created"]`. Findings flagged in step 1 for follow-up task creation each have a corresponding created task; `noted` findings have none. **Asserted**: `state.py gate set integrate open_tasks_refined_against_handshake=true` |
 | `handshake_artifact_written` | `handshake-<cycle-id>.json` exists with all seven required fields populated |
 
@@ -250,7 +248,7 @@ Four of the five are computed by `state.py gate check integrate`; the fifth is a
   state.json              # frozen snapshot of the cycle's state file
   pm-signals.json         # counts --write
   pm-digest.md
-  asks.md                 # the cycle's asks as presented, with the decisions
+  asks/<ask-id>.org       # applied, declined and superseded asks (templates/ask.md); open and deferred ones stay in .orchestrator/inbox/
   handshake.json
   premise-check.md        # plan § 3
   design-diff.json        # step 1 input to the handshake
@@ -264,6 +262,10 @@ Four of the five are computed by `state.py gate check integrate`; the fifth is a
 The active state file stays in place, marked `closed_at`; the next cycle's `state.py init` replaces it and carries the counts `history` from the archives.
 
 This archive is what the deferred curation cycle (v2) reads. It is also the audit trail the user can walk through to understand any past decision.
+
+## Commit
+
+After `close`: `git add .orchestrator openspec/changes/<change>` and commit `Orchestrator: <cycle-id> integrate closed`. Ask files were committed when created and when applied (`templates/ask.md` § Commit rule); this commit carries the rest: the archived state and handshake, the digest and signals, the findings, `design-diff.json`, the amended `design.md`, the refined and created task files. `close` reports `inbox_left`; open and deferred files stay in the inbox for the next cycle's `init`.
 
 ## Loop closure: integrate → plan
 

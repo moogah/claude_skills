@@ -35,7 +35,7 @@ The integrate question is **not skipped** — that's what catches the case where
 
 1. **Make the edit** in the orchestrator's own checkout (no worktree).
 2. **Run the verification command** (overlay's `test.command`, or a narrower command if obviously sufficient).
-3. **Check the seam rows**: does this edit change a seam row in the change's `design.md` (its statement or owning symbols)? If yes, amend the row in place and record a `doc-correction` ask (`templates/ask.md`) with `status: applied`, listed under "Applied without asking" at the next integrate. A design in question is a `decision` ask, presented at the next integrate unless it blocks this inline commit.
+3. **Check the seam rows**: does this edit change a seam row in the change's `design.md` (its statement or owning symbols)? If yes, amend the row in place and, when a cycle is open, write a `doc-correction` ask file (`templates/ask.md`) with `status: applied` into `cycles/<cycle-id>/asks/`, committed with the edit; its `* Answer` says what was applied and the user can object. A design in question is a `decision` file in the inbox, presented inline only if it blocks this inline commit and the user is present (`templates/ask.md` § The inline rule).
 4. **Update the task file**'s `status` to `done` directly (skipping `needs_review` / `reviewed`). Inline path skips formal review because the orchestrator IS the reviewer. If a cycle is open, the task is in state too: `state.py task add <name> …` if it was not, then `state.py task set <name> done`; between cycles the task file is the record.
 5. **Commit** with the standard task-name commit message.
 

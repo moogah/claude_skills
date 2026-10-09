@@ -51,13 +51,13 @@ drainage         1.00       0.83       0.50       0.57       0.45  ⚠ trending 
 
 ## Asks for the user
 
-| # | Question | Blocks | Recommendation |
-|---|---|---|---|
-| 1 | Should a video you fetch by hand be added to the archive? | — | Do nothing to the code |
-| 2 | Keep working through the refactor batch, or return to the critical path first? | next-plan | Return to the critical path |
+| # | Question | Blocks | Recommendation | File |
+|---|---|---|---|---|
+| 1 | Should a video you fetch by hand be added to the archive? | — | Do nothing to the code | `.orchestrator/inbox/ask-cycle-N-9.org` |
+| 2 | Keep working through the refactor batch, or return to the critical path first? | next-plan | Return to the critical path | `.orchestrator/inbox/ask-cycle-N-3.org` |
 
-Full asks, options and defaults: `.orchestrator/cycles/<cycle-id>/asks.md`.
-Applied without asking: 3 (listed there). Process notes: 1.
+Answer in the file's `* Answer` section, or in chat.
+Applied without asking: 3 (`cycles/<cycle-id>/asks/`). Process notes: 1 (inbox).
 Reasoning-only findings noted, not scheduled: 1.
 
 ## Trends to watch
@@ -77,7 +77,7 @@ Reasoning-only findings noted, not scheduled: 1.
 
 ## Signal symbols
 
-- ⚠ — actionable signal; warrants a disposition: an ask record, a conformance run, a task, or a listed default
+- ⚠ — actionable signal; warrants a disposition: an ask file, a conformance run, a task, or a listed default
 - ✓ — healthy on this dimension; included so the absence of a ✓ on a tracked dimension reads as missing data
 - ◦ — informational; trend to watch but not yet actionable
 
@@ -91,12 +91,12 @@ The deterministic pass is `state.py counts --write` (`roles/project-manager.md`)
 - The critical-path readout and the class table.
 - The findings count and how many are reasoning-only and `noted` (the one line under the asks table).
 - The list of fired signals it can compute (throughput inversion, review starvation, priority inversion, cascade).
-- The open asks and the blocked tasks with their `blocker_note`, from which the orchestrator writes candidate-ask stubs per `templates/ask.md`. A subject that already carries an open ask id in `blocker_note` re-surfaces that id. Cascade detection produces an Architect conformance run scoped to the cluster, not an ask; the PM may spawn it alone.
+- The open asks (with their paths) and the blocked tasks with their `blocker_note`, from which the orchestrator writes candidate-ask stubs, inbox files it completes per `templates/ask.md`. A subject that already carries an open ask id in `blocker_note` re-surfaces that id. Cascade detection produces an Architect conformance run scoped to the cluster, not an ask; the PM may spawn it alone.
 
 The agent pass produces:
 
 - The framing prose around each signal (e.g. "this cluster looks like a vocabulary-mapping gap").
-- The asks' prose per `templates/ask.md` (a plain question and, when the orchestrator has supplied `about` and `observed`, the options and consequences). Fields that need code or docs are the orchestrator's, not the PM's.
+- The asks' prose per `templates/ask.md` (a plain question and, when the orchestrator has supplied `* About` and `* What happened`, the options and consequences). Fields that need code or docs are the orchestrator's, not the PM's.
 - The goal-drift recommendation (revise / split / abandon / continue) and its one-line reason.
 
 If the agent pass fails or hallucinates, the deterministic pass output remains in `.orchestrator/cycles/<cycle-id>/pm-signals.json` and is recoverable.

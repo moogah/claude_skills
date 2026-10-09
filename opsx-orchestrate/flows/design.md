@@ -50,7 +50,7 @@ The coverage row's `test` column names the test. Promotion is removing the marke
 
 ### 5. Open questions
 
-A question only the user can settle (which of two seams; whether a scenario is in scope) is a `decision`. It is asked now when a seam row or a pending test depends on the answer; otherwise it can wait. Outside a cycle there is no state file to hold an ask record, so one asked now is put like an `environment` ask (`templates/ask.md`): the Settle-now block, at once; the question and the answer are then written into `design.md` § Open Questions (created when the file has none) and § Decisions. No record, no finding. One that can wait is written into § Open Questions and raised as an ask record at plan § 3.
+A question only the user can settle (which of two seams; whether a scenario is in scope) is a `decision`. It is asked now when a seam row or a pending test depends on the answer; otherwise it can wait. Outside a cycle there is no state file to index an ask file, so one asked now is put like an `environment` ask (`templates/ask.md`): the blocking call, at once, one question; the question and the answer are then written into `design.md` § Open Questions (created when the file has none) and § Decisions. No file, no finding. One that can wait is written into § Open Questions and raised as an ask file at plan § 3.
 
 ### 6. Commit
 

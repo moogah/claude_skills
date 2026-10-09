@@ -8,20 +8,23 @@ The file survives the lifetime of one cycle (plan → execute → integrate); `c
 
 **State is written only through the state tool**, `scripts/state.py` in this skill's directory (`python3 ~/.claude/skills/opsx-orchestrate/scripts/state.py <verb> …`, written `state.py <verb>` in the flow docs). A heredoc, `jq`, `sed` or Write call against `state.json` is a process bug: the tool owns the schema, the transitions, the timestamps and the derived numbers, and it refuses what does not fit. Subagents that touch state use the same verbs.
 
-Run `state.py status` before anything else in a session; it is the orientation (phase, gates with their failing checks, the task table, open asks, pending blocking findings, the last journal lines) in about 2 KB, and it says what to resume.
+Run `state.py status` before anything else in a session; it is the orientation (phase, gates with their failing checks, the task table, open asks and which of them have an answer waiting in the inbox, pending blocking findings, the last journal lines) in about 2 KB, and it says what to resume.
 
 | Verb | Does |
 |---|---|
-| `status` | Orientation, as above. Read-only. |
-| `validate` | Schema check. On a file of an older schema, prints what `migrate` would do. |
-| `migrate` | Converts a file of an older schema (1.0 or 1.1) to the current one; non-schema content (the old `register_touched` list among it) is parked in `cycles/<id>/legacy-state-extras.json`, a backup is kept. |
-| `init --change <name> --test-command <cmd> [--prior-handshake <path> \| --first-cycle] [--cycle <id>]` | Starts a cycle in `plan`. Refuses while a cycle is open. Validates the prior handshake's required fields (plan's refusal). Carries `history` from the archived cycles. |
+| `status` | Orientation, as above. Read-only. Its `resume` hint names the inbox answers waiting, if any. |
+| `inbox` | Read-only. Every `.orchestrator/inbox/*.org` joined with the index: the question, the answer and the option it names (`exact` / `fuzzy` / `none`), other ask ids the answer mentions, a label written under another heading, whether git tracks the file, and every index/file mismatch. Works on a closed cycle. The sync points run it (`SKILL.md` § Sync points). |
+| `validate` | Schema check, plus the inbox's file problems. On a file of an older schema, prints what `migrate` would do. |
+| `migrate` | Converts a file of an older schema (1.0, 1.1 or 1.2) to the current one; non-schema content (the old `register_touched` list among it) is parked in `cycles/<id>/legacy-state-extras.json`, a backup is kept. Every ask record becomes a file (`ask_files` in the output); a legacy "resolved" ask is applied history under its cycle's `asks/`. |
+| `init --change <name> --test-command <cmd> [--prior-handshake <path> \| --first-cycle] [--cycle <id>]` | Starts a cycle in `plan`. Refuses while a cycle is open, and refuses (`orchestrator_ignored`) when the repository's `.gitignore` ignores `.orchestrator/`. Validates the prior handshake's required fields (plan's refusal). Carries `history` from the archived cycles and every file in the inbox into the new index (`inbox_carried`). Writes `.orchestrator/.gitignore` (test outputs, the lock, migration backups) when absent. |
 | `set field=value …` | The four settable scalars: `baseline_snapshot`, `baseline_status`, `current_branch`, `test_command`. |
 | `task add <name> --file <path> --class <class> [--cites seam/a,seam/b] [--blocked-by t1] [--critical] [field=value …]` | Adds a task with spec fields only. |
 | `task set <name> [<status>] [field=value …]` | The transition. Validates the status enum and the transition rules; sets `started_at` / `completed_at` / `reviewed_at`; requires `merge_commit=` for `needs_review`; counts a rejection on `needs_review → in_progress`. `--force --why "<reason>"` allows a non-standard move and records a `deviation` journal entry. |
 | `task remove <name> --why "<reason>"` | Only `ready` / `failed` / `externalised` tasks. |
-| `record add findings\|asks <json \| @file>` | Appends a record. Ids are assigned (`arch-<cycle>-<n>`, `ask-<cycle>-<n>`) when omitted; a finding's `path` defaults to `cycles/<id>/findings/<finding-id>.md`. |
-| `record set <list> <id> field=value …` | Updates fields on a record: ask decisions, finding resolutions. |
+| `record add findings <json \| @file.json>` | Appends a finding. The id (`arch-<cycle>-<n>`) is assigned when omitted; `path` defaults to `cycles/<id>/findings/<finding-id>.md`. |
+| `record add asks <json \| @file.json \| @draft.org>` | Writes the ask file (`templates/ask.md`) and appends its index entry. Takes the full field set (`question`, `about`, `observed`, `options`, …); the prose lands in the file, not in state. An org draft's own prose is kept. The id is assigned when omitted, skipping any file already on disk; a `decision` without `about`, `observed` and two to four options is refused; `"revised_from": "<old-id>"` marks the old ask `superseded` and moves its file. A terminal status at add (`doc-correction` / `confirmation` recorded `applied`) writes straight into `cycles/<id>/asks/`. |
+| `record set findings <id> field=value …` | Updates fields on a finding: its resolution. |
+| `record set asks <id> field=value …` | Edits the file and the index together: re-reads the file (the file wins; a deleted drawer is restored from the index), applies the fields (`status`, `blocks`, `kind`, `about`, `observed`, `options`, `recommendation`, `default_if_unanswered`, `decision`, `decision_readback`, `applied_via`, `revised_from`), rewrites the index entry from the file. `status=answered\|applied\|declined\|deferred` refuses when `* Answer` is empty and no `decision=` is given; `applied` needs `applied_via`; crossing into or out of `applied` / `declined` / `superseded` moves the file (`git mv` when tracked, else rename; `moved_via` reported). `id` and `path` are not settable. |
 | `note <kind> "<text>" [--ref <id>] [--path <file>] [--by <role>]` | One journal line (≤ 280 chars). Kinds: `discovery`, `decision`, `inline-fix`, `deviation`, `push-back`, `note`. Longer text goes in a file and `--path` points at it. |
 | `phase set <plan\|execute\|integrate>` | Advances one phase; refuses unless the prior gate passed. |
 | `gate check <phase>` | Evaluates every check that is a function of state or file existence and stores the results; lists the checks it cannot compute. |
@@ -29,12 +32,12 @@ Run `state.py status` before anything else in a session; it is the orientation (
 | `gate pass <phase>` | Re-evaluates, then sets `passed` and `passed_at` if every check is true; otherwise names the failing checks. |
 | `counts [--write]` | The PM deterministic pass: counts, ratios, by-status, history, critical-path readout, class table, follow-ups by source, fired signals. `--write` saves `cycles/<id>/pm-signals.json`. |
 | `handshake [--meta-discoveries <json\|@file>] [--task-refinements <json\|@file>] [--design-diff <json\|@file>]` | Assembles `handshake-<cycle-id>.json` from state (asks, goal-drift decisions, digest path), the design diff (read from `cycles/<id>/design-diff.json` unless given) and the two judgment fields, and validates it. |
-| `close [--abandon --why "<reason>"]` | Archives state and handshake to `cycles/<id>/` and marks the cycle closed. Requires the integrate gate unless abandoning. |
+| `close [--abandon --why "<reason>"]` | Archives state and handshake to `cycles/<id>/` and marks the cycle closed. Requires the integrate gate unless abandoning. Reports `inbox_left` (open, answered, deferred); those files stay in the inbox for the next `init`. |
 
 Every verb prints JSON. A refusal is `{"ok": false, "error": "<slug>", "message": …}` on stderr, exit 1. The rules the tool enforces:
 
-- **Closed schema.** Unknown top-level keys, unknown task fields and unknown record fields are refused. Narrative goes through `note` or into the file that exists for it (findings, reviews, `design.md`, `asks.md`, the digest); state holds the path.
-- **Pointers, enums, timestamps.** Every string field is capped at 280 characters (`question` and `decision_readback`: 600). The one-paragraph fields of a finding live in its file.
+- **Closed schema.** Unknown top-level keys, unknown task fields and unknown record fields are refused. Narrative goes through `note` or into the file that exists for it (findings, reviews, `design.md`, the ask files, the digest); state holds the path.
+- **Pointers, enums, timestamps.** Every string field in state is capped at 280 characters. An ask's title (`question`) and `decision_readback` are capped at 600; its prose (`about`, options, the answer) lives in the file and has no cap. The one-paragraph fields of a finding live in its file.
 - **Counts are derived**, never stored. `cycle_log.counts` and the ratios do not exist in the file; `counts` computes them from task statuses and timestamps.
 - **Timestamps come from the tool.**
 - **Transitions are checked** (see Status semantics). A deviation is possible and is recorded, not hidden.
@@ -43,7 +46,7 @@ Every verb prints JSON. A refusal is `{"ok": false, "error": "<slug>", "message"
 
 ```json
 {
-  "schema_version": "1.2",
+  "schema_version": "1.3",
   "session_id": "orch-<unix-ts>",
   "cycle_id": "cycle-<unix-ts>",
   "phase": "plan | execute | integrate",
@@ -159,23 +162,19 @@ The state record is the index line; the finding file (`templates/architect-findi
 
 ## Ask entry
 
-Every question to the user, whichever role raised it. The schema lives in one place, `templates/ask.md`; this array holds the records for the current cycle, and the handshake copies them out unchanged.
+Every question to the user, whichever role raised it, is one org file (`templates/ask.md` is the format's normative text). State holds only the index entry; the file is the record, and when the two disagree the file wins (`record set` rewrites the entry from it; `validate` and `inbox` report the mismatch).
 
 ```json
 {
   "id": "ask-<cycle-id>-<seq>",
   "kind": "decision | doc-correction | process | environment | confirmation",
-  "raised_by": { "role": "...", "ref": "..." },
-  "question": "...", "about": "...", "observed": { "happened": true, "evidence": "..." },
-  "options": [ { "label": "...", "consequence": "..." } ],
-  "recommendation": { "option": "...", "why": "..." },
-  "default_if_unanswered": "...", "blocks": [],
   "status": "open | answered | applied | deferred | declined | superseded",
-  "decision": null, "decision_readback": null, "applied_via": null, "revised_from": null
+  "blocks": [],
+  "path": ".orchestrator/inbox/<id>.org | .orchestrator/cycles/<cycle-from-id>/asks/<id>.org"
 }
 ```
 
-Only `decision` kinds are presented to the user (`flows/integrate.md` § 3a, `flows/execute.md` § 9). A task blocked on an ask carries the ask id in `blocker_note`. The goal-drift ask is recognised by its four options (`revise` / `split` / `abandon` / `continue`); the tool derives the plan gate's `user_signed_off_goal_drift` and the handshake's `user_resolved_goal_drift` from it.
+`path` is a function of `id` and `status`: the inbox while `open`, `answered` or `deferred`; the asks directory of the cycle the id names once `applied`, `declined` or `superseded`. The question, the options, the answer and the readback are read from the file whenever a verb needs them (`inbox`, `handshake`, the gates). Only `decision` kinds are presented to the user (`flows/integrate.md` § 3a, `flows/execute.md` § 9). A task blocked on an ask carries the ask id in `blocker_note`. The goal-drift ask is recognised by its four options (`revise` / `split` / `abandon` / `continue`) in the file; the plan gate's `user_signed_off_goal_drift` passes only when its answer names one of them exactly, and the handshake's `user_resolved_goal_drift` carries that label.
 
 ## Journal entry
 
@@ -240,7 +239,7 @@ Each gate is a structured record of whether the phase's exit conditions are met.
 }
 ```
 
-Computed by `gate check` from state and the files on disk: all of execute's checks; plan's `prior_integrate_consumed`, `briefs_cite_seams` (every non-`externalised` task has a non-empty `cites_seams`), `user_signed_off_goal_drift`; integrate's `blocking_findings_resolved`, `pm_digest_produced` (a non-empty `## Signals` section), `user_asks_routed` (open asks in the handshake; decision asks in `asks.md`), `handshake_artifact_written` (file present with every required field). Asserted by the orchestrator with `gate set`: `batch_composed`, `open_tasks_refined_against_handshake`. The flow docs say what each check means.
+Computed by `gate check` from state and the files on disk: all of execute's checks; plan's `prior_integrate_consumed`, `briefs_cite_seams` (every non-`externalised` task has a non-empty `cites_seams`), `user_signed_off_goal_drift`; integrate's `blocking_findings_resolved`, `pm_digest_produced` (a non-empty `## Signals` section), `user_asks_routed` (every open ask in the handshake; no index/file mismatch or missing file; no open ask with an answer the orchestrator has not acted on, where a written `* Readback` counts as acted on; every non-terminal file in the inbox and every terminal one under `cycles/<id>/asks/`), `handshake_artifact_written` (file present with every required field). Asserted by the orchestrator with `gate set`: `batch_composed`, `open_tasks_refined_against_handshake`. The flow docs say what each check means.
 
 ## Integrate→plan handshake artifact
 
@@ -260,8 +259,8 @@ Computed by `gate check` from state and the files on disk: all of execute's chec
   "user_resolved_goal_drift": [
     { "ask": "ask-<cycle-id>-<seq>", "decision": "revise | split | abandon | continue", "rationale": "<the readback>" }
   ],
-  "asks_for_user_open": [ /* Ask entries with status open, copied unchanged */ ],
-  "asks_for_user_resolved": [ /* Ask entries with status answered, applied or deferred */ ],
+  "asks_for_user_open": [ /* index entries with status open; plan reads the file at each path */ ],
+  "asks_for_user_resolved": [ /* index entries with status answered, applied or deferred, plus decision, decision_readback and applied_via read from the file */ ],
   "task_refinements": [
     {
       "task": "openspec/changes/<change>/tasks/open/<name>.md",
@@ -288,10 +287,11 @@ Computed by `gate check` from state and the files on disk: all of execute's chec
 
 `status` on a missing, legacy or invalid state file says which, and the orchestrator does not invent state:
 
-1. Older schema (`1.0` or `1.1`): `validate` shows the migration plan; `migrate` converts it, renames `cites_register_entries` to `cites_seams`, maps old finding triggers to the current two (the original kept as `_legacy_trigger` in the extras), parks every other non-schema key and field, `register_touched` included, in `cycles/<id>/legacy-state-extras.json` (nothing is deleted) and keeps a `state.json.pre-migrate-<ts>` backup. A cycle migrated while at integrate re-runs `handshake` before `gate pass integrate`, since the handshake it wrote earlier carries the old field.
+1. Older schema (`1.0`, `1.1` or `1.2`): `validate` shows the migration plan; `migrate` converts it, renames `cites_register_entries` to `cites_seams`, maps old finding triggers to the current two (the original kept as `_legacy_trigger` in the extras), writes every ask record as a file (open ones into the inbox, resolved ones under their cycle's `asks/`; a file already there is left alone, so the verb can be rerun), parks every other non-schema key and field, `register_touched` included, in `cycles/<id>/legacy-state-extras.json` (nothing is deleted) and keeps a `state.json.pre-migrate-<ts>` backup. A cycle migrated while at integrate re-runs `handshake` before `gate pass integrate`, since the handshake it wrote earlier carries the old field.
 2. Invalid current-schema file (someone wrote it by hand): `validate` lists the offending keys; fix them by hand, then continue through the tool.
-3. Missing file mid-cycle: restore `cycles/<cycle-id>/state.json` if an archive exists for the cycle; otherwise ask the user whether to recover or to abandon the cycle. This is an `environment`-kind ask (`templates/ask.md`): asked at once, in block form, since there is no state file to record it in.
-4. Never silently start a new cycle — `init` refuses while a cycle is open; `close --abandon --why` is the explicit way out.
+3. Missing file mid-cycle: restore `cycles/<cycle-id>/state.json` if an archive exists for the cycle; otherwise ask the user whether to recover or to abandon the cycle. This is an `environment`-kind ask (`templates/ask.md`): the blocking call, at once, since there is no state file to index an ask file.
+4. An ask file and its index entry disagree (`validate` and `inbox` say how): a hand-edited `:STATUS:` is reconciled by `record set asks <id> status=<that value>`; a deleted drawer is restored by any `record set`; a file missing from its `path` is restored from git; a file in the inbox with no index entry is carried in by the next `init` or indexed now with `record add asks @<path>`.
+5. Never silently start a new cycle — `init` refuses while a cycle is open; `close --abandon --why` is the explicit way out.
 
 ## Cycle archive
 
@@ -305,16 +305,13 @@ Computed by `gate check` from state and the files on disk: all of execute's chec
   design-diff.json        # integrate § 1
   pm-signals.json         # counts --write
   pm-digest.md            # the cycle's digest
-  asks.md                 # the asks as presented, with the decisions (templates/ask.md)
+  asks/<ask-id>.org       # applied, declined and superseded asks (templates/ask.md); moved here by record set
   findings/<finding-id>.md
   reviews/<task-name>.md
   reports/<task-name>.md             # the Implementor's structured report, orchestrator-only
   legacy-state-extras.json           # only when migrate ran in this cycle
 ```
 
-`baseline-<cycle-id>.txt` and `after-<task>-<ts>.txt` stay at `.orchestrator/` and are named from state (`baseline_snapshot`, `tasks[].after_snapshot`).
-
-```
-```
+At the `.orchestrator/` level: `inbox/<ask-id>.org` holds every open, answered and deferred ask across cycles (`init` indexes what it finds there); `.gitignore`, written by `init`, keeps `baseline-<cycle-id>.txt`, `after-<task>-<ts>.txt`, `*.tmp`, the lock and the migration backups out of git; everything else under `.orchestrator/` is tracked and committed at the points `SKILL.md` names. The test outputs stay at `.orchestrator/` and are named from state (`baseline_snapshot`, `tasks[].after_snapshot`).
 
 This directory is the long-tail audit trail. The curation cycle (v2, deferred) reads it.

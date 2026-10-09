@@ -29,7 +29,7 @@ Nothing runs between an Implementor's commit and its merge. The Reviewer (§ 7) 
 
 ### 3. Merge each task as it lands
 
-Merges are not held for the batch. When an Implementor completes with a commit, its task joins the merge queue at once. The queue merges one task at a time, in the order tasks landed, while the other Implementors keep running; the chain is serial because there is one integration branch. A task that merges and passes § 4 goes straight on through § 5-7 (its Reviewer is spawned), and the chain moves to the next queued task without waiting for that review. A task held by a blocking ask (§ 9) stays out of the queue; the tasks behind it merge. The record shows why: a batch that waited for all seven Implementors made the first-finished task wait 10 minutes for its merge and 12 for its Reviewer, where batches merged as they landed spawned each Reviewer 0-3 minutes after its Implementor ended.
+Merges are not held for the batch. When an Implementor completes with a commit, its task joins the merge queue at once. The queue merges one task at a time, in the order tasks landed, while the other Implementors keep running; the chain is serial because there is one integration branch. A task that merges and passes § 4 goes straight on through § 5-7 (its Reviewer is spawned), and the chain moves to the next queued task without waiting for that review. A task held by a blocking ask (§ 9) stays out of the queue; the tasks behind it merge. When the chain pauses (nothing queued, agents still running), the orchestrator runs `state.py inbox` and handles an answered file before it waits again (§ 9). The record shows why: a batch that waited for all seven Implementors made the first-finished task wait 10 minutes for its merge and 12 for its Reviewer, where batches merged as they landed spawned each Reviewer 0-3 minutes after its Implementor ended.
 
 ```bash
 REPO_ROOT=$(git rev-parse --show-toplevel)
@@ -120,7 +120,7 @@ The Reviewer's findings file lands at `<repo>/.orchestrator/cycles/<cycle-id>/re
 |---|---|
 | `blocking` | Apply inline fix (`state.py note inline-fix "<what>" --ref <task>`) OR re-spawn Implementor with fix scope (`state.py task set <name> in_progress`, which counts a rejection) OR revert merge — task does not advance to `done` |
 | `advisory` | Apply inline fix OR file follow-up task with `discovered_by: reviewer`, `discovered_class: <appropriate>` (`state.py task add … discovered_from=<task> discovered_by=reviewer discovered_class=<class>`); a task only when the finding's `observed.happened` is true or a project prior asks for that kind of work, otherwise it stays in the review file — task can advance to `done` |
-| `spec-signal` | Record an ask (`templates/ask.md`, `raised_by.ref` the finding); presented at integrate unless its `blocks` names a merge in this batch (§ 9). Does not block the task itself; it signals that the design may need revision |
+| `spec-signal` | Write an ask file at once (`templates/ask.md`; `:RAISED_BY: reviewer`, `:REF:` the review file's path, since Reviewer findings carry no id); presented inline only under § 9's rule, otherwise listed at integrate. Does not block the task itself; it signals that the design may need revision |
 
 The orchestrator's inline fixes are committed with `Co-Authored-By: <reviewer>` style attribution; follow-up tasks carry the provenance fields.
 
@@ -128,12 +128,12 @@ When all inline fixes are applied: `state.py task set <name> done`. Follow-up ta
 
 ### 9. Asks raised during execute
 
-An `AskUserQuestion` call blocks everything the orchestrator would otherwise do next, and the record shows a 35-minute stall on a question that was not needed until the next wave. So:
+Every ask that arises while agents run (a `spec-signal`, an Implementor that stops to ask, an orchestrator-side discovery) is a file at once: `state.py record add asks '{...}'` per `templates/ask.md` writes `inbox/<id>.org` and returns the id; commit it with a subject naming the id. The record shows a 35-minute stall on a question that was not needed until the next wave, and a 950-minute one overnight on a question that blocked nothing. So:
 
-- An ask that arises while agents run (a `spec-signal`, an Implementor that stops to ask, an orchestrator-side discovery) is **recorded** with `state.py record add asks '{...}'` per `templates/ask.md` (the id comes back) and **held** until the next natural pause: the merge chain drained, the batch closed, or the user's next prompt. Integrate's § 3a presents it.
-- The exception is an ask whose `blocks` names a merge in this batch or a task not yet spawned: present that one ask **alone**, now, in the template's block form. Because the call blocks until answered, first start the orchestrator-side work that does not depend on it (spawn Reviewers for merged tasks, report filing), then ask. `environment` asks (a regression stop, a wedged runner) are always in this case.
-- Never put a non-blocking ask in the same `AskUserQuestion` as a blocking one.
+- The blocking call (`AskUserQuestion`) is used only when the ask's `blocks` names a merge in this batch or a task not yet spawned **and** the user is present (acted within the last 15 minutes of the session). Because the call blocks until answered, first start the orchestrator-side work that does not depend on it (spawn Reviewers for merged tasks, report filing), then ask: one question per call, never a non-blocking ask in the same call. `environment` asks (a regression stop, a wedged runner) always take the call; when the user is absent they also get a file so the next session finds them.
+- Otherwise the file is the ask. Each task named in `blocks` gets `state.py task set <name> blocked blocker_note=<ask-id>`; the merge chain continues with the tasks behind it; the orchestrator finishes everything that does not wait on it. When nothing else can run, it does not wait for the answer: `blocked` counts as stopped, so if `gate check execute` is all true it passes the gate and goes on to integrate, where § 3a presents the ask and the blocked task is carried in the handshake for the next plan (`task set <name> ready` happens in whichever phase the answer is applied). Only when the gate cannot pass does it stop, with a one-line pointer to the file. A non-blocking ask needs no pointer; `status` lists it at the next sync point and integrate's § 3a presents it.
 - An Implementor that stops to ask (`roles/implementor.md` § Escalation contract) leaves its task blocked (`state.py task set <name> blocked blocker_note=<ask-id>`) and its worktree retained. `blocked` counts as stopped for the exit gate, so `no_orphan_in_progress` still passes; `task set <name> ready` when the ask is applied.
+- Answers arrive through the file. `state.py inbox` runs at the sync points (`SKILL.md` § Sync points) and whenever the merge chain pauses (§ 3); an answered file is handled before anything else (`templates/ask.md` § Answer protocol), and a matched option that unblocks a task is applied and committed with the merge it releases.
 
 ### Productive tension resolution
 
@@ -159,6 +159,8 @@ The Reviewer never has to know which path was taken.
 | `no_orphan_in_progress` | No task is stuck in `setup_complete` / `in_progress` / `completed` / `needs_review` / `reviewed` |
 
 All three are computed: `state.py gate check execute` shows them with reasons, `state.py gate pass execute` sets the gate, and `state.py phase set integrate` advances. Integrate refuses to run otherwise.
+
+**Commit** at execute close: `git add .orchestrator openspec/changes/<change>` (`state.json`, the briefs, reports, reviews and findings, the task files' mirrored frontmatter; the after-files are ignored by `.orchestrator/.gitignore`) and commit `Orchestrator: <cycle-id> execute closed`. Ask files were committed when created and when applied (`templates/ask.md` § Commit rule).
 
 ## What execute does **not** do
 

@@ -22,7 +22,7 @@ A change enters the orchestrator after OpenSpec's `proposal → specs → design
 
 ## What phase am I in?
 
-Run `state.py status` (the state tool: `python3 ~/.claude/skills/opsx-orchestrate/scripts/state.py`; the flow docs write it `state.py`). It prints the phase (`plan` | `execute` | `integrate`), each gate's failing checks, the task table, open asks and what to resume. Each phase has its own flow doc and exit gate. **A later phase refuses to start if the prior phase's gate has not passed** — `state.py phase set` enforces it.
+Run `state.py status` (the state tool: `python3 ~/.claude/skills/opsx-orchestrate/scripts/state.py`; the flow docs write it `state.py`). It prints the phase (`plan` | `execute` | `integrate`), each gate's failing checks, the task table, the inbox (open asks, and which have an answer waiting) and what to resume. Each phase has its own flow doc and exit gate. **A later phase refuses to start if the prior phase's gate has not passed** — `state.py phase set` enforces it.
 
 | Phase | Flow doc | Defining ops |
 |---|---|---|
@@ -53,6 +53,7 @@ The orchestrator deploys four roles. Read the relevant role file before spawning
 - **Pending tests** in the project's test tree, written by the design round for behaviour HEAD does not yet satisfy, marked with the overlay's `test.pending-style` (a style the runner reports as pending, never failing). Promotion is removing the marker, done by the Implementor in the commit that makes the test pass.
 - **`proposal.md`** carries a goal-status header: [templates/proposal-status-header.md](templates/proposal-status-header.md).
 - **Per-cycle Architect artifacts**: `cycles/<id>/premise-check.md` (plan § 3) and `cycles/<id>/design-diff.json` (integrate § 1).
+- **Ask files**: one org file per question, `.orchestrator/inbox/<ask-id>.org` while open; `cycles/<id>/asks/<ask-id>.org` once applied, declined or superseded ([templates/ask.md](templates/ask.md)).
 - **Provenance fields on every follow-up task**: `discovered_from`, `discovered_by`, `discovered_class`. Enforced by [externalisation.md](externalisation.md).
 
 ## Templates
@@ -61,7 +62,7 @@ Output forms — read at the point each is produced:
 
 - [templates/design.md](templates/design.md) — the Seams and Scenario coverage sections
 - [templates/architect-finding.md](templates/architect-finding.md)
-- [templates/ask.md](templates/ask.md) — every question to the user
+- [templates/ask.md](templates/ask.md) — every question to the user, as an org file in `.orchestrator/inbox/`
 - [templates/pm-digest.md](templates/pm-digest.md)
 - [templates/task-body.md](templates/task-body.md)
 
@@ -91,6 +92,10 @@ When invoked without an explicit phase:
 
 Never silently start a new cycle while a prior cycle is open; `init` refuses, and `close --abandon --why` is the explicit exit.
 
+## Sync points
+
+Where the orchestrator reads the inbox (`templates/ask.md`): `state.py status` at session start; each phase boundary (`phase set`, `gate pass`, `init`); every `ScheduleWakeup` firing; the user's next prompt. `status` prints `inbox: N open, M answered (ids)`; `state.py inbox` prints the full scan. An answered file is handled before any other work at that point: readback if free text; apply; `record set … status=applied applied_via=…`; the move; the commit. The flows point here.
+
 ## Critical requirements
 
 - **`state.json` is written only through `scripts/state.py`.** A heredoc, `jq`, `sed` or Write against it is a process bug. The tool owns the schema (unknown keys and long text are refused), the transitions, the timestamps, the gate evaluation and the handshake; narrative goes to `state.py note` or to the file that exists for it.
@@ -101,4 +106,5 @@ Never silently start a new cycle while a prior cycle is open; `init` refuses, an
 - **Provenance fields are mandatory on follow-up tasks.** The orchestrator refuses to externalise without them.
 - **The integrate→plan handshake artifact is the loop-closure contract.** Without every required field (see `state.md`), plan refuses to start.
 - **A finding, discovery or observation becomes a task only on a demonstrated reason**: its `observed.happened` is true, a project prior or the user asked for that kind of work, or it states a measured cost. A reasoning-only finding is `noted`; it never becomes a task, a backlog item or a question to the user (`flows/integrate.md` § 7). The user's own words (a prior, an ask decision, a proposal sentence) outrank a `design.md` sentence.
-- **Every question to the user is an ask record** per `templates/ask.md`, triaged by kind. Only `decision` kinds reach the user as questions, in the template's rendering, and decisions are read back before they are applied. An `AskUserQuestion` raised mid-execute is reserved for asks that block a merge.
+- **Every question to the user is an org file in `.orchestrator/inbox/`** per `templates/ask.md`, written the moment it is raised, in any phase, and triaged by kind. Only `decision` kinds reach the user as questions; the user answers in the file; an answer outside the offered options is read back before it is applied. The blocking call is for `environment` asks and for blocking asks while the user is present (acted within the last 15 minutes); one question per call. Nothing else blocks a session on a question.
+- **Process artifacts are tracked in git.** `.orchestrator/` is never gitignored (`state.py init` refuses when it is, and writes `.orchestrator/.gitignore` for the test outputs). The orchestrator commits an ask file when it is created, an applied ask alongside the change that applies it, and everything else at phase close (`Orchestrator: <cycle-id> <phase> closed`).

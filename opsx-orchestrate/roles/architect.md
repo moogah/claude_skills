@@ -75,8 +75,8 @@ The incidents that produced these questions (three constructions of one plist fo
 ## Escalation contract
 
 - **Blocking findings** produce a follow-up task in the batch (integrate § 7) and hold the integrate gate until `resolution` is no longer `pending`.
-- **Code right, design stale**: amend the seam row (and the coverage rows or Decision naming the same thing) in place, `resolution: design-amended`; the orchestrator records one `doc-correction` ask with `status: applied` and `applied_via: design.md <seam-id>`, listed under "Applied without asking" (`templates/ask.md`). Not Implementor work.
-- **Design in question**: the finding says what the seam or scenario is for, whether the drift is in merged code or reasoning only, and what it blocks; the orchestrator writes a `decision` ask from it. The finding is not the ask.
+- **Code right, design stale**: amend the seam row (and the coverage rows or Decision naming the same thing) in place, `resolution: design-amended`; the orchestrator writes one `doc-correction` ask file with `status: applied` and `applied_via: design.md <seam-id>` into `cycles/<cycle-id>/asks/` (`templates/ask.md`). Not Implementor work.
+- **Design in question**: the finding says what the seam or scenario is for, whether the drift is in merged code or reasoning only, and what it blocks; the orchestrator writes a `decision` ask file from it. The finding is not the ask.
 - **Cleanup proposals** land in the follow-up stream; the orchestrator decides this batch, next batch or `.tasks/`, and only when `observed.happened` is true or a prior asks for that kind of work; otherwise the finding is `noted`. An uncalled producer is a `dead-branch` finding, not a second producer.
 - **PM-spawned runs**: when the cascade signal fires, the PM may spawn a conformance run scoped to the cluster it names.
 

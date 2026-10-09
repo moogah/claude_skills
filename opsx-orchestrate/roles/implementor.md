@@ -75,7 +75,7 @@ The reviewer reads `## Observations` alongside the merge and groups related ones
     :reason]; :message and :error gone.
 ```
 
-`class` must be one of: `shape-fragmentation`, `vocabulary-mismatch`, `responsibility-leakage`, `dead-branch`, `interface-drift`, `mutation`, `invariant-gap`, `spec-signal`, `deviation`, `scope-question`, `duplication`. A `spec-signal` or `scope-question` discovery that only the user can settle becomes an ask record at integrate (`templates/ask.md`); write what the feature is for, fill `observed` (`templates/architect-finding.md` § Observed), and say what it blocks, so the orchestrator can write the ask without re-deriving it. Every discovery carries `observed`; one that rests on reasoning only is recorded, not scheduled (`flows/integrate.md` § 7).
+`class` must be one of: `shape-fragmentation`, `vocabulary-mismatch`, `responsibility-leakage`, `dead-branch`, `interface-drift`, `mutation`, `invariant-gap`, `spec-signal`, `deviation`, `scope-question`, `duplication`. A `spec-signal` or `scope-question` discovery that only the user can settle becomes an ask file in the inbox when the orchestrator reads it (`templates/ask.md`); write what the feature is for, fill `observed` (`templates/architect-finding.md` § Observed), and say what it blocks, so the orchestrator can write the ask without re-deriving it. Every discovery carries `observed`; one that rests on reasoning only is recorded, not scheduled (`flows/integrate.md` § 7).
 
 `affected_seam` is optional but strongly preferred — without it the conformance check can't route the discovery to the right row.
 
@@ -106,7 +106,7 @@ This report is **for the orchestrator only**. It is held by the orchestrator unt
 The Implementor:
 - **May** create new tasks for **genuinely external findings** (user-visible bug or correctness regression that can't wait for review).
 - **Must not** silently expand scope on the in-progress task.
-- **Must** stop and ask the orchestrator if the task body itself appears to require revision before it can be implemented (rather than implementing a guess). Say what you observed and what it blocks; the orchestrator records it as an ask (`flows/execute.md` § 9) and your task waits as `blocked`.
+- **Must** stop and ask the orchestrator if the task body itself appears to require revision before it can be implemented (rather than implementing a guess). Say what you observed and what it blocks; the orchestrator writes it as an ask file (`flows/execute.md` § 9) and your task waits as `blocked`.
 - **Must not** modify `design.md`'s seam rows; push-backs are recommendations, the conformance check at integrate is the authority.
 
 ## Failure modes

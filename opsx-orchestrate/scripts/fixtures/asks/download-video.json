@@ -1,0 +1,35 @@
+{
+  "id": "ask-cycle-1790026644-9",
+  "kind": "decision",
+  "status": "open",
+  "blocks": [],
+  "raised_by": {
+    "role": "architect",
+    "ref": "arch-cycle-1790026644-1"
+  },
+  "question": "Should a video you fetch by hand with --download-video be added to the archive?",
+  "about": "--download-video fetches one YouTube video by URL; it is not tied to any Reddit post. The archive is the set of videos the scraper has indexed from posts; each has a record, and a video YouTube has removed gets a 'dead' mark so scrape runs stop retrying it.",
+  "observed": {
+    "happened": true,
+    "evidence": "The seam row in design.md, the spec and the docs all say a hand fetch clears the dead mark. The code does not: it calls the downloader and never touches the index. Verified against the code at the cycle-3 conformance check."
+  },
+  "options": [
+    {
+      "label": "Fix the docs and the code",
+      "consequence": "Every hand fetch is indexed into the archive and clears the dead mark. Videos you fetch for reasons unrelated to the archive are indexed too."
+    },
+    {
+      "label": "Do nothing to the code",
+      "consequence": "--download-video stays a plain fetch: the file lands on disk and the archive does not know about it. The docs are corrected to say so."
+    }
+  ],
+  "recommendation": {
+    "option": "Do nothing to the code",
+    "why": "What has been observed is a false sentence in the docs; nothing has been observed to need hand fetches in the archive."
+  },
+  "default_if_unanswered": "Docs corrected at this integrate; code untouched.",
+  "decision": null,
+  "decision_readback": null,
+  "applied_via": null,
+  "revised_from": null
+}

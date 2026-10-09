@@ -27,10 +27,10 @@ If the task is a follow-up to an in-change task that just merged, with the same 
 | Implementor (latent bug surfaced by regression chasing) | In-change if the bug is in modules this change touches; externalised otherwise |
 | Reviewer (sub-par-code finding) | In-change |
 | Reviewer (design-drift finding) | In-change |
-| Reviewer (spec-signal finding) | Becomes an ask record (`templates/ask.md`); if the user's decision needs work, in-change revision tasks carry `discovered_from: <ask-id>`; otherwise no task |
+| Reviewer (spec-signal finding) | Becomes an ask file (`templates/ask.md`); if the user's decision needs work, in-change revision tasks carry `discovered_from: <ask-id>`; otherwise no task |
 | Architect (shape-fragmentation, vocabulary-mismatch on touched code) | In-change |
 | Architect (responsibility-leakage on adjacent code) | Externalised — this is the *consolidation round* the Architect exists to make unnecessary; if the adjacent code is in scope, in-change |
-| Architect (interface-drift against a stale seam row or design sentence) | Becomes an ask record, triaged: `doc-correction` is applied and listed; `decision` is asked |
+| Architect (interface-drift against a stale seam row or design sentence) | Becomes an ask file, triaged: `doc-correction` is written applied; `decision` goes to the inbox |
 | PM (cascade cluster) | Spawns a conformance run scoped to the cluster; resulting tasks follow Architect rules |
 | Orchestrator (manual conflict-resolution) | In-change |
 | User (ad-hoc) | User chooses |
@@ -45,7 +45,7 @@ Externalised tasks **may** still cite seams (`cites_seams`); this is what enable
 
 PM monitors `.tasks/` growth:
 - **Monotonic growth over ≥3 cycles** → externalisation-pressure signal in digest.
-- **A coherent cluster** (≥3 tasks with overlapping modules and discovered_class) → an ask record of kind `decision` (`templates/ask.md`): "promote cluster X into the active change?"
+- **A coherent cluster** (≥3 tasks with overlapping modules and discovered_class) → an ask file of kind `decision` (`templates/ask.md`): "promote cluster X into the active change?"
 
 The user dispositions: promote, leave externalised, or open a new change for the cluster. Default if unanswered: leave externalised.
 

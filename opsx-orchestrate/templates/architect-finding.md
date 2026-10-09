@@ -60,7 +60,7 @@ symbols to name build-violation-info as the one constructor.">
 
 ## Observed
 
-`observed` says whether the problem has happened. `happened` is `true` when the finding can point at it: a failing run, a wrong output, a user report, a false statement in a shipped document (the ask's definition, `templates/ask.md` § Record), or a defect present in merged code that the finding cites by line: a function nothing calls, two bodies that are the same today. It is `false` when the harm is what would happen under a future change (a third consumer, a later sweep, a future maintainer); then `evidence` starts with `reasoning only:` and gives the reasoning. Required on `blocking` and `advisory` findings; `state.py record add findings` refuses them without it. `informational` may leave it null. What happens to a reasoning-only finding is decided once, in `flows/integrate.md` § 7: it is `noted`, not scheduled.
+`observed` says whether the problem has happened. `happened` is `true` when the finding can point at it: a failing run, a wrong output, a user report, a false statement in a shipped document (the ask's definition, `templates/ask.md` § The file), or a defect present in merged code that the finding cites by line: a function nothing calls, two bodies that are the same today. It is `false` when the harm is what would happen under a future change (a third consumer, a later sweep, a future maintainer); then `evidence` starts with `reasoning only:` and gives the reasoning. Required on `blocking` and `advisory` findings; `state.py record add findings` refuses them without it. `informational` may leave it null. What happens to a reasoning-only finding is decided once, in `flows/integrate.md` § 7: it is `noted`, not scheduled.
 
 ## Severity routing
 
@@ -74,8 +74,8 @@ Default: `blocking` when merged code contradicts a seam row it cites or a promot
 
 ## Routing
 
-- **`interface-drift`, code right and row stale** → the Architect amends the seam row and names it here; the orchestrator records a `doc-correction` ask (`templates/ask.md`) with `status: applied`, `applied_via: design.md <seam-id>`, listed under "Applied without asking". Not Implementor work.
-- **`interface-drift`, design in question** → a `decision` ask written by the orchestrator from this finding; the `recommended_resolution` must say what the seam or scenario is for, `observed` whether the drift is in merged code or reasoning only, and the finding what it blocks. The finding is not the ask.
+- **`interface-drift`, code right and row stale** → the Architect amends the seam row and names it here; the orchestrator writes a `doc-correction` ask file (`templates/ask.md`) with `status: applied`, `applied_via: design.md <seam-id>`, into `cycles/<cycle-id>/asks/`. Not Implementor work.
+- **`interface-drift`, design in question** → a `decision` ask file written to the inbox by the orchestrator from this finding; the `recommended_resolution` must say what the seam or scenario is for, `observed` whether the drift is in merged code or reasoning only, and the finding what it blocks. The finding is not the ask.
 - **`blocking`** with any other class → routes to a follow-up task in the active batch; the integrate gate doesn't close until resolved.
 - **`advisory`** → follow-up task with `discovered_class` set; orchestrator decides this-batch / next-batch / `.tasks/`.
 - **Any severity with `observed.happened: false`**, unless a project prior (`overlay.md` § Priors) or the user has asked for that kind of work or the finding states a measured cost → `resolution: noted`; no task, no `.tasks/` item, no `decision` ask; a stale sentence it exposed may still be a `doc-correction` (`flows/integrate.md` § 7). A `blocking` finding that rests on reasoning only is a contradiction; the Architect re-grades it `advisory`.
@@ -86,7 +86,7 @@ Default: `blocking` when merged code contradicts a seam row it cites or a promot
 The state-file `architect_findings[].resolution` field tracks how each finding was handled:
 
 - `pending` — not yet acted on (blocks integrate gate if severity is `blocking`)
-- `inline-fixed` — orchestrator applied an inline fix
+- `inline-fixed` — orchestrator applied an inline fix (to code, or to a document other than `design.md`: a README, a usage page, a spec scenario the amended row cites)
 - `design-amended` — the code was right and the Architect amended the seam row (and the coverage rows or Decision that named the same thing); the orchestrator's `doc-correction` ask carries the path
 - `followup-task-<task-name>` — became a task; field carries the task name
 - `reverted` — the implicated merge was reverted
