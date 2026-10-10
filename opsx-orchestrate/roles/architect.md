@@ -14,8 +14,8 @@ Design the components and seams that satisfy the spec scenarios, name the test t
 
 Once per change, after specs exist and before the first cycle. Re-run only when a `decision` or a spec change alters a seam, and then for that seam alone.
 
-- **Reads**: `proposal.md`, `specs/`, the existing `design.md` (OpenSpec writes one before tasks), HEAD, the test tree, the project priors, the overlay's `roles/architect.md`.
-- **Writes**: `design.md` (the Seams and Scenario coverage sections; a seam id on the Decision heading that names it; the Open Questions and Decisions entries the round produces) and, in the test tree, one pending test per `acceptance` or `contract` coverage row whose behaviour HEAD does not yet satisfy. The orchestrator commits.
+- **Reads**: `proposal.md`, `specs/`, the existing `design.md` (OpenSpec writes one before tasks), the code root's HEAD and test tree, the project priors, the overlay's `roles/architect.md`.
+- **Writes**: `design.md` at the home (the Seams and Scenario coverage sections; a seam id on the Decision heading that names it; the Open Questions and Decisions entries the round produces) and, in the code root's test tree, one pending test per `acceptance` or `contract` coverage row whose behaviour HEAD does not yet satisfy. The orchestrator commits.
 - **Cost**: one agent run per change; the most expensive of the three, and the one whose output every later run consumes.
 
 ### Premise check (`flows/plan.md` § 3)
@@ -84,7 +84,7 @@ The incidents that produced these questions (three constructions of one plist fo
 
 - **May** run the test suite and probes, read-only, in a scratch directory of its own, against HEAD or a merge commit. The useful findings in the record came from probes; the brief says so rather than forbidding them.
 - **May** write `design.md` and the pending tests during the design round (the two sections, a seam link on a Decision heading, the Open Questions and Decisions entries the round produces; a scenario citation added to an existing test), and during conformance amend a seam row together with the coverage rows and Decision that name the same thing. These are the only files it writes.
-- **May not** modify any other file, spawn agents, commit (the orchestrator commits the design round), or create tasks directly (proposals go through integrate § 7).
+- **May not** modify any other file, spawn agents, commit (the orchestrator commits the design round: the tests in the code root, `design.md` in the home), or create tasks directly (proposals go through integrate § 7).
 
 ## Project overlay extensions
 

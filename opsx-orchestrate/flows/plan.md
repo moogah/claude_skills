@@ -8,7 +8,7 @@ A plan that doesn't consume the prior cycle's integrate output isn't planning �
 
 ### 1. Consume the prior integrate's handshake
 
-`state.py init --change <name> --test-command <cmd>` starts the cycle and reads `<repo>/.orchestrator/handshake-<prior-cycle-id>.json` (the newest one, or `--prior-handshake <path>`; `--first-cycle` when none exists). Then read the handshake. It has:
+`state.py init --change <name> --test-command <cmd>` starts the cycle and reads `<home>/.orchestrator/handshake-<prior-cycle-id>.json` (the newest one, or `--prior-handshake <path>`; `--first-cycle` when none exists). Then read the handshake. It has:
 
 - `design_diff` — the seam rows conformance added, amended or retired last cycle.
 - `pm_digest_path` — the prior digest, for context.
@@ -30,17 +30,17 @@ Read the overlay's `priors.md` alongside the handshake (`overlay.md` § Priors):
 
 The change's `design.md` (`templates/design.md`) is the input: its Seams table and its Scenario coverage table. A change without them has not had its design round (`flows/design.md`); run it before this cycle, not inside it.
 
-The orchestrator drafts the candidate task files for this cycle under `<change>/tasks/open/` (per `templates/task-body.md`) from three sources, in this order:
+The orchestrator drafts the candidate task files for this cycle under `<change>/tasks/open/` at the home (`$ORCH_HOME/openspec/changes/<change>/tasks/open/`, per `templates/task-body.md`) from three sources, in this order:
 
 1. Open tasks carried over (refined by the prior integrate § 7, or user-authored on a first cycle); do not re-touch those `task_refinements` lists. A task named in the `:BLOCKS:` of an open ask file (`state.py inbox`) stays out of the batch until the ask is applied.
 2. Coverage rows whose test is still pending, grouped by the seam they exercise: one task per seam or per closely coupled pair, never one per test.
 3. The prior cycle's follow-ups and user-resolved asks with deferred implementation, which integrate § 7 already wrote as task files.
 
-Each candidate cites the seams it implements (`cites_seams`, also carried in state) and the scenarios it makes pass (`cites_scenarios`, a task-file field only), and its Verification section lists the pending tests it promotes. The orchestrator may read HEAD while drafting, but the premise check is the authority on what holds there. The brief will quote the cited rows verbatim, so a task that cites nothing has no contract to be reviewed against.
+Each candidate cites the seams it implements (`cites_seams`, also carried in state) and the scenarios it makes pass (`cites_scenarios`, a task-file field only), and its Verification section lists the pending tests it promotes. The orchestrator may read the code root's HEAD while drafting, but the premise check is the authority on what holds there. The brief will quote the cited rows verbatim, so a task that cites nothing has no contract to be reviewed against.
 
 ### 3. Premise check
 
-The Architect runs against the candidate task files (`roles/architect.md` § Premise check): for each task, a `| claim | at HEAD |` table with **Holds** or **Wrong** per claim the task body makes about the code (a function exists and has this signature; a path is reachable from this entry point; a return value has these cases; a defect of the task file's own form, such as a truncated seam quote, is a row too, flagged as such), and a one-line verdict. Output: `<repo>/.orchestrator/cycles/<cycle-id>/premise-check.md` (the orchestrator creates the directory). The check may run the suite and probes read-only in a scratch directory.
+The Architect runs against the candidate task files (`roles/architect.md` § Premise check): for each task, a `| claim | at HEAD |` table with **Holds** or **Wrong** per claim the task body makes about the code at the code root's HEAD (a function exists and has this signature; a path is reachable from this entry point; a return value has these cases; a defect of the task file's own form, such as a truncated seam quote, is a row too, flagged as such), and a one-line verdict. Output: `<home>/.orchestrator/cycles/<cycle-id>/premise-check.md` (the orchestrator creates the directory). The check may run the suite and probes read-only in a scratch directory.
 
 Then:
 
@@ -103,7 +103,7 @@ The cycle does not enter execute until:
 
 `state.py gate check plan` shows the computed three with reasons; `state.py gate pass plan` sets the gate when all four are true; `state.py phase set execute` advances.
 
-**Commit** at plan close: `git add .orchestrator openspec/changes/<change>` (the batch's task files, `premise-check.md`, `state.json`, any `doc-correction` file with the row it amended) and commit `Orchestrator: <cycle-id> plan closed`. Ask files written during plan were committed when created (`templates/ask.md` § Commit rule).
+**Commit** at plan close, in the home: `git -C "$ORCH_HOME" add .orchestrator openspec/changes/<change> && git -C "$ORCH_HOME" commit -m "Orchestrator: <cycle-id> plan closed"` (add `.tasks` too when plan touched it; the batch's task files, `premise-check.md`, `state.json`, any `doc-correction` file with the row it amended). Ask files written during plan were committed when created (`templates/ask.md` § Commit rule).
 
 Execute refuses to run if the plan gate has not passed.
 

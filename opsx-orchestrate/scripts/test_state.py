@@ -18,7 +18,7 @@ _spec.loader.exec_module(state)
 
 REAL_FILES = [
     "/Users/jefffarr/src/reddit_scraper/.orchestrator/cycles/cycle-1790187401/state.json",
-    "/Users/jefffarr/emacs-workspaces/emacs-workspace-bookmarks/emacs/.orchestrator/cycles/cycle-1790453714/state.json",
+    "/Users/jefffarr/emacs-workspaces/emacs-workspace-bookmarks/.orchestrator/cycles/cycle-1790453714/state.json",
 ]
 FIX = HERE / "fixtures" / "asks"
 # A complete decision ask as templates/ask.md requires one: about, observed, two to four options.
@@ -604,7 +604,8 @@ def test_migrate_legacy(run, repo):
     assert code == 1 and out["migration"]["register_touched_parked"] == 1
     assert out["migration"]["task_fields_parked"] == {"a": ["merge_order"]}
     code, out, _ = run("migrate")
-    assert code == 0 and out["ok"] and out["from"] == "1.0" and out["to"] == "1.3"
+    assert code == 0 and out["ok"] and out["from"] == "1.0" and out["to"] == "1.4"
+    assert out["rehomed_from"] is None and out["paths"] == {"home": str(repo), "code_root": str(repo)}
     assert sorted(out["parked_top_level_keys"]) == ["orchestrator_discoveries", "phase_gates.integrate",
                                                     "phase_gates.plan", "plan_note", "register_touched"]
     assert out["register_touched_parked"] == 1 and sorted(out["records"]) == ["architect_findings", "asks_for_user"]
@@ -619,7 +620,8 @@ def test_migrate_legacy(run, repo):
     assert parked["record_extras"]["asks_for_user"]["ask-1"]["_legacy_kind"] is None
     assert glob.glob(str(repo / ".orchestrator" / "state.json.pre-migrate-*"))
     s = read_state(repo)
-    assert "register_touched" not in s
+    assert "register_touched" not in s and "repo_root" not in s
+    assert s["home"] == str(repo) and s["code_root"] == str(repo)
     assert s["tasks"][0]["status"] == "completed"
     ask = s["asks_for_user"][0]
     assert ask == {"id": "ask-1", "kind": "decision", "status": "open", "blocks": [],
@@ -731,6 +733,8 @@ def test_replay_real_data(run, repo, capsys, src):
     assert "register_touched" in parked_keys and out["register_touched_parked"] == n_reg
     parked = json.loads((repo / out["parked"]).read_text())
     assert parked["top_level"]["register_touched"] == original["register_touched"]
+    assert out["rehomed_from"] == original["repo_root"] == parked["top_level"]["repo_root"]
+    assert read_state(repo)["home"] == str(repo)
     with_scaffold = [r["entry_id"] for r in parked["top_level"]["register_touched"] if r.get("scaffolding_path")]
     is_a = "reddit_scraper" in src
     assert (n_reg, len(with_scaffold)) == ((7, 3) if is_a else (15, 0))
@@ -986,6 +990,8 @@ def test_migrate_1_2_asks_to_files(run, repo):
     assert written[0] == ".orchestrator/inbox/ask-cycle-1790604160-1.org" and len(written) == 4
     assert all(w.startswith(".orchestrator/cycles/cycle-1790604160/asks/") for w in written[1:])
     s = read_state(repo)
+    assert s["home"] == str(repo) and s["code_root"] == str(repo) and out["rehomed_from"] is None
+    assert out["gitignore_written"] is True and (repo / ".orchestrator" / ".gitignore").exists()
     assert [set(a) for a in s["asks_for_user"]] == [set(state.ASK_FIELDS)] * 4
     text = (repo / written[1]).read_text()
     assert ":STATUS: applied" in text and ":APPLIED_VIA: " in text and "Applied without asking" in text
@@ -995,3 +1001,242 @@ def test_migrate_1_2_asks_to_files(run, repo):
     assert out["unchanged"] is True
     code, out, _ = run("inbox")
     assert [e["id"] for e in out["asks"]] == ["ask-cycle-1790604160-1"] and out["asks"][0]["kind"] == "process"
+
+
+# ---------------------------------------------------------------- the home and the code root
+
+def _git_ok():
+    return shutil.which("git") is not None
+
+
+def _g(path, *a):
+    return subprocess.run(["git", "-C", str(path), "-c", "user.email=t@t", "-c", "user.name=t", *a],
+                          capture_output=True, text=True)
+
+
+def split_repo(repo, name="code", worktree=False, git=True):
+    """Point the home's config.yaml at a nested code root and create it."""
+    cfg = repo / ".claude" / "orchestrator" / "config.yaml"
+    cfg.write_text(cfg.read_text() + f"code-root: {name}\n")
+    code = repo / name
+    if worktree:
+        origin = repo.parent / (repo.name + "-origin")
+        origin.mkdir()
+        _g(origin, "init", "-q")
+        (origin / "f.txt").write_text("x\n")
+        _g(origin, "add", ".")
+        _g(origin, "commit", "-qm", "init")
+        r = _g(origin, "worktree", "add", "-q", str(code), "-b", "feature-x")
+        assert r.returncode == 0, r.stderr
+        assert (code / ".git").is_file()
+    else:
+        code.mkdir()
+        if git:
+            _g(code, "init", "-q")
+    return code
+
+
+# 32
+def test_where_single_repo(run, repo):
+    code, out, _ = run("where")
+    assert code == 0 and out["state"] == "absent" and out["split"] is False and out["home_found"] is True
+    assert out["home"] == out["code_root"] == str(repo) and out["problems"] == [] and out["config"]
+    init(run, "cycle-1", "--first-cycle")
+    s = read_state(repo)
+    assert s["home"] == s["code_root"] == str(repo) and "repo_root" not in s
+    code, out, _ = run("status")
+    assert out["paths"] == {"home": str(repo), "code_root": str(repo)}
+    code, out, _ = run("where")
+    assert out["state"] == "present"
+
+
+# 33
+def test_where_and_init_with_split_code_root(run, repo):
+    if not _git_ok():
+        pytest.skip("no git")
+    code_dir = split_repo(repo)
+    code, out, _ = run("where")
+    assert code == 0 and out["split"] is True and out["code_root"] == str(code_dir)
+    assert out["code_root_from_config"] == "code" and out["problems"] == []
+    code, out, err = init(run, "cycle-1", "--first-cycle")
+    assert code == 0, err
+    assert out["home"] == str(repo) and out["code_root"] == str(code_dir) and out["warnings"] == []
+    assert (repo / ".orchestrator" / "state.json").exists() and not (code_dir / ".orchestrator").exists()
+    s = read_state(repo)
+    assert s["home"] == str(repo) and s["code_root"] == str(code_dir)
+
+
+# 34
+def test_init_refuses_no_home(tmp_path, capsys, monkeypatch):
+    empty = tmp_path / "nowhere"
+    empty.mkdir()
+    monkeypatch.chdir(empty)
+    code = state.main(["init", "--change", "c", "--test-command", "t", "--first-cycle"])
+    err = _parse(capsys.readouterr().err)
+    assert code == 1 and err["error"] == "no_home" and str(empty) in err["message"]
+    assert not (empty / ".orchestrator").exists()
+    code = state.main(["status"])
+    err = _parse(capsys.readouterr().err)
+    assert code == 2 and err["error"] == "not_initialized"
+    code = state.main(["where"])
+    out = _parse(capsys.readouterr().out)
+    assert code == 0 and out["home_found"] is False and out["home"] == str(empty)
+
+
+# 35
+def test_home_flag_and_repo_alias(repo, capsys):
+    for flag in ("--home", "--repo"):
+        code = state.main([flag, str(repo), "where"])
+        out = _parse(capsys.readouterr().out)
+        assert code == 0 and out["home"] == str(repo)
+    code = state.main(["--home", str(repo), "where", "--sh"])
+    text = capsys.readouterr().out
+    assert text.splitlines() == [f"ORCH_HOME={repo}", f"CODE_ROOT={repo}"]
+
+
+# 36
+def test_read_code_root_parsing(repo):
+    cfg = repo / ".claude" / "orchestrator" / "config.yaml"
+    base = "name: scratch\nworktree:\n  code-root: nested-not-this\n"
+    cases = {
+        "code-root: sub\n": ("sub", str(repo / "sub")),
+        "code-root: 'quoted dir'  # comment\n": ("quoted dir", str(repo / "quoted dir")),
+        'code-root: "/abs/elsewhere"\n': ("/abs/elsewhere", "/abs/elsewhere"),
+        "code-root:\n": (None, None),
+        "code-root: .\n": (".", str(repo)),
+        "": (None, None),
+    }
+    for text, want in cases.items():
+        cfg.write_text(base + text)
+        assert state.read_code_root(str(repo)) == want, text
+    assert state.Store(str(repo), str(repo)).split is False
+    cfg.write_text(base + "code-root: ~/x\n")
+    assert state.read_code_root(str(repo))[1] == os.path.expanduser("~/x")
+    for text in ("code-root: [a, b]\n", "code-root:\n  - a\n  - b\n"):
+        cfg.write_text(base + text)
+        with pytest.raises(state.Refusal) as e:
+            state.read_code_root(str(repo))
+        assert e.value.slug == "bad_code_root"
+
+
+# 37
+def test_init_refuses_code_root_missing_and_not_git(run, repo):
+    cfg = repo / ".claude" / "orchestrator" / "config.yaml"
+    cfg.write_text("name: scratch\ncode-root: gone\n")
+    code, _, err = init(run, "cycle-1", "--first-cycle")
+    assert code == 1 and err["error"] == "code_root_missing"
+    code, out, _ = run("where")
+    assert code == 0 and [p["error"] for p in out["problems"]] == ["code_root_missing"]
+    (repo / "gone").mkdir()
+    if _git_ok():
+        code, _, err = init(run, "cycle-1", "--first-cycle")
+        assert code == 1 and err["error"] == "code_root_not_git"
+    assert not (repo / ".orchestrator" / "state.json").exists()
+
+
+# 38
+def test_init_refuses_misplaced_artifacts_then_two_homes(run, repo):
+    if not _git_ok():
+        pytest.skip("no git")
+    code_dir = split_repo(repo)
+    (code_dir / ".orchestrator").mkdir()
+    (code_dir / ".claude" / "orchestrator").mkdir(parents=True)
+    (code_dir / ".claude" / "orchestrator" / "config.yaml").write_text("name: old\n")
+    code, _, err = init(run, "cycle-1", "--first-cycle")
+    assert code == 1 and err["error"] == "misplaced_artifacts" and str(repo) in err["message"]
+    assert [p["error"] for p in err["problems"]] == ["misplaced_artifacts", "two_homes"]
+    (code_dir / ".orchestrator").rmdir()
+    code, _, err = init(run, "cycle-1", "--first-cycle")
+    assert code == 1 and err["error"] == "two_homes"
+    (code_dir / ".claude" / "orchestrator" / "config.yaml").unlink()
+    (code_dir / "openspec").mkdir()
+    code, out, err = init(run, "cycle-1", "--first-cycle")
+    assert code == 0, err
+    assert len(out["warnings"]) == 1 and "openspec/" in out["warnings"][0]
+
+
+# 39
+def test_init_branch_from_linked_worktree(run, repo):
+    if not _git_ok():
+        pytest.skip("no git")
+    code_dir = split_repo(repo, worktree=True)
+    code, out, err = init(run, "cycle-1", "--first-cycle")
+    assert code == 0, err
+    assert read_state(repo)["current_branch"] == "feature-x"
+    run("close", "--abandon", "--why", "t")
+    init(run, "cycle-2", "--first-cycle", "--branch", "given")
+    assert read_state(repo)["current_branch"] == "given"
+    assert state._git_branch(str(repo / "no-such-dir")) == "main"
+    _g(code_dir, "checkout", "-q", "--detach")
+    assert len(state._git_branch(str(code_dir))) == 12
+
+
+# 40
+def test_orchestrator_ignored_is_checked_on_home_not_code_root(run, repo):
+    if not _git_ok():
+        pytest.skip("no git")
+    code_dir = split_repo(repo)
+    (code_dir / ".gitignore").write_text("# tasks-orchestrator ephemeral state\n.orchestrator/\n")
+    code, _, err = init(run, "cycle-1", "--first-cycle")
+    assert code == 0, err
+    run("close", "--abandon", "--why", "t")
+    _g(repo, "init", "-q")
+    (repo / ".gitignore").write_text(".orchestrator/\n")
+    code, _, err = init(run, "cycle-2", "--first-cycle")
+    assert code == 1 and err["error"] == "orchestrator_ignored"
+    (repo / ".gitignore").write_text("")
+    code, out, _ = run("where")
+    assert code == 0 and len(out["warnings"]) == 1 and "does not ignore the code root code/" in out["warnings"][0]
+    (repo / ".gitignore").write_text("code/\n")
+    assert run("where")[1]["warnings"] == []
+
+
+# 41
+def test_migrate_1_3_rehomes(run, repo):
+    init(run, "cycle-1", "--first-cycle")
+    add_task(run, "a")
+    s = read_state(repo)
+    s["schema_version"] = "1.3"
+    s["repo_root"] = "/old/place"
+    del s["home"], s["code_root"]
+    (repo / ".orchestrator" / "state.json").write_text(json.dumps(s))
+    (repo / ".orchestrator" / ".gitignore").unlink()
+    code, out, _ = run("status")
+    assert code == 0 and out["legacy"] is True
+    code, out, _ = run("validate")
+    assert code == 1 and out["migration"]["to"] == "1.4" and out["migration"]["top_level_parked"] == []
+    assert out["migration"]["rehome"] == {"from": "/old/place", "to": str(repo)}
+    code, out, err = run("migrate")
+    assert code == 0, err
+    assert out["rehomed_from"] == "/old/place" and out["parked_top_level_keys"] == ["repo_root"]
+    assert out["gitignore_written"] is True
+    s2 = read_state(repo)
+    assert s2["home"] == str(repo) and s2["code_root"] == str(repo) and "repo_root" not in s2
+    assert [t["task_name"] for t in s2["tasks"]] == ["a"]
+    parked = json.loads((repo / out["parked"]).read_text())
+    assert parked["top_level"] == {"repo_root": "/old/place"}
+    code, out, _ = run("migrate")
+    assert out["unchanged"] is True
+    assert run("validate")[1]["ok"] is True
+
+
+# 42
+def test_at_file_falls_back_to_home(run, repo, tmp_path, monkeypatch):
+    init(run, "cycle-1", "--first-cycle")
+    draft = repo / "draft.org"
+    draft.write_text(state.ask_to_org({**state.ASK_DEFAULTS, **state.ASK_FILE_DEFAULTS, **ASK,
+                                       "id": "ask-cycle-1-9", "status": "open"}))
+    elsewhere = tmp_path / "elsewhere"
+    elsewhere.mkdir()
+    monkeypatch.chdir(elsewhere)
+    code, out, err = run("record", "add", "asks", "@draft.org")
+    assert code == 0, err
+    assert out["id"] == "ask-cycle-1-9"
+    (repo / "refs.json").write_text(json.dumps([{"task": "openspec/changes/c/tasks/open/a.md",
+                                                 "refinement": "x", "ref": "y"}]))
+    (elsewhere / "refs.json").write_text("[]")
+    code, out, err = run("record", "add", "findings", "@nope.json")
+    assert code == 1 and err["error"] == "no_such_file" and str(repo) in err["message"]
+    assert state._arg_path("refs.json", str(repo)) == "refs.json"  # cwd wins when both exist
+    (elsewhere / "refs.json").unlink()
+    assert state._arg_path("refs.json", str(repo)) == str(repo / "refs.json")

@@ -84,7 +84,7 @@ The Reviewer may run the project's test command and its own probe scripts, read-
 
 ## Output contract
 
-The Reviewer writes findings to `<repo>/.orchestrator/cycles/<cycle-id>/reviews/<task-name>.md`:
+The Reviewer writes findings to `<home>/.orchestrator/cycles/<cycle-id>/reviews/<task-name>.md`:
 
 ```markdown
 ---

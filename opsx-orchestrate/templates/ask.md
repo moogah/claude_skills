@@ -1,6 +1,6 @@
 # Ask template
 
-An **ask** is a question the orchestrator needs the user to answer. It is one org file, `<repo>/.orchestrator/inbox/<ask-id>.org`, written the moment the ask is raised, in any phase. The file is the record: the user answers in it, git carries its history, and the orchestrator reads it at its sync points. `state.json` keeps only an index entry `{id, kind, status, blocks, path}` (`state.md`) so `status`, `counts` and the gates can read the inbox without parsing it; when the two disagree the file wins and `record set` rewrites the index from it.
+An **ask** is a question the orchestrator needs the user to answer. It is one org file, `<home>/.orchestrator/inbox/<ask-id>.org`, written the moment the ask is raised, in any phase. The file is the record: the user answers in it, git carries its history, and the orchestrator reads it at its sync points. `state.json` keeps only an index entry `{id, kind, status, blocks, path}` (`state.md`) so `status`, `counts` and the gates can read the inbox without parsing it; when the two disagree the file wins and `record set` rewrites the index from it.
 
 Any role can raise one: a Reviewer `spec-signal`, an Architect `interface-drift` finding against a stale design doc, an Implementor push-back that only the user can settle, a PM blocked-path or goal-drift signal, a plan-time escalation. None of them writes the ask. **The orchestrator writes the ask** from the finding, because the PM does not read code and the finding roles do not know the reader. The finding must give the orchestrator what the file needs (see "What a finding must carry").
 
@@ -117,11 +117,11 @@ For every phase. The blocking call (`AskUserQuestion`) is for an `environment` a
 
 ## Commit rule
 
-`.orchestrator/` is tracked. `state.py init` writes `.orchestrator/.gitignore` (the test outputs `baseline-*.txt` and `after-*.txt`, `*.tmp`, the lock file, the migration backups) when absent and refuses to start when the repo ignores the directory (an `environment` ask: delete the line). The orchestrator commits:
+`.orchestrator/` is tracked by the home repo. `state.py init` writes `.orchestrator/.gitignore` (the test outputs `baseline-*.txt` and `after-*.txt`, `*.tmp`, the lock file, the migration backups) when absent and refuses to start when the home repo ignores the directory (an `environment` ask: delete the line). The orchestrator commits, in the home:
 
 - an ask file when it is created (`git add .orchestrator/inbox/<id>.org`; the subject names the id, so `git log --grep=ask-` finds the trail);
 - a readback when it is written, together with the user's answer it restates (one commit, the subject naming the id), and with it any `priors.md` line and `confirmation` file the answer produced;
-- an applied ask alongside the change that applies it (the moved file and the edit or merge in one commit, as the `--download-video` reversal was);
+- an applied ask alongside the change that applies it (the moved file and the edit or merge in one commit, as the `--download-video` reversal was; one commit per repository with the same subject when the change is in a separate code root);
 - everything else, `state.json` included, at phase close (`Orchestrator: <cycle-id> <phase> closed`). Between those commits the index at HEAD may lag the files; the files are the record.
 
 A new ask is then a new file in `git status`; an answer is a diff of one section; a reversal is a second commit on the file. The record shows the project that gitignored `.orchestrator/` lost its handshakes to removed worktrees three times.

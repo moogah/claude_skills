@@ -11,7 +11,12 @@ Every verb prints compact JSON on stdout. A refusal prints
 (exit 2 when no state file exists). Writes are load -> validate -> mutate ->
 validate -> atomic replace, under a file lock.
 
-Usage: python3 state.py [--repo PATH] <verb> ...   (state.py help lists the verbs)
+Usage: python3 state.py [--home PATH] <verb> ...   (state.py help lists the verbs)
+
+The home is the directory holding .claude/orchestrator/config.yaml (found by walking up
+from cwd); it holds .orchestrator/ and openspec/. The code root is where worktrees, merges
+and tests happen: config.yaml `code-root: <path>` relative to the home, default the home.
+`where` prints both.
 """
 
 import argparse
@@ -21,13 +26,14 @@ import glob
 import json
 import os
 import re
+import shlex
 import shutil
 import subprocess
 import sys
 import time
 from datetime import datetime, timezone
 
-SCHEMA_VERSION = "1.3"
+SCHEMA_VERSION = "1.4"
 TEXT_CAP = 280
 LONG_TEXT_CAP = 600
 LONG_TEXT_FIELDS = {"question", "decision_readback"}
@@ -136,7 +142,8 @@ HANDSHAKE_REQUIRED = ["design_diff", "pm_digest_path", "meta_discoveries",
 DESIGN_DIFF_CHANGES = ["added", "amended", "retired"]
 
 TOP_LEVEL = {
-    "schema_version": str, "session_id": str, "cycle_id": str, "phase": str, "repo_root": str,
+    "schema_version": str, "session_id": str, "cycle_id": str, "phase": str, "home": str,
+    "code_root": str,
     "change_name": str, "baseline_snapshot": (str, type(None)), "baseline_status": (int, type(None)),
     "current_branch": str, "test_command": str, "history_window": int,
     "prior_handshake": (str, type(None)), "closed_at": (str, type(None)),
@@ -144,7 +151,7 @@ TOP_LEVEL = {
     "journal": list, "cycle_log": dict, "phase_gates": dict,
 }
 TOP_LEVEL_SETTABLE = {"baseline_snapshot", "baseline_status", "current_branch", "test_command"}
-LEGACY_ALIASES = {"prior_handshake_path": "prior_handshake"}
+LEGACY_ALIASES = {"prior_handshake_path": "prior_handshake", "repo_root": "home"}
 
 
 class Refusal(Exception):
@@ -159,25 +166,63 @@ def now_iso():
 
 # ---------------------------------------------------------------- location
 
-def find_repo_root(explicit=None):
+def find_home(explicit=None):
+    """(home, found). The nearest ancestor of cwd with .claude/orchestrator/config.yaml, else
+    with .orchestrator/state.json; (cwd, False) when neither exists."""
     if explicit:
-        return os.path.abspath(explicit)
+        return os.path.abspath(explicit), True
     d = os.getcwd()
     while True:
         if os.path.exists(os.path.join(d, ".claude", "orchestrator", "config.yaml")):
-            return d
+            return d, True
         if os.path.exists(os.path.join(d, ".orchestrator", "state.json")):
-            return d
+            return d, True
         parent = os.path.dirname(d)
         if parent == d:
-            return os.getcwd()
+            return os.getcwd(), False
         d = parent
 
 
+def config_path(home):
+    return os.path.join(home, ".claude", "orchestrator", "config.yaml")
+
+
+def read_code_root(home):
+    """(raw value, absolute path) of config.yaml's top-level `code-root:`; (None, None) when absent
+    or empty. One path only: a list is refused (multi-repo is deferred)."""
+    p = config_path(home)
+    if not os.path.exists(p):
+        return None, None
+    lines = open(p, encoding="utf-8").read().split("\n")
+    for i, line in enumerate(lines):
+        m = re.match(r"^code-root:\s*(.*?)\s*$", line)
+        if not m:
+            continue
+        raw = re.split(r"\s+#", m.group(1))[0].strip()
+        if raw.startswith("#"):
+            raw = ""
+        nxt = lines[i + 1] if i + 1 < len(lines) else ""
+        if raw.startswith("[") or (raw == "" and re.match(r"^\s*-\s", nxt)):
+            raise Refusal("bad_code_root", "code-root takes one path; multi-repo is not supported")
+        raw = raw.strip("\"'")
+        if not raw:
+            return None, None
+        return raw, os.path.abspath(os.path.join(home, os.path.expanduser(raw)))
+    return None, None
+
+
+def _same_path(a, b):
+    return os.path.realpath(a) == os.path.realpath(b)
+
+
 class Store:
-    def __init__(self, repo_root):
-        self.repo_root = repo_root
-        self.dir = os.path.join(repo_root, ".orchestrator")
+    def __init__(self, home, code_root=None):
+        self.home = home
+        self.code_root = code_root or home
+        self.split = not _same_path(self.code_root, self.home)
+        self.home_found = True
+        self.code_root_raw = None
+        self.dir = os.path.join(home, ".orchestrator")
         self.path = os.path.join(self.dir, "state.json")
         self.lock_path = os.path.join(self.dir, "state.lock")
 
@@ -422,10 +467,23 @@ def parse_assignments(items):
     return out
 
 
-def load_json_arg(raw):
-    """A JSON literal, or @path to a JSON file."""
+def _arg_path(raw_path, home=None):
+    """An @file path: relative to cwd when that exists, else relative to the home."""
+    if home and not os.path.isabs(raw_path) and not os.path.exists(raw_path):
+        alt = os.path.join(home, raw_path)
+        if os.path.exists(alt):
+            return alt
+    return raw_path
+
+
+def load_json_arg(raw, home=None):
+    """A JSON literal, or @path to a JSON file (cwd-relative, else home-relative)."""
     if raw.startswith("@"):
-        with open(raw[1:]) as f:
+        path = _arg_path(raw[1:], home)
+        if not os.path.exists(path):
+            raise Refusal("no_such_file", f"{raw[1:]} does not exist (looked in cwd"
+                          + (f" and {home}" if home else "") + ")")
+        with open(path) as f:
             return json.load(f)
     try:
         return json.loads(raw)
@@ -748,14 +806,14 @@ def _cycle_of(ask_id, fallback):
 
 
 def ask_path(ask_id, status, fallback_cycle):
-    """Relative to the repo root; a pure function of id and status."""
+    """Relative to the home; a pure function of id and status."""
     if status in ASK_TERMINAL:
         return f".orchestrator/cycles/{_cycle_of(ask_id, fallback_cycle)}/asks/{ask_id}.org"
     return f".orchestrator/inbox/{ask_id}.org"
 
 
 def read_ask_file(store, rel):
-    p = os.path.join(store.repo_root, rel)
+    p = os.path.join(store.home, rel)
     if not os.path.exists(p):
         return None, None
     with open(p, encoding="utf-8") as f:
@@ -782,11 +840,11 @@ def _git_ignores(repo_root, rel):
 
 
 def _move_ask_file(store, old_rel, new_rel):
-    src, dst = os.path.join(store.repo_root, old_rel), os.path.join(store.repo_root, new_rel)
+    src, dst = os.path.join(store.home, old_rel), os.path.join(store.home, new_rel)
     os.makedirs(os.path.dirname(dst), exist_ok=True)
-    rc, _ = _git(store.repo_root, "ls-files", "--error-unmatch", "--", old_rel)
+    rc, _ = _git(store.home, "ls-files", "--error-unmatch", "--", old_rel)
     if rc == 0:
-        rc2, _ = _git(store.repo_root, "mv", "--", old_rel, new_rel)
+        rc2, _ = _git(store.home, "mv", "--", old_rel, new_rel)
         if rc2 == 0 and os.path.exists(dst):
             return "git mv"
     os.replace(src, dst)
@@ -796,10 +854,10 @@ def _move_ask_file(store, old_rel, new_rel):
 def scan_inbox(store, state):
     """Every inbox file joined with the index, plus index entries whose file is wrong or gone."""
     index = {a["id"]: a for a in (state or {}).get("asks_for_user", [])}
-    tracked = _git_tracked(store.repo_root, ".orchestrator")
+    tracked = _git_tracked(store.home, ".orchestrator")
     asks, problems, seen = [], [], set()
     for p in sorted(glob.glob(os.path.join(store.dir, "inbox", "*.org"))):
-        rel = os.path.relpath(p, store.repo_root)
+        rel = os.path.relpath(p, store.home)
         fid = os.path.basename(p)[:-4]
         doc, rec = read_ask_file(store, rel)
         entry = index.get(rec["id"]) or index.get(fid)
@@ -844,7 +902,7 @@ def scan_inbox(store, state):
     for a in index.values():
         if a["id"] in seen:
             continue
-        if not os.path.exists(os.path.join(store.repo_root, a["path"])):
+        if not os.path.exists(os.path.join(store.home, a["path"])):
             problems.append(f"{a['id']}: file {a['path']} is missing (restore it from git)")
         elif a["status"] not in ASK_TERMINAL:
             problems.append(f"{a['id']}: status {a['status']} but its file is not in the inbox")
@@ -1059,7 +1117,7 @@ def evaluate_gate(store, state, phase):
         if hp is None:
             put("prior_integrate_consumed", True, "first cycle: no prior handshake")
         else:
-            errs = _handshake_errors(os.path.join(store.repo_root, hp), prior=True)
+            errs = _handshake_errors(os.path.join(store.home, hp), prior=True)
             put("prior_integrate_consumed", not errs, "; ".join(errs) or f"{hp} has all required fields")
         missing = [t["task_name"] for t in tasks
                    if t["status"] != "externalised" and not t["cites_seams"]]
@@ -1086,7 +1144,7 @@ def evaluate_gate(store, state, phase):
         for t in tasks:
             if t["status"] in ("reviewed", "done") and t["review_mode"] is not None:
                 p = t["findings_path"]
-                if not p or not os.path.exists(os.path.join(store.repo_root, p)):
+                if not p or not os.path.exists(os.path.join(store.home, p)):
                     unreviewed.append(t["task_name"])
         put("all_reviews_completed", not unreviewed,
             f"reviewed/done without a findings file: {unreviewed}" if unreviewed
@@ -1100,7 +1158,7 @@ def evaluate_gate(store, state, phase):
         put("blocking_findings_resolved", not blocking,
             f"pending blocking findings: {blocking}" if blocking else "no pending blocking finding")
         digest = os.path.join(store.cycle_dir(state), "pm-digest.md")
-        ok, why = False, f"{os.path.relpath(digest, store.repo_root)} missing"
+        ok, why = False, f"{os.path.relpath(digest, store.home)} missing"
         if os.path.exists(digest):
             text = open(digest).read()
             m = re.search(r"^## Signals\s*\n(.*?)(?=^## |\Z)", text, re.S | re.M)
@@ -1151,6 +1209,10 @@ def apply_gate_eval(state, phase, result):
 # ---------------------------------------------------------------- verbs
 
 def verb_init(store, args):
+    if not store.home_found:
+        raise Refusal("no_home", f"no .claude/orchestrator/config.yaml found walking up from {os.getcwd()}; "
+                      "create the overlay at the intended home (the repo, or the workspace above it) or "
+                      "pass --home")
     if store.exists():
         cur = store.load()
         if not cur.get("closed_at"):
@@ -1159,28 +1221,29 @@ def verb_init(store, args):
     if args.prior_handshake is None and not args.first_cycle:
         # Default: the most recent handshake on disk, if any.
         hs = sorted(glob.glob(os.path.join(store.dir, "handshake-*.json")), key=os.path.getmtime)
-        args.prior_handshake = os.path.relpath(hs[-1], store.repo_root) if hs else None
+        args.prior_handshake = os.path.relpath(hs[-1], store.home) if hs else None
         if args.prior_handshake is None:
             raise Refusal("no_prior_handshake", "no handshake-*.json found; pass --prior-handshake "
                           "or --first-cycle")
     if args.prior_handshake:
-        errs = _handshake_errors(os.path.join(store.repo_root, args.prior_handshake), prior=True)
+        errs = _handshake_errors(os.path.join(store.home, args.prior_handshake), prior=True)
         if errs:
             raise Refusal("bad_prior_handshake", "plan refuses to start: " + "; ".join(errs))
-    if _git_ignores(store.repo_root, ".orchestrator"):
+    if _git_ignores(store.home, ".orchestrator"):
         raise Refusal("orchestrator_ignored", ".orchestrator/ is ignored by this repository's "
                       ".gitignore; process artifacts are tracked (SKILL.md). Delete that line "
                       "and run `init` again (an environment ask)")
+    problems = code_root_problems(store)
+    if problems:
+        slug, msg = problems[0]
+        raise Refusal(slug, msg, problems=[{"error": a, "message": b} for a, b in problems])
     os.makedirs(store.dir, exist_ok=True)
-    gi = os.path.join(store.dir, ".gitignore")
-    wrote_gitignore = not os.path.exists(gi)
-    if wrote_gitignore:
-        _atomic_write(gi, ORCHESTRATOR_GITIGNORE)
+    wrote_gitignore = _write_orchestrator_gitignore(store)
     ts = int(time.time())
     cycle_id = args.cycle or f"cycle-{ts}"
     carried = []
     for p in sorted(glob.glob(os.path.join(store.dir, "inbox", "*.org"))):
-        rel = os.path.relpath(p, store.repo_root)
+        rel = os.path.relpath(p, store.home)
         _doc, rec = read_ask_file(store, rel)
         if rec["kind"] not in ASK_KINDS or rec["status"] not in ASK_STATUSES:
             continue  # reported by `inbox` as a problem, not silently indexed
@@ -1190,11 +1253,12 @@ def verb_init(store, args):
         "session_id": f"orch-{ts}",
         "cycle_id": cycle_id,
         "phase": "plan",
-        "repo_root": store.repo_root,
+        "home": store.home,
+        "code_root": store.code_root,
         "change_name": args.change,
         "baseline_snapshot": None,
         "baseline_status": None,
-        "current_branch": args.branch or _git_branch(store.repo_root),
+        "current_branch": args.branch or _git_branch(store.code_root),
         "test_command": args.test_command,
         "history_window": args.history_window,
         "prior_handshake": args.prior_handshake,
@@ -1214,16 +1278,65 @@ def verb_init(store, args):
     store.write(state)
     return {"ok": True, "cycle_id": cycle_id, "path": store.path,
             "history_cycles": [h["cycle_id"] for h in state["cycle_log"]["history"]],
-            "inbox_carried": [a["id"] for a in carried], "gitignore_written": wrote_gitignore}
+            "inbox_carried": [a["id"] for a in carried], "gitignore_written": wrote_gitignore,
+            "home": store.home, "code_root": store.code_root, "warnings": code_root_warnings(store)}
 
 
-def _git_branch(repo_root):
-    head = os.path.join(repo_root, ".git", "HEAD")
-    try:
-        ref = open(head).read().strip()
-        return ref.split("/", 2)[-1] if ref.startswith("ref:") else ref[:12]
-    except OSError:
+def _git_branch(code_root):
+    """The code root's current branch (a linked worktree's .git is a file, so ask git)."""
+    rc, out = _git(code_root, "rev-parse", "--abbrev-ref", "HEAD")
+    if rc != 0 or not out.strip():
         return "main"
+    ref = out.strip()
+    if ref == "HEAD":
+        rc, sha = _git(code_root, "rev-parse", "--short=12", "HEAD")
+        return sha.strip() if rc == 0 and sha.strip() else "main"
+    return ref
+
+
+def code_root_problems(store):
+    """[(slug, message)] about a code root that differs from the home; empty when they are one."""
+    if not store.split:
+        return []
+    cr, home = store.code_root, store.home
+    if not os.path.isdir(cr):
+        return [("code_root_missing", f"config.yaml code-root: {store.code_root_raw} -> {cr} is not a directory")]
+    rc, _ = _git(cr, "rev-parse", "--show-toplevel")
+    out = []
+    if rc != 0:
+        out.append(("code_root_not_git", f"code root {cr} is not a git work tree (a linked worktree is fine)"))
+    if os.path.exists(os.path.join(cr, ".orchestrator")):
+        out.append(("misplaced_artifacts", f".orchestrator/ found in the code root {cr}; artifacts live at "
+                    f"the home {home}. Move it there (a plain mv; the code repo's .gitignore usually "
+                    "ignores it) and run init again"))
+    if os.path.exists(config_path(cr)):
+        out.append(("two_homes", f"the code root {cr} has its own .claude/orchestrator/config.yaml; one "
+                    f"home per code root. Move that overlay to {config_path(home)} or drop code-root "
+                    "from the home's config.yaml"))
+    return out
+
+
+def code_root_warnings(store):
+    if not store.split:
+        return []
+    out = []
+    if os.path.isdir(os.path.join(store.code_root, "openspec")):
+        out.append(f"openspec/ also present in the code root {store.code_root}; the home's copy is the one "
+                   "the orchestrator reads")
+    rel = os.path.relpath(store.code_root, store.home)
+    if not rel.startswith("..") and _git(store.home, "rev-parse", "--show-toplevel")[0] == 0 \
+            and not _git_ignores(store.home, rel):
+        out.append(f"the home repo does not ignore the code root {rel}/; add it to {store.home}/.gitignore "
+                   "so the code checkout is not an embedded repository in the home's history")
+    return out
+
+
+def _write_orchestrator_gitignore(store):
+    gi = os.path.join(store.dir, ".gitignore")
+    if os.path.exists(gi):
+        return False
+    _atomic_write(gi, ORCHESTRATOR_GITIGNORE)
+    return True
 
 
 def collect_history(store, window):
@@ -1288,6 +1401,7 @@ def verb_status(store, args):
         "change_name": state["change_name"],
         "phase": state["phase"],
         "closed_at": state["closed_at"],
+        "paths": {"home": store.home, "code_root": store.code_root},
         "resume": resume,
         "gates": gates,
         "counts": derive_counts(state["tasks"]),
@@ -1320,9 +1434,20 @@ def verb_inbox(store, args):
     if state is not None and str(state.get("schema_version")) != SCHEMA_VERSION:
         state = None
     entries, problems = scan_inbox(store, state)
-    return {"ok": True, "cycle_id": (state or {}).get("cycle_id"),
+    return {"ok": True, "cycle_id": (state or {}).get("cycle_id"), "home": store.home,
             "answered": [e["id"] for e in entries if e["answer"]],
             "asks": entries, "problems": problems}
+
+
+def verb_where(store, args):
+    """Where am I: the home, the code root and anything wrong with them. Needs no state file."""
+    cfg = config_path(store.home)
+    return {"ok": True, "home": store.home, "code_root": store.code_root, "split": store.split,
+            "home_found": store.home_found, "config": cfg if os.path.exists(cfg) else None,
+            "code_root_from_config": store.code_root_raw,
+            "state": "present" if store.exists() else "absent",
+            "problems": [{"error": a, "message": b} for a, b in code_root_problems(store)],
+            "warnings": code_root_warnings(store)}
 
 
 def resume_hint(state):
@@ -1342,7 +1467,7 @@ def resume_hint(state):
 def verb_validate(store, args):
     state = store.load()
     if str(state.get("schema_version")) != SCHEMA_VERSION:
-        plan = migration_plan(state)
+        plan = migration_plan(state, store)
         return {"ok": False, "schema_version": state.get("schema_version"), "migration": plan}
     errors = validate(state)
     _entries, file_problems = scan_inbox(store, state)
@@ -1452,16 +1577,17 @@ RECORD_LISTS = {
 }
 
 
-def _ask_input(raw):
+def _ask_input(raw, home=None):
     """A JSON object, @file.json, or @draft.org -> (record, draft AskDoc or None, draft path)."""
     if raw.startswith("@") and raw.lower().endswith(".org"):
-        path = raw[1:]
+        path = _arg_path(raw[1:], home)
         if not os.path.exists(path):
-            raise Refusal("no_such_file", f"{path} does not exist")
+            raise Refusal("no_such_file", f"{raw[1:]} does not exist (looked in cwd"
+                          + (f" and {home}" if home else "") + ")")
         with open(path, encoding="utf-8") as f:
             doc = AskDoc(f.read())
         return ask_from_org(doc, None), doc, path  # no :ID: in the draft -> the tool assigns one
-    rec = load_json_arg(raw)
+    rec = load_json_arg(raw, home)
     if not isinstance(rec, dict):
         raise Refusal("bad_record", "record must be a JSON object")
     return rec, None, None
@@ -1486,7 +1612,7 @@ def _supersede(store, state, old_id, new_id):
     if doc is None:
         raise Refusal("ask_file_missing", f"{old['path']} is missing (restore it from git)")
     doc.set_prop("STATUS", "superseded")
-    _atomic_write(os.path.join(store.repo_root, old["path"]), doc.text())
+    _atomic_write(os.path.join(store.home, old["path"]), doc.text())
     new_path = ask_path(old_id, "superseded", state["cycle_id"])
     moved = _move_ask_file(store, old["path"], new_path) if new_path != old["path"] else None
     old.update({"status": "superseded", "path": new_path})
@@ -1495,7 +1621,7 @@ def _supersede(store, state, old_id, new_id):
 
 
 def verb_ask_add(store, args):
-    rec_in, draft, draft_path = _ask_input(args.json)
+    rec_in, draft, draft_path = _ask_input(args.json, store.home)
 
     def fn(state):
         rec = {**ASK_DEFAULTS, **ASK_FILE_DEFAULTS, **{k: v for k, v in rec_in.items() if k != "path"}}
@@ -1510,7 +1636,7 @@ def verb_ask_add(store, args):
         if errors:
             raise Refusal("invalid_record", "ask does not fit templates/ask.md", errors=errors)
         path = ask_path(rec["id"], rec["status"], state["cycle_id"])
-        abs_path = os.path.join(store.repo_root, path)
+        abs_path = os.path.join(store.home, path)
         in_place = draft_path and os.path.abspath(draft_path) == os.path.abspath(abs_path)
         if os.path.exists(abs_path) and not in_place:
             raise Refusal("file_exists", f"{path} already exists; `record add asks @{path}` indexes it, "
@@ -1602,7 +1728,7 @@ def verb_ask_set(store, args):
             elif k == "revised_from":
                 doc.set_prop("REVISED_FROM", v)
         old_path = entry["path"]
-        _atomic_write(os.path.join(store.repo_root, old_path), doc.text())
+        _atomic_write(os.path.join(store.home, old_path), doc.text())
         final = ask_from_org(doc, entry["id"])
         final["id"] = entry["id"]
         new_path = ask_path(entry["id"], final["status"], state["cycle_id"])
@@ -1620,7 +1746,7 @@ def verb_record_add(store, args):
     if args.list == "asks":
         return verb_ask_add(store, args)
     key, fields, defaults, id_field = RECORD_LISTS[args.list]
-    rec_in = load_json_arg(args.json)
+    rec_in = load_json_arg(args.json, store.home)
     if not isinstance(rec_in, dict):
         raise Refusal("bad_record", "record must be a JSON object")
 
@@ -1639,7 +1765,7 @@ def verb_record_add(store, args):
                           "observed={\"happened\": true|false, \"evidence\": \"<where | reasoning only: ...>\"}")
         if args.list == "findings" and not rec.get("path"):
             rec["path"] = os.path.relpath(os.path.join(store.cycle_dir(state), "findings",
-                                                       rec["finding_id"] + ".md"), store.repo_root)
+                                                       rec["finding_id"] + ".md"), store.home)
         errors = []
         _validate_record(rec, fields, f"{key}[new]", errors, id_field)
         if args.list == "findings":
@@ -1757,27 +1883,27 @@ def verb_gate_pass(store, args):
 def verb_counts(store, args):
     state = store.load()
     require_current_schema(state)
-    sig = pm_signals(state, store.repo_root)
+    sig = pm_signals(state, store.home)
     if args.write:
         d = store.cycle_dir(state)
         os.makedirs(d, exist_ok=True)
         p = os.path.join(d, "pm-signals.json")
         with open(p, "w") as f:
             json.dump(sig, f, indent=2)
-        sig["written_to"] = os.path.relpath(p, store.repo_root)
+        sig["written_to"] = os.path.relpath(p, store.home)
     sig["ok"] = True
     return sig
 
 
 def verb_handshake(store, args):
-    meta = load_json_arg(args.meta_discoveries) if args.meta_discoveries else []
-    refinements = load_json_arg(args.task_refinements) if args.task_refinements else []
+    meta = load_json_arg(args.meta_discoveries, store.home) if args.meta_discoveries else []
+    refinements = load_json_arg(args.task_refinements, store.home) if args.task_refinements else []
     if not isinstance(meta, list) or not isinstance(refinements, list):
         raise Refusal("bad_json", "meta-discoveries and task-refinements must be JSON arrays")
-    flag_diff = load_json_arg(args.design_diff) if args.design_diff else None
+    flag_diff = load_json_arg(args.design_diff, store.home) if args.design_diff else None
 
     def fn(state):
-        digest = os.path.relpath(os.path.join(store.cycle_dir(state), "pm-digest.md"), store.repo_root)
+        digest = os.path.relpath(os.path.join(store.cycle_dir(state), "pm-digest.md"), store.home)
         # design_diff: the conformance step's cycles/<id>/design-diff.json when present,
         # else --design-diff, else empty.
         diff_file = os.path.join(store.cycle_dir(state), "design-diff.json")
@@ -1786,8 +1912,8 @@ def verb_handshake(store, args):
                 with open(diff_file) as f:
                     diff = json.load(f)
             except (json.JSONDecodeError, OSError) as e:
-                raise Refusal("bad_design_diff", f"{os.path.relpath(diff_file, store.repo_root)}: {e}")
-            source = os.path.relpath(diff_file, store.repo_root)
+                raise Refusal("bad_design_diff", f"{os.path.relpath(diff_file, store.home)}: {e}")
+            source = os.path.relpath(diff_file, store.home)
         elif flag_diff is not None:
             diff, source = flag_diff, "--design-diff"
         else:
@@ -1829,7 +1955,7 @@ def verb_handshake(store, args):
         with open(p + ".tmp", "w") as f:
             json.dump(h, f, indent=2)
         os.replace(p + ".tmp", p)
-        return {"ok": True, "path": os.path.relpath(p, store.repo_root),
+        return {"ok": True, "path": os.path.relpath(p, store.home),
                 "design_diff": len(diff), "design_diff_source": source,
                 "asks_open": len(h["asks_for_user_open"]),
                 "asks_resolved": len(h["asks_for_user_resolved"]), "task_refinements": len(refinements)}
@@ -1855,7 +1981,7 @@ def verb_close(store, args):
         if os.path.exists(hp):
             shutil.copy(hp, os.path.join(d, "handshake.json"))
             copied.append("handshake.json")
-        return {"ok": True, "cycle_id": state["cycle_id"], "archived_to": os.path.relpath(d, store.repo_root),
+        return {"ok": True, "cycle_id": state["cycle_id"], "archived_to": os.path.relpath(d, store.home),
                 "copied": copied, "abandoned": bool(args.abandon),
                 "counts": derive_counts(state["tasks"]),
                 "inbox_left": {s: sum(1 for a in state["asks_for_user"] if a["status"] == s)
@@ -1890,12 +2016,17 @@ def _legacy_task_extras(t):
                   and not (k in LEGACY_TASK_DROP_WHEN_NULL and t[k] is None))
 
 
-def migration_plan(state):
-    """What `migrate` would do to a legacy file. Pure."""
+def migration_plan(state, store=None):
+    """What `migrate` would do to a legacy file. Pure but for the store's paths."""
     plan = {"from": state.get("schema_version"), "to": SCHEMA_VERSION,
             "top_level_parked": [], "task_fields_parked": {}, "status_mapped": {},
             "records_parked": {}, "asks_kept": 0, "asks_parked": 0,
             "register_touched_parked": 0}
+    if store is not None:
+        old_root = state.get("home", state.get("repo_root"))
+        plan["rehome"] = ({"from": old_root, "to": store.home}
+                          if isinstance(old_root, str) and old_root and not _same_path(old_root, store.home)
+                          else None)
     reg = state.get(LEGACY_REGISTER_KEY)
     plan["register_touched_parked"] = len(reg) if isinstance(reg, list) else 0
     for k in state:
@@ -1945,6 +2076,12 @@ def verb_migrate(store, args):
                 else:
                     parked["top_level"][k] = v
             new["schema_version"] = SCHEMA_VERSION
+            old_root = new.get("home")
+            rehomed_from = (old_root if isinstance(old_root, str) and old_root
+                            and not _same_path(old_root, store.home) else None)
+            if rehomed_from:
+                parked["top_level"]["repo_root"] = old_root
+            new["home"], new["code_root"] = store.home, store.code_root
             new.setdefault("prior_handshake", None)
             new.setdefault("closed_at", None)
             new.setdefault("journal", [])
@@ -2101,7 +2238,7 @@ def verb_migrate(store, args):
                         extras_here[str(u[id_field])] = extra
                     if key == "asks_for_user":
                         path = ask_path(u["id"], u["status"], new.get("cycle_id") or old.get("cycle_id"))
-                        abs_path = os.path.join(store.repo_root, path)
+                        abs_path = os.path.join(store.home, path)
                         if os.path.exists(abs_path):
                             ask_files["existing"].append(path)
                         else:
@@ -2157,11 +2294,14 @@ def verb_migrate(store, args):
             reg_count = len(reg) if isinstance(reg, list) else 0
             add_journal(new, "note", f"migrated state from schema {old.get('schema_version')} to "
                         f"{SCHEMA_VERSION}; non-schema content parked", by="state.py",
-                        path=os.path.relpath(parked_path, store.repo_root))
+                        path=os.path.relpath(parked_path, store.home))
+            wrote_gitignore = _write_orchestrator_gitignore(store)
             store.write(new)
             return {"ok": True, "from": old.get("schema_version"), "to": SCHEMA_VERSION,
-                    "parked": os.path.relpath(parked_path, store.repo_root),
-                    "backup": os.path.relpath(backup, store.repo_root),
+                    "paths": {"home": store.home, "code_root": store.code_root},
+                    "rehomed_from": rehomed_from, "gitignore_written": wrote_gitignore,
+                    "parked": os.path.relpath(parked_path, store.home),
+                    "backup": os.path.relpath(backup, store.home),
                     "parked_top_level_keys": sorted(parked["top_level"]),
                     "tasks_with_parked_fields": sorted(parked["tasks"]),
                     "register_touched_parked": reg_count,
@@ -2177,8 +2317,14 @@ def verb_migrate(store, args):
 
 def build_parser():
     p = argparse.ArgumentParser(prog="state.py", description=__doc__.split("\n\n")[0])
-    p.add_argument("--repo", help="repo root (default: walk up to .claude/orchestrator/config.yaml)")
+    p.add_argument("--home", "--repo", dest="home",
+                   help="the home: the directory holding .claude/orchestrator/config.yaml and "
+                        ".orchestrator/ (default: walk up from cwd)")
     sub = p.add_subparsers(dest="verb", required=True)
+
+    s = sub.add_parser("where", help="the home and the code root, and any problem with them (needs no state)")
+    s.add_argument("--sh", action="store_true", help="print ORCH_HOME=... CODE_ROOT=... for eval")
+    s.set_defaults(fn=verb_where)
 
     s = sub.add_parser("status", help="orientation: phase, gates, tasks, open asks and inbox answers (run first)")
     s.set_defaults(fn=verb_status)
@@ -2186,8 +2332,8 @@ def build_parser():
     s.set_defaults(fn=verb_inbox)
     s = sub.add_parser("validate", help="schema check; on a legacy file, what migrate would do")
     s.set_defaults(fn=verb_validate)
-    s = sub.add_parser("migrate", help=f"convert an older-schema file to {SCHEMA_VERSION}; "
-                       "parks non-schema content in a sidecar")
+    s = sub.add_parser("migrate", help=f"convert an older-schema file (1.0 to 1.3) to {SCHEMA_VERSION}; "
+                       "parks non-schema content in a sidecar; rehomes the paths")
     s.set_defaults(fn=verb_migrate)
 
     s = sub.add_parser("init", help="start a new cycle (refuses while one is open)")
@@ -2196,7 +2342,7 @@ def build_parser():
     s.add_argument("--cycle", help="cycle id (default cycle-<unix-ts>)")
     s.add_argument("--branch")
     s.add_argument("--history-window", type=int, default=5)
-    s.add_argument("--prior-handshake", help="path relative to repo root (default: newest handshake-*.json)")
+    s.add_argument("--prior-handshake", help="path relative to the home (default: newest handshake-*.json)")
     s.add_argument("--first-cycle", action="store_true", help="no prior handshake exists")
     s.set_defaults(fn=verb_init)
 
@@ -2207,7 +2353,7 @@ def build_parser():
     t = sub.add_parser("task", help="task add | set | remove").add_subparsers(dest="sub", required=True)
     s = t.add_parser("add")
     s.add_argument("name")
-    s.add_argument("--file", required=True, help="task file path relative to repo root")
+    s.add_argument("--file", required=True, help="task file path relative to the home")
     s.add_argument("--class", dest="task_class", required=True)
     s.add_argument("--cites", help="comma-separated seam ids (seam/<name>)")
     s.add_argument("--blocked-by", help="comma-separated task names")
@@ -2284,15 +2430,21 @@ def build_parser():
 def main(argv=None):
     parser = build_parser()
     args = parser.parse_args(argv)
-    store = Store(find_repo_root(args.repo))
     try:
+        home, found = find_home(args.home)
+        raw, code_root = read_code_root(home)
+        store = Store(home, code_root)
+        store.home_found, store.code_root_raw = found, raw
         result = args.fn(store, args)
     except Refusal as r:
         err = {"ok": False, "error": r.slug, "message": r.message}
         err.update(r.extra)
         print(json.dumps(err, indent=2), file=sys.stderr)
         return r.exit_code
-    print(json.dumps(result, indent=2 if args.verb in ("status", "counts", "validate", "migrate", "inbox") else None))
+    if args.verb == "where" and args.sh:
+        print(f"ORCH_HOME={shlex.quote(result['home'])}\nCODE_ROOT={shlex.quote(result['code_root'])}")
+        return 0
+    print(json.dumps(result, indent=2 if args.verb in ("status", "counts", "validate", "migrate", "inbox", "where") else None))
     return 0 if result.get("ok", True) else 1
 
 

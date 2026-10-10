@@ -40,14 +40,14 @@ The triggers v2 will use are spec'd in v1 so the state file has the right fields
 
 ## Deep archive location (decided in v1 to avoid v2 rework)
 
-`<repo>/.tasks/archive/` is the deep archive. Decided now because:
+`<home>/.tasks/archive/` is the deep archive. Decided now because:
 
 - Closest to where externalisation already lives.
-- Survives `git worktree`.
+- Lives outside the code root's worktrees.
 - One home per project.
 - Doesn't pollute the cycle archive at `.orchestrator/cycles/<cycle-id>/`.
 
-Closed-task bodies that get compressed (by v2) keep a back-reference to `<repo>/.tasks/archive/<task-name>.md`.
+Closed-task bodies that get compressed (by v2) keep a back-reference to `<home>/.tasks/archive/<task-name>.md`.
 
 ## V2 phase shape (single-pass first)
 

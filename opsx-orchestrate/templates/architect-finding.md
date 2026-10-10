@@ -1,6 +1,6 @@
 # Architect finding template
 
-Architect findings are **structured**, **cite specific lines**, and carry a **severity that decides routing**. They go in `<repo>/.orchestrator/cycles/<cycle-id>/findings/<finding-id>.md`. The state file's `architect_findings` array carries the index fields in JSON form.
+Architect findings are **structured**, **cite specific lines**, and carry a **severity that decides routing**. They go in `<home>/.orchestrator/cycles/<cycle-id>/findings/<finding-id>.md`. The state file's `architect_findings` array carries the index fields in JSON form.
 
 ## Form
 

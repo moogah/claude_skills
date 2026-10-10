@@ -1,18 +1,19 @@
 ---
 name: opsx-orchestrate
-description: "Orchestrate batched, agent-driven implementation across a project — planning, executing, and integrating cycles of tasks with role-separated agents (Implementor, Reviewer, Architect, PM). Use when working with a repo that has `.claude/orchestrator/config.yaml` or when the user invokes `/opsx-orchestrate`, `/opsx-tasks generate`, `/pm-digest`, `/curate`. Handles: (1) the design round that turns spec scenarios into seams and pending tests, (2) running plan / execute / integrate phases of a change, (3) spawning role agents in worktrees, (4) author-blind review enforcement, (5) checking merged code against the change's design and amending it, (6) producing PM digests with cascade detection, (7) integrate→plan handshake artifacts that close the cycle loop. Skip for ad-hoc one-off edits that don't span a batch — those don't need the orchestrator."
+description: "Orchestrate batched, agent-driven implementation across a project — planning, executing, and integrating cycles of tasks with role-separated agents (Implementor, Reviewer, Architect, PM). Use when working in a directory, a repo or a workspace above one, that has `.claude/orchestrator/config.yaml` or when the user invokes `/opsx-orchestrate`, `/opsx-tasks generate`, `/pm-digest`, `/curate`. Handles: (1) the design round that turns spec scenarios into seams and pending tests, (2) running plan / execute / integrate phases of a change, (3) spawning role agents in worktrees, (4) author-blind review enforcement, (5) checking merged code against the change's design and amending it, (6) producing PM digests with cascade detection, (7) integrate→plan handshake artifacts that close the cycle loop. Skip for ad-hoc one-off edits that don't span a batch — those don't need the orchestrator."
 ---
 
 # opsx-orchestrate
 
-Central skill that runs the **plan / execute / integrate** cycle for batched, agent-driven implementation. Lives globally; reads a per-project overlay at `<repo>/.claude/orchestrator/` for project specifics.
+Central skill that runs the **plan / execute / integrate** cycle for batched, agent-driven implementation. Lives globally; reads a per-project overlay at `<home>/.claude/orchestrator/` for project specifics.
 
 ## Resolution: where am I, what do I read?
 
-1. **Walk up from `$cwd`** looking for `.claude/orchestrator/config.yaml`. First hit wins; that directory is `$REPO_ROOT`.
+1. **Walk up from `$cwd`** looking for `.claude/orchestrator/config.yaml`. First hit wins; that directory is the **home** (`$ORCH_HOME`). It holds `.orchestrator/`, `openspec/` and `.tasks/`, and its git repo tracks them.
 2. **Parse `config.yaml`** — required fields validated; missing-required = hard error. Optional fields fall through to core defaults.
-3. **Append role overlays** from `<repo>/.claude/orchestrator/roles/*.md` (if present) to the corresponding core role briefs at agent-spawn time, followed by `priors.md` (the user's standing rules, `overlay.md` § Priors) when it exists.
-4. **No overlay found** → warn the user explicitly; fall back to sensible defaults (see `overlay.md`).
+3. **Read `code-root`** from `config.yaml`: one path relative to the home naming the **code root** (`$CODE_ROOT`), the git work tree where worktrees are created, code is merged and tested, and code commits are made. Absent, the code root is the home. The orchestrator's cwd is the home; the `openspec` CLI and the sibling `/opsx-*` skills run there (the CLI resolves `openspec/` from its cwd), and every git or test command that belongs in the code root says so (`git -C "$CODE_ROOT"`, or a `cd` in a subshell). `state.py where --sh` prints both paths for `eval`.
+4. **Append role overlays** from `<home>/.claude/orchestrator/roles/*.md` (if present) to the corresponding core role briefs at agent-spawn time, followed by `priors.md` (the user's standing rules, `overlay.md` § Priors) when it exists.
+5. **No overlay found** → warn the user explicitly; fall back to sensible defaults (see `overlay.md`).
 
 Full overlay contract: **[overlay.md](overlay.md)**.
 
@@ -22,7 +23,7 @@ A change enters the orchestrator after OpenSpec's `proposal → specs → design
 
 ## What phase am I in?
 
-Run `state.py status` (the state tool: `python3 ~/.claude/skills/opsx-orchestrate/scripts/state.py`; the flow docs write it `state.py`). It prints the phase (`plan` | `execute` | `integrate`), each gate's failing checks, the task table, the inbox (open asks, and which have an answer waiting) and what to resume. Each phase has its own flow doc and exit gate. **A later phase refuses to start if the prior phase's gate has not passed** — `state.py phase set` enforces it.
+Run `state.py status` (the state tool: `python3 ~/.claude/skills/opsx-orchestrate/scripts/state.py`; the flow docs write it `state.py`). It prints the phase (`plan` | `execute` | `integrate`), each gate's failing checks, the task table, the inbox (open asks, and which have an answer waiting) and what to resume. `state.py where` prints the home and the code root (`--sh` gives them as shell assignments) and works with no state file. Each phase has its own flow doc and exit gate. **A later phase refuses to start if the prior phase's gate has not passed** — `state.py phase set` enforces it.
 
 | Phase | Flow doc | Defining ops |
 |---|---|---|
@@ -72,14 +73,14 @@ In-change vs `.tasks/` rule: **[externalisation.md](externalisation.md)**. Rule 
 
 ## Loop closure: integrate → plan handshake
 
-The keystone transition is **integrate → plan**, not execute → review. Each plan reads `<repo>/.orchestrator/handshake-<prior-cycle-id>.json` as a hard input contract. Required fields: `design_diff`, `pm_digest_path`, `meta_discoveries`, `user_resolved_goal_drift`, `asks_for_user_open`, `asks_for_user_resolved` and `task_refinements`. Empty list is allowed; missing field is not. `state.py init` refuses to start a cycle if the file is missing or any field is unset; `state.py handshake` writes it with the mechanical fields filled from state.
+The keystone transition is **integrate → plan**, not execute → review. Each plan reads `<home>/.orchestrator/handshake-<prior-cycle-id>.json` as a hard input contract. Required fields: `design_diff`, `pm_digest_path`, `meta_discoveries`, `user_resolved_goal_drift`, `asks_for_user_open`, `asks_for_user_resolved` and `task_refinements`. Empty list is allowed; missing field is not. `state.py init` refuses to start a cycle if the file is missing or any field is unset; `state.py handshake` writes it with the mechanical fields filled from state.
 
 This is the structural fix for "learns and forgets" — without it, the orchestrator becomes a queue runner.
 
 ## When NOT to use this skill
 
 - Single ad-hoc edits with no batch context — just edit; don't bring in worktrees and agents.
-- Projects without `.claude/orchestrator/config.yaml` AND with no Makefile / no test runner — the orchestrator can't validate anything; defer until the project is onboarded.
+- Projects with no `.claude/orchestrator/config.yaml` in the repo or a workspace above it AND with no Makefile / no test runner — the orchestrator can't validate anything; defer until the project is onboarded.
 - Across-multiple-changes work — v1 is single-change at a time.
 
 ## Mode detection at entry
@@ -107,4 +108,5 @@ Where the orchestrator reads the inbox (`templates/ask.md`): `state.py status` a
 - **The integrate→plan handshake artifact is the loop-closure contract.** Without every required field (see `state.md`), plan refuses to start.
 - **A finding, discovery or observation becomes a task only on a demonstrated reason**: its `observed.happened` is true, a project prior or the user asked for that kind of work, or it states a measured cost. A reasoning-only finding is `noted`; it never becomes a task, a backlog item or a question to the user (`flows/integrate.md` § 7). The user's own words (a prior, an ask decision, a proposal sentence) outrank a `design.md` sentence.
 - **Every question to the user is an org file in `.orchestrator/inbox/`** per `templates/ask.md`, written the moment it is raised, in any phase, and triaged by kind. Only `decision` kinds reach the user as questions; the user answers in the file; an answer outside the offered options is read back before it is applied. The blocking call is for `environment` asks and for blocking asks while the user is present (acted within the last 15 minutes); one question per call. Nothing else blocks a session on a question.
-- **Process artifacts are tracked in git.** `.orchestrator/` is never gitignored (`state.py init` refuses when it is, and writes `.orchestrator/.gitignore` for the test outputs). The orchestrator commits an ask file when it is created, an applied ask alongside the change that applies it, and everything else at phase close (`Orchestrator: <cycle-id> <phase> closed`).
+- **Process artifacts are tracked in git, in the home repo.** `.orchestrator/` is never gitignored there (`state.py init` refuses when the home ignores it and when the code root contains a `.orchestrator/` of its own; it writes `.orchestrator/.gitignore` for the test outputs). The orchestrator commits an ask file when it is created, an applied ask alongside the change that applies it, and everything else at phase close (`Orchestrator: <cycle-id> <phase> closed`). Artifact commits are made in the home; code commits in the code root. When the code root is nested inside the home, the home's `.gitignore` ignores it (`where` warns when it does not), so the code checkout never appears as an embedded repository in the home's history.
+- **When the home and the code root differ, "in one commit" means one commit per repository.** Every rule that says so (an applied ask with the change that applies it; the design round's `design.md` with its pending tests; an inline doc-correction with the edit) is then one commit in each repository with the same subject, the code commit's message naming the ask id or the change.

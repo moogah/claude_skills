@@ -1,22 +1,23 @@
 # State file shape
 
-The orchestrator's state file (`<repo-root>/.orchestrator/state.json`) is the source of truth for everything the PM digest counts and everything the cycle's exit gates check. Counts never come from the LLM — every number in a PM digest is derived from this file by the state tool.
+The orchestrator's state file (`<home>/.orchestrator/state.json`) is the source of truth for everything the PM digest counts and everything the cycle's exit gates check. Counts never come from the LLM — every number in a PM digest is derived from this file by the state tool.
 
 The file survives the lifetime of one cycle (plan → execute → integrate); `close` archives it to `.orchestrator/cycles/<cycle-id>/state.json` and the next `init` starts a fresh one carrying the counts history.
 
 ## Writing state
 
-**State is written only through the state tool**, `scripts/state.py` in this skill's directory (`python3 ~/.claude/skills/opsx-orchestrate/scripts/state.py <verb> …`, written `state.py <verb>` in the flow docs). A heredoc, `jq`, `sed` or Write call against `state.json` is a process bug: the tool owns the schema, the transitions, the timestamps and the derived numbers, and it refuses what does not fit. Subagents that touch state use the same verbs.
+**State is written only through the state tool**, `scripts/state.py` in this skill's directory (`python3 ~/.claude/skills/opsx-orchestrate/scripts/state.py <verb> …`, written `state.py <verb>` in the flow docs). A heredoc, `jq`, `sed` or Write call against `state.json` is a process bug: the tool owns the schema, the transitions, the timestamps and the derived numbers, and it refuses what does not fit. Subagents that touch state use the same verbs. The tool finds the home by walking up from its cwd for `.claude/orchestrator/config.yaml`, then for `.orchestrator/state.json`; `--home <path>` (alias `--repo`) names it outright. It reads `code-root` from the home's `config.yaml`. An `@file` argument resolves against the cwd first, then the home.
 
 Run `state.py status` before anything else in a session; it is the orientation (phase, gates with their failing checks, the task table, open asks and which of them have an answer waiting in the inbox, pending blocking findings, the last journal lines) in about 2 KB, and it says what to resume.
 
 | Verb | Does |
 |---|---|
-| `status` | Orientation, as above. Read-only. Its `resume` hint names the inbox answers waiting, if any. |
+| `status` | Orientation, as above, plus `paths: {home, code_root}`. Read-only. Its `resume` hint names the inbox answers waiting, if any. |
 | `inbox` | Read-only. Every `.orchestrator/inbox/*.org` joined with the index: the question, the answer and the option it names (`exact` / `fuzzy` / `none`), other ask ids the answer mentions, a label written under another heading, whether git tracks the file, and every index/file mismatch. Works on a closed cycle. The sync points run it (`SKILL.md` § Sync points). |
 | `validate` | Schema check, plus the inbox's file problems. On a file of an older schema, prints what `migrate` would do. |
-| `migrate` | Converts a file of an older schema (1.0, 1.1 or 1.2) to the current one; non-schema content (the old `register_touched` list among it) is parked in `cycles/<id>/legacy-state-extras.json`, a backup is kept. Every ask record becomes a file (`ask_files` in the output); a legacy "resolved" ask is applied history under its cycle's `asks/`. |
-| `init --change <name> --test-command <cmd> [--prior-handshake <path> \| --first-cycle] [--cycle <id>]` | Starts a cycle in `plan`. Refuses while a cycle is open, and refuses (`orchestrator_ignored`) when the repository's `.gitignore` ignores `.orchestrator/`. Validates the prior handshake's required fields (plan's refusal). Carries `history` from the archived cycles and every file in the inbox into the new index (`inbox_carried`). Writes `.orchestrator/.gitignore` (test outputs, the lock, migration backups) when absent. |
+| `migrate` | Converts a file of an older schema (1.0 to 1.3) to the current one; `repo_root` becomes `home`, and an old `repo_root` that differs from the home is parked under `parked.top_level` and reported as `rehomed_from`; other non-schema content (the old `register_touched` list among it) is parked in `cycles/<id>/legacy-state-extras.json`, a backup is kept. Writes `.orchestrator/.gitignore` when absent (the same content `init` writes). Every ask record becomes a file (`ask_files` in the output); a legacy "resolved" ask is applied history under its cycle's `asks/`. |
+| `where [--sh]` | Prints the home and the code root: `{home, code_root, split, home_found, config, state: present \| absent, problems}`. Works with no state file. `--sh` prints `ORCH_HOME=… CODE_ROOT=…` shell assignments for the flows' bash blocks (`eval "$(state.py where --sh)"`). |
+| `init --change <name> --test-command <cmd> [--prior-handshake <path> \| --first-cycle] [--cycle <id>]` | Starts a cycle in `plan`. Refuses while a cycle is open; `no_home` when no `config.yaml` is found walking up and no `--home` is given; `orchestrator_ignored` when the home repo's `.gitignore` ignores `.orchestrator/` (the code repo may keep ignoring it as a guard); `code_root_missing`; `code_root_not_git` (`git -C <code-root> rev-parse --show-toplevel` fails); `misplaced_artifacts` (`<code-root>/.orchestrator/` exists; the message names the home: move it there with a plain `mv` and run `init` again); `two_homes` (`<code-root>/.claude/orchestrator/config.yaml` exists); `bad_code_root` (a list). An `openspec/` in the code root is a warning in the result, not a refusal. `current_branch` comes from `git -C <code-root> rev-parse --abbrev-ref HEAD`. Validates the prior handshake's required fields (plan's refusal). Carries `history` from the archived cycles and every file in the inbox into the new index (`inbox_carried`). Writes `.orchestrator/.gitignore` (test outputs, the lock, migration backups) when absent. |
 | `set field=value …` | The four settable scalars: `baseline_snapshot`, `baseline_status`, `current_branch`, `test_command`. |
 | `task add <name> --file <path> --class <class> [--cites seam/a,seam/b] [--blocked-by t1] [--critical] [field=value …]` | Adds a task with spec fields only. |
 | `task set <name> [<status>] [field=value …]` | The transition. Validates the status enum and the transition rules; sets `started_at` / `completed_at` / `reviewed_at`; requires `merge_commit=` for `needs_review`; counts a rejection on `needs_review → in_progress`. `--force --why "<reason>"` allows a non-standard move and records a `deviation` journal entry. |
@@ -46,11 +47,12 @@ Every verb prints JSON. A refusal is `{"ok": false, "error": "<slug>", "message"
 
 ```json
 {
-  "schema_version": "1.3",
+  "schema_version": "1.4",
   "session_id": "orch-<unix-ts>",
   "cycle_id": "cycle-<unix-ts>",
   "phase": "plan | execute | integrate",
-  "repo_root": "<absolute path>",
+  "home": "<absolute path>",
+  "code_root": "<absolute path>",
   "change_name": "<change-name>",
   "baseline_snapshot": ".orchestrator/baseline-<cycle-id>.txt",
   "baseline_status": 0,
@@ -68,7 +70,7 @@ Every verb prints JSON. A refusal is `{"ok": false, "error": "<slug>", "message"
 }
 ```
 
-`schema_version` is a hard field — the tool refuses to write a file whose version it does not own, and `status` says so. `prior_handshake` is null only on a first cycle (`init --first-cycle`).
+`schema_version` is a hard field — the tool refuses to write a file whose version it does not own, and `status` says so. `home` is the directory holding `.claude/orchestrator/config.yaml`, where `.orchestrator/`, `openspec/` and `.tasks/` live. `code_root` is the git work tree where worktrees are made and code is merged and committed; it is the home unless `config.yaml` sets `code-root`. `prior_handshake` is null only on a first cycle (`init --first-cycle`).
 
 ## Task entry
 
@@ -78,7 +80,7 @@ Every verb prints JSON. A refusal is `{"ok": false, "error": "<slug>", "message"
   "task_file": "openspec/changes/<change>/tasks/open/setup-module.md",
   "task_class": "feature | test | doc | refactor | bug | contract | infrastructure",
   "on_critical_path": true,
-  "worktree_path": "<repo>/.worktrees/task-setup-module-<ts>",
+  "worktree_path": "<code-root>/.worktrees/task-setup-module-<ts>",
   "branch_name": "task-setup-module-<ts>",
   "agent_task_id": "<Agent id or null>",
   "status": "ready | setup_complete | in_progress | completed | needs_review | reviewed | done | failed | blocked | externalised",
@@ -243,7 +245,7 @@ Computed by `gate check` from state and the files on disk: all of execute's chec
 
 ## Integrate→plan handshake artifact
 
-`handshake` writes `<repo>/.orchestrator/handshake-<cycle-id>.json` when integrate closes. The next plan phase reads this file as a hard input contract; `init` refuses to start a cycle whose prior handshake lacks any required field (a prior handshake written before schema 1.2, which carries `register_diff` instead of `design_diff`, is accepted once).
+`handshake` writes `<home>/.orchestrator/handshake-<cycle-id>.json` when integrate closes. The next plan phase reads this file as a hard input contract; `init` refuses to start a cycle whose prior handshake lacks any required field (a prior handshake written before schema 1.2, which carries `register_diff` instead of `design_diff`, is accepted once).
 
 ```json
 {
@@ -287,11 +289,13 @@ Computed by `gate check` from state and the files on disk: all of execute's chec
 
 `status` on a missing, legacy or invalid state file says which, and the orchestrator does not invent state:
 
-1. Older schema (`1.0`, `1.1` or `1.2`): `validate` shows the migration plan; `migrate` converts it, renames `cites_register_entries` to `cites_seams`, maps old finding triggers to the current two (the original kept as `_legacy_trigger` in the extras), writes every ask record as a file (open ones into the inbox, resolved ones under their cycle's `asks/`; a file already there is left alone, so the verb can be rerun), parks every other non-schema key and field, `register_touched` included, in `cycles/<id>/legacy-state-extras.json` (nothing is deleted) and keeps a `state.json.pre-migrate-<ts>` backup. A cycle migrated while at integrate re-runs `handshake` before `gate pass integrate`, since the handshake it wrote earlier carries the old field.
+1. Older schema (`1.0` to `1.3`): `validate` shows the migration plan; `migrate` converts it, renames `repo_root` to `home` (an old value that differs from the home is parked under `parked.top_level` and reported as `rehomed_from`) and adds `code_root`, writes `.orchestrator/.gitignore` when absent, renames `cites_register_entries` to `cites_seams`, maps old finding triggers to the current two (the original kept as `_legacy_trigger` in the extras), writes every ask record as a file (open ones into the inbox, resolved ones under their cycle's `asks/`; a file already there is left alone, so the verb can be rerun), parks every other non-schema key and field, `register_touched` included, in `cycles/<id>/legacy-state-extras.json` (nothing is deleted) and keeps a `state.json.pre-migrate-<ts>` backup. A cycle migrated while at integrate re-runs `handshake` before `gate pass integrate`, since the handshake it wrote earlier carries the old field.
 2. Invalid current-schema file (someone wrote it by hand): `validate` lists the offending keys; fix them by hand, then continue through the tool.
 3. Missing file mid-cycle: restore `cycles/<cycle-id>/state.json` if an archive exists for the cycle; otherwise ask the user whether to recover or to abandon the cycle. This is an `environment`-kind ask (`templates/ask.md`): the blocking call, at once, since there is no state file to index an ask file.
 4. An ask file and its index entry disagree (`validate` and `inbox` say how): a hand-edited `:STATUS:` is reconciled by `record set asks <id> status=<that value>`; a deleted drawer is restored by any `record set`; a file missing from its `path` is restored from git; a file in the inbox with no index entry is carried in by the next `init` or indexed now with `record add asks @<path>`.
 5. Never silently start a new cycle — `init` refuses while a cycle is open; `close --abandon --why` is the explicit way out.
+
+The home may be the code root (a single repo) or its parent (a workspace directory holding the repo). A home with no git behaves as before: nothing is tracked and `init` does not refuse.
 
 ## Cycle archive
 
@@ -312,6 +316,6 @@ Computed by `gate check` from state and the files on disk: all of execute's chec
   legacy-state-extras.json           # only when migrate ran in this cycle
 ```
 
-At the `.orchestrator/` level: `inbox/<ask-id>.org` holds every open, answered and deferred ask across cycles (`init` indexes what it finds there); `.gitignore`, written by `init`, keeps `baseline-<cycle-id>.txt`, `after-<task>-<ts>.txt`, `*.tmp`, the lock and the migration backups out of git; everything else under `.orchestrator/` is tracked and committed at the points `SKILL.md` names. The test outputs stay at `.orchestrator/` and are named from state (`baseline_snapshot`, `tasks[].after_snapshot`).
+At the `.orchestrator/` level: `inbox/<ask-id>.org` holds every open, answered and deferred ask across cycles (`init` indexes what it finds there); `.gitignore`, written by `init`, keeps `baseline-<cycle-id>.txt`, `after-<task>-<ts>.txt`, `*.tmp`, the lock and the migration backups out of git; everything else under `.orchestrator/` is tracked by the home repo and committed there at the points `SKILL.md` names. The test outputs stay at `.orchestrator/` and are named from state (`baseline_snapshot`, `tasks[].after_snapshot`).
 
 This directory is the long-tail audit trail. The curation cycle (v2, deferred) reads it.

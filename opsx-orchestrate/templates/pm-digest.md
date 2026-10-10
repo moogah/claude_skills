@@ -6,7 +6,7 @@ The structure is fixed; the contents are derived. Every count traces to a state-
 
 ## Output location
 
-`<repo>/.orchestrator/cycles/<cycle-id>/pm-digest.md`
+`<home>/.orchestrator/cycles/<cycle-id>/pm-digest.md`
 
 `state.py gate check integrate` computes `pm_digest_produced` from this file: it must exist with a non-empty `## Signals` section. A cycle with nothing to ask closes cleanly.
 
@@ -56,7 +56,7 @@ drainage         1.00       0.83       0.50       0.57       0.45  ⚠ trending 
 | 1 | Should a video you fetch by hand be added to the archive? | — | Do nothing to the code | `.orchestrator/inbox/ask-cycle-N-9.org` |
 | 2 | Keep working through the refactor batch, or return to the critical path first? | next-plan | Return to the critical path | `.orchestrator/inbox/ask-cycle-N-3.org` |
 
-Answer in the file's `* Answer` section, or in chat.
+Answer in the file's `* Answer` section (paths are relative to the home), or in chat.
 Applied without asking: 3 (`cycles/<cycle-id>/asks/`). Process notes: 1 (inbox).
 Reasoning-only findings noted, not scheduled: 1.
 
@@ -113,4 +113,4 @@ If the agent pass fails or hallucinates, the deterministic pass output remains i
 | `review_starvation_ratio` | (needs_review/in_progress) > 1.5 |
 | `externalisation_pressure_growth` | monotonic over 3 cycles |
 
-Per-project overlay overrides via `.claude/orchestrator/config.yaml` `thresholds.*`.
+Per-project overlay overrides via `<home>/.claude/orchestrator/config.yaml` `thresholds.*`.

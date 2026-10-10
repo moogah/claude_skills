@@ -1,11 +1,11 @@
 # Overlay convention
 
-The core skill is project-agnostic. Each project repo carries its own overlay at `<repo>/.claude/orchestrator/`. The overlay supplies the project's test command, build hooks, role-prompt extensions, threshold tuning, and task taxonomy.
+The core skill is project-agnostic. Each project carries its own overlay at `<home>/.claude/orchestrator/`, where the home is the repo or a workspace directory above it. The overlay supplies the project's test command, build hooks, role-prompt extensions, threshold tuning, and task taxonomy.
 
 ## Layout
 
 ```
-<repo>/.claude/orchestrator/
+<home>/.claude/orchestrator/
   config.yaml              # required if the directory exists
   roles/
     implementor.md         # OPTIONAL — appended to core implementor brief
@@ -27,6 +27,10 @@ The directory is **flat under `.claude/`** — not nested under `.claude/skills/
 # Required: project identity
 project: <slug>
 language: elisp | go | typescript | python | rust | other
+
+# OPTIONAL: the code root, where worktrees are made, code is merged and tested, and code commits land.
+# One path relative to the home (the directory holding this file); default: the home. A list is refused; multi-repo is deferred.
+code-root: <dir>
 
 # Required: build & test
 build:
@@ -111,21 +115,23 @@ priors: priors.md
 
 At skill invocation:
 
-1. The orchestrator resolves the overlay by **walking up from `$cwd`** looking for `.claude/orchestrator/config.yaml`. The first hit wins; record its directory as `$REPO_ROOT`.
+1. The orchestrator resolves the overlay by **walking up from `$cwd`** looking for `.claude/orchestrator/config.yaml`. The first hit wins; record its directory as the home (`$ORCH_HOME`). It holds `.orchestrator/`, `openspec/` and `.tasks/`.
 2. If found, parse `config.yaml`. Required fields are validated; missing-required is a hard error (orchestrator refuses to start).
 3. Optional fields fall through to core defaults.
 4. Markdown role overlays referenced by `roles-overlay.*` are read and **appended** to the corresponding core role briefs at agent-spawn time, followed by `priors.md` when it exists.
-5. Hook scripts referenced by `build.pre-commit`, `test.command`, `worktree.init` are resolved relative to `$REPO_ROOT`.
+5. `code-root`, when set, names the code root (`$CODE_ROOT`) relative to the home; absent, the code root is the home.
+6. Hook scripts referenced by `build.pre-commit`, `test.command`, `worktree.init` are resolved relative to the code root and run there, or in a worktree under it (§ Hook contract).
 
 If no overlay is found, the orchestrator warns explicitly and falls back to:
 
 | Default |
 |---|
+| `code-root`: the home |
 | `test.command`: `make test` if Makefile present, else error |
 | `test.parser`: `exit-code` |
 | `worktree.parent`: `.worktrees` |
 | `worktree.needs-submodules`: false |
-| `artifacts.tasks-root`: `tasks` (flat) |
+| `artifacts.tasks-root`: `openspec/changes/<change>/tasks` |
 | `artifacts.externalised-root`: `.tasks` |
 | `artifacts.design-pattern`: `openspec/changes/<change>/design.md` |
 | `test.pending-style`: `xfail-strict` (pytest) or `xit` (buttercup), else error when the design round needs it |
@@ -136,10 +142,10 @@ If no overlay is found, the orchestrator warns explicitly and falls back to:
 
 The fallback behaviour exists so the orchestrator can run on a project that hasn't been onboarded yet, but the warning is loud — running without an overlay is not the steady state.
 
-## Why walk up rather than require `$REPO_ROOT`
+## Why walk up rather than require the home
 
-- Works from sub-directories without needing to `cd` to the repo root.
-- Doesn't require `git` to be present (some projects use `jj`, `hg`, or no VCS).
+- Works from sub-directories without needing to `cd` to the home.
+- Works from inside the code root: the walk-up passes through it to the home.
 - Matches how editors and other tooling resolve project-local config (`.editorconfig`, `package.json`, `pyproject.toml`).
 
 ## Role overlay append semantics
@@ -148,7 +154,7 @@ Role overlay files are **appended**, not substituted. The core role brief is the
 
 Core `roles/reviewer.md` contains the rigorous-not-contrarian / thoughtful-maintainer mindset.
 
-Project overlay `<repo>/.claude/orchestrator/roles/reviewer.md` adds:
+Project overlay `<home>/.claude/orchestrator/roles/reviewer.md` adds:
 
 ```markdown
 ## Project-specific reviewer checks (elisp)
@@ -184,9 +190,9 @@ Hooks are bash scripts run by the orchestrator at fixed lifecycle points:
 
 | Hook | When | Cwd | Failure semantics |
 |---|---|---|---|
-| `worktree.init` | After `git worktree add`, before agent spawn | inside the new worktree | Failure aborts task setup; status → failed |
+| `worktree.init` | After `git worktree add`, before agent spawn | inside the new worktree (under the code root) | Failure aborts task setup; status → failed |
 | `build.pre-commit` | Before commit in a worktree (after agent finishes) | inside the worktree | Failure aborts commit; status → failed; worktree retained |
-| `test.command` | After every merge to integration branch, and as the final implementor verification step | inside repo root or worktree (depending on phase) | Non-zero status indicates regression; baseline-vs-after comparison runs |
+| `test.command` | After every merge to integration branch, and as the final implementor verification step | inside the code root or worktree (depending on phase) | Non-zero status indicates regression; baseline-vs-after comparison runs |
 
 Hooks must be idempotent. The orchestrator may re-run them on retry.
 

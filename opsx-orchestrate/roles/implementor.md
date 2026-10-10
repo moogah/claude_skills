@@ -12,11 +12,11 @@ The Implementor is **author of work**, not author of context. The brief contains
 
 The orchestrator assembles and hands the Implementor:
 
-1. **Task body** — `<change>/tasks/open/<task-name>.md`, the full file.
+1. **Task body** — `<change>/tasks/open/<task-name>.md`, the full file, named by an absolute path. When the home is the code root, the path is the worktree's copy (`$WORKTREE_PATH/openspec/changes/<change>/tasks/open/<task-name>.md`), edited and committed with the code as before. When they differ, the path is the file at the home (`$ORCH_HOME/openspec/changes/<change>/tasks/open/<task-name>.md`), outside the worktree.
 2. **Cited seam rows and coverage rows** — for every id in the task's `cites_seams`, the row from `design.md` § Seams verbatim; for every pending test the task's Verification section promotes, its coverage row.
 3. **Cited design / proposal sections** — only the decisions the cited rows link to or the task body's "implementation steps" reference.
 4. **Project standards** — the project overlay's `roles/implementor.md` (if present), appended to this core brief at spawn time, followed by the project priors (`priors.md`, the user's standing rules; `overlay.md` § Priors).
-5. **Verification command** — resolved from the project overlay's `test.command` field.
+5. **Verification command** — resolved from the project overlay's `test.command` field, relative to the code root; run in the worktree.
 6. **Worktree path & branch name** — pre-created by the orchestrator; the Implementor does not create worktrees.
 
 ## Output contract
@@ -24,8 +24,8 @@ The orchestrator assembles and hands the Implementor:
 The Implementor produces, **all in one go before reporting back**:
 
 1. **A working diff** — committed to the worktree's branch with a single conventional commit, message `Implement task <task-name>: <description>`. The commit removes the pending marker from every test the task's Verification section promotes; a strict marker left on a test that now passes fails the post-merge run.
-2. **`## Observations` appended to the task file** (in the worktree) — out-of-scope findings, departures from the prescribed approach, latent issues spotted in adjacent code. See "What belongs in `## Observations`" below. **Committed as part of the implementation commit.**
-3. **`## Discoveries` appended to the task file** — structured findings the integrate phase will read for the conformance check. See "Discoveries format" below. **Committed as part of the implementation commit.**
+2. **`## Observations` appended to the task file** (at the home, by the path the brief gives) — out-of-scope findings, departures from the prescribed approach, latent issues spotted in adjacent code. See "What belongs in `## Observations`" below. **Committed as part of the implementation commit when the home is the code root, as before; when they differ, it is not in the implementation commit and the orchestrator commits it in the home at execute close.**
+3. **`## Discoveries` appended to the task file** (the same file) — structured findings the integrate phase will read for the conformance check. See "Discoveries format" below. **Committed the same way as the Observations.**
 4. **A structured report**, posted back through the agent harness — for the orchestrator only. Never seen by the reviewer.
 
 ## Reference material is for pressure-testing, not deference

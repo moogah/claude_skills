@@ -10,10 +10,10 @@ A task is "executed" only when **both** implement and review have completed on i
 
 For each task in the batch, the orchestrator:
 
-1. Captures a baseline test snapshot if one isn't already taken for this cycle: `<repo>/.orchestrator/baseline-<cycle-id>.txt`, then `state.py set baseline_snapshot=<path> baseline_status=<exit code>`.
-2. Creates a worktree at `<repo>/<worktree.parent>/task-<task-name>-<ts>`.
-   - Uses `git worktree add "$WORKTREE_PATH" -b "$BRANCH_NAME"`.
-   - Always from main repo root; never from within an existing worktree.
+1. Captures a baseline test snapshot if one isn't already taken for this cycle: `$TEST_CMD` (the overlay's `test.command`) run in the code root (`cd "$CODE_ROOT" && $TEST_CMD > "$ORCH_HOME/.orchestrator/baseline-<cycle-id>.txt"`), then `state.py set baseline_snapshot=.orchestrator/baseline-<cycle-id>.txt baseline_status=<exit code>` (paths in state are relative to the home). `$ORCH_HOME` and `$CODE_ROOT` come from `eval "$(state.py where --sh)"` (§ 3); the orchestrator's own cwd stays the home, and every git or test command that belongs in the code root says so with `-C "$CODE_ROOT"` or a `cd` in a subshell.
+2. Creates a worktree at `$WORKTREE_PATH=$CODE_ROOT/<worktree.parent>/task-<task-name>-<ts>` on the branch `$BRANCH_NAME=task-<task-name>-<ts>` (the same `<ts>` names the after-file in § 4).
+   - Uses `git -C "$CODE_ROOT" worktree add "$WORKTREE_PATH" -b "$BRANCH_NAME"`.
+   - Always from the code root; never from within an existing worktree.
 3. Runs the overlay's `worktree.init` hook if defined.
 4. Spawns an Implementor agent (`Agent` tool, `subagent_type: general-purpose`). The call returns at once and the agent runs concurrently with the orchestrator and the other agents; its completion arrives as a notification. No polling, no `sleep`.
 5. Hands the agent the assembled brief (per `roles/implementor.md`), saved as `.orchestrator/cycles/<cycle-id>/briefs/<task-name>.md` so the review and the audit trail can see what the Implementor saw.
@@ -32,10 +32,9 @@ Nothing runs between an Implementor's commit and its merge. The Reviewer (§ 7) 
 Merges are not held for the batch. When an Implementor completes with a commit, its task joins the merge queue at once. The queue merges one task at a time, in the order tasks landed, while the other Implementors keep running; the chain is serial because there is one integration branch. A task that merges and passes § 4 goes straight on through § 5-7 (its Reviewer is spawned), and the chain moves to the next queued task without waiting for that review. A task held by a blocking ask (§ 9) stays out of the queue; the tasks behind it merge. When the chain pauses (nothing queued, agents still running), the orchestrator runs `state.py inbox` and handles an answered file before it waits again (§ 9). The record shows why: a batch that waited for all seven Implementors made the first-finished task wait 10 minutes for its merge and 12 for its Reviewer, where batches merged as they landed spawned each Reviewer 0-3 minutes after its Implementor ended.
 
 ```bash
-REPO_ROOT=$(git rev-parse --show-toplevel)
-cd "$REPO_ROOT"
-git merge --no-ff "$BRANCH_NAME" -m "Merge task $TASK_NAME: $DESCRIPTION"
-MERGE_COMMIT=$(git rev-parse HEAD)
+eval "$(python3 ~/.claude/skills/opsx-orchestrate/scripts/state.py where --sh)"   # ORCH_HOME=… CODE_ROOT=…
+git -C "$CODE_ROOT" merge --no-ff "$BRANCH_NAME" -m "Merge task $TASK_NAME: $DESCRIPTION"
+MERGE_COMMIT=$(git -C "$CODE_ROOT" rev-parse HEAD)
 ```
 
 `MERGE_COMMIT` is recorded in step 6 with the status change. **Conflicts**: `git merge --abort`, `state.py task set <name> blocked blocker_note=merge-conflict`, keep worktree, continue with next task.
@@ -43,11 +42,11 @@ MERGE_COMMIT=$(git rev-parse HEAD)
 ### 4. Test after each merge
 
 ```bash
-$TEST_CMD > "$REPO_ROOT/.orchestrator/after-${TASK_NAME}-${TS}.txt" 2>&1
+(cd "$CODE_ROOT" && $TEST_CMD) > "$ORCH_HOME/.orchestrator/after-${TASK_NAME}-${TS}.txt" 2>&1
 AFTER_STATUS=$?
 ```
 
-Record the file: `state.py task set <name> after_snapshot=.orchestrator/after-<task>-<ts>.txt`. If `AFTER_STATUS != 0` and `BASELINE_STATUS == 0`: regression. `state.py task set <name> regression_detected=true`; stop further merges; keep worktrees; raise an `environment`-kind ask (`templates/ask.md`) with the after-file paths. It blocks the merge chain, so it is asked at once (§ 9). Only merging stops: Implementors still running finish and join the queue, and Reviewers already spawned carry on.
+The command runs in the code root; the after-file lives at the home. Record the file: `state.py task set <name> after_snapshot=.orchestrator/after-<task>-<ts>.txt`. If `AFTER_STATUS != 0` and `BASELINE_STATUS == 0`: regression. `state.py task set <name> regression_detected=true`; stop further merges; keep worktrees; raise an `environment`-kind ask (`templates/ask.md`) with the after-file paths. It blocks the merge chain, so it is asked at once (§ 9). Only merging stops: Implementors still running finish and join the queue, and Reviewers already spawned carry on.
 
 ### 5. Capture orchestrator-side discoveries
 
@@ -68,13 +67,13 @@ After successful merge + tests pass + no regression, the task is **not yet** clo
 state.py task set "$TASK_NAME" needs_review merge_commit="$MERGE_COMMIT" implementor_report_path="$REPORT"
 ```
 
-where `$REPORT` is the Implementor's structured report saved by the orchestrator at `.orchestrator/cycles/<cycle-id>/reports/<task-name>.md` (the tool refuses `needs_review` without `merge_commit` and sets `completed_at`). Mirror `status: needs_review` and `merge_commit` into the task file's frontmatter (file stays in `tasks/open/`); mirror `status: done` the same way in § 8.
+where `$REPORT` is the Implementor's structured report saved by the orchestrator at `.orchestrator/cycles/<cycle-id>/reports/<task-name>.md` (the tool refuses `needs_review` without `merge_commit` and sets `completed_at`). Mirror `status: needs_review` and `merge_commit` into the task file's frontmatter (file stays in `tasks/open/`); mirror `status: done` the same way in § 8. The task file lives at the home (`$ORCH_HOME/openspec/changes/<change>/tasks/open/<task>.md`), not in the worktree: the Implementor is given its absolute path and appends `## Observations` and `## Discoveries` there; the orchestrator commits the task file (the mirror and those sections) in the home at execute close with the other artifacts, as SKILL.md says. When the home is the code root, the task file is the worktree's copy and the Implementor commits it with the code, as before. With a split, the Reviewer's diff (`git diff <merge-base>..<merge_commit>` in the code root) cannot contain the Observations hunk, which closes the author-blind leak the record noted.
 
 Then remove the worktree and record it:
 
 ```bash
-git worktree remove "$WORKTREE_PATH"
-git branch -D "$BRANCH_NAME"   # optional; tidies local branch list
+git -C "$CODE_ROOT" worktree remove "$WORKTREE_PATH"
+git -C "$CODE_ROOT" branch -D "$BRANCH_NAME"   # optional; tidies local branch list
 state.py task set "$TASK_NAME" worktree_removed=true
 ```
 
@@ -89,7 +88,7 @@ The helper builds the Reviewer's input from a **fixed set of sources**, none of 
 ```yaml
 reviewer_input:
   diff: $(git diff <merge-base>..<merge_commit>)
-  task_brief: <full text of <change>/tasks/open/<task-name>.md, EXCLUDING ## Observations and ## Discoveries sections>
+  task_brief: <full text of $ORCH_HOME/openspec/changes/<change>/tasks/open/<task-name>.md, read from the home, EXCLUDING ## Observations and ## Discoveries sections>
   cited_seams: <the design.md Seams rows named in cites_seams, verbatim>
   coverage_rows: <the design.md Scenario coverage rows the task's Verification section promotes, verbatim>
   project_standards: <overlay's roles/reviewer.md, if present>
@@ -114,7 +113,7 @@ Either way, the input contract is identical and author-blind. The Reviewer may r
 
 ### 8. Handle review findings
 
-The Reviewer's findings file lands at `<repo>/.orchestrator/cycles/<cycle-id>/reviews/<task-name>.md`; the orchestrator records it with `state.py task set <name> reviewed review_mode=<inline|delegated> findings_path=<path> findings_count=<n>` (the summary stays in the file; state holds the path and the count). Then it processes:
+The Reviewer's findings file lands at `<home>/.orchestrator/cycles/<cycle-id>/reviews/<task-name>.md`; the orchestrator records it with `state.py task set <name> reviewed review_mode=<inline|delegated> findings_path=<path> findings_count=<n>` (the summary stays in the file; state holds the path and the count). Then it processes:
 
 | Finding severity | Orchestrator action |
 |---|---|
@@ -128,12 +127,12 @@ When all inline fixes are applied: `state.py task set <name> done`. Follow-up ta
 
 ### 9. Asks raised during execute
 
-Every ask that arises while agents run (a `spec-signal`, an Implementor that stops to ask, an orchestrator-side discovery) is a file at once: `state.py record add asks '{...}'` per `templates/ask.md` writes `inbox/<id>.org` and returns the id; commit it with a subject naming the id. The record shows a 35-minute stall on a question that was not needed until the next wave, and a 950-minute one overnight on a question that blocked nothing. So:
+Every ask that arises while agents run (a `spec-signal`, an Implementor that stops to ask, an orchestrator-side discovery) is a file at once: `state.py record add asks '{...}'` per `templates/ask.md` writes `inbox/<id>.org` and returns the id; commit it in the home with a subject naming the id. The record shows a 35-minute stall on a question that was not needed until the next wave, and a 950-minute one overnight on a question that blocked nothing. So:
 
 - The blocking call (`AskUserQuestion`) is used only when the ask's `blocks` names a merge in this batch or a task not yet spawned **and** the user is present (acted within the last 15 minutes of the session). Because the call blocks until answered, first start the orchestrator-side work that does not depend on it (spawn Reviewers for merged tasks, report filing), then ask: one question per call, never a non-blocking ask in the same call. `environment` asks (a regression stop, a wedged runner) always take the call; when the user is absent they also get a file so the next session finds them.
 - Otherwise the file is the ask. Each task named in `blocks` gets `state.py task set <name> blocked blocker_note=<ask-id>`; the merge chain continues with the tasks behind it; the orchestrator finishes everything that does not wait on it. When nothing else can run, it does not wait for the answer: `blocked` counts as stopped, so if `gate check execute` is all true it passes the gate and goes on to integrate, where § 3a presents the ask and the blocked task is carried in the handshake for the next plan (`task set <name> ready` happens in whichever phase the answer is applied). Only when the gate cannot pass does it stop, with a one-line pointer to the file. A non-blocking ask needs no pointer; `status` lists it at the next sync point and integrate's § 3a presents it.
 - An Implementor that stops to ask (`roles/implementor.md` § Escalation contract) leaves its task blocked (`state.py task set <name> blocked blocker_note=<ask-id>`) and its worktree retained. `blocked` counts as stopped for the exit gate, so `no_orphan_in_progress` still passes; `task set <name> ready` when the ask is applied.
-- Answers arrive through the file. `state.py inbox` runs at the sync points (`SKILL.md` § Sync points) and whenever the merge chain pauses (§ 3); an answered file is handled before anything else (`templates/ask.md` § Answer protocol), and a matched option that unblocks a task is applied and committed with the merge it releases.
+- Answers arrive through the file. `state.py inbox` runs at the sync points (`SKILL.md` § Sync points) and whenever the merge chain pauses (§ 3); an answered file is handled before anything else (`templates/ask.md` § Answer protocol), and a matched option that unblocks a task is applied and committed in the home with the same subject as the merge it releases in the code root (one commit when they are the same repo).
 
 ### Productive tension resolution
 
@@ -160,7 +159,7 @@ The Reviewer never has to know which path was taken.
 
 All three are computed: `state.py gate check execute` shows them with reasons, `state.py gate pass execute` sets the gate, and `state.py phase set integrate` advances. Integrate refuses to run otherwise.
 
-**Commit** at execute close: `git add .orchestrator openspec/changes/<change>` (`state.json`, the briefs, reports, reviews and findings, the task files' mirrored frontmatter; the after-files are ignored by `.orchestrator/.gitignore`) and commit `Orchestrator: <cycle-id> execute closed`. Ask files were committed when created and when applied (`templates/ask.md` § Commit rule).
+**Commit** at execute close, in the home: `git -C "$ORCH_HOME" add .orchestrator openspec/changes/<change> && git -C "$ORCH_HOME" commit -m "Orchestrator: <cycle-id> execute closed"` (add `.tasks` too when the cycle touched it; `state.json`, the briefs, reports, reviews and findings, the task files' mirrored frontmatter and appended sections; the after-files are ignored by `.orchestrator/.gitignore`). Ask files were committed when created and when applied (`templates/ask.md` § Commit rule).
 
 ## What execute does **not** do
 

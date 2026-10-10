@@ -7,7 +7,7 @@ The rule, lifted from both existing skills and promoted to core:
 | Place | Path | Use when |
 |---|---|---|
 | **In-change** | `<change>/tasks/open/<task-name>.md` | The task contributes to the active change's stated outcome (per `proposal.md`). Discovery happened *in* this change and resolution belongs *with* this change. |
-| **Externalised** | `<repo>/.tasks/<task-name>.md` | The task is genuinely cross-cutting: it surfaced during this change but the work it requires is outside the active scope. Resolving it here would require reopening the proposal. |
+| **Externalised** | `<home>/.tasks/<task-name>.md` | The task is genuinely cross-cutting: it surfaced during this change but the work it requires is outside the active scope. Resolving it here would require reopening the proposal. |
 
 When in doubt about placement, externalise; when in doubt whether it has happened, note it (`flows/integrate.md` § 7): a reasoning-only finding is never externalised. In-change task bloat is what produces "the change never finishes"; externalised task accumulation is what the PM's externalisation-pressure signal exists to manage.
 
@@ -37,7 +37,7 @@ If the task is a follow-up to an in-change task that just merged, with the same 
 
 ## Externalised task structure
 
-Externalised tasks at `<repo>/.tasks/<task-name>.md` use the standard task-body template (`templates/task-body.md`) with `status: externalised`. They MUST carry full provenance fields (`discovered_from`, `discovered_by`, `discovered_class`) — without them the PM's externalisation-pressure signal can't cluster.
+Externalised tasks at `<home>/.tasks/<task-name>.md` use the standard task-body template (`templates/task-body.md`) with `status: externalised`. They MUST carry full provenance fields (`discovered_from`, `discovered_by`, `discovered_class`) — without them the PM's externalisation-pressure signal can't cluster.
 
 Externalised tasks **may** still cite seams (`cites_seams`); this is what enables PM's cluster-coherence check ("is this cluster ready to be promoted into a change?").
 
@@ -59,7 +59,7 @@ This is the brainstorm's open Q5 — worth revisiting once a project routinely h
 
 ## Deep archive — where retired tasks live (decided for v1, used by v2)
 
-`<repo>/.tasks/archive/` is the deep archive. When the deferred curation cycle (v2) compresses or supersedes externalised tasks, the originals move to `<repo>/.tasks/archive/<task-name>.md` and the active externalised entry retains a back-reference.
+`<home>/.tasks/archive/` is the deep archive. When the deferred curation cycle (v2) compresses or supersedes externalised tasks, the originals move to `<home>/.tasks/archive/<task-name>.md` and the active externalised entry retains a back-reference.
 
 V1 doesn't write to `.tasks/archive/` — there's no curation cycle yet. The path is reserved so v2 doesn't re-decide it.
 

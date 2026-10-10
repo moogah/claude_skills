@@ -2,7 +2,7 @@
 
 The step between specs and the first cycle. The Architect reads the spec scenarios and the code as it stands, writes the seams that will satisfy them into `design.md`, and writes the pending tests those scenarios and seams imply. Plan (`flows/plan.md`) drafts tasks from this document; integrate (`flows/integrate.md` § 1) checks merged code against it.
 
-The round is not a cycle. It runs before `state.py init --first-cycle` and needs no state file. Its outputs are files in the repository.
+The round is not a cycle. It runs before `state.py init --first-cycle` and needs no state file. Its outputs are files in the home (`design.md`) and the code root (the pending tests).
 
 ## When it runs
 
@@ -15,7 +15,7 @@ A change with no scenario that needs a seam (a doc change, a config tweak) skips
 
 ### 1. Spawn the Architect
 
-The orchestrator assembles the brief (`roles/architect.md` § Design round): `proposal.md`, every `specs/*/spec.md`, the existing `design.md`, the overlay's `roles/architect.md`, `priors.md`, the test command and the test tree's layout, and `test.pending-style` from the overlay. The Architect works in the main checkout, not a worktree, and writes only `design.md` and test files.
+The orchestrator assembles the brief (`roles/architect.md` § Design round): `proposal.md`, every `specs/*/spec.md`, the existing `design.md`, the overlay's `roles/architect.md`, `priors.md`, the test command and the test tree's layout, and `test.pending-style` from the overlay. The Architect works in the main checkout, not a worktree: it edits `design.md` at the home and writes the pending tests in the code root's main checkout, and writes nothing else.
 
 ### 2. Seams
 
@@ -54,7 +54,7 @@ A question only the user can settle (which of two seams; whether a scenario is i
 
 ### 6. Commit
 
-The Architect reports the files it wrote. The orchestrator reads `design.md`'s two sections against the checklist, runs `build.pre-commit` when the overlay defines it, runs the test command once to confirm the baseline is green with the pending tests reported as pending, stages the reported files and commits: `Design round: <change>` (or `Design round (<seam-id>): <change>` for a scoped re-run). The Architect does not commit.
+The Architect reports the files it wrote. The orchestrator reads `design.md`'s two sections against the checklist, runs `build.pre-commit` when the overlay defines it and the test command once, both in the code root, to confirm the baseline is green with the pending tests reported as pending, stages the reported files and commits `Design round: <change>` (or `Design round (<seam-id>): <change>` for a scoped re-run): in the code root for the tests and in the home for `design.md`, one commit when they are the same repo. The Architect does not commit.
 
 ## Inputs
 

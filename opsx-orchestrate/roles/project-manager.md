@@ -24,7 +24,7 @@ It produces:
 
 Candidate asks come from the blocked-task list: a `blocker_note` that is an ask id re-surfaces that id; any other blocker is a stub, an inbox file with the fields the PM can fill, which the orchestrator completes per `templates/ask.md`. Cascade detection produces an Architect conformance run, not an ask.
 
-Output: `<repo>/.orchestrator/cycles/<cycle-id>/pm-signals.json`.
+Output: `<home>/.orchestrator/cycles/<cycle-id>/pm-signals.json`.
 
 ### Agent pass
 
@@ -37,7 +37,7 @@ The agent pass produces:
 - The "trends to watch" section.
 - The "meta-discoveries" section.
 
-Output: `<repo>/.orchestrator/cycles/<cycle-id>/pm-digest.md` (see `templates/pm-digest.md`).
+Output: `<home>/.orchestrator/cycles/<cycle-id>/pm-digest.md` (see `templates/pm-digest.md`).
 
 ### Why split
 
