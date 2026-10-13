@@ -23,6 +23,8 @@ When an agent completes, the orchestrator reads its one line and verifies at lea
 
 While agents run, the orchestrator does the work that does not depend on the ones still running: verify each completed commit, save its report, merge whatever has landed (§ 3), spawn Reviewers (§ 7). A task whose `blocked_by` tasks have not all merged is spawned when they have.
 
+The orchestrator never adds scope to a running Implementor by message. New work is a task of its own, drafted and premise-checked at the next plan, or an inline fix after review (§ 8). The record: scope sent to a running Implementor by `SendMessage` without a premise check was blocked by its Reviewer, cost a rework and a re-review, and then a one-task cycle of its own (24M tokens, 57 minutes).
+
 ### 2. No Architect run in execute
 
 Nothing runs between an Implementor's commit and its merge. The Reviewer (§ 7) reads the cited seam rows and may probe the merge candidate; that is the check the old execute-time Architect run performed, and the useful catches in the record came from the probes, not the trigger. Restore an execute-time Architect run only on a demonstrated Reviewer miss that a seam-scoped run would have caught (`roles/architect.md` § Three runs).

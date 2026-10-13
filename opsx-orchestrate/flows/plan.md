@@ -28,7 +28,7 @@ Read the overlay's `priors.md` alongside the handshake (`overlay.md` § Priors):
 
 ### 2. Read the design and draft the candidate tasks
 
-The change's `design.md` (`templates/design.md`) is the input: its Seams table and its Scenario coverage table. A change without them has not had its design round (`flows/design.md`); run it before this cycle, not inside it.
+The change's `design.md` (`templates/design.md`) is the input: its Seams table and its Scenario coverage table. A change without them has not had its design round (`flows/design.md`); run it before this cycle, not inside it. A `design.md` whose § Open Questions has an entry with no Decision has not finished its round either: plan hands back `stopped: <n> open questions; design.md § Open Questions` and drafts nothing, since a task drafted on a provisional answer is the rework the record paid for (`flows/design.md` § 5).
 
 The orchestrator drafts the candidate task files for this cycle under `<change>/tasks/open/` at the home (`$ORCH_HOME/openspec/changes/<change>/tasks/open/`, per `templates/task-body.md`) from three sources, in this order:
 

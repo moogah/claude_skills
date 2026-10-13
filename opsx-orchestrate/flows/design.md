@@ -50,7 +50,9 @@ The coverage row's `test` column names the test. Promotion is removing the marke
 
 ### 5. Open questions
 
-A question only the user can settle (which of two seams; whether a scenario is in scope) is a `decision`. It is asked now when a seam row or a pending test depends on the answer; otherwise it can wait. Outside a cycle there is no state file to index an ask file, so one asked now is put like an `environment` ask (`templates/ask.md`): the Architect writes it into `design.md` § Open Questions (created when the file has none) with its recommendation and hands back the count; the phase agent hands back `stopped: <n> open questions; design.md § Open Questions`; the dispatcher makes the blocking call for each, one question per call, and resumes the phase agent, which writes each answer into § Decisions. No ask file, no finding. One that can wait is written into § Open Questions and raised as an ask file at plan § 3.
+A question only the user can settle (which of two seams; whether a scenario is in scope; a default the product should have) is a `decision`, and **every one the round raises is asked before plan starts, in one sitting**. None waits, none is deferred to a later cycle, and nothing is drafted on a provisional answer. The Architect writes each into `design.md` § Open Questions (created when the file has none): the question in plain terms, two to four options with the consequence the user would notice, its recommendation and why, and the seam rows and pending tests that depend on it. It drafts those rows and tests in the form the recommendation implies and says so in the entry; it writes **no Decision** for the question. Outside a cycle there is no state file to index an ask file, so the dispatcher carries the questions (`SKILL.md` § Two contexts): the phase agent hands back `stopped: <n> open questions; design.md § Open Questions`; the dispatcher asks each, one question per call, while the user is present; the phase agent is resumed with the answers and writes each into § Decisions, re-running the round scoped to any seam whose answer differs from the recommendation (§ When it runs). When the user is absent, the change waits: the questions stay in the file, the user answers there or in the next session's calls, and plan does not start (`flows/plan.md` § 2). A design-round question has no `If unanswered` default.
+
+The record shows why. In one change the four questions asked at the round held; in the next the Architect wrote provisional decisions for five, two cycles built on them, the user answered sixteen hours later, two of the five were reversed, and a cycle of its own was spent on the rework (`ws-agent-tools-ask-answers`). On the eight decisions of those changes the user chose the recommended option every time, yet the lean default rule (`templates/ask.md` § Recommendation) would have chosen the opposite on exactly the two later reversed; the system does not decide these.
 
 ### 6. Commit
 
@@ -63,7 +65,7 @@ The Architect reports the files it wrote. The orchestrator reads `design.md`'s t
 
 ## Exit
 
-No gate; the round is complete when `design.md` has a Seams table and a coverage row for every scenario in `specs/`, every `acceptance` and `contract` row names a test that exists, and the baseline run is green. `state.py init --first-cycle` follows.
+No gate; the round is complete when `design.md` has a Seams table and a coverage row for every scenario in `specs/`, every `acceptance` and `contract` row names a test that exists, every § Open Questions entry has its Decision, and the baseline run is green. The phase agent hands back `design-round <change>: gate passed` only then; `state.py init --first-cycle` follows.
 
 ## What the round does not do
 

@@ -15,7 +15,7 @@ Design the components and seams that satisfy the spec scenarios, name the test t
 Once per change, after specs exist and before the first cycle. Re-run only when a `decision` or a spec change alters a seam, and then for that seam alone.
 
 - **Reads**: `proposal.md`, `specs/`, the existing `design.md` (OpenSpec writes one before tasks), the code root's HEAD and test tree, the project priors, the overlay's `roles/architect.md`.
-- **Writes**: `design.md` at the home (the Seams and Scenario coverage sections; a seam id on the Decision heading that names it; the Open Questions and Decisions entries the round produces) and, in the code root's test tree, one pending test per `acceptance` or `contract` coverage row whose behaviour HEAD does not yet satisfy. The orchestrator commits.
+- **Writes**: `design.md` at the home (the Seams and Scenario coverage sections; a seam id on the Decision heading that names it; the Open Questions entries the round produces, and the Decisions entries once the user has answered) and, in the code root's test tree, one pending test per `acceptance` or `contract` coverage row whose behaviour HEAD does not yet satisfy. The orchestrator commits. An open question is written with its options, its recommendation and the rows and tests that depend on it, drafted in the recommended form and marked so; the Architect writes no provisional Decision for it (`flows/design.md` § 5).
 - **Cost**: one agent run per change; the most expensive of the three, and the one whose output every later run consumes.
 
 ### Premise check (`flows/plan.md` § 3)
