@@ -38,6 +38,7 @@ build:
 test:
   command: ./bin/run-tests.sh       # REQUIRED
   parser: emacs-results-txt | exit-code | junit-xml | tap   # default: exit-code
+  compare: ./bin/compare-baseline.py   # OPTIONAL; required when the baseline is red: `<cmd> <baseline-file> <after-file>` exits non-zero and prints the test ids that fail after but not before (flows/execute.md § 4)
   pending-style: xfail-strict | xit | <project value>   # how the design round marks a pending test; must be a style the runner reports as pending, never as failing (a red baseline disables regression detection). Default: xfail-strict for pytest, xit for buttercup
 
 # Required: artifact roots — where the orchestrator finds tasks
@@ -129,6 +130,7 @@ If no overlay is found, the orchestrator warns explicitly and falls back to:
 | `code-root`: the home |
 | `test.command`: `make test` if Makefile present, else error |
 | `test.parser`: `exit-code` |
+| `test.compare`: none (the exit-code rule; an `environment` ask at the first red baseline) |
 | `worktree.parent`: `.worktrees` |
 | `worktree.needs-submodules`: false |
 | `artifacts.tasks-root`: `openspec/changes/<change>/tasks` |

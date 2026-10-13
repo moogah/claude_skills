@@ -57,7 +57,7 @@ The record shows why. In one change the four questions asked at the round held; 
 
 ### 6. Commit
 
-The Architect reports the files it wrote. The orchestrator reads `design.md`'s two sections against the checklist, runs `build.pre-commit` when the overlay defines it and the test command once, both in the code root, to confirm the baseline is green with the pending tests reported as pending, stages the reported files and commits `Design round: <change>` (or `Design round (<seam-id>): <change>` for a scoped re-run): in the code root for the tests and in the home for `design.md`, one commit when they are the same repo. The Architect does not commit.
+The Architect reports the files it wrote. The orchestrator reads `design.md`'s two sections against the checklist, runs `build.pre-commit` when the overlay defines it and the test command once, both in the code root, to confirm the baseline is green with the pending tests reported as pending (or, where the project's baseline is red before the change, that the overlay defines `test.compare` and the failing set is unchanged; `flows/execute.md` § 4), stages the reported files and commits `Design round: <change>` (or `Design round (<seam-id>): <change>` for a scoped re-run): in the code root for the tests and in the home for `design.md`, one commit when they are the same repo. The Architect does not commit.
 
 ## Inputs
 
