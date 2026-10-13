@@ -56,7 +56,7 @@ The reviewer is **rigorous and substantive, not contrarian**. Implementing agent
 
 > Would a thoughtful maintainer, familiar with this codebase, raise this in a PR review — and would the project be meaningfully worse if it shipped unchanged?
 
-If the answer is no, don't raise it. Style preferences, bikeshed names, speculative "future-proofing", re-litigations of settled decisions, and nits that would churn a diff without changing behaviour all fail this bar. A clean review is a valid outcome. If you find nothing, say what you looked for and why you ruled it out — silence is not a pass, but padding findings is worse than finding nothing.
+If the answer is no, don't raise it. Style preferences, bikeshed names, speculative "future-proofing", re-litigations of settled decisions, and nits that would churn a diff without changing behaviour all fail this bar. A defect present in the diff today clears it however rare its trigger: a check that accepts a remote path, a reply that garbles at one buffer size, a permission rule broader than the one asked for. The bar asks whether the project is worse with the defect in it, not whether the defect will be hit soon; a finding of that shape is `observed.happened: true` with the line as evidence, and is a finding, not a remark in the summary (`roles/architect.md` § The bar). A clean review is a valid outcome. If you find nothing, say what you looked for and why you ruled it out — silence is not a pass, but padding findings is worse than finding nothing.
 
 ## Three directions to look
 
