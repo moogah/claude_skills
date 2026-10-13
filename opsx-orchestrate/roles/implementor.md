@@ -18,6 +18,7 @@ The orchestrator assembles and hands the Implementor:
 4. **Project standards** — the project overlay's `roles/implementor.md` (if present), appended to this core brief at spawn time, followed by the project priors (`priors.md`, the user's standing rules; `overlay.md` § Priors).
 5. **Verification command** — resolved from the project overlay's `test.command` field, relative to the code root; run in the worktree.
 6. **Worktree path & branch name** — pre-created by the orchestrator; the Implementor does not create worktrees.
+7. **Report path** — `$ORCH_HOME/.orchestrator/cycles/<cycle-id>/reports/<task-name>.md`, where the structured report is written (below).
 
 ## Output contract
 
@@ -26,7 +27,10 @@ The Implementor produces, **all in one go before reporting back**:
 1. **A working diff** — committed to the worktree's branch with a single conventional commit, message `Implement task <task-name>: <description>`. The commit removes the pending marker from every test the task's Verification section promotes; a strict marker left on a test that now passes fails the post-merge run.
 2. **`## Observations` appended to the task file** (at the home, by the path the brief gives) — out-of-scope findings, departures from the prescribed approach, latent issues spotted in adjacent code. See "What belongs in `## Observations`" below. **Committed as part of the implementation commit when the home is the code root, as before; when they differ, it is not in the implementation commit and the orchestrator commits it in the home at execute close.**
 3. **`## Discoveries` appended to the task file** (the same file) — structured findings the integrate phase will read for the conformance check. See "Discoveries format" below. **Committed the same way as the Observations.**
-4. **A structured report**, posted back through the agent harness — for the orchestrator only. Never seen by the reviewer.
+4. **A structured report**, written to the report path the brief names — for the orchestrator only. Never seen by the reviewer.
+5. **A hand-back of one line** (below). The report is never pasted into the hand-back.
+
+The verification command runs in the foreground, before the commit; the Implementor never leaves a test run in the background and reports once. The record shows eight extra wake-ups of the orchestrator from Implementors that reported done while their own run continued.
 
 ## Reference material is for pressure-testing, not deference
 
@@ -81,7 +85,7 @@ The reviewer reads `## Observations` alongside the merge and groups related ones
 
 ## Structured report (to orchestrator)
 
-Posted back through the agent harness:
+Written to the report path the brief names (`cycles/<cycle-id>/reports/<task-name>.md`):
 
 ```yaml
 task_name: <name>
@@ -99,7 +103,21 @@ push_backs:
 deviation_summary: <optional one-line — e.g. "deviated from prescribed approach because X; details in ## Observations">
 ```
 
-This report is **for the orchestrator only**. It is held by the orchestrator until integrate phase, then read alongside the conformance check. **It is never passed to the reviewer.** See `flows/execute.md` for the author-blind constraint and the substrate-level enforcement.
+This report is **for the orchestrator only**. It is read at integrate alongside the conformance check, and in execute only when the hand-back line flags a deviation or a filed task. **It is never passed to the reviewer.** See `flows/execute.md` for the author-blind constraint and the substrate-level enforcement.
+
+## Hand-back
+
+The last thing the Implementor does is hand back **one line**, at most 200 characters, and nothing else (`SKILL.md` § Hand-back lines):
+
+```
+done <task-name> <commit-sha> report=<report-path>
+done <task-name> <commit-sha> report=<report-path> deviated
+done <task-name> <commit-sha> report=<report-path> filed=2
+blocked <task-name>: <what you observed and what it blocks, one clause>
+failed <task-name>: <why, one clause>
+```
+
+`deviated` is present when `deviation_summary` is non-empty; `filed=<n>` when `new_tasks_filed` is. The orchestrator verifies the sha against the branch and opens the report only when a flag says to; the test output, the observations and the discoveries are in the files the brief names, not in the line.
 
 ## Escalation contract
 

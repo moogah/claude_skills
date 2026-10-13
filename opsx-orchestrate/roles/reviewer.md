@@ -127,6 +127,14 @@ clean_review: false      # true if no findings
 that the silence on a direction is a real silence, not a missed pass.>
 ```
 
+Then the Reviewer hands back **one line** and nothing else (`SKILL.md` § Hand-back lines):
+
+```
+reviewed <task-name> findings=<n> blocking=<n> spec-signal=<n> path=<findings-path>
+```
+
+The findings, their evidence and the probes' output are in the file; the orchestrator opens it when `findings` is not zero. A summary in the hand-back is a process bug.
+
 ## Severity routing
 
 - **`blocking`**: orchestrator must apply an inline fix or schedule re-implementation; the task does not advance to `done`.

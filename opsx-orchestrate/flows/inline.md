@@ -1,6 +1,6 @@
 # Inline path
 
-For trivial tasks where agent + worktree overhead dominates the work. The entire cycle collapses into the orchestrator's own context.
+For trivial tasks where agent + worktree overhead dominates the work. The entire cycle collapses into the orchestrator's own context: a phase agent the dispatcher spawns for the inline path (`SKILL.md` § Two contexts), so the dispatcher itself reads no code.
 
 ## When to take the inline path
 
@@ -35,7 +35,7 @@ The integrate question is **not skipped** — that's what catches the case where
 
 1. **Make the edit** in the code root's own checkout (no worktree).
 2. **Run the verification command** in the code root (overlay's `test.command`, or a narrower command if obviously sufficient).
-3. **Check the seam rows**: does this edit change a seam row in the change's `design.md` (its statement or owning symbols)? If yes, amend the row in place and, when a cycle is open, write a `doc-correction` ask file (`templates/ask.md`) with `status: applied` into `cycles/<cycle-id>/asks/` at the home, committed with the edit (one commit per repository, same subject, when the home and the code root differ); its `* Answer` says what was applied and the user can object. A design in question is a `decision` file in the inbox, presented inline only if it blocks this inline commit and the user is present (`templates/ask.md` § The inline rule).
+3. **Check the seam rows**: does this edit change a seam row in the change's `design.md` (its statement or owning symbols)? If yes, amend the row in place and, when a cycle is open, write a `doc-correction` ask file (`templates/ask.md`) with `status: applied` into `cycles/<cycle-id>/asks/` at the home, committed with the edit (one commit per repository, same subject, when the home and the code root differ); its `* Answer` says what was applied and the user can object. A design in question is a `decision` file in the inbox, presented only if it blocks this inline commit and the user is present (`templates/ask.md` § The inline rule: the phase agent hands back `stopped`, the dispatcher asks).
 4. **Update the task file** at the home: its `status` to `done` directly (skipping `needs_review` / `reviewed`). Inline path skips formal review because the orchestrator IS the reviewer. If a cycle is open, the task is in state too: `state.py task add <name> …` if it was not, then `state.py task set <name> done`; between cycles the task file is the record.
 5. **Commit** with the standard task-name commit message: the code in the code root, the task file and any ask file in the home (one commit when they are the same repo).
 

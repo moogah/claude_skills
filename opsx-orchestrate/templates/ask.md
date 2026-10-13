@@ -113,7 +113,7 @@ Where the orchestrator reads the inbox, named once in `SKILL.md` and pointed at 
 
 ## The inline rule
 
-For every phase. The blocking call (`AskUserQuestion`) is for an `environment` ask, and for an ask whose `:BLOCKS:` is non-empty while the user is present, where present means the user acted within the last 15 minutes of the session (by the timestamps of their messages; a session with no message from the user at all counts as absent). Otherwise, in every phase including integrate, the ask is the file: each task it blocks is set `blocked` with `blocker_note: <ask-id>`, the orchestrator finishes everything that does not wait on it, passes the phase gate if it can (`blocked` counts as stopped) and moves on, and stops with a one-line pointer to the file only when the gate cannot pass. It never waits for the answer. One question per call, always. The record shows the 950-minute call was made at integrate, two hours after the user's last action, about a sentence in a spec that nothing waited on.
+For every phase. The blocking call (`AskUserQuestion`) is for an `environment` ask, and for an ask whose `:BLOCKS:` is non-empty while the user is present, where present means the user acted within the last 15 minutes of the session (by the timestamps of their messages; a session with no message from the user at all counts as absent). Otherwise, in every phase including integrate, the ask is the file: each task it blocks is set `blocked` with `blocker_note: <ask-id>`, the orchestrator finishes everything that does not wait on it, passes the phase gate if it can (`blocked` counts as stopped) and moves on, and stops with a one-line pointer to the file only when the gate cannot pass. It never waits for the answer. One question per call, always. The call is the dispatcher's (`SKILL.md` § Two contexts): a phase agent has no user, so it writes the file, finishes what does not wait, hands back `stopped` naming the ask, and is resumed once the answer is in the file. The record shows the 950-minute call was made at integrate, two hours after the user's last action, about a sentence in a spec that nothing waited on.
 
 ## Commit rule
 
@@ -128,7 +128,7 @@ A new ask is then a new file in `git status`; an answer is a diff of one section
 
 ## Chat
 
-The chat still carries: a new inbox file (one line: the id, the question, the path); a readback when one is needed; an `environment` call; a stop with the one-line pointer. Asks come first; phase results follow, or go in a separate message. Narration is unchanged.
+The chat still carries, from the dispatcher: a new inbox file (one line: the id, the question, the path, read from `state.py status` after a hand-back); a readback when one is needed; an `environment` call; a stop with the one-line pointer. Asks come first; phase results follow, or go in a separate message. Narration is unchanged.
 
 ## What a finding must carry
 

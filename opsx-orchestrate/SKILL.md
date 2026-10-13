@@ -21,27 +21,62 @@ Full overlay contract: **[overlay.md](overlay.md)**.
 
 A change enters the orchestrator after OpenSpec's `proposal → specs → design`. The Architect's **design round** (`flows/design.md`) then appends two sections to `design.md`, Seams and Scenario coverage (`templates/design.md`), and writes the pending tests they imply. It runs once per change, before `state.py init --first-cycle`, and needs no state file. Plan drafts tasks from those sections; integrate checks merged code against them.
 
-## What phase am I in?
+## Two contexts: the dispatcher and the phase agent
 
-Run `state.py status` (the state tool: `python3 ~/.claude/skills/opsx-orchestrate/scripts/state.py`; the flow docs write it `state.py`). It prints the phase (`plan` | `execute` | `integrate`), each gate's failing checks, the task table, the inbox (open asks, and which have an answer waiting) and what to resume. `state.py where` prints the home and the code root (`--sh` gives them as shell assignments) and works with no state file. Each phase has its own flow doc and exit gate. **A later phase refuses to start if the prior phase's gate has not passed** — `state.py phase set` enforces it.
+The session that invokes this skill is the **dispatcher**. It reads this file and the output of `state.py status` (the state tool: `python3 ~/.claude/skills/opsx-orchestrate/scripts/state.py`; the flow docs write it `state.py`), and nothing else: no flow doc, no role file, no artifact, no code. Every phase runs in a **phase agent**, spawned with the `Agent` tool (`subagent_type: general-purpose`) from a fresh context, which reads its flow doc, spawns the role agents the flow names, runs the gate, makes the close commit and hands back one line. The dispatcher's context holds hand-back lines, the user's prompts and the blocking calls, so it stays near its floor for the whole change.
+
+The record shows why: 82% of the orchestrator's context was accumulated history (235k tokens per call against a 45k floor); one session ran five cycles and reached 529k with four compactions; the main thread cost twice what all Implementors cost. A phase agent oriented in 64k in the dry run of 2026-10-13.
+
+In the flow, role and template docs, **"the orchestrator" is the phase agent running that flow**; where the dispatcher is meant, it is named.
+
+### The dispatcher's loop
+
+1. `state.py status` (orientation in about 2 KB: phase, gates, tasks, the inbox, `resume`). `state.py where` prints the home and the code root and works with no state file.
+2. Handle the inbox first if `status` says an answer is waiting: that is a sync point (§ Sync points), done by the phase agent the next step spawns, not by the dispatcher.
+3. Spawn the phase agent `resume` calls for: the design round (no state file yet, `design.md` has no Seams section), `plan` (including `init`), `execute`, `integrate` (including `close` and its commit), or the inline path. The brief is fixed and short:
+
+   > You are the phase agent for `<phase>` of change `<change>` in cycle `<cycle-id>` (or: for the design round of `<change>`). Home: `<path>`. Run `state.py status`, then read and follow `~/.claude/skills/opsx-orchestrate/flows/<phase>.md` to its exit gate and close commit. Read a role file at the moment you spawn that role and a template at the moment you produce its artifact; do not read `SKILL.md`. When nothing can run until a worker reports, end your turn; you are woken when it hands back. You cannot ask the user: an ask that would take the blocking call is a file, and you hand back `stopped` naming it after finishing everything that does not wait on it. Hand back one line (§ Hand-back lines), never a report.
+
+4. On the hand-back: `state.py status` again. Gate passed → spawn the next phase agent. `stopped` on an ask → the inline rule (`templates/ask.md`): when the user is present, the dispatcher makes the blocking call for that one ask (one question per call), writes the answer with `state.py record set asks <id> decision=<label>` (or `status=answered` with the free text, for readback by the phase agent), and resumes the same phase agent by message so its context, worktrees and running workers are kept; when the user is absent, the dispatcher stops with the one-line pointer. `failed` → the line says what; the dispatcher reports it and stops.
+5. Relay to the user, after each hand-back: the line itself, and from `status` the open decisions (id, question, path) in one line each. Asks first, results after.
+
+A phase agent with workers still running cannot hand back until they finish; an ask raised mid-execute reaches the dispatcher when the running Implementors end, minutes later, with the merge chain already stopped as `flows/execute.md` § 9 says. Resume by message when the agent stopped on an ask; spawn fresh when it finished its phase.
+
+### Hand-back lines
+
+Every agent the orchestrator spawns hands back **one line of at most 200 characters** and writes everything else to the file the flow names for it. The line states the outcome and points at the file; the reader opens the file only when the next step needs it. The record: hand-backs and notifications carried 55% of the main thread's tokens.
+
+| Agent | Line | Detail lives in |
+|---|---|---|
+| Phase agent | `<phase> <cycle-id>: gate passed` · `<phase> <cycle-id>: stopped, ask <id> blocks <task\|merge\|phase>; <path>` · `<phase> <cycle-id>: failed, <why>; <path>` | `state.json`, the cycle's artifacts, the ask file |
+| Implementor | `done <task> <sha> report=<path>` with `deviated` / `filed=<n>` appended when true · `blocked <task>: <one line>` · `failed <task>: <one line>` | `cycles/<id>/reports/<task>.md`, written by the Implementor; the task file's `## Observations` and `## Discoveries` |
+| Reviewer | `reviewed <task> findings=<n> blocking=<n> spec-signal=<n> path=<path>` | `cycles/<id>/reviews/<task>.md` |
+| Architect | `design-round <change>: <n> seams, <m> coverage rows, <k> pending tests, <q> open questions` · `premise-check <cycle-id>: <n> holds, <m> wrong, <f> findings; <path>` · `conformance <cycle-id>: <f> findings, <a> rows amended; <path>` | `design.md`, `premise-check.md`, `findings/`, `design-diff.json` |
+
+A worker runs its test command in the foreground and reports once, after its commit; a report sent while a run continues in the background wakes the orchestrator twice (8 such wake-ups in one session of the record).
+
+### Phases
+
+Each phase has its own flow doc and exit gate. **A later phase refuses to start if the prior phase's gate has not passed** — `state.py phase set` enforces it.
 
 | Phase | Flow doc | Defining ops |
 |---|---|---|
+| Design round | [flows/design.md](flows/design.md) | Once per change, before the first cycle: Architect writes Seams and Scenario coverage into `design.md` and the pending tests; open questions go to the user through the dispatcher |
 | Plan | [flows/plan.md](flows/plan.md) | Consume prior integrate's handshake → draft candidate tasks from `design.md` → Architect premise check against HEAD → batch composition → implementor briefs |
 | Execute | [flows/execute.md](flows/execute.md) | Per-task: worktree + Implementor + author-blind Reviewer (with probe licence); each task merged as it lands (serial chain) with regression check |
-| Integrate | [flows/integrate.md](flows/integrate.md) | Design conformance (Architect) + PM digest + meta-discovery + goal-drift check + open-task refinement + handshake artifact |
+| Integrate | [flows/integrate.md](flows/integrate.md) | Design conformance (Architect) + PM digest + meta-discovery + goal-drift check + open-task refinement + handshake artifact + `close` |
 
 State-file shape, the state tool's verbs and the exit gates: **[state.md](state.md)**.
 
-If the work is trivially small (one-line edit, single-file doc fix, config tweak), use the inline path: **[flows/inline.md](flows/inline.md)**. Bailout to standard cycle if it grows.
+If the work is trivially small (one-line edit, single-file doc fix, config tweak), use the inline path: **[flows/inline.md](flows/inline.md)**, run by a phase agent like any phase. Bailout to standard cycle if it grows.
 
 The curation cycle (slower-tempo corpus grooming) is **deferred to v2**: see **[flows/curation.md](flows/curation.md)** for the placeholder and reasons.
 
 ## Roles
 
-The orchestrator deploys four roles. Read the relevant role file before spawning:
+The orchestrator deploys four roles. The phase agent reads the relevant role file before spawning; every role hands back one line (§ Hand-back lines):
 
-- **[roles/implementor.md](roles/implementor.md)** — does the task at expert level in a worktree; produces diff + structured `## Observations` and `## Discoveries`; reports to orchestrator only (never to reviewer).
+- **[roles/implementor.md](roles/implementor.md)** — does the task at expert level in a worktree; produces diff + structured `## Observations` and `## Discoveries`; writes its report to `cycles/<id>/reports/<task>.md` for the orchestrator only (never the reviewer).
 - **[roles/reviewer.md](roles/reviewer.md)** — author-blind review of one merged diff against the cited seam rows; rigorous-not-contrarian; may probe the merge candidate read-only. **The reviewer-spawn helper enforces author-blindness at the substrate level** — see `flows/execute.md` § 7.
 - **[roles/architect.md](roles/architect.md)** — designs the seams that satisfy the spec and writes the pending tests (design round); checks the batch's premises at plan; checks merged code against the design at integrate and amends it. Three runs, no execute-time run.
 - **[roles/project-manager.md](roles/project-manager.md)** — hybrid deterministic+thin-agent form; the deterministic pass is `state.py counts`, never the LLM; cascade detection can spawn a scoped conformance run.
@@ -85,20 +120,22 @@ This is the structural fix for "learns and forgets" — without it, the orchestr
 
 ## Mode detection at entry
 
-When invoked without an explicit phase:
+When invoked without an explicit phase, the dispatcher runs its loop (§ Two contexts):
 
-1. Run `state.py status`. Its `resume` line says which of these applies: resume the current phase; advance (`phase set`) because the prior gate passed; `close` because integrate passed; or `init` a new cycle because the last one is closed.
-2. No state file (`not_initialized`): **start a new plan phase** with `state.py init` (it needs the prior handshake, or `--first-cycle`).
+1. Run `state.py status`. Its `resume` line says which of these applies: resume the current phase; advance (`phase set`) because the prior gate passed; `close` because integrate passed; or `init` a new cycle because the last one is closed. The dispatcher spawns the phase agent that line calls for; the phase agent runs the verb.
+2. No state file (`not_initialized`): a `design.md` without a Seams section wants the design round first; otherwise **start a new plan phase** (its agent runs `state.py init`, which needs the prior handshake, or `--first-cycle`).
 3. A legacy or invalid file: `status` says so; `state.md` § Recovery gives the steps. Do not write it by hand.
 
 Never silently start a new cycle while a prior cycle is open; `init` refuses, and `close --abandon --why` is the explicit exit.
 
 ## Sync points
 
-Where the orchestrator reads the inbox (`templates/ask.md`): `state.py status` at session start; each phase boundary (`phase set`, `gate pass`, `init`); every `ScheduleWakeup` firing; the user's next prompt. `status` prints `inbox: N open, M answered (ids)`; `state.py inbox` prints the full scan. An answered file is handled before any other work at that point: readback if free text; apply; `record set … status=applied applied_via=…`; the move; the commit. The flows point here.
+Where the orchestrator reads the inbox (`templates/ask.md`): `state.py status` at session start and at a phase agent's start; each phase boundary (`phase set`, `gate pass`, `init`); every `ScheduleWakeup` firing; the user's next prompt. `status` prints `inbox: N open, M answered (ids)`; `state.py inbox` prints the full scan. An answered file is handled before any other work at that point, by the phase agent (the dispatcher only sees that an answer waits): readback if free text; apply; `record set … status=applied applied_via=…`; the move; the commit. The flows point here.
 
 ## Critical requirements
 
+- **The dispatcher's context holds pointers only.** It reads `SKILL.md` and `state.py status`; every phase runs in a phase agent from a fresh context (§ Two contexts). A dispatcher that reads a flow doc, a role file, an artifact or code is a process bug.
+- **Every spawned agent hands back one line; the detail is a file** (§ Hand-back lines). A report, a findings list or a narrative in a hand-back is a process bug; the orchestrator opens the file when the next step needs it.
 - **`state.json` is written only through `scripts/state.py`.** A heredoc, `jq`, `sed` or Write against it is a process bug. The tool owns the schema (unknown keys and long text are refused), the transitions, the timestamps, the gate evaluation and the handshake; narrative goes to `state.py note` or to the file that exists for it.
 - **Counts come from the state file, never from the LLM.** `state.py counts` is the PM digest's deterministic pass and the source of truth for every number; the agent pass only frames prose.
 - **Author-blind review is enforced at the harness level**, not by discipline. The reviewer-spawn helper has no path to the Implementor's report, observations, discoveries, identity, or scratch files.
@@ -107,6 +144,6 @@ Where the orchestrator reads the inbox (`templates/ask.md`): `state.py status` a
 - **Provenance fields are mandatory on follow-up tasks.** The orchestrator refuses to externalise without them.
 - **The integrate→plan handshake artifact is the loop-closure contract.** Without every required field (see `state.md`), plan refuses to start.
 - **A finding, discovery or observation becomes a task only on a demonstrated reason**: its `observed.happened` is true, a project prior or the user asked for that kind of work, or it states a measured cost. A reasoning-only finding is `noted`; it never becomes a task, a backlog item or a question to the user (`flows/integrate.md` § 7). The user's own words (a prior, an ask decision, a proposal sentence) outrank a `design.md` sentence.
-- **Every question to the user is an org file in `.orchestrator/inbox/`** per `templates/ask.md`, written the moment it is raised, in any phase, and triaged by kind. Only `decision` kinds reach the user as questions; the user answers in the file; an answer outside the offered options is read back before it is applied. The blocking call is for `environment` asks and for blocking asks while the user is present (acted within the last 15 minutes); one question per call. Nothing else blocks a session on a question.
+- **Every question to the user is an org file in `.orchestrator/inbox/`** per `templates/ask.md`, written the moment it is raised, in any phase, and triaged by kind. Only `decision` kinds reach the user as questions; the user answers in the file; an answer outside the offered options is read back before it is applied. The blocking call is for `environment` asks and for blocking asks while the user is present (acted within the last 15 minutes); one question per call; made by the dispatcher, since a phase agent has no user (§ Two contexts). Nothing else blocks a session on a question.
 - **Process artifacts are tracked in git, in the home repo.** `.orchestrator/` is never gitignored there (`state.py init` refuses when the home ignores it and when the code root contains a `.orchestrator/` of its own; it writes `.orchestrator/.gitignore` for the test outputs). The orchestrator commits an ask file when it is created, an applied ask alongside the change that applies it, and everything else at phase close (`Orchestrator: <cycle-id> <phase> closed`). Artifact commits are made in the home; code commits in the code root. When the code root is nested inside the home, the home's `.gitignore` ignores it (`where` warns when it does not), so the code checkout never appears as an embedded repository in the home's history.
 - **When the home and the code root differ, "in one commit" means one commit per repository.** Every rule that says so (an applied ask with the change that applies it; the design round's `design.md` with its pending tests; an inline doc-correction with the edit) is then one commit in each repository with the same subject, the code commit's message naming the ask id or the change.

@@ -8,7 +8,7 @@ The file survives the lifetime of one cycle (plan → execute → integrate); `c
 
 **State is written only through the state tool**, `scripts/state.py` in this skill's directory (`python3 ~/.claude/skills/opsx-orchestrate/scripts/state.py <verb> …`, written `state.py <verb>` in the flow docs). A heredoc, `jq`, `sed` or Write call against `state.json` is a process bug: the tool owns the schema, the transitions, the timestamps and the derived numbers, and it refuses what does not fit. Subagents that touch state use the same verbs. The tool finds the home by walking up from its cwd for `.claude/orchestrator/config.yaml`, then for `.orchestrator/state.json`; `--home <path>` (alias `--repo`) names it outright. It reads `code-root` from the home's `config.yaml`. An `@file` argument resolves against the cwd first, then the home.
 
-Run `state.py status` before anything else in a session; it is the orientation (phase, gates with their failing checks, the task table, open asks and which of them have an answer waiting in the inbox, pending blocking findings, the last journal lines) in about 2 KB, and it says what to resume.
+Run `state.py status` before anything else in a session, in the dispatcher and in every phase agent (`SKILL.md` § Two contexts); it is the orientation (phase, gates with their failing checks, the task table, open asks and which of them have an answer waiting in the inbox, pending blocking findings, the last journal lines) in about 2 KB, and it says what to resume.
 
 | Verb | Does |
 |---|---|

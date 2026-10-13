@@ -2,7 +2,7 @@
 
 The step between specs and the first cycle. The Architect reads the spec scenarios and the code as it stands, writes the seams that will satisfy them into `design.md`, and writes the pending tests those scenarios and seams imply. Plan (`flows/plan.md`) drafts tasks from this document; integrate (`flows/integrate.md` § 1) checks merged code against it.
 
-The round is not a cycle. It runs before `state.py init --first-cycle` and needs no state file. Its outputs are files in the home (`design.md`) and the code root (the pending tests).
+The round is not a cycle. It runs before `state.py init --first-cycle` and needs no state file. Its outputs are files in the home (`design.md`) and the code root (the pending tests). Like a phase, it runs in a phase agent the dispatcher spawns (`SKILL.md` § Two contexts); that agent spawns the Architect, checks and commits its output, and hands back one line.
 
 ## When it runs
 
@@ -50,7 +50,7 @@ The coverage row's `test` column names the test. Promotion is removing the marke
 
 ### 5. Open questions
 
-A question only the user can settle (which of two seams; whether a scenario is in scope) is a `decision`. It is asked now when a seam row or a pending test depends on the answer; otherwise it can wait. Outside a cycle there is no state file to index an ask file, so one asked now is put like an `environment` ask (`templates/ask.md`): the blocking call, at once, one question; the question and the answer are then written into `design.md` § Open Questions (created when the file has none) and § Decisions. No file, no finding. One that can wait is written into § Open Questions and raised as an ask file at plan § 3.
+A question only the user can settle (which of two seams; whether a scenario is in scope) is a `decision`. It is asked now when a seam row or a pending test depends on the answer; otherwise it can wait. Outside a cycle there is no state file to index an ask file, so one asked now is put like an `environment` ask (`templates/ask.md`): the Architect writes it into `design.md` § Open Questions (created when the file has none) with its recommendation and hands back the count; the phase agent hands back `stopped: <n> open questions; design.md § Open Questions`; the dispatcher makes the blocking call for each, one question per call, and resumes the phase agent, which writes each answer into § Decisions. No ask file, no finding. One that can wait is written into § Open Questions and raised as an ask file at plan § 3.
 
 ### 6. Commit
 

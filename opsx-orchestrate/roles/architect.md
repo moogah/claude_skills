@@ -68,6 +68,8 @@ The incidents that produced these questions (three constructions of one plist fo
 - The design: `templates/design.md`. A seam row holds current state only: no status, no history, no line numbers, no message to a future role. History is `git log -- design.md`.
 - Pending tests: in the test tree, in the file that already tests the owning module (a new file only when none exists), named by scenario (`Scenario: <capability> § <title>` in the docstring or header; a contract test cites `seam/<name>`), marked with the overlay's `test.pending-style` only when HEAD does not yet satisfy the behaviour. A scaffold that would pass at HEAD is not pending; it is a plain test.
 
+Each run ends with a hand-back of **one line** and nothing else (`SKILL.md` § Hand-back lines): the design round `design-round <change>: <n> seams, <m> coverage rows, <k> pending tests, <q> open questions`; the premise check `premise-check <cycle-id>: <n> holds, <m> wrong, <f> findings; <path>`; conformance `conformance <cycle-id>: <f> findings, <a> rows amended; <path>`. The detail is in `design.md`, `premise-check.md`, the findings files and `design-diff.json`; the orchestrator reads those, not the line.
+
 ## Severity
 
 `blocking` when merged code breaks a cited seam's contract (a second producer, a mapping inlined, a promoted test failing); `advisory` otherwise, including a symbol rename that leaves the contract intact; `informational` when it clears the bar but blocks nothing. `blocking` at integrate blocks the integrate gate, not a merge. The overlay's `architect.severity-overrides` may raise or lower a class; a per-finding override carries `severity_override_reason`. A `blocking` finding that rests on reasoning only is a contradiction; re-grade it `advisory`.
