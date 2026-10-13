@@ -46,7 +46,7 @@ Then:
 
 - A task with a **Wrong** premise is rewritten or split by the orchestrator before the batch freezes; the rewrite is the correction, not a stanza.
 - A defect the check finds outside every task's scope is a finding (`state.py record add findings`, `trigger: premise-check`, `discovered_from: batch-<cycle-id>`) at the bar with `observed` filled, routed by `flows/integrate.md` § 7's rules when integrate runs; one with `observed.happened: false` that no prior or user request covers is `record set findings <id> resolution=noted` at once, since its fate is already known. One whose `blocks` names a task in this batch is settled now: a `blocking` finding becomes an in-batch task or a rewrite of the task it blocks; a `decision` it raises is an ask file (`state.py record add asks`), presented before `batch_composed` only under the inline rule (`templates/ask.md` § The inline rule: the user present, one question per call, asked by the dispatcher after the phase agent hands back `stopped`); otherwise the task it blocks is `blocked` with `blocker_note: <ask-id>`, left out of the batch, and the plan goes on.
-- A seam row the check finds stale (the code or the test tree is right, the row is not) is a `doc-correction` ask (`templates/ask.md`): the orchestrator amends the row and writes the ask file with `status: applied` and `applied_via: design.md <seam-id>` straight into `cycles/<cycle-id>/asks/`, committed with the amended row; integrate § 3a counts it. The check itself does not edit `design.md`.
+- A seam row the check finds stale (the code or the test tree is right, the row is not) is a record correction (`templates/design.md` § Seams): the orchestrator fixes the row, cutting rather than adding when the staleness is implementation detail, writes one `state.py note note "record-correction: <what>" --ref <seam-id>` and commits the row with the premise check. No ask file. The check itself does not edit `design.md`.
 
 The record shows why this step exists: the plan-time review of the batch against HEAD found a three-way return value described as two-way, two contradicting log messages, and a task premise that split a task, none of it inside any task's stated scope, and every one of its outputs was used.
 
@@ -103,7 +103,7 @@ The cycle does not enter execute until:
 
 `state.py gate check plan` shows the computed three with reasons; `state.py gate pass plan` sets the gate when all four are true; `state.py phase set execute` advances.
 
-**Commit** at plan close, in the home: `git -C "$ORCH_HOME" add .orchestrator openspec/changes/<change> && git -C "$ORCH_HOME" commit -m "Orchestrator: <cycle-id> plan closed"` (add `.tasks` too when plan touched it; the batch's task files, `premise-check.md`, `state.json`, any `doc-correction` file with the row it amended). Ask files written during plan were committed when created (`templates/ask.md` § Commit rule).
+**Commit** at plan close, in the home: `git -C "$ORCH_HOME" add .orchestrator openspec/changes/<change> && git -C "$ORCH_HOME" commit -m "Orchestrator: <cycle-id> plan closed"` (add `.tasks` too when plan touched it; the batch's task files, `premise-check.md`, `state.json`, any row a record correction amended, with its journal line in `state.json`). Ask files written during plan were committed when created (`templates/ask.md` § Commit rule).
 
 Execute refuses to run if the plan gate has not passed.
 
@@ -125,7 +125,7 @@ Plan is the first; integrate (`flows/integrate.md`) is the second.
 ## What plan does **not** do
 
 - Plan does not modify code. (The premise check may run the suite and probes read-only; nothing in plan writes to `src/` or the test tree.)
-- Plan does not redesign. (The one edit it makes to `design.md` is a `doc-correction` the premise check surfaced: one row, applied by the orchestrator and listed.)
+- Plan does not redesign. (The one edit it makes to `design.md` is a record correction the premise check surfaced: one row, fixed by the orchestrator and journaled.)
 - Plan does not spawn Implementors. (That's execute's job.)
 - Plan-time findings are routed by integrate's rules, not acted on ad hoc; only one that blocks a batch task is settled before `batch_composed`.
 

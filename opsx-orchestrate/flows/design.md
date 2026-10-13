@@ -22,7 +22,8 @@ The orchestrator assembles the brief (`roles/architect.md` § Design round): `pr
 For each scenario, the Architect names the seam that satisfies it: a boundary the code must honour, stated in one sentence, with its owning symbols and the test that pins it. One row per seam in `design.md` § Seams (`templates/design.md`). Rules:
 
 - A seam is a contract between two parts of the code, not a feature. "One writer for the ledger file; the heal pass is its only reader" is a seam. "Dead videos are skipped" is a scenario.
-- Symbols, never line numbers. A row that cannot name a symbol at HEAD names the symbol the design introduces.
+- Symbols, never line numbers. A row that cannot name a symbol at HEAD names the symbol the design introduces. Owning symbols are the boundary's entry points, not every helper.
+- A row states the contract, never the implementation: no guard, error string, encoding, helper name, test name or transient marker (`templates/design.md` § Seams). The same binds the Decisions the round writes.
 - A row holds current state only. No status, history, importance flags, dated notes or messages to future roles. `git log -- design.md` is the history.
 - Existing design decisions that name a seam ("D1: two advice seams") link to the row by id.
 - The design checklist (`roles/architect.md` § Design checklist) is applied to the finished table: one producer per shape, one mapping per vocabulary, one canonical translation per boundary, every invariant with a coverage row.

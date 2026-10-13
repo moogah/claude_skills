@@ -30,7 +30,7 @@ If the task is a follow-up to an in-change task that just merged, with the same 
 | Reviewer (spec-signal finding) | Becomes an ask file (`templates/ask.md`); if the user's decision needs work, in-change revision tasks carry `discovered_from: <ask-id>`; otherwise no task |
 | Architect (shape-fragmentation, vocabulary-mismatch on touched code) | In-change |
 | Architect (responsibility-leakage on adjacent code) | Externalised — this is the *consolidation round* the Architect exists to make unnecessary; if the adjacent code is in scope, in-change |
-| Architect (interface-drift against a stale seam row or design sentence) | Becomes an ask file, triaged: `doc-correction` is written applied; `decision` goes to the inbox |
+| Architect (interface-drift against a stale seam row or design sentence) | Code right, record stale: a record correction, fixed and journaled, no file; a design in question: a `decision` file in the inbox |
 | PM (cascade cluster) | Spawns a conformance run scoped to the cluster; resulting tasks follow Architect rules |
 | Orchestrator (manual conflict-resolution) | In-change |
 | User (ad-hoc) | User chooses |

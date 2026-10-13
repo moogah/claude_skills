@@ -162,7 +162,7 @@ Severity should bias to blocking: cascades that aren't gaps are
 rare; the cost of running this check on a non-gap is small.
 ```
 
-The answer is routed through `flows/integrate.md` § 1's rules: code right, row stale is amended in place and recorded as an applied `doc-correction`; a design in question is a `decision` ask; other findings go to the bar.
+The answer is routed through `flows/integrate.md` § 1's rules: code right, row stale is amended in place and journaled as a record correction; a design in question is a `decision` ask; other findings go to the bar.
 
 ## Escalation contract
 

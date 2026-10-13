@@ -24,7 +24,7 @@ Every plan, over the candidate task files, before the batch freezes.
 
 - **Reads**: the candidate tasks, `design.md`, HEAD, the handshake's journal.
 - **Writes**: `cycles/<cycle-id>/premise-check.md`, one `| claim | at HEAD |` table per task with **Holds** or **Wrong** per claim, and a one-line verdict per task. A defect found outside every task's scope is a finding (`trigger: premise-check`) at the bar, routed by `flows/integrate.md` § 7's rules; one whose `blocks` names a batch task is settled before `batch_composed`.
-- **Cost**: minutes; may run the suite and probes read-only in a scratch directory. Never amends the design (a stale row it finds is a `doc-correction` ask the orchestrator applies) and never writes catalogue text or test stubs outside the design round.
+- **Cost**: minutes; may run the suite and probes read-only in a scratch directory. Never amends the design (a stale row it finds is a record correction the orchestrator makes and journals, `templates/design.md` § Seams) and never writes catalogue text or test stubs outside the design round.
 
 ### Conformance (`flows/integrate.md` § 1)
 
@@ -32,7 +32,7 @@ Every integrate, scoped to the seams this cycle's tasks cited, plus a dead-branc
 
 - **Reads**: the cited seam rows and coverage rows, each merged diff (full divergence from its merge base), the modules the diffs touch and their immediate call-graph neighbours, the project priors.
 - **Asks, per seam**: do the owning symbols exist and remain the single producer or mapping; do the coverage row's tests exist, carry no pending marker, and pass. **Per diff**: is any old implementation still on a live path; is any function the diff touched now unreachable.
-- **Writes**: findings (`trigger: conformance`); when the code is right and the design is stale, the amended seam row and, in the same edit, the coverage rows and the Decision that named the same thing, with `resolution: design-amended` so the orchestrator records one `doc-correction`; `cycles/<cycle-id>/design-diff.json` listing rows added, amended or retired (empty when none). A clean check is one `state.py note note "conformance: zero findings" --by architect`.
+- **Writes**: findings (`trigger: conformance`); when the code is right and the design is stale, the amended seam row and, in the same edit, the coverage rows and the Decision that named the same thing, each kept at the contract (a guard, error string, encoding or helper the code gained is never written into a row or a Decision; a row that held one is cut back), with `resolution: design-amended` so the orchestrator journals one record correction; `cycles/<cycle-id>/design-diff.json` listing rows added, amended or retired (empty when none). A clean check is one `state.py note note "conformance: zero findings" --by architect`.
 - **Cost**: moderate, bounded by the number of cited seams. The PM's cascade signal spawns this run scoped to the cluster it names.
 
 There is no Architect run in execute. The Reviewer carries the probe licence that the old execute-time run used (`roles/reviewer.md` § Probes). Restore an execute-time run only on a demonstrated Reviewer miss that a seam-scoped run would have caught.
@@ -65,7 +65,7 @@ The incidents that produced these questions (three constructions of one plist fo
 ## Output
 
 - Findings: `templates/architect-finding.md`, one file per finding under `cycles/<cycle-id>/findings/`, indexed with `state.py record add findings '{...}'` (title, severity, class, trigger, locations, `discovered_from`, `seam`, `observed`; the file carries the reasoning and the recommended resolution).
-- The design: `templates/design.md`. A seam row holds current state only: no status, no history, no line numbers, no message to a future role. History is `git log -- design.md`.
+- The design: `templates/design.md`. A seam row holds current state only and the contract only: no status, no history, no line numbers, no message to a future role, no guard, error string, encoding, helper name or test name. Decisions the same. History is `git log -- design.md`.
 - Pending tests: in the test tree, in the file that already tests the owning module (a new file only when none exists), named by scenario (`Scenario: <capability> § <title>` in the docstring or header; a contract test cites `seam/<name>`), marked with the overlay's `test.pending-style` only when HEAD does not yet satisfy the behaviour. A scaffold that would pass at HEAD is not pending; it is a plain test.
 
 Each run ends with a hand-back of **one line** and nothing else (`SKILL.md` § Hand-back lines): the design round `design-round <change>: <n> seams, <m> coverage rows, <k> pending tests, <q> open questions`; the premise check `premise-check <cycle-id>: <n> holds, <m> wrong, <f> findings; <path>`; conformance `conformance <cycle-id>: <f> findings, <a> rows amended; <path>`. The detail is in `design.md`, `premise-check.md`, the findings files and `design-diff.json`; the orchestrator reads those, not the line.
@@ -77,7 +77,7 @@ Each run ends with a hand-back of **one line** and nothing else (`SKILL.md` § H
 ## Escalation contract
 
 - **Blocking findings** produce a follow-up task in the batch (integrate § 7) and hold the integrate gate until `resolution` is no longer `pending`.
-- **Code right, design stale**: amend the seam row (and the coverage rows or Decision naming the same thing) in place, `resolution: design-amended`; the orchestrator writes one `doc-correction` ask file with `status: applied` and `applied_via: design.md <seam-id>` into `cycles/<cycle-id>/asks/` (`templates/ask.md`). Not Implementor work.
+- **Code right, design stale**: amend the seam row (and the coverage rows or Decision naming the same thing) in place at the contract level, `resolution: design-amended`; the orchestrator journals one record correction and commits it (`templates/design.md` § Seams). Not Implementor work, not an ask.
 - **Design in question**: the finding says what the seam or scenario is for, whether the drift is in merged code or reasoning only, and what it blocks; the orchestrator writes a `decision` ask file from it. The finding is not the ask.
 - **Cleanup proposals** land in the follow-up stream; the orchestrator decides this batch, next batch or `.tasks/`, and only when `observed.happened` is true or a prior asks for that kind of work; otherwise the finding is `noted`. An uncalled producer is a `dead-branch` finding, not a second producer.
 - **PM-spawned runs**: when the cascade signal fires, the PM may spawn a conformance run scoped to the cluster it names.

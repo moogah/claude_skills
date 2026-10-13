@@ -89,12 +89,12 @@ No timestamps: git has them.
 | Kind | What it is | What happens |
 |---|---|---|
 | `decision` | Only the user can choose, and the choice changes the product | A file in the inbox. The only kind that becomes a question. |
-| `doc-correction` | The code is right and a document is stale | Written with `:STATUS: applied` straight into `cycles/<cycle-id>/asks/`; never in the inbox. Its `* Answer` says "Applied without asking: <what>. Object if the document was right." Never a question. |
+| `doc-correction` | Retired 2026-10-13. The code is right and a document is stale | Not an ask. A **record correction**: the orchestrator fixes the text, keeps it at the contract (`templates/design.md` § Seams), commits it with a subject naming the row or sentence and writes one journal line `state.py note note "record-correction: <what>" --ref <seam-id>`; the digest counts the lines. The record: 47 of 47 such files were titled as questions nobody answered, and 39 would not have existed once rows hold contracts only. Files of this kind already on disk keep it; the tool still reads them. |
 | `confirmation` | A default already applied; a PM action the PM may take alone (a conformance run, a re-rank); a prior recorded from the user's words (`overlay.md` § Priors) | The same: written applied into `cycles/<cycle-id>/asks/`, with `* About` and `* What happened` and no options; its `* Answer` says "Applied without asking: <what>. Object if that is not what you meant." Never a question. |
 | `environment` | A licence, a wedged container, a permission, a missing or unreadable `state.json` or handshake | The blocking call, at once, alone. Also a file when the user is absent, so the next session finds it. The only kind that may bypass `state.json`. |
 | `process` | About the orchestration itself: the design round, the state file, the skill text | A file in the inbox with no options; never presented. The digest counts them. The user copies the file into the process-improvement workspace when reviewing the process. |
 
-Triage happens when the orchestrator writes the file, not when the digest is rendered. A finding routed "to the user" by a role brief is a candidate; the kind decides whether it is asked. One finding can yield two files, each with one kind: the stale sentence is a `doc-correction` applied now, and the product question it exposed is a separate `decision`. The record shows this pairing is the common case.
+Triage happens when the orchestrator writes the file, not when the digest is rendered. A finding routed "to the user" by a role brief is a candidate; the kind decides whether it is asked. One finding can yield a record correction and a file: the stale sentence is fixed and journaled now, and the product question it exposed is a separate `decision`. The record shows this pairing is the common case.
 
 ## Answer protocol
 
@@ -161,7 +161,7 @@ The user chose the in-change code fix, a critical-path task was created, and ele
 
 As this template writes it: the file under "The file" above, at `.orchestrator/inbox/ask-cycle-1790026644-9.org`, committed when written. With `* About` in front of them, the user would have recognised the one-off use at once; the reversal turned on exactly that sentence. The answer `do nothing to the code` matches the label and is applied at the next sync point with no readback; the file moves to `cycles/cycle-1790026644/asks/` in the commit that corrects the docs.
 
-### 2. A doc correction that was asked seven times
+### 2. A doc correction that was asked seven times (historical: since 2026-10-13 this is a record correction, a journal line and a commit, not a file)
 
 As asked (Project B, cycle 1 plan, seven asks of this shape, each with the recommendation "apply"):
 

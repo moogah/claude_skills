@@ -74,11 +74,11 @@ Default: `blocking` when merged code contradicts a seam row it cites or a promot
 
 ## Routing
 
-- **`interface-drift`, code right and row stale** → the Architect amends the seam row and names it here; the orchestrator writes a `doc-correction` ask file (`templates/ask.md`) with `status: applied`, `applied_via: design.md <seam-id>`, into `cycles/<cycle-id>/asks/`. Not Implementor work.
+- **`interface-drift`, code right and row stale** → a record correction: the Architect amends the seam row at the contract level (cutting implementation detail, never adding it; `templates/design.md` § Seams) and names it here; the orchestrator journals `record-correction: <what>` and commits. Not Implementor work, not an ask.
 - **`interface-drift`, design in question** → a `decision` ask file written to the inbox by the orchestrator from this finding; the `recommended_resolution` must say what the seam or scenario is for, `observed` whether the drift is in merged code or reasoning only, and the finding what it blocks. The finding is not the ask.
 - **`blocking`** with any other class → routes to a follow-up task in the active batch; the integrate gate doesn't close until resolved.
 - **`advisory`** → follow-up task with `discovered_class` set; orchestrator decides this-batch / next-batch / `.tasks/`.
-- **Any severity with `observed.happened: false`**, unless a project prior (`overlay.md` § Priors) or the user has asked for that kind of work or the finding states a measured cost → `resolution: noted`; no task, no `.tasks/` item, no `decision` ask; a stale sentence it exposed may still be a `doc-correction` (`flows/integrate.md` § 7). A `blocking` finding that rests on reasoning only is a contradiction; the Architect re-grades it `advisory`.
+- **Any severity with `observed.happened: false`**, unless a project prior (`overlay.md` § Priors) or the user has asked for that kind of work or the finding states a measured cost → `resolution: noted`; no task, no `.tasks/` item, no `decision` ask; a stale sentence it exposed may still be a record correction (`flows/integrate.md` § 7). A `blocking` finding that rests on reasoning only is a contradiction; the Architect re-grades it `advisory`.
 - **`informational`** → no task; appears in PM digest's "trends to watch" section. PM tracks recurrence; if the same informational class fires three cycles running, PM proposes promoting to advisory.
 
 ## Resolution states
@@ -87,7 +87,7 @@ The state-file `architect_findings[].resolution` field tracks how each finding w
 
 - `pending` — not yet acted on (blocks integrate gate if severity is `blocking`)
 - `inline-fixed` — orchestrator applied an inline fix (to code, or to a document other than `design.md`: a README, a usage page, a spec scenario the amended row cites)
-- `design-amended` — the code was right and the Architect amended the seam row (and the coverage rows or Decision that named the same thing); the orchestrator's `doc-correction` ask carries the path
+- `design-amended` — the code was right and the Architect amended the seam row (and the coverage rows or Decision that named the same thing); the orchestrator's `record-correction:` journal line and the commit carry the path
 - `followup-task-<task-name>` — became a task; field carries the task name
 - `reverted` — the implicated merge was reverted
 - `accepted-with-note` — user explicitly chose to accept the divergence; carries the ask id whose `decision_readback` is the rationale
