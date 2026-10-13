@@ -15,6 +15,8 @@ The Reviewer's input is **strictly limited** to:
 3. The cited seam rows and the coverage rows the task promotes, verbatim from `design.md`.
 4. Project standards (overlay extensions) and the project priors (`priors.md`, the user's standing rules).
 
+The **whole-change review** (`flows/integrate.md` § 9) is the same contract at change scale: the diff from the change's base to HEAD, `proposal.md` and the whole Seams and Scenario coverage tables in place of items 1-3. It looks for what no per-task review could see: interactions between tasks, a bypassed review, a scenario whose test passes while the user's surface does not.
+
 The Reviewer **never sees**:
 - The Implementor's structured report.
 - The Implementor's `## Observations` or `## Discoveries` sections from the task file.

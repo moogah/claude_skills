@@ -218,6 +218,17 @@ which reads `design_diff` from `cycles/<cycle-id>/design-diff.json` (step 1; `--
 
 This is the structural fix for the brainstorm's "learns and forgets" failure mode. Without the handshake, plan degrades into "pull from the top of the backlog" and the orchestrator becomes a queue runner.
 
+### 9. Whole-change review, when no open task remains
+
+Per-task reviews see one diff and its cited rows. When this integrate leaves the change with no open task (nothing in `<change>/tasks/open/`, no blocked task, no ask whose answer would create one), the orchestrator spawns one more Reviewer over the whole change before the change is reported done:
+
+- **Diff**: `git -C "$CODE_ROOT" diff <change-base>..HEAD`, where `<change-base>` is the parent of the change's first code-root commit (the design round's, found by `git log --grep="Design round: <change>"`; a change with no round starts at its first task merge). This covers every path a change took: task merges, inline-path commits, inline fixes, ask answers.
+- **Input** (author-blind as in execute § 7, with the whole design in place of the cited rows): the diff, `proposal.md`, every Seams and Scenario coverage row, the overlay's `roles/reviewer.md` and `priors.md`. No report, no Observations, no review files.
+- **Looks for** what no per-task review could: interactions between tasks (a setting, a wrapper and a doc that disagree), a scenario whose test passes while the surface the user would use does not, a change that bypassed review, a contract weakened in one task and relied on in another.
+- **Output**: `cycles/<cycle-id>/reviews/whole-change.md` in the Reviewer's format, one hand-back line. `blocking` findings become tasks for one more cycle (§ 7, `discovered_by: reviewer`); the change is not reported done while one is open. `advisory` and `spec-signal` route as in execute § 8.
+
+The record: after the orchestrator reported two changes done, the user's smoke check, `/code-review` and UAT found nine defects and more; the cross-cutting ones (settings × wrapper × `SKILL.md`) had never been in any one task's diff.
+
 ## Inputs (from execute)
 
 - All Implementor reports (held by orchestrator since execute, not seen by reviewers).
