@@ -47,6 +47,8 @@ Before writing code, check every claim the task body and its cited rows make abo
 
 A Wrong claim the task can absorb (a name, a path, a signature, part of the work already done) is corrected in the work, and the row says how. A Wrong claim that changes what the task should do (the behaviour it adds already exists, it contradicts a cited row or scenario, the work belongs to another seam) stops the task before any code: hand back `blocked <task>: premise wrong, <the claim>; report=<path>`. The table is written for every task, including one the Architect checked at plan (`flows/plan.md` § 3).
 
+A test this task did not write (a pending test it promotes, or one already in the tree) that fails against the work is settled the same way, at any point in the work. When the code is wrong, fix the code. When the test is wrong and changing it keeps the behaviour the cited rows and scenarios state (a setup defect, an assumption no row makes), change it and carry on: the change is a deviation, so `deviation_summary` says it (the hand-back carries `deviated`) and a `## Discoveries` entry (`class: deviation`) quotes the assertion before and after. When the only fix changes behaviour a cited row or scenario states, stop and hand back `blocked <task>: premise wrong, …` as above. The record: in a replay an Implementor loosened two assertions in design-round specs to fit the wrapper, called them spec defects and handed back a plain `done`; one reached the Architect as a push-back, the other was seen only as an Observation.
+
 ## Reference material is for pressure-testing, not deference
 
 The brief framing is fixed: cited seam rows are **reference material to pressure-test, not authority to defer to**. A row was written by the design round before the code existed; the Implementor is *expected* to push back if implementation reveals it is wrong.
@@ -68,7 +70,7 @@ When the Implementor pushes back:
 What does **NOT** belong in `## Observations` and **DOES** merit filing a new task:
 - A user-visible bug or correctness regression that genuinely can't wait for review.
 
-The reviewer reads `## Observations` alongside the merge and groups related ones in context. New tasks fragment that context — reserve them for the rare case above.
+The orchestrator scans `## Observations` after the merge (`flows/execute.md` § 5) and keeps related ones together in the task body; the Reviewer never sees them (author-blind, § 7). New tasks fragment that context — reserve them for the rare case above.
 
 ## Discoveries format
 

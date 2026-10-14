@@ -64,7 +64,7 @@ The exact command(s) to run, and the list of pending tests this task promotes (f
 What's deliberately not in this task. Reduces the "while I was there I also fixed Y" surface.
 
 ### Observations
-Empty in `tasks/open/`. The implementor appends here during execution. Per the brainstorm § implementor: out-of-scope findings during implementation belong in `## Observations`, not in new tasks. The reviewer reads observations alongside the merge.
+Empty in `tasks/open/`. The implementor appends here during execution. Per the brainstorm § implementor: out-of-scope findings during implementation belong in `## Observations`, not in new tasks. The orchestrator scans them after the merge (`flows/execute.md` § 5); the Reviewer never sees them.
 
 What belongs in `## Observations`:
 - Departures from the task body's prescribed approach (with evidence)

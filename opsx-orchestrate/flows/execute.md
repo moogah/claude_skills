@@ -55,7 +55,7 @@ The command runs in the code root; the after-file lives at the home. Record the 
 After each merge, before that task's review, the orchestrator scans for discoveries no individual agent owns. Per the brainstorm and lifted from VCE's §A.7.5:
 
 - **Latent bugs surfaced by a regression** — a test broke not because the merging task was wrong but because it perturbed a pre-existing fragile assumption (e.g. a non-stable sort coupled to insertion order).
-- **Worker observations on the merged task body** — scan `## Observations`; an observation becomes a follow-up task only if it has happened (a failing run, a wrong output, a defect the observation cites by line) or a project prior asks for that kind of work (`overlay.md` § Priors); a reading of what could go wrong stays in the body. Most stay in the body for the reviewer to read in context.
+- **Worker observations on the merged task body** — scan `## Observations`; an observation becomes a follow-up task only if it has happened (a failing run, a wrong output, a defect the observation cites by line) or a project prior asks for that kind of work (`overlay.md` § Priors); a reading of what could go wrong stays in the body. Most stay in the body as the record; the Reviewer does not see them (§ 7).
 - **Manual conflict-resolution decisions** — when the orchestrator dropped, restructured, or regenerated code while reconciling two branches, that decision is an unreviewed structural change. Note it on the merged task body; if it touched a contract or dropped a test, file a follow-up.
 - **Aborted merges where the abort reason is itself the finding** — capture the structural issue (not just the merge failure) as a `ready` task so the next cycle can address it.
 
