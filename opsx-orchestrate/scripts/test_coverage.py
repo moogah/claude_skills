@@ -239,6 +239,11 @@ def test_capability_and_uncited_filters(tree, capsys):
     assert [r["scenario"] for r in json.loads(capsys.readouterr().out)["rows"]] == ["Nobody"]
 
 
+def test_scenario_filter(tree, capsys):
+    assert cov.main(["--root", str(tree), "--scenario", "ws § Nobody", "--scenario", "ws § Pending one", "--json"]) == 0
+    assert sorted(r["scenario"] for r in json.loads(capsys.readouterr().out)["rows"]) == ["Nobody", "Pending one"]
+
+
 # ---------------------------------------------------------------- adopt-rows
 
 @pytest.mark.parametrize("cell,want", [

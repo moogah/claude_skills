@@ -24,7 +24,8 @@ output: Buttercup lines join on the `it` string, ERT lines on the test name.
 
 Usage:
   coverage.py [--root CODE_ROOT] [--specs DIR] [--tests DIR ...] [--output RUN_OUTPUT]
-              [--capability ID] [--since COMMIT] [--uncited] [--json]
+              [--capability ID] [--scenario 'CAP § TITLE' ...] [--since COMMIT]
+              [--uncited] [--json]
   coverage.py adopt-rows DESIGN_ORG [--root …] [--specs …] [--write]
       a change's legacy `* Scenario coverage` table -> `:TEST:` properties for its `none`
       rows and for rows naming a test that carries no citation; prints them, --write
@@ -587,6 +588,7 @@ def main(argv=None):
     ap.add_argument("--tests", action="append")
     ap.add_argument("--output")
     ap.add_argument("--capability")
+    ap.add_argument("--scenario", action="append", help="'<capability> § <title>'; repeatable")
     ap.add_argument("--since")
     ap.add_argument("--uncited", action="store_true")
     ap.add_argument("--json", action="store_true")
@@ -603,6 +605,9 @@ def main(argv=None):
         if args.capability:
             cap = args.capability
             rows = [r for r in rows if r["capability"] == cap or r["capability"].startswith(cap + "/")]
+        if args.scenario:
+            keys = {tuple(x.split(" § ", 1)) for x in args.scenario}
+            rows = [r for r in rows if (r["capability"], r["scenario"]) in keys]
         if args.since:
             touched = touched_lines(root, specs, args.since)
             rows = [r for r in rows if in_since(r["_sc"], touched)]
