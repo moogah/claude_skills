@@ -19,7 +19,7 @@ Full overlay contract: **[overlay.md](overlay.md)**.
 
 ## Before the first cycle: the design round
 
-A change enters the orchestrator after OpenSpec's `proposal → specs → design`. The Architect's **design round** (`flows/design.md`) then appends two sections to `design.md`, Seams and Scenario coverage (`templates/design.md`), and writes the pending tests they imply. It runs once per change, before `state.py init --first-cycle`, and needs no state file. Plan drafts tasks from those sections; integrate checks merged code against them.
+A change enters the orchestrator after OpenSpec's `proposal → specs → design`. The Architect's **design round** (`flows/design.md`) then appends two sections to `design.md`, Seams and Scenario coverage (`templates/design.md`), and writes the pending tests they imply. It runs once per change, before `state.py init --first-cycle`, and needs no state file. The orchestrator does not write a design before the round, itself or through another agent: a change it opens or splits gets a proposal and specs, and the round writes the design's sections too (`flows/design.md` § When it runs). Plan drafts tasks from those sections; integrate checks merged code against them.
 
 ## Two contexts: the dispatcher and the phase agent
 
