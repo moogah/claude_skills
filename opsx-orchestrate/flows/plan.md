@@ -40,6 +40,13 @@ Each candidate cites the seams it implements (`cites_seams`, also carried in sta
 
 ### 3. Premise check
 
+Who checks a task's claims against HEAD depends on who wrote its text. **An experiment (roadmap 1.1, 2026-10-13), run on one replay before it is kept or reverted.**
+
+- A task drafted at this plan from the design's seams and coverage rows (§ 2, source 2): no Architect check. Its Implementor checks the claims against HEAD before writing code (`roles/implementor.md` § Premises).
+- Every other candidate (carried over, a follow-up from a finding, a bug report, a task the user wrote): the Architect check below. When no candidate needs it, the Architect is not spawned and the cycle has no `premise-check.md`.
+
+The record behind the split: of 48 Wrong rows over two projects, 17 of the 27 design-wrong rows and all 12 task defects were in task text the orchestrator wrote, 14 of them in one bug task; the Implementor reads HEAD anyway, and the check's own agent cost about 6.6M tokens a run.
+
 The Architect runs against the candidate task files (`roles/architect.md` § Premise check): for each task, a `| claim | at HEAD |` table with **Holds** or **Wrong** per claim the task body makes about the code at the code root's HEAD (a function exists and has this signature; a path is reachable from this entry point; a return value has these cases; a defect of the task file's own form, such as a truncated seam quote, is a row too, flagged as such), and a one-line verdict. Output: `<home>/.orchestrator/cycles/<cycle-id>/premise-check.md` (the orchestrator creates the directory), and one hand-back line with the counts (`SKILL.md` § Hand-back lines). The check may run the suite and probes read-only in a scratch directory.
 
 Then:

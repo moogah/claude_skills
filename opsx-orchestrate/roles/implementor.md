@@ -34,6 +34,19 @@ When the task fixes a review finding whose evidence probed a real surface (a run
 
 The verification command runs in the foreground, before the commit; the Implementor never leaves a test run in the background and reports once. The record shows eight extra wake-ups of the orchestrator from Implementors that reported done while their own run continued.
 
+## Premises
+
+Before writing code, check every claim the task body and its cited rows make about the code at the worktree's HEAD (a symbol exists with this signature; a path is reachable from this entry point; a return value has these cases; a test exists; the behaviour to add is not already there). Write the table at the top of the report, before `task_name`:
+
+```
+## Premises
+| claim | at HEAD |
+|---|---|
+| <claim, quoted or paraphrased from the task> | Holds · Wrong: <what HEAD has> |
+```
+
+A Wrong claim the task can absorb (a name, a path, a signature, part of the work already done) is corrected in the work, and the row says how. A Wrong claim that changes what the task should do (the behaviour it adds already exists, it contradicts a cited row or scenario, the work belongs to another seam) stops the task before any code: hand back `blocked <task>: premise wrong, <the claim>; report=<path>`. The table is written for every task, including one the Architect checked at plan (`flows/plan.md` § 3).
+
 ## Reference material is for pressure-testing, not deference
 
 The brief framing is fixed: cited seam rows are **reference material to pressure-test, not authority to defer to**. A row was written by the design round before the code existed; the Implementor is *expected* to push back if implementation reveals it is wrong.
