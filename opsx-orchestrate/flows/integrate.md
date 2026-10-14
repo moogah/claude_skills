@@ -35,6 +35,8 @@ Two passes, per `roles/project-manager.md`:
 1. **Deterministic pass** — `state.py counts --write` produces `<home>/.orchestrator/cycles/<cycle-id>/pm-signals.json`: counts, ratios, history, by-status, critical-path readout, class table, follow-ups by source, open asks, blocked tasks, the findings count with how many are reasoning-only and `noted`, and the fired signals it can compute. Blocked tasks whose `blocker_note` is an ask id re-surface that id rather than raising a new ask; a blocked task with another kind of blocker is a candidate ask the orchestrator writes per `templates/ask.md`.
 2. **Agent pass** — turns that into the digest prose at `<home>/.orchestrator/cycles/<cycle-id>/pm-digest.md` (per `templates/pm-digest.md`).
 
+When § 9's whole-change review runs this cycle, the agent pass waits for its hand-back, so the digest counts its findings and corrections (§ 9).
+
 If the agent pass fails, the deterministic output remains and is recoverable.
 
 ### 3a. Inbox and readback
@@ -195,7 +197,7 @@ This is the structural fix for the brainstorm's "learns and forgets" failure mod
 
 ### 9. Whole-change review, when no open task remains
 
-Per-task reviews see one diff and its cited rows. When this integrate leaves the change with no open task (nothing in `<change>/tasks/open/`, no blocked task, no ask whose answer would create one), the orchestrator spawns one more Reviewer over the whole change before the change is reported done:
+Per-task reviews see one diff and its cited rows. When this integrate leaves the change with no open task (nothing in `<change>/tasks/open/`, no blocked task, no ask whose answer would create one), the orchestrator spawns one more Reviewer over the whole change before the change is reported done. It runs after § 1 and before § 3's agent pass and § 7, so the digest counts its findings and § 7 creates the tasks its `blocking` findings need; whether a task remains is decided then, from § 1's routing, the open and blocked tasks, and the candidate tasks execute left for § 7. The record: run alongside the PM pass, the review's one finding and the spec correction it led to were missing from the digest (bookmarks `cycle-1791996711`).
 
 - **Diff**: `git -C "$CODE_ROOT" diff <change-base>..HEAD`, where `<change-base>` is the parent of the change's first code-root commit (the design round's, found by `git log --grep="Design round: <change>"`; a change with no round starts at its first task merge). This covers every path a change took: task merges, inline-path commits, inline fixes, ask answers.
 - **Input** (author-blind as in execute § 7, with the whole design in place of the cited rows): the diff, `proposal.md`, every Seams and Scenario coverage row, the overlay's `roles/reviewer.md` and `priors.md`. No report, no Observations, no review files.
