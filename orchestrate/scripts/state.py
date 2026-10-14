@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""opsx-orchestrate state tool.
+"""orchestrate state tool.
 
 The orchestrator's `.orchestrator/state.json` is written only through this script.
 It owns the schema (see ../state.md), the task status transitions, the timestamps,
@@ -1354,8 +1354,8 @@ def code_root_warnings(store):
     out = []
     if os.path.isdir(os.path.join(store.home, "openspec", "specs")):
         out.append(f"openspec/specs/ is still in the home {store.home}; this skill reads the record from "
-                   "docs/ in the code root (templates/spec.md). Run this home on the skill tagged "
-                   "openspec-layout-final, or migrate it with scripts/spec_convert.py")
+                   "docs/ in the code root (templates/spec.md). Convert it first with the openspec-convert "
+                   "skill")
     if not store.split:
         return out
     rel = os.path.relpath(store.code_root, store.home)

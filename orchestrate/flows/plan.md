@@ -116,7 +116,7 @@ Execute refuses to run if the plan gate has not passed.
 
 ## What this displaces
 
-The older two-phase tick/tock model (`opsx-tick-tock`, retired from the skills directory on 2026-10-13; never invoked in the copied logs) conflated plan with execute. Per the brainstorm:
+The older two-phase tick/tock model (retired on 2026-10-13; never invoked in the copied logs) conflated plan with execute. Per the brainstorm:
 
 > Tick and tock were both *per-task* operations on the batch as it forms — implement the diff, review the diff. What was missing is a phase whose unit is the *cycle itself*, with two distinct cycle-level jobs that the two-phase model could not house: *planning the next cycle's speculations* and *integrating the prior cycle's discoveries*.
 

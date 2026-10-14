@@ -53,7 +53,7 @@ A contract test also cites `seam/<name>`. The `:TEST:` property holds what a tes
 
 ## Coverage
 
-`python3 ~/.claude/skills/opsx-orchestrate/scripts/coverage.py --root "$CODE_ROOT"` prints one row per scenario: capability, title, status, citations. Status, worst first: `failed`, `not run`, `pending`, `cited` (no run output given), `pass`, `none: <reason>`, `uncited`. `--output <raw test-run output>` joins Buttercup lines on the `it` string and ERT lines on the test name; `--since <base>` keeps the scenarios the change touched; `--capability <id>`, `--scenario '<capability> § <title>'` and `--uncited` narrow further; `--json` for a tool. The design round's exit and integrate's conformance read it; nobody writes coverage by hand.
+`python3 ~/.claude/skills/orchestrate/scripts/coverage.py --root "$CODE_ROOT"` prints one row per scenario: capability, title, status, citations. Status, worst first: `failed`, `not run`, `pending`, `cited` (no run output given), `pass`, `none: <reason>`, `uncited`. `--output <raw test-run output>` joins Buttercup lines on the `it` string and ERT lines on the test name; `--since <base>` keeps the scenarios the change touched; `--capability <id>`, `--scenario '<capability> § <title>'` and `--uncited` narrow further; `--json` for a tool. The design round's exit and integrate's conformance read it; nobody writes coverage by hand.
 
 ## Who edits `docs/specs/`
 

@@ -1051,7 +1051,7 @@ def test_where_single_repo(run, repo):
     assert out["warnings"] == []
     (repo / "openspec" / "specs").mkdir(parents=True)  # Project A's layout: home and code root are one
     code, out, _ = run("where")
-    assert len(out["warnings"]) == 1 and "openspec-layout-final" in out["warnings"][0]
+    assert len(out["warnings"]) == 1 and "openspec-convert" in out["warnings"][0]
 
 
 # 33
@@ -1158,7 +1158,7 @@ def test_init_refuses_misplaced_artifacts_then_two_homes(run, repo):
     code, out, err = init(run, "cycle-1", "--first-cycle")
     assert code == 0, err
     assert len(out["warnings"]) == 1 and "openspec/specs/ is still in the home" in out["warnings"][0]
-    assert "openspec-layout-final" in out["warnings"][0]
+    assert "openspec-convert" in out["warnings"][0]
 
 
 # 39
