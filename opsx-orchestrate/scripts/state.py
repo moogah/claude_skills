@@ -14,9 +14,9 @@ validate -> atomic replace, under a file lock.
 Usage: python3 state.py [--home PATH] <verb> ...   (state.py help lists the verbs)
 
 The home is the directory holding .claude/orchestrator/config.yaml (found by walking up
-from cwd); it holds .orchestrator/ and openspec/. The code root is where worktrees, merges
-and tests happen: config.yaml `code-root: <path>` relative to the home, default the home.
-`where` prints both.
+from cwd); it holds .orchestrator/ and .tasks/. The code root is where worktrees, merges
+and tests happen, and it holds the record (docs/specs/, docs/changes/<change>/):
+config.yaml `code-root: <path>` relative to the home, default the home. `where` prints both.
 """
 
 import argparse
@@ -1351,12 +1351,13 @@ def code_root_problems(store):
 
 
 def code_root_warnings(store):
-    if not store.split:
-        return []
     out = []
-    if os.path.isdir(os.path.join(store.code_root, "openspec")):
-        out.append(f"openspec/ also present in the code root {store.code_root}; the home's copy is the one "
-                   "the orchestrator reads")
+    if os.path.isdir(os.path.join(store.home, "openspec", "specs")):
+        out.append(f"openspec/specs/ is still in the home {store.home}; this skill reads the record from "
+                   "docs/ in the code root (templates/spec.md). Run this home on the skill tagged "
+                   "openspec-layout-final, or migrate it with scripts/spec_convert.py")
+    if not store.split:
+        return out
     rel = os.path.relpath(store.code_root, store.home)
     if not rel.startswith("..") and _git(store.home, "rev-parse", "--show-toplevel")[0] == 0 \
             and not _git_ignores(store.home, rel):

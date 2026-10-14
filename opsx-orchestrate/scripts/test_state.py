@@ -1048,6 +1048,10 @@ def test_where_single_repo(run, repo):
     assert out["paths"] == {"home": str(repo), "code_root": str(repo)}
     code, out, _ = run("where")
     assert out["state"] == "present"
+    assert out["warnings"] == []
+    (repo / "openspec" / "specs").mkdir(parents=True)  # Project A's layout: home and code root are one
+    code, out, _ = run("where")
+    assert len(out["warnings"]) == 1 and "openspec-layout-final" in out["warnings"][0]
 
 
 # 33
@@ -1149,10 +1153,12 @@ def test_init_refuses_misplaced_artifacts_then_two_homes(run, repo):
     code, _, err = init(run, "cycle-1", "--first-cycle")
     assert code == 1 and err["error"] == "two_homes"
     (code_dir / ".claude" / "orchestrator" / "config.yaml").unlink()
-    (code_dir / "openspec").mkdir()
+    (code_dir / "openspec" / "specs").mkdir(parents=True)  # a record in the code root is not the warning
+    (repo / "openspec" / "specs").mkdir(parents=True)
     code, out, err = init(run, "cycle-1", "--first-cycle")
     assert code == 0, err
-    assert len(out["warnings"]) == 1 and "openspec/" in out["warnings"][0]
+    assert len(out["warnings"]) == 1 and "openspec/specs/ is still in the home" in out["warnings"][0]
+    assert "openspec-layout-final" in out["warnings"][0]
 
 
 # 39
@@ -1232,7 +1238,7 @@ def test_at_file_falls_back_to_home(run, repo, tmp_path, monkeypatch):
     code, out, err = run("record", "add", "asks", "@draft.org")
     assert code == 0, err
     assert out["id"] == "ask-cycle-1-9"
-    (repo / "refs.json").write_text(json.dumps([{"task": "openspec/changes/c/tasks/open/a.md",
+    (repo / "refs.json").write_text(json.dumps([{"task": ".orchestrator/changes/c/tasks/open/a.md",
                                                  "refinement": "x", "ref": "y"}]))
     (elsewhere / "refs.json").write_text("[]")
     code, out, err = run("record", "add", "findings", "@nope.json")
