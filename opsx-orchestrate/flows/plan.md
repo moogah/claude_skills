@@ -40,7 +40,7 @@ Each candidate cites the seams it implements (`cites_seams`, also carried in sta
 
 ### 3. Premise check
 
-Who checks a task's claims against HEAD depends on who wrote its text. **An experiment (roadmap 1.1, 2026-10-13), run on one replay before it is kept or reverted.**
+Who checks a task's claims against HEAD depends on who wrote its text. Kept after one replay (roadmap 1.1, 2026-10-14).
 
 - A task drafted at this plan from the design's seams and coverage rows (§ 2, source 2): no Architect check. Its Implementor checks the claims against HEAD before writing code (`roles/implementor.md` § Premises).
 - Every other candidate (carried over, a follow-up from a finding, a bug report, a task the user wrote): the Architect check below. When no candidate needs it, the Architect is not spawned and the cycle has no `premise-check.md`.
