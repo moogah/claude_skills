@@ -11,7 +11,7 @@ Tasks live at `<change>/tasks/open/<task-name>.md` (active) or `<change>/tasks/c
 task_name: <task-slug>
 description: <one-line>
 change: <change-name>
-status: ready | blocked | needs_review | done | failed | externalised
+status: ready | blocked | needs_review | done | failed | externalised   # the state statuses the file mirrors (state.md § Status semantics); the others are not written here
 task_class: feature | test | doc | refactor | bug | contract | infrastructure
 on_critical_path: true | false
 
@@ -73,8 +73,7 @@ What belongs in `## Observations`:
 - Spec/design contradictions or ambiguities the implementation forced you to resolve
 - Push-backs against seam rows the brief cited
 
-What does NOT belong in `## Observations` and DOES merit a new task:
-- A user-visible bug or correctness regression that genuinely can't wait for review
+What does NOT belong in `## Observations`: a defect outside the task that cannot wait for review. It is a `## Discoveries` entry with `observed.happened: true`, listed in the report's `candidate_tasks`; the orchestrator files the task (`roles/implementor.md` § What belongs in `## Observations`).
 
 ### Discoveries
 The structured form of significant findings. Implementor fills this when discoveries warrant integrate-phase attention. Each entry:

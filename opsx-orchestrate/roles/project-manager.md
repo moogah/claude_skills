@@ -22,7 +22,7 @@ It produces:
 - The fired-signals list for the queries it can compute from state: throughput inversion, review starvation, priority inversion, cascade (follow-ups by source task).
 - The critical-path readout, the class-distribution table, follow-ups by source, the open asks and the blocked tasks with their `blocker_note`, and the findings count with how many are reasoning-only and `noted`.
 
-Candidate asks come from the blocked-task list: a `blocker_note` that is an ask id re-surfaces that id; any other blocker is a stub, an inbox file with the fields the PM can fill, which the orchestrator completes per `templates/ask.md`. Cascade detection produces an Architect conformance run, not an ask.
+Candidate asks come from the blocked-task list: a `blocker_note` that is an ask id re-surfaces that id; any other blocker is a candidate question, from which the orchestrator writes the ask file (`templates/ask.md`, opening). Cascade detection produces an Architect conformance run, not an ask.
 
 Output: `<home>/.orchestrator/cycles/<cycle-id>/pm-signals.json`.
 
@@ -32,7 +32,7 @@ Turns the structured signals into **digest prose** and **user-facing asks**. Che
 
 The agent pass produces:
 - The framing prose around each signal (e.g. "this cluster looks like a vocabulary-mapping gap").
-- The asks' prose per `templates/ask.md`: a plain question for the reader the overlay names, as an inbox file with the fields the PM can fill. The sections that need code or docs (`* About`, `* What happened`) are filled by the orchestrator when it routes the finding; the PM does not read code.
+- The candidate questions, in the digest: a plain question for the reader the overlay names, with what it blocks and a recommendation. The orchestrator writes every ask file from them (`templates/ask.md`, opening), including the sections that need code or docs (`* About`, `* What happened`); the PM writes no ask file and does not read code.
 - The goal-drift recommendation (revise / split / abandon / continue) and its one-line reason.
 - The "trends to watch" section.
 - The "meta-discoveries" section.
@@ -69,7 +69,7 @@ A single completed task generates a disproportionate number of follow-ups, repea
 
 `.tasks/` grows without ever being pulled. The cross-cutting work is real, the orchestrator correctly externalised it, and now it's invisible.
 
-**PM action**: when the externalised cluster has grown coherent, **promote externalised tasks back into the active change**. PM is the natural channel for `.tasks/` → active migration. (Resolves part of brainstorm Q5.)
+**PM action**: when the externalised cluster has grown coherent, **propose promoting it into the active change**; the promotion is the user's decision on a `decision` ask (`externalisation.md` § Externalisation pressure). (Resolves part of brainstorm Q5.)
 
 ### 5. Goal drift
 
@@ -87,13 +87,13 @@ Refactor or polish tasks consuming attention while load-bearing tasks sit blocke
 
 Same kind of task fails in the same way, cycle after cycle. Reviewer rejects implementor X's tests for the same reason five times. Implementor agent loses context on tasks of class Y. These are process bugs the orchestrator can't see because each cycle ends "successfully"; the PM sees them because it reads the cycle history.
 
-**PM action**: signal; write a `process`-kind ask file in the inbox (`templates/ask.md`) naming the class; if persistent, the file proposes updating the task taxonomy or the implementor brief for that class. Process asks are not presented; the digest counts them.
+**PM action**: signal, and name the class as a candidate `process` ask in the digest; the orchestrator writes the file (`templates/ask.md`). If persistent, it proposes updating the task taxonomy or the implementor brief for that class. Process asks are not presented; the digest counts them.
 
 ### 8. Blocked-path stagnation
 
 Tasks blocked on an external dependency (user decision, upstream change, environment) for ≥N cycles with no movement.
 
-**PM action**: write an ask stub (an inbox file with the fields the PM can fill; the orchestrator completes it per `templates/ask.md`), or re-surface the open ask id the task's `blocker_note` already names.
+**PM action**: a candidate question in the digest, from which the orchestrator writes the ask file (`templates/ask.md`), or re-surface the open ask id the task's `blocker_note` already names.
 
 ## Input contract — what the PM reads
 
@@ -114,11 +114,11 @@ The PM does **not** read code. If a question requires reading code, that's a sig
 | Cascade detection | `count(followups discovered_from=T) > cascade-trigger-followup-count` | Signal: cascade; **spawn conformance run** |
 | Review balance | `needs_review/in_progress > review-starvation-ratio` | Signal: review starvation |
 | Externalisation pressure | `.tasks/` count delta monotonic over ≥3 cycles | Signal: externalisation pressure |
-| Stale detection | any task in any non-`done` state > `stale-task-cycles` cycles | Signal: stale; ask stub (an inbox file the orchestrator completes), or re-surface the ask id in `blocker_note` |
+| Stale detection | any task in any non-`done` state > `stale-task-cycles` cycles | Signal: stale; a candidate question (the orchestrator writes the ask file), or re-surface the ask id in `blocker_note` |
 | Critical-path coverage | active tasks on critical path / total active tasks < 0.3 | Signal: priority inversion |
 | Cohort velocity | completion rate by `task_class` < global avg / 2 | Signal: cycle anti-pattern in class |
 | Cycle anti-pattern | rejection reasons clustered by implementor or class with count ≥3 | Signal: process bug |
-| Blocked-path aging | tasks `status: blocked` for ≥`stale-task-cycles` cycles | Signal: blocked-path stagnation; ask stub (an inbox file the orchestrator completes), or re-surface the ask id in `blocker_note` |
+| Blocked-path aging | tasks `status: blocked` for ≥`stale-task-cycles` cycles | Signal: blocked-path stagnation; a candidate question (the orchestrator writes the ask file), or re-surface the ask id in `blocker_note` |
 | Goal drift | critical-path completion ratio stagnant or declining for K cycles while non-critical-path completions continue | Signal: goal drift |
 
 All thresholds are overlay-configurable via `config.yaml` `thresholds.*`. `state.py counts` computes the first, second, third and sixth rows; the rows that need per-task cycle age or rejection reasons (stale detection, cohort velocity, cycle anti-pattern, blocked-path aging, goal drift over K cycles) are read by the agent pass from the history table until a cycle shows they are worth computing.
@@ -173,7 +173,7 @@ It can:
 - **Spawn an Architect conformance run** when the cascade signal fires.
 - **Surface user-decisions** on blocked items in the asks section.
 - **Recommend pause** of the change when signals indicate the design is wrong (cascade + drainage inversion + critical-path starvation in the same cycle). PM recommends; user decides.
-- **Promote externalised tasks** back into the active change when `.tasks/` pressure crosses threshold and the cluster has grown coherent.
+- **Propose promoting externalised tasks** back into the active change when `.tasks/` pressure crosses threshold and the cluster has grown coherent; the user decides (`externalisation.md` § Externalisation pressure).
 
 It cannot:
 - **Spawn Implementor or Reviewer agents** — that's the orchestrator's job. PM influences *what* runs, not *that* something runs.

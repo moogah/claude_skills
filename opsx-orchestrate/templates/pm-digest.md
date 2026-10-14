@@ -91,12 +91,12 @@ The deterministic pass is `state.py counts --write` (`roles/project-manager.md`)
 - The critical-path readout and the class table.
 - The findings count and how many are reasoning-only and `noted` (the one line under the asks table).
 - The list of fired signals it can compute (throughput inversion, review starvation, priority inversion, cascade).
-- The open asks (with their paths) and the blocked tasks with their `blocker_note`, from which the orchestrator writes candidate-ask stubs, inbox files it completes per `templates/ask.md`. A subject that already carries an open ask id in `blocker_note` re-surfaces that id. Cascade detection produces an Architect conformance run scoped to the cluster, not an ask; the PM may spawn it alone.
+- The open asks (with their paths) and the blocked tasks with their `blocker_note`, from which the agent pass proposes candidate questions; the orchestrator writes each ask file (`templates/ask.md`). A subject that already carries an open ask id in `blocker_note` re-surfaces that id. Cascade detection produces an Architect conformance run scoped to the cluster, not an ask; the PM may spawn it alone.
 
 The agent pass produces:
 
 - The framing prose around each signal (e.g. "this cluster looks like a vocabulary-mapping gap").
-- The asks' prose per `templates/ask.md` (a plain question and, when the orchestrator has supplied `* About` and `* What happened`, the options and consequences). Fields that need code or docs are the orchestrator's, not the PM's.
+- The candidate questions (the asks table's question column), from which the orchestrator writes the ask files; the PM writes none (`templates/ask.md`, opening).
 - The goal-drift recommendation (revise / split / abandon / continue) and its one-line reason.
 
 If the agent pass fails or hallucinates, the deterministic pass output remains in `.orchestrator/cycles/<cycle-id>/pm-signals.json` and is recoverable.

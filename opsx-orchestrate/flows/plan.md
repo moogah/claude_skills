@@ -24,7 +24,7 @@ This is the brainstorm's loop-closure contract: each cycle's discoveries must up
 
 Read the overlay's `priors.md` alongside the handshake (`overlay.md` § Priors): the user's standing rules apply to batch composition and go into every brief.
 
-`init` indexes every file left in `inbox/` into the new cycle (`inbox_carried`) and is a sync point (`SKILL.md` § Sync points): an inbox file with an answer is handled before the batch is drafted (`templates/ask.md` § Answer protocol).
+`init` indexes every file left in `inbox/` into the new cycle (`inbox_carried`) and is a sync point (`templates/ask.md` § Sync points): an inbox file with an answer is handled before the batch is drafted (`templates/ask.md` § Answer protocol).
 
 ### 2. Read the design and draft the candidate tasks
 
@@ -52,7 +52,7 @@ The Architect runs against the candidate task files (`roles/architect.md` § Pre
 Then:
 
 - A task with a **Wrong** premise is rewritten or split by the orchestrator before the batch freezes; the rewrite is the correction, not a stanza.
-- A defect the check finds outside every task's scope is a finding (`state.py record add findings`, `trigger: premise-check`, `discovered_from: batch-<cycle-id>`) at the bar with `observed` filled, routed by `flows/integrate.md` § 7's rules when integrate runs; one with `observed.happened: false` that no prior or user request covers is `record set findings <id> resolution=noted` at once, since its fate is already known. One whose `blocks` names a task in this batch is settled now: a `blocking` finding becomes an in-batch task or a rewrite of the task it blocks; a `decision` it raises is an ask file (`state.py record add asks`), presented before `batch_composed` only under the inline rule (`templates/ask.md` § The inline rule: the user present, one question per call, asked by the dispatcher after the phase agent hands back `stopped`); otherwise the task it blocks is `blocked` with `blocker_note: <ask-id>`, left out of the batch, and the plan goes on.
+- A defect the check finds outside every task's scope is a finding (`state.py record add findings`, `trigger: premise-check`, `discovered_from: batch-<cycle-id>`) at the bar with `observed` filled, routed by `flows/integrate.md` § 7's rules when integrate runs; one that does not meet the demonstrated-reason rule (`templates/architect-finding.md` § Demonstrated reason) is `record set findings <id> resolution=noted` at once, since its fate is already known. One whose `blocks` names a task in this batch is settled now: a `blocking` finding becomes an in-batch task or a rewrite of the task it blocks; a `decision` it raises is an ask file (`state.py record add asks`), presented before `batch_composed` only under the inline rule (`templates/ask.md` § The inline rule; the phase agent hands back `stopped` and the dispatcher asks); otherwise the task it blocks is `blocked` with `blocker_note: <ask-id>`, left out of the batch, and the plan goes on.
 - A seam row the check finds stale (the code or the test tree is right, the row is not) is a record correction (`templates/design.md` § Seams): the orchestrator fixes the row, cutting rather than adding when the staleness is implementation detail, writes one `state.py note note "record-correction: <what>" --ref <seam-id>` and commits the row with the premise check. No ask file. The check itself does not edit `design.md`.
 
 The record shows why this step exists: the plan-time review of the batch against HEAD found a three-way return value described as two-way, two contradicting log messages, and a task premise that split a task, none of it inside any task's stated scope, and every one of its outputs was used.
@@ -63,7 +63,7 @@ Select which candidates this cycle will run. The batch composer balances:
 
 - Critical-path coverage: ≥1 task on the critical path per cycle, unless the prior integrate explicitly deferred.
 - Dependencies: `blocked_by` names the tasks a candidate must follow; execute spawns a task when its `blocked_by` tasks have merged.
-- Total batch size: project-overlay-configurable; default 3–7 tasks, or fewer when the design has fewer seams left to implement.
+- Total batch size: the plan's judgment (no overlay key); default 3–7 tasks, or fewer when the design has fewer seams left to implement.
 
 Add each: `state.py task add <name> --file <path> --class <class> --cites <seam-id,...> [--blocked-by <task,...>] [--critical]`. A follow-up carries `discovered_from=… discovered_by=… discovered_class=…` on the same command. Then `state.py gate set plan batch_composed=true`.
 

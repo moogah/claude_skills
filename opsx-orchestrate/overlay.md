@@ -54,13 +54,6 @@ worktree:
   needs-submodules: true                  # default: false
   parent: .worktrees                       # default: .worktrees
 
-# OPTIONAL: role-prompt extensions
-roles-overlay:
-  implementor: roles/implementor.md
-  reviewer: roles/reviewer.md
-  architect: roles/architect.md
-  project-manager: roles/project-manager.md
-
 # OPTIONAL: task taxonomy — what classes are valid for this project
 taxonomy:
   - feature
@@ -119,7 +112,7 @@ At skill invocation:
 1. The orchestrator resolves the overlay by **walking up from `$cwd`** looking for `.claude/orchestrator/config.yaml`. The first hit wins; record its directory as the home (`$ORCH_HOME`). It holds `.orchestrator/`, `openspec/` and `.tasks/`.
 2. If found, parse `config.yaml`. Required fields are validated; missing-required is a hard error (orchestrator refuses to start).
 3. Optional fields fall through to core defaults.
-4. Markdown role overlays referenced by `roles-overlay.*` are read and **appended** to the corresponding core role briefs at agent-spawn time, followed by `priors.md` when it exists.
+4. Role overlays are found by role name, `roles/<role>.md` (§ Layout; no key names them), and are read and **appended** to the corresponding core role briefs at agent-spawn time, followed by `priors.md` when it exists.
 5. `code-root`, when set, names the code root (`$CODE_ROOT`) relative to the home; absent, the code root is the home.
 6. Hook scripts referenced by `build.pre-commit`, `test.command`, `worktree.init` are resolved relative to the code root and run there, or in a worktree under it (§ Hook contract).
 

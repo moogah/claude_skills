@@ -13,7 +13,7 @@ Run `state.py status` before anything else in a session, in the dispatcher and i
 | Verb | Does |
 |---|---|
 | `status` | Orientation, as above, plus `paths: {home, code_root}`. Read-only. Its `resume` hint names the inbox answers waiting, if any. |
-| `inbox` | Read-only. Every `.orchestrator/inbox/*.org` joined with the index: the question, the answer and the option it names (`exact` / `fuzzy` / `none`), other ask ids the answer mentions, a label written under another heading, whether git tracks the file, and every index/file mismatch. Works on a closed cycle. The sync points run it (`SKILL.md` § Sync points). |
+| `inbox` | Read-only. Every `.orchestrator/inbox/*.org` joined with the index: the question, the answer and the option it names (`exact` / `fuzzy` / `none`), other ask ids the answer mentions, a label written under another heading, whether git tracks the file, and every index/file mismatch. Works on a closed cycle. The sync points run it (`templates/ask.md` § Sync points). |
 | `validate` | Schema check, plus the inbox's file problems. On a file of an older schema, prints what `migrate` would do. |
 | `migrate` | Converts a file of an older schema (1.0 to 1.3) to the current one; `repo_root` becomes `home`, and an old `repo_root` that differs from the home is parked under `parked.top_level` and reported as `rehomed_from`; other non-schema content (the old `register_touched` list among it) is parked in `cycles/<id>/legacy-state-extras.json`, a backup is kept. Writes `.orchestrator/.gitignore` when absent (the same content `init` writes). Every ask record becomes a file (`ask_files` in the output); a legacy "resolved" ask is applied history under its cycle's `asks/`. |
 | `where [--sh]` | Prints the home and the code root: `{home, code_root, split, home_found, config, state: present \| absent, problems}`. Works with no state file. `--sh` prints `ORCH_HOME=… CODE_ROOT=…` shell assignments for the flows' bash blocks (`eval "$(state.py where --sh)"`). |
@@ -160,7 +160,7 @@ The state record is the index line; the finding file (`templates/architect-findi
 }
 ```
 
-`severity: blocking` with `resolution: pending` blocks the integrate exit gate. `record add findings` refuses a `blocking` or `advisory` finding without `observed` (`templates/architect-finding.md` § Observed); records written before the field existed read as `null`. `resolution: noted` is a reasoning-only finding kept in its file and not scheduled (`flows/integrate.md` § 7); `counts` reports how many.
+Which role uses which severity: the Architect `blocking | advisory | informational` (`templates/architect-finding.md`); the Reviewer `blocking | advisory | spec-signal` (`roles/reviewer.md` § Severity routing). The `resolution` values above are the one list. `severity: blocking` with `resolution: pending` blocks the integrate exit gate. `record add findings` refuses a `blocking` or `advisory` finding without `observed` (`templates/architect-finding.md` § Observed); records written before the field existed read as `null`. `resolution: noted` is a reasoning-only finding kept in its file and not scheduled (`flows/integrate.md` § 7); `counts` reports how many.
 
 ## Ask entry
 
@@ -299,23 +299,26 @@ The home may be the code root (a single repo) or its parent (a workspace directo
 
 ## Cycle archive
 
-`close` writes:
+`close` archives the state file and the handshake; every other file was written there during the cycle, by the step named beside it. This is the one listing; the flows point here.
 
 ```
 .orchestrator/cycles/<cycle-id>/
-  state.json              # frozen snapshot, closed_at set
-  handshake.json          # the artifact above
+  state.json              # close: frozen snapshot, closed_at set
+  handshake.json          # close: the artifact above
+  briefs/<task-name>.md   # execute § 1: what the Implementor saw
   premise-check.md        # plan § 3
   design-diff.json        # integrate § 1
   pm-signals.json         # counts --write
-  pm-digest.md            # the cycle's digest
+  pm-digest.md            # integrate § 3
+  meta-discoveries.json   # integrate § 4, input to the handshake
+  task-refinements.json   # integrate § 7, input to the handshake
   asks/<ask-id>.org       # applied, declined and superseded asks (templates/ask.md); moved here by record set
   findings/<finding-id>.md
-  reviews/<task-name>.md
-  reports/<task-name>.md             # the Implementor's structured report, orchestrator-only
-  legacy-state-extras.json           # only when migrate ran in this cycle
+  reviews/<task-name>.md  # and reviews/whole-change.md (integrate § 9)
+  reports/<task-name>.md  # the Implementor's structured report, orchestrator-only
+  legacy-state-extras.json  # only when migrate ran in this cycle
 ```
 
-At the `.orchestrator/` level: `inbox/<ask-id>.org` holds every open, answered and deferred ask across cycles (`init` indexes what it finds there); `.gitignore`, written by `init`, keeps `baseline-<cycle-id>.txt`, `after-<task>-<ts>.txt`, `*.tmp`, the lock and the migration backups out of git; everything else under `.orchestrator/` is tracked by the home repo and committed there at the points `SKILL.md` names. The test outputs stay at `.orchestrator/` and are named from state (`baseline_snapshot`, `tasks[].after_snapshot`).
+At the `.orchestrator/` level: `inbox/<ask-id>.org` holds every open, answered and deferred ask across cycles (`init` indexes what it finds there); `.gitignore`, written by `init`, keeps `baseline-<cycle-id>.txt`, `after-<task>-<ts>.txt`, `*.tmp`, the lock and the migration backups out of git; everything else under `.orchestrator/` is tracked by the home repo and committed there at the points `templates/ask.md` § Commit rule lists. The test outputs stay at `.orchestrator/` and are named from state (`baseline_snapshot`, `tasks[].after_snapshot`).
 
 This directory is the long-tail audit trail. The curation cycle (v2, deferred) reads it.

@@ -9,7 +9,7 @@ The rule, lifted from both existing skills and promoted to core:
 | **In-change** | `<change>/tasks/open/<task-name>.md` | The task contributes to the active change's stated outcome (per `proposal.md`). Discovery happened *in* this change and resolution belongs *with* this change. |
 | **Externalised** | `<home>/.tasks/<task-name>.md` | The task is genuinely cross-cutting: it surfaced during this change but the work it requires is outside the active scope. Resolving it here would require reopening the proposal. |
 
-When in doubt about placement, externalise; when in doubt whether it has happened, note it (`flows/integrate.md` § 7): a reasoning-only finding is never externalised. In-change task bloat is what produces "the change never finishes"; externalised task accumulation is what the PM's externalisation-pressure signal exists to manage.
+When in doubt about placement, externalise; when in doubt whether it meets the demonstrated-reason rule (`templates/architect-finding.md` § Demonstrated reason), note it: a finding that does not is never externalised. In-change task bloat is what produces "the change never finishes"; externalised task accumulation is what the PM's externalisation-pressure signal exists to manage.
 
 ## Heuristic: would in-change resolution change the proposal?
 
@@ -49,13 +49,13 @@ PM monitors `.tasks/` growth:
 
 The user dispositions: promote, leave externalised, or open a new change for the cluster. Default if unanswered: leave externalised.
 
-PM is the **only role** that can promote externalised tasks back into the active change. Other roles can only externalise; promotion is queue-rebalancing, which is PM's domain.
+Promotion is the user's decision on that ask, which the PM proposes; no role promotes on its own. Other roles can only externalise.
 
 ## Does the orchestrator pull from `.tasks/`?
 
 **V1: no.** The active change has its own task queue; `.tasks/` is strictly the backlog for cross-cutting work that surfaced from past changes.
 
-This is the brainstorm's open Q5 — worth revisiting once a project routinely has dry spells in the active change while `.tasks/` accumulates pressure. Until then, `.tasks/` is pull-only-by-promotion (PM-driven), not by orchestrator-when-idle.
+This is the brainstorm's open Q5 — worth revisiting once a project routinely has dry spells in the active change while `.tasks/` accumulates pressure. Until then, `.tasks/` is pull-only-by-promotion (the user's decision above), not by orchestrator-when-idle.
 
 ## Deep archive — where retired tasks live (decided for v1, used by v2)
 
@@ -68,14 +68,17 @@ V1 doesn't write to `.tasks/archive/` — there's no curation cycle yet. The pat
 The Implementor's `## Observations` section is **the alternative to filing a task**. Out-of-scope findings that:
 
 - Are small enough to read alongside the merged task,
-- Don't constitute a user-visible bug or correctness regression,
-- Are evidence the reviewer benefits from seeing in context,
+- Are evidence the orchestrator benefits from seeing in context,
 
 → go in `## Observations` on the merged task body. They are *not* externalised and they are *not* in-change tasks. They live with the task that surfaced them.
 
-The reviewer reads them alongside the diff. The orchestrator scans them in execute step 5 (`flows/execute.md`) and may promote individual observations to follow-up tasks if they cross the bar.
+The Reviewer never sees them (`roles/reviewer.md` § Author-blind constraint). The orchestrator scans them in execute § 5 (`flows/execute.md`) and files a follow-up task from one only under the demonstrated-reason rule (`templates/architect-finding.md` § Demonstrated reason).
 
-This is the brainstorm's "where do worker observations belong" answer: in the merged task body's `## Observations`, not as new tasks. New tasks fragment context — reserve them for the rare bug-or-regression case.
+This is the brainstorm's "where do worker observations belong" answer: in the merged task body's `## Observations`, not as new tasks. New tasks fragment context.
+
+## Who writes a task file
+
+Only the orchestrator writes task files, by one procedure: `templates/task-body.md`, `state.py task add` with the provenance fields, and the placement rule above, at the points the flows name (plan § 2 drafts the batch; integrate § 7 creates and refines from the cycle's outputs; execute § 5 and § 8 file the follow-ups an observation, a discovery or an advisory finding earns). Integrate § 7 is the one point where open tasks are *refined*. The Implementor, Reviewer, Architect and PM report a candidate task in their findings or discoveries; none of them files one.
 
 ## Provenance is mandatory on externalised tasks
 

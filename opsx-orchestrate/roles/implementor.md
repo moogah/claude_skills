@@ -58,10 +58,9 @@ When the Implementor pushes back:
 - Tests that pass but are weakly asserted, mocks that diverge from production, fixtures that don't reproduce real-shape inputs.
 - Spec/design contradictions or ambiguities the implementation forced you to resolve.
 
-What does **NOT** belong in `## Observations` and **DOES** merit filing a new task:
-- A user-visible bug or correctness regression that genuinely can't wait for review.
+What does **NOT** belong in `## Observations`: a defect outside the task that you can point at and that cannot wait for review (a user-visible bug, a correctness regression). Record it as a `## Discoveries` entry with `observed.happened: true` and list its id under `candidate_tasks` in the report. You do not file the task; the orchestrator does, in execute § 5, under the demonstrated-reason rule (`templates/architect-finding.md` § Demonstrated reason; `externalisation.md` § Who writes a task file).
 
-The orchestrator scans `## Observations` after the merge (`flows/execute.md` § 5) and keeps related ones together in the task body; the Reviewer never sees them (author-blind, § 7). New tasks fragment that context — reserve them for the rare case above.
+The orchestrator scans `## Observations` after the merge (`flows/execute.md` § 5) and keeps related ones together in the task body; the Reviewer never sees them (author-blind, § 7). New tasks fragment that context.
 
 ## Discoveries format
 
@@ -87,7 +86,7 @@ The orchestrator scans `## Observations` after the merge (`flows/execute.md` § 
     :reason]; :message and :error gone.
 ```
 
-`class` must be one of: `shape-fragmentation`, `vocabulary-mismatch`, `responsibility-leakage`, `dead-branch`, `interface-drift`, `mutation`, `invariant-gap`, `spec-signal`, `deviation`, `scope-question`, `duplication`. A `spec-signal` or `scope-question` discovery that only the user can settle becomes an ask file in the inbox when the orchestrator reads it (`templates/ask.md`); write what the feature is for, fill `observed` (`templates/architect-finding.md` § Observed), and say what it blocks, so the orchestrator can write the ask without re-deriving it. Every discovery carries `observed`; one that rests on reasoning only is recorded, not scheduled (`flows/integrate.md` § 7).
+`class` must be one of: `shape-fragmentation`, `vocabulary-mismatch`, `responsibility-leakage`, `dead-branch`, `interface-drift`, `mutation`, `invariant-gap`, `spec-signal`, `deviation`, `scope-question`, `duplication`. A `spec-signal` or `scope-question` discovery that only the user can settle becomes an ask file in the inbox when the orchestrator reads it (`templates/ask.md`); write what the feature is for, fill `observed` (`templates/architect-finding.md` § Observed), and say what it blocks, so the orchestrator can write the ask without re-deriving it. Every discovery carries `observed`; whether it is scheduled is decided by the demonstrated-reason rule (`templates/architect-finding.md` § Demonstrated reason), so one that rests on reasoning only is recorded, not scheduled.
 
 `affected_seam` is optional but strongly preferred — without it the conformance check can't route the discovery to the right row.
 
@@ -102,16 +101,15 @@ test_output_tail: |
   <last 10 lines of test command output>
 observations_count: <number of bullets in ## Observations, 0 if none>
 discoveries_count: <number of entries in ## Discoveries, 0 if none>
-new_tasks_filed:
-  - name: <task-name>
-    reason: <user-visible bug or correctness regression that justified bypassing ## Observations>
+candidate_tasks:
+  - <discovery_id of a defect that cannot wait for review>
 push_backs:
   - seam: <seam-id>
     summary: <one-line>
 deviation_summary: <optional one-line — e.g. "deviated from prescribed approach because X; details in ## Observations">
 ```
 
-This report is **for the orchestrator only**. It is read at integrate alongside the conformance check, and in execute only when the hand-back line flags a deviation or a filed task. **It is never passed to the reviewer.** See `flows/execute.md` for the author-blind constraint and the substrate-level enforcement.
+This report is **for the orchestrator only**. It is read at integrate alongside the conformance check, and in execute only when the hand-back line flags a deviation or a candidate task. **It is never passed to the reviewer.** See `flows/execute.md` for the author-blind constraint and the substrate-level enforcement.
 
 ## Hand-back
 
@@ -120,17 +118,17 @@ The last thing the Implementor does is hand back **one line**, at most 200 chara
 ```
 done <task-name> <commit-sha> report=<report-path>
 done <task-name> <commit-sha> report=<report-path> deviated
-done <task-name> <commit-sha> report=<report-path> filed=2
+done <task-name> <commit-sha> report=<report-path> candidates=2
 blocked <task-name>: <what you observed and what it blocks, one clause>
 failed <task-name>: <why, one clause>
 ```
 
-`deviated` is present when `deviation_summary` is non-empty; `filed=<n>` when `new_tasks_filed` is. The orchestrator verifies the sha against the branch and opens the report only when a flag says to; the test output, the observations and the discoveries are in the files the brief names, not in the line.
+`deviated` is present when `deviation_summary` is non-empty; `candidates=<n>` when `candidate_tasks` is. The orchestrator verifies the sha against the branch and opens the report only when a flag says to; the test output, the observations and the discoveries are in the files the brief names, not in the line.
 
 ## Escalation contract
 
 The Implementor:
-- **May** create new tasks for **genuinely external findings** (user-visible bug or correctness regression that can't wait for review).
+- **Must not** create task files; a defect outside the task that cannot wait for review is a candidate task in `## Discoveries` (§ What belongs in `## Observations`).
 - **Must not** silently expand scope on the in-progress task.
 - **Must** stop and ask the orchestrator if the task body itself appears to require revision before it can be implemented (rather than implementing a guess). Say what you observed and what it blocks; the orchestrator writes it as an ask file (`flows/execute.md` § 9) and your task waits as `blocked`.
 - **Must not** modify `design.md`'s seam rows; push-backs are recommendations, the conformance check at integrate is the authority.
