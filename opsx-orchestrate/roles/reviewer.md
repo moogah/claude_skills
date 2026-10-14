@@ -120,6 +120,8 @@ clean_review: false      # true if no findings
   # Required when kind is route-to-user (templates/ask.md § What a finding must carry):
   about: <one sentence — what the feature, flag or rule is for, in product terms>
   blocks: <task | merge | next-plan | archive | nothing>
+  # Required on a spec-signal whose observed.happened is true (§ Severity routing):
+  stopgap: <the smallest change that makes the defect fail loudly under every option the ask would offer | none: <why no change holds under every option>>
 
 ### Finding 2: ...
 
@@ -141,7 +143,7 @@ The findings, their evidence and the probes' output are in the file; the orchest
 
 - **`blocking`**: orchestrator must apply an inline fix or schedule re-implementation; the task does not advance to `done`.
 - **`advisory`**: orchestrator may apply inline fix or file follow-up task (a task only when `observed.happened` is true or a project prior asks for that kind of work; otherwise the finding stays in the review file); task can advance to `done` regardless.
-- **`spec-signal`**: becomes an ask file in the inbox at once, listed at integrate; it does not block the task in execute. **Highest-value findings.** These are the ones scope and bash-parser systematically under-weighted; the Reviewer's recommendation is that the design be rethought, not that another implementation task be filed. The finding carries `about`, `observed` and `blocks` (above) so the orchestrator can write the ask without re-reading the code.
+- **`spec-signal`**: becomes an ask file in the inbox at once, listed at integrate; it does not block the task in execute. **Highest-value findings.** These are the ones scope and bash-parser systematically under-weighted; the Reviewer's recommendation is that the design be rethought, not that another implementation task be filed. The finding carries `about`, `observed` and `blocks` (above) so the orchestrator can write the ask without re-reading the code. When the defect is present in merged code (`observed.happened: true`), the finding also carries `stopgap`: the smallest change that makes the defect fail loudly (an error, a non-zero exit, a refusal) in place of a wrong success, and that still holds whichever option the ask's answer picks. It detects; it does not answer the ask. When no change holds under every option, `stopgap: none` says why. The record: two Reviewers of one cycle demonstrated the same garbled reply on a real daemon, exit 0, and routed it to the user; one added "in both cases, treat a reply that is not one well-formed string as exit 1" and the cycle closed with the defect loud; the other did not, and it closed silent.
 
 ## What the Reviewer cannot do
 
