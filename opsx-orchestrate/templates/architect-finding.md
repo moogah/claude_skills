@@ -42,7 +42,7 @@ cycle's index. Don't skip it. Typical patterns:
 - "Each call site has its own test that pins its own shape; no test crosses the boundary."
 - "Stages tested in isolation; no test crossed multiple stages with realistic data."
 - "Per-call-site tests pinned their own subset; no test covered the full vocabulary."
-- "Invariant stated in design.md; the coverage row was `none` and no test asserted it.">
+- "Invariant stated in design.org; the scenario carried `:TEST: none:` and no test asserted it.">
 
 ## Recommended resolution
 
@@ -90,8 +90,8 @@ Default: `blocking` when merged code contradicts a seam row it cites or a promot
 The state-file `architect_findings[].resolution` field tracks how each finding was handled:
 
 - `pending` — not yet acted on (blocks integrate gate if severity is `blocking`)
-- `inline-fixed` — orchestrator applied an inline fix (to code, or to a document other than `design.md`: a README, a usage page, a spec scenario the amended row cites)
-- `design-amended` — the code was right and the Architect amended the seam row (and the coverage rows or Decision that named the same thing); the orchestrator's `record-correction:` journal line and the commit carry the path
+- `inline-fixed` — orchestrator applied an inline fix (to code, or to a document other than `design.org`: a README, a usage page, a spec scenario the amended row cites)
+- `design-amended` — the code was right and the Architect amended the seam row (and the Decision or scenario steps that named the same thing); the orchestrator's `record-correction:` journal line and the commit carry the path
 - `followup-task-<task-name>` — became a task; field carries the task name
 - `reverted` — the implicated merge was reverted
 - `accepted-with-note` — user explicitly chose to accept the divergence; carries the ask id whose `decision_readback` is the rationale

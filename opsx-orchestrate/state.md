@@ -17,7 +17,7 @@ Run `state.py status` before anything else in a session, in the dispatcher and i
 | `validate` | Schema check, plus the inbox's file problems. On a file of an older schema, prints what `migrate` would do. |
 | `migrate` | Converts a file of an older schema (1.0 to 1.3) to the current one; `repo_root` becomes `home`, and an old `repo_root` that differs from the home is parked under `parked.top_level` and reported as `rehomed_from`; other non-schema content (the old `register_touched` list among it) is parked in `cycles/<id>/legacy-state-extras.json`, a backup is kept. Writes `.orchestrator/.gitignore` when absent (the same content `init` writes). Every ask record becomes a file (`ask_files` in the output); a legacy "resolved" ask is applied history under its cycle's `asks/`. |
 | `where [--sh]` | Prints the home and the code root: `{home, code_root, split, home_found, config, state: present \| absent, problems}`. Works with no state file. `--sh` prints `ORCH_HOME=… CODE_ROOT=…` shell assignments for the flows' bash blocks (`eval "$(state.py where --sh)"`). |
-| `init --change <name> --test-command <cmd> [--prior-handshake <path> \| --first-cycle] [--cycle <id>]` | Starts a cycle in `plan`. Refuses while a cycle is open; `no_home` when no `config.yaml` is found walking up and no `--home` is given; `orchestrator_ignored` when the home repo's `.gitignore` ignores `.orchestrator/` (the code repo may keep ignoring it as a guard); `code_root_missing`; `code_root_not_git` (`git -C <code-root> rev-parse --show-toplevel` fails); `misplaced_artifacts` (`<code-root>/.orchestrator/` exists; the message names the home: move it there with a plain `mv` and run `init` again); `two_homes` (`<code-root>/.claude/orchestrator/config.yaml` exists); `bad_code_root` (a list). An `openspec/` in the code root is a warning in the result, not a refusal. `current_branch` comes from `git -C <code-root> rev-parse --abbrev-ref HEAD`. Validates the prior handshake's required fields (plan's refusal). Carries `history` from the archived cycles and every file in the inbox into the new index (`inbox_carried`). Writes `.orchestrator/.gitignore` (test outputs, the lock, migration backups) when absent. |
+| `init --change <name> --test-command <cmd> [--prior-handshake <path> \| --first-cycle] [--cycle <id>]` | Starts a cycle in `plan`. Refuses while a cycle is open; `no_home` when no `config.yaml` is found walking up and no `--home` is given; `orchestrator_ignored` when the home repo's `.gitignore` ignores `.orchestrator/` (the code repo may keep ignoring it as a guard); `code_root_missing`; `code_root_not_git` (`git -C <code-root> rev-parse --show-toplevel` fails); `misplaced_artifacts` (`<code-root>/.orchestrator/` exists; the message names the home: move it there with a plain `mv` and run `init` again); `two_homes` (`<code-root>/.claude/orchestrator/config.yaml` exists); `bad_code_root` (a list). An `openspec/specs/` left in the home (a record not yet moved to `docs/` in the code root) is a warning in the result, not a refusal. `current_branch` comes from `git -C <code-root> rev-parse --abbrev-ref HEAD`. Validates the prior handshake's required fields (plan's refusal). Carries `history` from the archived cycles and every file in the inbox into the new index (`inbox_carried`). Writes `.orchestrator/.gitignore` (test outputs, the lock, migration backups) when absent. |
 | `set field=value …` | The four settable scalars: `baseline_snapshot`, `baseline_status`, `current_branch`, `test_command`. |
 | `task add <name> --file <path> --class <class> [--cites seam/a,seam/b] [--blocked-by t1] [--critical] [field=value …]` | Adds a task with spec fields only. |
 | `task set <name> [<status>] [field=value …]` | The transition. Validates the status enum and the transition rules; sets `started_at` / `completed_at` / `reviewed_at`; requires `merge_commit=` for `needs_review`; counts a rejection on `needs_review → in_progress`. `--force --why "<reason>"` allows a non-standard move and records a `deviation` journal entry. |
@@ -37,7 +37,7 @@ Run `state.py status` before anything else in a session, in the dispatcher and i
 
 Every verb prints JSON. A refusal is `{"ok": false, "error": "<slug>", "message": …}` on stderr, exit 1. The rules the tool enforces:
 
-- **Closed schema.** Unknown top-level keys, unknown task fields and unknown record fields are refused. Narrative goes through `note` or into the file that exists for it (findings, reviews, `design.md`, the ask files, the digest); state holds the path.
+- **Closed schema.** Unknown top-level keys, unknown task fields and unknown record fields are refused. Narrative goes through `note` or into the file that exists for it (findings, reviews, `design.org`, the ask files, the digest); state holds the path.
 - **Pointers, enums, timestamps.** Every string field in state is capped at 280 characters. An ask's title (`question`) and `decision_readback` are capped at 600; its prose (`about`, options, the answer) lives in the file and has no cap. The one-paragraph fields of a finding live in its file.
 - **Counts are derived**, never stored. `cycle_log.counts` and the ratios do not exist in the file; `counts` computes them from task statuses and timestamps.
 - **Timestamps come from the tool.**
@@ -70,14 +70,14 @@ Every verb prints JSON. A refusal is `{"ok": false, "error": "<slug>", "message"
 }
 ```
 
-`schema_version` is a hard field — the tool refuses to write a file whose version it does not own, and `status` says so. `home` is the directory holding `.claude/orchestrator/config.yaml`, where `.orchestrator/`, `openspec/` and `.tasks/` live. `code_root` is the git work tree where worktrees are made and code is merged and committed; it is the home unless `config.yaml` sets `code-root`. `prior_handshake` is null only on a first cycle (`init --first-cycle`).
+`schema_version` is a hard field — the tool refuses to write a file whose version it does not own, and `status` says so. `home` is the directory holding `.claude/orchestrator/config.yaml`, where `.orchestrator/` and `.tasks/` live. `code_root` is the git work tree where worktrees are made and code is merged and committed; it is the home unless `config.yaml` sets `code-root`. `prior_handshake` is null only on a first cycle (`init --first-cycle`).
 
 ## Task entry
 
 ```json
 {
   "task_name": "setup-module",
-  "task_file": "openspec/changes/<change>/tasks/open/setup-module.md",
+  "task_file": ".orchestrator/changes/<change>/tasks/open/setup-module.md",
   "task_class": "feature | test | doc | refactor | bug | contract | infrastructure",
   "on_critical_path": true,
   "worktree_path": "<code-root>/.worktrees/task-setup-module-<ts>",
@@ -111,11 +111,11 @@ Every verb prints JSON. A refusal is `{"ok": false, "error": "<slug>", "message"
 
 - **`status`** moves forward along `ready → setup_complete → in_progress → completed → needs_review → reviewed → done` (steps may be skipped), sideways into `failed` / `blocked` / `externalised` from any non-`done` state, and back only by `failed → ready`, `blocked → ready`, `needs_review → in_progress` and `reviewed → in_progress` (re-implementation after rejection; `rejections` is incremented). Anything else needs `--force --why` and is journaled as a deviation. Every transition is persisted by the verb that makes it.
 - **`task_class`** comes from the project overlay's `taxonomy` field. PM uses it for class-distribution and cohort-velocity queries.
-- **`on_critical_path`** is set during plan phase from a per-batch LLM read of `proposal.md` (`task add --critical`, or `task set <name> on_critical_path=true`). Defaults to `false`. Overlay's `critical-path` field can override.
+- **`on_critical_path`** is set during plan phase from a per-batch LLM read of `intent.org` (`task add --critical`, or `task set <name> on_critical_path=true`). Defaults to `false`. Overlay's `critical-path` field can override.
 - **`merge_commit`** is mandatory before `status` can advance to `needs_review`; the tool refuses otherwise. Reviewer worktrees diff against this.
 - **`implementor_report_path`** stores the implementor's deviations + discoveries report. **This file is read by the orchestrator only — never passed to the reviewer.** See `flows/execute.md` for the author-blind constraint.
 - **`discovered_*`** fields are mandatory on follow-up tasks. An unset `discovered_*` on a task whose source is another task is a state-file bug; the orchestrator refuses to start the next phase.
-- **`cites_seams`** is the list of seam ids (`seam/<name>`, rows of the change's `design.md`) the implementor brief cites. The plan gate requires one on every non-externalised task; integrate's conformance check enumerates the cited rows; the task file carries the same list plus `cites_scenarios`, which state does not hold.
+- **`cites_seams`** is the list of seam ids (`seam/<name>`, rows of the change's `design.org`) the implementor brief cites. The plan gate requires one on every non-externalised task; integrate's conformance check enumerates the cited rows; the task file carries the same list plus `cites_scenarios`, which state does not hold.
 - **`blocked_by`** is a list of `task_name`s. `blocker_note` is free-text for non-task blockers (external dependencies); when the blocker is a user decision, the value is the ask id (`ask-<cycle-id>-<seq>`, see Ask entry); when it is a finding, the finding id. Both feed the PM digest's blocked-path-aging signal, which re-surfaces an ask id rather than raising a new ask. A merge conflict is `blocked` with `blocker_note: merge-conflict`, not a status of its own.
 - **`after_snapshot`** is the path of the post-merge test output for this task (`.orchestrator/after-<task>-<ts>.txt`); `regression_detected` points at it as evidence.
 - **`agent_task_id`** is omitted when the orchestrator implements inline (no agent); `setup_complete` is an optional intermediate the flows do not require, and going `ready → in_progress` directly is the normal move.
@@ -265,7 +265,7 @@ Computed by `gate check` from state and the files on disk: all of execute's chec
   "asks_for_user_resolved": [ /* index entries with status answered, applied or deferred, plus decision, decision_readback and applied_via read from the file */ ],
   "task_refinements": [
     {
-      "task": "openspec/changes/<change>/tasks/open/<name>.md",
+      "task": ".orchestrator/changes/<change>/tasks/open/<name>.md",
       "modes": ["created"] | ["in-place"] | ["append"] | ["in-place", "append"] | [],
       "applied_learnings": [
         { "channel": "design-diff", "ref": "seam/violation-info" },
@@ -283,7 +283,7 @@ Computed by `gate check` from state and the files on disk: all of execute's chec
 }
 ```
 
-`pm_digest_path`, `user_resolved_goal_drift` and the two `asks_for_user_*` lists are assembled from state; `design_diff` is read from `cycles/<cycle-id>/design-diff.json` (integrate § 1) or passed as `--design-diff`; `meta_discoveries` and `task_refinements` are the orchestrator's judgment, passed as JSON (usually `@file`). **The seven fields are required** (`design_diff`, `pm_digest_path`, `meta_discoveries`, `user_resolved_goal_drift`, `asks_for_user_open`, `asks_for_user_resolved`, `task_refinements`); the tool defines the list once. An empty list is allowed; a missing field is not. Plan reads `design_diff` to know which seam rows moved; `meta_discoveries` to weigh when drafting the batch; `user_resolved_goal_drift` to know whether the proposal was revised; `task_refinements` to know which open tasks already absorbed cycle learning (so plan doesn't re-touch them) and which were flagged as candidate-obsolete for user disposition; `journal` for the discoveries and decisions the cycle recorded.
+`pm_digest_path`, `user_resolved_goal_drift` and the two `asks_for_user_*` lists are assembled from state; `design_diff` is read from `cycles/<cycle-id>/design-diff.json` (integrate § 1) or passed as `--design-diff`; `meta_discoveries` and `task_refinements` are the orchestrator's judgment, passed as JSON (usually `@file`). **The seven fields are required** (`design_diff`, `pm_digest_path`, `meta_discoveries`, `user_resolved_goal_drift`, `asks_for_user_open`, `asks_for_user_resolved`, `task_refinements`); the tool defines the list once. An empty list is allowed; a missing field is not. Plan reads `design_diff` to know which seam rows moved; `meta_discoveries` to weigh when drafting the batch; `user_resolved_goal_drift` to know whether the intent was revised; `task_refinements` to know which open tasks already absorbed cycle learning (so plan doesn't re-touch them) and which were flagged as candidate-obsolete for user disposition; `journal` for the discoveries and decisions the cycle recorded.
 
 ## Recovery
 

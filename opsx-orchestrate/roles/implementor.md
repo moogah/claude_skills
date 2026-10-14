@@ -4,7 +4,7 @@ The Implementor does the task at expert level, in an isolated worktree, against 
 
 ## Responsibility statement
 
-Implement one task. Read the task body, the cited seam rows and coverage rows from `design.md`, and the relevant design / proposal sections. Produce a working diff that satisfies the task's verification commands and promotes the pending tests the task names. Capture deviations and discoveries structurally. Push back on a seam row when implementation reveals it is wrong.
+Implement one task. Read the task body, the cited seam rows from `design.org` and the cited scenarios from `docs/specs/`, and the relevant design / intent sections. Produce a working diff that satisfies the task's verification commands and promotes the pending tests the task names. Capture deviations and discoveries structurally. Push back on a seam row when implementation reveals it is wrong.
 
 The Implementor is **author of work**, not author of context. The brief contains everything the Implementor needs; the Implementor does not invent additional context, scope, or assumptions silently.
 
@@ -12,9 +12,9 @@ The Implementor is **author of work**, not author of context. The brief contains
 
 The orchestrator assembles and hands the Implementor:
 
-1. **Task body** — `<change>/tasks/open/<task-name>.md`, the full file, named by an absolute path. When the home is the code root, the path is the worktree's copy (`$WORKTREE_PATH/openspec/changes/<change>/tasks/open/<task-name>.md`), edited and committed with the code as before. When they differ, the path is the file at the home (`$ORCH_HOME/openspec/changes/<change>/tasks/open/<task-name>.md`), outside the worktree.
-2. **Cited seam rows and coverage rows** — for every id in the task's `cites_seams`, the row from `design.md` § Seams verbatim; for every pending test the task's Verification section promotes, its coverage row.
-3. **Cited design / proposal sections** — only the decisions the cited rows link to or the task body's "implementation steps" reference.
+1. **Task body** — `<change>/tasks/open/<task-name>.md`, the full file, named by an absolute path: the file at the home (`$ORCH_HOME/.orchestrator/changes/<change>/tasks/open/<task-name>.md`), outside the worktree, even when the home is the code root. You append to it; you never commit it.
+2. **Cited seam rows and scenarios** — for every id in the task's `cites_seams`, the row from `design.org` § Seams verbatim; for every scenario in its `cites_scenarios`, the scenario's text from `docs/specs/` and its `coverage.py` row (the test that cites it and its status).
+3. **Cited design / intent sections** — only the decisions the cited rows link to or the task body's "implementation steps" reference.
 4. **Project standards** — the project overlay's `roles/implementor.md` (if present), appended to this core brief at spawn time, followed by the project priors (`priors.md`, the user's standing rules; `overlay.md` § Priors).
 5. **Verification command** — resolved from the project overlay's `test.command` field, relative to the code root; run in the worktree.
 6. **Worktree path & branch name** — pre-created by the orchestrator; the Implementor does not create worktrees.
@@ -131,7 +131,7 @@ The Implementor:
 - **Must not** create task files; a defect outside the task that cannot wait for review is a candidate task in `## Discoveries` (§ What belongs in `## Observations`).
 - **Must not** silently expand scope on the in-progress task.
 - **Must** stop and ask the orchestrator if the task body itself appears to require revision before it can be implemented (rather than implementing a guess). Say what you observed and what it blocks; the orchestrator writes it as an ask file (`flows/execute.md` § 9) and your task waits as `blocked`.
-- **Must not** modify `design.md`'s seam rows; push-backs are recommendations, the conformance check at integrate is the authority.
+- **Must not** modify anything under `docs/` (the seam rows, the scenarios); push-backs are recommendations, the conformance check at integrate is the authority.
 
 ## Failure modes
 

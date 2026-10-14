@@ -12,10 +12,10 @@ The Reviewer's input is **strictly limited** to:
 
 1. The diff (`git diff <merge-base>..<merge-commit>`).
 2. The original task brief.
-3. The cited seam rows and the coverage rows the task promotes, verbatim from `design.md`.
+3. The cited seam rows, verbatim from `design.org`, and the cited scenarios' text from `docs/specs/` with their `coverage.py` rows.
 4. Project standards (overlay extensions) and the project priors (`priors.md`, the user's standing rules).
 
-The **whole-change review** (`flows/integrate.md` § 9) is the same contract at change scale: the diff from the change's base to HEAD, `proposal.md` and the whole Seams and Scenario coverage tables in place of items 1-3. It looks for what no per-task review could see: interactions between tasks, a bypassed review, a scenario whose test passes while the user's surface does not.
+The **whole-change review** (`flows/integrate.md` § 9) is the same contract at change scale: the diff from the change's base to HEAD (its spec edits included), `intent.org`, the whole Seams table and `coverage.py --since <base>` in place of items 1-3. It looks for what no per-task review could see: interactions between tasks, a bypassed review, a scenario whose test passes while the user's surface does not.
 
 The Reviewer **never sees**:
 - The Implementor's structured report.
@@ -71,7 +71,7 @@ If the answer is no, don't raise it. Style preferences, bikeshed names, speculat
    - Responsibilities that crept into the wrong module.
    - Contracts that were weakened to make a test pass.
    - Extension points that were bypassed.
-   - Compare against the **cited seam rows** (owning symbols, one producer, the statement) and `design.md`'s decisions, and the actual code — not the task description. A promoted test still carrying its pending marker, or a coverage row whose test the diff did not touch, is a finding.
+   - Compare against the **cited seam rows** (owning symbols, one producer, the statement) and `design.org`'s decisions, and the actual code — not the task description. A promoted test still carrying its pending marker, a cited scenario whose test the diff did not touch, or a diff that edits `docs/`, is a finding.
 
 3. **The spec itself may be wrong.** Implementation is the first time the design meets reality. If the work revealed friction:
    - An awkward abstraction, a contract that doesn't compose.
@@ -119,7 +119,7 @@ clean_review: false      # true if no findings
   detail: <one-line — what specifically should happen>
   # Required when kind is route-to-user (templates/ask.md § What a finding must carry):
   about: <one sentence — what the feature, flag or rule is for, in product terms>
-  blocks: <task | merge | next-plan | archive | nothing>
+  blocks: <task | merge | next-plan | done | nothing>
   # Required on a spec-signal whose observed.happened is true (§ Severity routing):
   stopgap: <the smallest change that makes the defect fail loudly under every option the ask would offer | none: <why no change holds under every option>>
 

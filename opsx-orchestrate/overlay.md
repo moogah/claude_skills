@@ -41,12 +41,13 @@ test:
   compare: ./bin/compare-baseline.py   # OPTIONAL; required when the baseline is red: `<cmd> <baseline-file> <after-file>` exits non-zero and prints the test ids that fail after but not before (flows/execute.md § 4)
   pending-style: xfail-strict | xit | <project value>   # how the design round marks a pending test; must be a style the runner reports as pending, never as failing (a red baseline disables regression detection). Default: xfail-strict for pytest, xit for buttercup
 
-# Required: artifact roots — where the orchestrator finds tasks
+# Optional: where the process and the record live (defaults shown); <change> is a placeholder
 artifacts:
-  tasks-root: openspec/changes/<change>/tasks   # in-change tasks; <change> is a placeholder
-  externalised-root: .tasks                      # cross-cutting backlog
-  proposal-pattern: openspec/changes/<change>/proposal.md
-  design-pattern: openspec/changes/<change>/design.md
+  tasks-root: .orchestrator/changes/<change>/tasks   # in-change tasks; relative to the home
+  externalised-root: .tasks                          # cross-cutting backlog; relative to the home
+  specs-root: docs/specs                             # the record, relative to the code root
+  intent-pattern: docs/changes/<change>/intent.org   # relative to the code root
+  design-pattern: docs/changes/<change>/design.org   # relative to the code root
 
 # Required: worktree handling
 worktree:
@@ -109,7 +110,7 @@ priors: priors.md
 
 At skill invocation:
 
-1. The orchestrator resolves the overlay by **walking up from `$cwd`** looking for `.claude/orchestrator/config.yaml`. The first hit wins; record its directory as the home (`$ORCH_HOME`). It holds `.orchestrator/`, `openspec/` and `.tasks/`.
+1. The orchestrator resolves the overlay by **walking up from `$cwd`** looking for `.claude/orchestrator/config.yaml`. The first hit wins; record its directory as the home (`$ORCH_HOME`). It holds the process, `.orchestrator/` and `.tasks/`; the record is under `docs/` in the code root.
 2. If found, parse `config.yaml`. Required fields are validated; missing-required is a hard error (orchestrator refuses to start).
 3. Optional fields fall through to core defaults.
 4. Role overlays are found by role name, `roles/<role>.md` (§ Layout; no key names them), and are read and **appended** to the corresponding core role briefs at agent-spawn time, followed by `priors.md` when it exists.
@@ -126,9 +127,11 @@ If no overlay is found, the orchestrator warns explicitly and falls back to:
 | `test.compare`: none (the exit-code rule; an `environment` ask at the first red baseline) |
 | `worktree.parent`: `.worktrees` |
 | `worktree.needs-submodules`: false |
-| `artifacts.tasks-root`: `openspec/changes/<change>/tasks` |
-| `artifacts.externalised-root`: `.tasks` |
-| `artifacts.design-pattern`: `openspec/changes/<change>/design.md` |
+| `artifacts.tasks-root`: `.orchestrator/changes/<change>/tasks` (home) |
+| `artifacts.externalised-root`: `.tasks` (home) |
+| `artifacts.specs-root`: `docs/specs` (code root) |
+| `artifacts.intent-pattern`: `docs/changes/<change>/intent.org` (code root) |
+| `artifacts.design-pattern`: `docs/changes/<change>/design.org` (code root) |
 | `test.pending-style`: `xfail-strict` (pytest) or `xit` (buttercup), else error when the design round needs it |
 | `taxonomy`: `[feature, test, doc, refactor, bug, contract, infrastructure]` |
 | `thresholds`: see `templates/pm-digest.md` defaults |
@@ -175,7 +178,7 @@ The orchestrator concatenates: core brief + `\n\n## Project-specific extensions\
 
 **Write rule.** When a decision or a free-text reply states a general rule rather than a one-off choice ("in general", "I don't want to keep", "overengineering", "use it a while before"), the orchestrator appends the line and writes a `confirmation`-kind ask file citing it, applied, into `cycles/<cycle-id>/asks/` (`templates/ask.md`). The user can object. The line is the quote, not a paraphrase.
 
-**Read rule.** The file is appended to every role brief after the role overlay, and the orchestrator reads it at plan § 1 and at integrate § 3a and § 7. A role may treat a prior as a user request: "removing leftovers" makes a dead-code finding actionable without an ask. A prior is never re-asked. A finding that a prior already answers is `noted` with the prior cited in `evidence`; no ask file is written for it, and one that already exists is `declined` with the prior as its readback. A prior is the user's own words and outranks a `design.md` sentence; a design sentence a prior contradicts is a record correction (`templates/design.md` § Seams).
+**Read rule.** The file is appended to every role brief after the role overlay, and the orchestrator reads it at plan § 1 and at integrate § 3a and § 7. A role may treat a prior as a user request: "removing leftovers" makes a dead-code finding actionable without an ask. A prior is never re-asked. A finding that a prior already answers is `noted` with the prior cited in `evidence`; no ask file is written for it, and one that already exists is `declined` with the prior as its readback. A prior is the user's own words and outranks a `design.org` sentence; a design sentence a prior contradicts is a record correction (`templates/design.md` § Seams).
 
 The file is markdown, not a `config.yaml` list, because the spawn contract already concatenates markdown and a quoted sentence is safer there than in YAML.
 

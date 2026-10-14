@@ -6,16 +6,16 @@ The rule, lifted from both existing skills and promoted to core:
 
 | Place | Path | Use when |
 |---|---|---|
-| **In-change** | `<change>/tasks/open/<task-name>.md` | The task contributes to the active change's stated outcome (per `proposal.md`). Discovery happened *in* this change and resolution belongs *with* this change. |
+| **In-change** | `<change>/tasks/open/<task-name>.md` | The task contributes to the active change's stated outcome (per `intent.org`). Discovery happened *in* this change and resolution belongs *with* this change. |
 | **Externalised** | `<home>/.tasks/<task-name>.md` | The task is genuinely cross-cutting: it surfaced during this change but the work it requires is outside the active scope. Resolving it here would require reopening the proposal. |
 
 When in doubt about placement, externalise; when in doubt whether it meets the demonstrated-reason rule (`templates/architect-finding.md` § Demonstrated reason), note it: a finding that does not is never externalised. In-change task bloat is what produces "the change never finishes"; externalised task accumulation is what the PM's externalisation-pressure signal exists to manage.
 
-## Heuristic: would in-change resolution change the proposal?
+## Heuristic: would in-change resolution change the intent?
 
-If filing the task in-change would force the user to update `proposal.md` to acknowledge a new sub-outcome, externalise it. The proposal is the speculation about *outcome*; tasks that don't fit the speculation aren't in-change tasks.
+If filing the task in-change would force the user to update `intent.org` to acknowledge a new sub-outcome, externalise it. The intent is the speculation about *outcome*; tasks that don't fit the speculation aren't in-change tasks.
 
-If filing the task in-change would only require updating `design.md` (implementation strategy), it's borderline — usually still in-change because design is allowed to evolve mid-change.
+If filing the task in-change would only require updating `design.org` (implementation strategy), it's borderline — usually still in-change because design is allowed to evolve mid-change.
 
 If the task is a follow-up to an in-change task that just merged, with the same scope and the same modules, it's in-change. Cascading follow-ups within scope are normal.
 

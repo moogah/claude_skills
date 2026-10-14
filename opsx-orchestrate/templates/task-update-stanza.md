@@ -60,6 +60,6 @@ Append-only is safer (preserves user-tuned prose, easy to audit) but accumulates
 
 ## What this template does NOT do
 
-- It does not replace the authoritative log of a cited seam's changes — that is the git history of `design.md` plus the journal.
+- It does not replace the authoritative log of a cited seam's changes — that is the git history of `design.org` plus the journal.
 - It does not capture findings the implementor discovered mid-task — those go in `## Observations` / `## Discoveries` per `templates/task-body.md`.
 - It does not record cycle-N learnings into a closed task. Tasks in `<change>/tasks/closed/` are frozen at merge time and integrate does not touch them.

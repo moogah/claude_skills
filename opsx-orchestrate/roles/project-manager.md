@@ -98,7 +98,7 @@ Tasks blocked on an external dependency (user decision, upstream change, environ
 ## Input contract — what the PM reads
 
 - The orchestrator state file, through `state.py counts` and `state.py status`: every task and its status, `architect_findings`, the journal.
-- The change's `proposal.md` — the stated outcome, used to define "done" and to identify the critical path. **One LLM read per plan phase**, not per PM tick.
+- The change's `intent.org` — the stated outcome, used to define "done" and to identify the critical path. **One LLM read per plan phase**, not per PM tick.
 - The current `tasks/` tree (in-change tasks) and `.tasks/` store (externalised backlog).
 - Cycle history (last K cycles' counts and transitions; default K=5; overlay-configurable).
 - Provenance metadata on every task (`discovered_from`, `discovered_by`, `discovered_class`).
@@ -151,10 +151,11 @@ Follow-ups (N): <T-YYY-1>, <T-YYY-2>, ..., <T-YYY-N>
 Discovered classes: <distribution of discovered_class values>
 Implicated modules (inferred from diffs): <module list>
 
-Mission: which seam rows in the change's design.md do the cluster's
+Mission: which seam rows in the change's design.org do the cluster's
 tasks cite (their `cites_seams`)? Does the merged code match those
 rows (owning symbols exist and remain the single producer or
-mapping; the coverage rows' tests exist and pass)? Which rows need
+mapping; the scenarios those rows serve pass in
+`coverage.py --scenario …`)? Which rows need
 amending, and is any seam missing from the design?
 Produce structured findings per templates/architect-finding.md.
 
@@ -183,7 +184,7 @@ It cannot:
 ## Form-factor open questions
 
 - **Multi-change scope**: v1 is single-change at a time. Worth revisiting once a project routinely runs more than one change in parallel. (Brainstorm's open question; deferred.)
-- **Critical-path inference**: per-batch LLM read of `proposal.md` (default). Overlay can override with explicit `critical-path.override-tasks` / `override-labels`.
+- **Critical-path inference**: per-batch LLM read of `intent.org` (default). Overlay can override with explicit `critical-path.override-tasks` / `override-labels`.
 - **Goal-drift query**: critical-path completion ratio stagnant or declining for K cycles while non-critical-path completions continue. Spec'd as the v1 query; revise if VCE/emacs validation shows it's wrong.
 
 ## Project overlay extensions
@@ -191,5 +192,5 @@ It cannot:
 The overlay's `roles/project-manager.md` (if present) is appended at spawn time, followed by `priors.md` (`overlay.md` § Priors). Typical extensions:
 
 - Project-specific class labels (overlay's `taxonomy` field carries the values; the prose can elaborate).
-- Project-specific "done" criteria (often derivable from `proposal.md`, but the overlay can sharpen).
+- Project-specific "done" criteria (often derivable from `intent.org`, but the overlay can sharpen).
 - External-system bridges (later, optional): pushing the digest to Linear, Beads, Slack, etc. — only when the user has authorised the destination. Out of scope for v1.

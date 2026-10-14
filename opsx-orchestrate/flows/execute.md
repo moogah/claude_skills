@@ -69,7 +69,7 @@ After successful merge + tests pass + no regression, the task is **not yet** clo
 state.py task set "$TASK_NAME" needs_review merge_commit="$MERGE_COMMIT" implementor_report_path="$REPORT"
 ```
 
-where `$REPORT` is the Implementor's structured report, written by the Implementor at `.orchestrator/cycles/<cycle-id>/reports/<task-name>.md`, the path its brief named (the tool refuses `needs_review` without `merge_commit` and sets `completed_at`). Mirror `status: needs_review` and `merge_commit` into the task file's frontmatter (file stays in `tasks/open/`); mirror `status: done` the same way in § 8. The task file lives at the home (`$ORCH_HOME/openspec/changes/<change>/tasks/open/<task>.md`), not in the worktree: the Implementor is given its absolute path and appends `## Observations` and `## Discoveries` there; the orchestrator commits the task file (the mirror and those sections) in the home at execute close with the other artifacts, as SKILL.md says. When the home is the code root, the task file is the worktree's copy and the Implementor commits it with the code, as before. With a split, the Reviewer's diff (`git diff <merge-base>..<merge_commit>` in the code root) cannot contain the Observations hunk, which closes the author-blind leak the record noted.
+where `$REPORT` is the Implementor's structured report, written by the Implementor at `.orchestrator/cycles/<cycle-id>/reports/<task-name>.md`, the path its brief named (the tool refuses `needs_review` without `merge_commit` and sets `completed_at`). Mirror `status: needs_review` and `merge_commit` into the task file's frontmatter (file stays in `tasks/open/`); mirror `status: done` the same way in § 8. The task file lives at the home (`$ORCH_HOME/.orchestrator/changes/<change>/tasks/open/<task>.md`), not in the worktree: the Implementor is given its absolute path and appends `## Observations` and `## Discoveries` there; the orchestrator commits the task file (the mirror and those sections) in the home at execute close with the other artifacts, as SKILL.md says. That holds when the home is the code root too: the Implementor writes the main checkout's copy by its absolute path, never a worktree's, and commits only code. With a split, the Reviewer's diff (`git diff <merge-base>..<merge_commit>` in the code root) cannot contain the Observations hunk, which closes the author-blind leak the record noted.
 
 Then remove the worktree and record it:
 
@@ -90,9 +90,9 @@ The helper builds the Reviewer's input from a **fixed set of sources**, none of 
 ```yaml
 reviewer_input:
   diff: $(git diff <merge-base>..<merge_commit>)
-  task_brief: <full text of $ORCH_HOME/openspec/changes/<change>/tasks/open/<task-name>.md, read from the home, EXCLUDING ## Observations and ## Discoveries sections>
-  cited_seams: <the design.md Seams rows named in cites_seams, verbatim>
-  coverage_rows: <the design.md Scenario coverage rows the task's Verification section promotes, verbatim>
+  task_brief: <full text of $ORCH_HOME/.orchestrator/changes/<change>/tasks/open/<task-name>.md, read from the home, EXCLUDING ## Observations and ## Discoveries sections>
+  cited_seams: <the design.org Seams rows named in cites_seams, verbatim>
+  cited_scenarios: <for each scenario in the task's cites_scenarios, its text from docs/specs/ at merge_commit and its coverage.py --scenario row>
   project_standards: <overlay's roles/reviewer.md, if present>
   project_priors: <overlay's priors.md, if present>
 ```
@@ -151,7 +151,7 @@ The Reviewer never has to know which path was taken.
 ## Inputs (from plan)
 
 - The composed batch and its tasks with briefs.
-- The change's `design.md` (the cited seam rows and coverage rows).
+- The change's `design.org` (the cited seam rows) and the cited scenarios in `docs/specs/`.
 - `phase_gates.plan.passed: true` (mandatory; `state.py phase set execute` enforces it).
 
 ## Exit gate
@@ -164,13 +164,13 @@ The Reviewer never has to know which path was taken.
 
 All three are computed: `state.py gate check execute` shows them with reasons, `state.py gate pass execute` sets the gate, and `state.py phase set integrate` advances. Integrate refuses to run otherwise.
 
-**Commit** at execute close, in the home: `git -C "$ORCH_HOME" add .orchestrator openspec/changes/<change> && git -C "$ORCH_HOME" commit -m "Orchestrator: <cycle-id> execute closed"` (add `.tasks` too when the cycle touched it; `state.json`, the briefs, reports, reviews and findings, the task files' mirrored frontmatter and appended sections; the after-files are ignored by `.orchestrator/.gitignore`). Ask files were committed when created and when applied (`templates/ask.md` § Commit rule).
+**Commit** at execute close, in the home: `git -C "$ORCH_HOME" add .orchestrator && git -C "$ORCH_HOME" commit -m "Orchestrator: <cycle-id> execute closed"` (add `.tasks` too when the cycle touched it; `state.json`, the briefs, reports, reviews and findings, the task files' mirrored frontmatter and appended sections; the after-files are ignored by `.orchestrator/.gitignore`). Ask files were committed when created and when applied (`templates/ask.md` § Commit rule).
 
 ## What execute does **not** do
 
 - Execute does not run the Architect. (Conformance is integrate's job; the premise check is plan's.)
 - Execute does not produce the PM digest. (Integrate.)
-- Execute does not amend `design.md`. (Integrate's conformance check.)
-- Execute does not modify the proposal status header. (Integrate, via goal-drift handling.)
+- Execute does not amend `design.org` or `docs/specs/`. (Integrate's conformance check.)
+- Execute does not modify the intent's status line. (Integrate, via goal-drift handling and § 9.)
 
 These are all integrate-phase operations; conflating them into execute is what the brainstorm's three-phase model exists to prevent.

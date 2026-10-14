@@ -15,7 +15,7 @@ The triage criteria (lifted from older emacs skill §4 and promoted to core):
 | Editing one config value | Yes |
 | Fixing a typo in a comment or docstring | Yes |
 | Anything touching ≥2 files | **No** — go to standard cycle |
-| Anything touching a seam's owning symbols (a `## Seams` row in the change's `design.md`) | **No** — a seam edit deserves the full Reviewer path and integrate's conformance check |
+| Anything touching a seam's owning symbols (a `## Seams` row in the change's `design.org`) | **No** — a seam edit deserves the full Reviewer path and integrate's conformance check |
 | Anything that requires running tests with state setup | **No** — needs a worktree |
 | Anything where the verification command's output isn't trivially predictable | **No** |
 
@@ -27,7 +27,7 @@ In the inline path, plan / execute / integrate collapse into the orchestrator's 
 
 - **Plan** = "is this trivial enough?" (the triage above).
 - **Execute** = the inline edit + verification.
-- **Integrate** = "does the trivial edit change a seam row in `design.md`?"
+- **Integrate** = "does the trivial edit change a seam row in `design.org`?"
 
 The integrate question is **not skipped** — that's what catches the case where a "trivial" edit surfaces a contract issue. Most inline tasks integrate to "no; close." But the question still gets asked.
 
@@ -35,7 +35,7 @@ The integrate question is **not skipped** — that's what catches the case where
 
 1. **Make the edit** in the code root's own checkout (no worktree).
 2. **Run the verification command** in the code root (overlay's `test.command`, or a narrower command if obviously sufficient).
-3. **Check the seam rows**: does this edit change a seam row in the change's `design.md` (its statement or owning symbols)? If yes, amend the row in place at the contract level (`templates/design.md` § Seams: cut detail, never add it) and, when a cycle is open, write one `state.py note note "record-correction: <what>" --ref <seam-id>`; commit the row with the edit (one commit per repository, same subject, when the home and the code root differ), the subject naming the row. A design in question is a `decision` file in the inbox, presented only under the inline rule (`templates/ask.md` § The inline rule: the phase agent hands back `stopped`, the dispatcher asks).
+3. **Check the seam rows**: does this edit change a seam row in the change's `design.org` (its statement or owning symbols)? If yes, amend the row in place at the contract level (`templates/design.md` § Seams: cut detail, never add it) and, when a cycle is open, write one `state.py note note "record-correction: <what>" --ref <seam-id>`; commit the row with the edit in the code root, the subject naming the row. A design in question is a `decision` file in the inbox, presented only under the inline rule (`templates/ask.md` § The inline rule: the phase agent hands back `stopped`, the dispatcher asks).
 4. **Update the task file** at the home: its `status` to `done` directly (skipping `needs_review` / `reviewed`). Inline path skips formal review because the orchestrator IS the reviewer. If a cycle is open, the task is in state too: `state.py task add <name> …` if it was not, then `state.py task set <name> done`; between cycles the task file is the record.
 5. **Commit** with the standard task-name commit message: the code in the code root, the task file and any ask file in the home (one commit when they are the same repo).
 
@@ -63,7 +63,7 @@ If a commit was already made and bail-out is needed, revert via `git revert <com
 
 The brainstorm names this explicitly. Even trivial edits can surface contract issues; pretending they can't is what produces silent contract drift. The integrate question is cheap to ask:
 
-- Did this edit touch a seam's owning symbols? → check `cites_seams` of the implicit "task" against the `## Seams` rows in `design.md`.
+- Did this edit touch a seam's owning symbols? → check `cites_seams` of the implicit "task" against the `## Seams` rows in `design.org`.
 - Did the verification command's output reveal anything new? → grep the after-file.
 - Was there an adjacent observation worth recording? → write it down in the task body's `## Observations`.
 

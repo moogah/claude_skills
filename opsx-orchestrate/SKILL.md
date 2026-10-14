@@ -9,9 +9,9 @@ Central skill that runs the **plan / execute / integrate** cycle for batched, ag
 
 ## Resolution: where am I, what do I read?
 
-1. **Walk up from `$cwd`** looking for `.claude/orchestrator/config.yaml`. First hit wins; that directory is the **home** (`$ORCH_HOME`). It holds `.orchestrator/`, `openspec/` and `.tasks/`, and its git repo tracks them.
+1. **Walk up from `$cwd`** looking for `.claude/orchestrator/config.yaml`. First hit wins; that directory is the **home** (`$ORCH_HOME`). It holds the process, `.orchestrator/` (state, cycles, briefs, reviews, the change's task files) and `.tasks/`, and its git repo tracks them.
 2. **Parse `config.yaml`** — required fields validated; missing-required = hard error. Optional fields fall through to core defaults.
-3. **Read `code-root`** from `config.yaml`: one path relative to the home naming the **code root** (`$CODE_ROOT`), the git work tree where worktrees are created, code is merged and tested, and code commits are made. Absent, the code root is the home. The orchestrator's cwd is the home; the `openspec` CLI and the sibling `/opsx-*` skills run there (the CLI resolves `openspec/` from its cwd), and every git or test command that belongs in the code root says so (`git -C "$CODE_ROOT"`, or a `cd` in a subshell). `state.py where --sh` prints both paths for `eval`.
+3. **Read `code-root`** from `config.yaml`: one path relative to the home naming the **code root** (`$CODE_ROOT`), the git work tree where worktrees are created, code is merged and tested, and code commits are made. Absent, the code root is the home. The code root also holds the **record**: `docs/specs/`, one org file per capability (`templates/spec.md`), and `docs/changes/<change>/` with the change's `intent.org` and `design.org`. The orchestrator's cwd is the home, and every git or test command that belongs in the code root says so (`git -C "$CODE_ROOT"`, or a `cd` in a subshell). `state.py where --sh` prints both paths for `eval`. A home whose record is still under `openspec/` runs on the skill tagged `openspec-layout-final` until it is migrated; `where` warns.
 4. **Append role overlays** from `<home>/.claude/orchestrator/roles/*.md` (if present) to the corresponding core role briefs at agent-spawn time, followed by `priors.md` (the user's standing rules, `overlay.md` § Priors) when it exists.
 5. **No overlay found** → warn the user explicitly; fall back to sensible defaults (see `overlay.md`).
 
@@ -19,7 +19,7 @@ Full overlay contract: **[overlay.md](overlay.md)**.
 
 ## Before the first cycle: the design round
 
-A change enters the orchestrator after OpenSpec's `proposal → specs → design`. The Architect's **design round** (`flows/design.md`) then appends two sections to `design.md`, Seams and Scenario coverage (`templates/design.md`), and writes the pending tests they imply. It runs once per change, before `state.py init --first-cycle`, and needs no state file. The orchestrator does not write a design before the round, itself or through another agent: a change it opens or splits gets a proposal and specs, and the round writes the design's sections too (`flows/design.md` § When it runs). Plan drafts tasks from those sections; integrate checks merged code against them.
+A change enters the orchestrator with its intent and its spec edits, committed in the code root: `docs/changes/<change>/intent.org` (`templates/intent.md`) and the requirements and scenarios it adds, changes or removes, edited in place in `docs/specs/` (`templates/spec.md`). The Architect's **design round** (`flows/design.md`) then writes `docs/changes/<change>/design.org` (`templates/design.md`), Context, Decisions and the Seams table, and the pending tests the scenarios imply. It runs once per change, before `state.py init --first-cycle`, and needs no state file. The orchestrator does not write a design before the round, itself or through another agent: a change it opens or splits gets an intent and spec edits, and the round writes the design (`flows/design.md` § When it runs). Plan drafts tasks from the seams and the scenarios still pending; integrate checks merged code against them.
 
 ## Two contexts: the dispatcher and the phase agent
 
@@ -33,7 +33,7 @@ In the flow, role and template docs, **"the orchestrator" is the phase agent run
 
 1. `state.py status` (orientation in about 2 KB: phase, gates, tasks, the inbox, `resume`). `state.py where` prints the home and the code root and works with no state file.
 2. Handle the inbox first if `status` says an answer is waiting: that is a sync point (`templates/ask.md` § Sync points), done by the phase agent the next step spawns, not by the dispatcher.
-3. Spawn the phase agent `resume` calls for: the design round (no state file yet, `design.md` has no Seams section), `plan` (including `init`), `execute`, `integrate` (including `close` and its commit), or the inline path. The brief is fixed and short:
+3. Spawn the phase agent `resume` calls for: the design round (no state file yet, `design.org` has no Seams section), `plan` (including `init`), `execute`, `integrate` (including `close` and its commit), or the inline path. The brief is fixed and short:
 
    > You are the phase agent for `<phase>` of change `<change>` in cycle `<cycle-id>` (or: for the design round of `<change>`). Home: `<path>`. Run `state.py status`, then read and follow `~/.claude/skills/opsx-orchestrate/flows/<phase>.md` to its exit gate and close commit. Read a role file at the moment you spawn that role and a template at the moment you produce its artifact; do not read `SKILL.md`. When nothing can run until a worker reports, end your turn; you are woken when it hands back. You cannot ask the user: an ask that would take the blocking call is a file, and you hand back `stopped` naming it after finishing everything that does not wait on it. Hand back one line (§ Hand-back lines), never a report.
 
@@ -51,7 +51,7 @@ Every agent the orchestrator spawns hands back **one line of at most 200 charact
 | Phase agent | `<phase> <cycle-id>: gate passed` · `<phase> <cycle-id>: stopped, ask <id> blocks <task\|merge\|phase>; <path>` (several: `asks <ids> block …`) · `<phase> <cycle-id>: failed, <why>; <path>` | `state.json`, the cycle's artifacts, the ask file |
 | Implementor | `done <task> <sha> report=<path>` with `deviated` / `candidates=<n>` appended when true · `blocked <task>: <one line>` · `failed <task>: <one line>` | `cycles/<id>/reports/<task>.md`, written by the Implementor; the task file's `## Observations` and `## Discoveries` |
 | Reviewer | `reviewed <task> findings=<n> blocking=<n> spec-signal=<n> path=<path>` | `cycles/<id>/reviews/<task>.md` |
-| Architect | `design-round <change>: <n> seams, <m> coverage rows, <k> pending tests, <q> open questions` · `premise-check <cycle-id>: <n> holds, <m> wrong, <f> findings; <path>` · `conformance <cycle-id>: <f> findings, <a> rows amended; <path>` | `design.md`, `premise-check.md`, `findings/`, `design-diff.json` |
+| Architect | `design-round <change>: <n> seams, <k> pending tests, <u> uncited scenarios, <q> open questions` · `premise-check <cycle-id>: <n> holds, <m> wrong, <f> findings; <path>` · `conformance <cycle-id>: <f> findings, <a> rows amended; <path>` | `design.org`, `premise-check.md`, `findings/`, `design-diff.json` |
 
 A worker runs its test command in the foreground and reports once, after its commit; a report sent while a run continues in the background wakes the orchestrator twice (8 such wake-ups in one session of the record).
 
@@ -61,8 +61,8 @@ Each phase has its own flow doc and exit gate. **A later phase refuses to start 
 
 | Phase | Flow doc | Defining ops |
 |---|---|---|
-| Design round | [flows/design.md](flows/design.md) | Once per change, before the first cycle: Architect writes Seams and Scenario coverage into `design.md` and the pending tests; open questions become ask files blocking plan, asked by the dispatcher |
-| Plan | [flows/plan.md](flows/plan.md) | Consume prior integrate's handshake → draft candidate tasks from `design.md` → Architect premise check against HEAD → batch composition → implementor briefs |
+| Design round | [flows/design.md](flows/design.md) | Once per change, before the first cycle: Architect writes `design.org` and the pending tests until `coverage.py --since <base>` shows no uncited scenario; open questions become ask files blocking plan, asked by the dispatcher |
+| Plan | [flows/plan.md](flows/plan.md) | Consume prior integrate's handshake → draft candidate tasks from `design.org` and the pending scenarios → Architect premise check against HEAD → batch composition → implementor briefs |
 | Execute | [flows/execute.md](flows/execute.md) | Per-task: worktree + Implementor + author-blind Reviewer (with probe licence); each task merged as it lands (serial chain) with regression check |
 | Integrate | [flows/integrate.md](flows/integrate.md) | Design conformance (Architect) + PM digest + meta-discovery + goal-drift check + open-task refinement + handshake artifact + `close` |
 
@@ -85,9 +85,14 @@ The orchestrator deploys four roles. The phase agent reads the relevant role fil
 
 ## Change artifact set
 
-- **`design.md`** is the Architect's home: OpenSpec's sections (implementation strategy, decisions, alternatives) plus two the design round appends, **Seams** (one row per contract between two parts of the code: id `seam/<name>`, statement, owning symbols, scenarios, tests) and **Scenario coverage** (per spec scenario: `acceptance` | `contract` | `none`, the test, and for `none` the reason). Rows hold current state only; `git log -- design.md` is the history. Template: [templates/design.md](templates/design.md).
+The record is in the code root, under `docs/`; the process is in the home, under `.orchestrator/`.
+
+- **`docs/specs/`** is the one copy of the requirements and scenarios, an org file per capability, edited in place by each change on the branch its tasks merge into; `git diff <base> -- docs/specs/` is the change's spec record ([templates/spec.md](templates/spec.md)).
+- **`design.org`** (`docs/changes/<change>/`) is the Architect's home: Context, Decisions and **Seams** (one row per contract between two parts of the code: id `seam/<name>`, statement, owning symbols, scenarios, tests). Rows hold current state only; the file's `git log` is the history. Template: [templates/design.md](templates/design.md).
+- **Scenario coverage is computed, never written.** The tests cite `<capability> § <title>`, a scenario no test is worth writing for carries `:TEST: none: <reason>` in the spec, and `scripts/coverage.py` prints one row per scenario with its status (`templates/spec.md` § Coverage).
 - **Pending tests** in the project's test tree, written by the design round for behaviour HEAD does not yet satisfy, marked with the overlay's `test.pending-style` (a style the runner reports as pending, never failing). Promotion is removing the marker, done by the Implementor in the commit that makes the test pass.
-- **`proposal.md`** carries a goal-status header: [templates/proposal-status-header.md](templates/proposal-status-header.md).
+- **`intent.org`** (`docs/changes/<change>/`) carries what the diff cannot: why, goals, non-goals, capabilities, removals and their reasons, the change's `#+BASE:` and its `#+STATUS:` line ([templates/intent.md](templates/intent.md)). A done change stays where it is, its status line saying so.
+- **Task files** are process: `<home>/.orchestrator/changes/<change>/tasks/open/` and `…/closed/` ([templates/task-body.md](templates/task-body.md)).
 - **Per-cycle Architect artifacts**: `cycles/<id>/premise-check.md` (plan § 3) and `cycles/<id>/design-diff.json` (integrate § 1).
 - **Ask files**: one org file per question, `.orchestrator/inbox/<ask-id>.org` while open; `cycles/<id>/asks/<ask-id>.org` once applied, declined or superseded ([templates/ask.md](templates/ask.md)).
 - **Provenance fields on every follow-up task**: `discovered_from`, `discovered_by`, `discovered_class`. Enforced by [externalisation.md](externalisation.md).
@@ -96,7 +101,9 @@ The orchestrator deploys four roles. The phase agent reads the relevant role fil
 
 Output forms — read at the point each is produced:
 
-- [templates/design.md](templates/design.md) — the Seams and Scenario coverage sections
+- [templates/intent.md](templates/intent.md) — `intent.org` and its status line
+- [templates/spec.md](templates/spec.md) — a spec file, its scenarios' citations, `coverage.py`
+- [templates/design.md](templates/design.md) — `design.org` and its Seams table
 - [templates/architect-finding.md](templates/architect-finding.md)
 - [templates/ask.md](templates/ask.md) — every question to the user, as an org file in `.orchestrator/inbox/`
 - [templates/pm-digest.md](templates/pm-digest.md)
@@ -104,7 +111,7 @@ Output forms — read at the point each is produced:
 
 ## Externalisation
 
-In-change vs `.tasks/` rule: **[externalisation.md](externalisation.md)**. Rule of thumb: in-change tasks contribute to the proposal's stated outcome; cross-cutting findings go to `.tasks/` with full provenance. Promotion back into the active change is the user's decision, on a `decision` ask the PM proposes (`externalisation.md` § Externalisation pressure).
+In-change vs `.tasks/` rule: **[externalisation.md](externalisation.md)**. Rule of thumb: in-change tasks contribute to the intent's stated outcome; cross-cutting findings go to `.tasks/` with full provenance. Promotion back into the active change is the user's decision, on a `decision` ask the PM proposes (`externalisation.md` § Externalisation pressure).
 
 ## Loop closure: integrate → plan handshake
 
@@ -123,7 +130,7 @@ This is the structural fix for "learns and forgets" — without it, the orchestr
 When invoked without an explicit phase, the dispatcher runs its loop (§ Two contexts):
 
 1. Run `state.py status`. Its `resume` line says which of these applies: resume the current phase; advance (`phase set`) because the prior gate passed; `close` because integrate passed; or `init` a new cycle because the last one is closed. The dispatcher spawns the phase agent that line calls for; the phase agent runs the verb.
-2. No state file (`not_initialized`): a `design.md` without a Seams section wants the design round first; otherwise **start a new plan phase** (its agent runs `state.py init`, which needs the prior handshake, or `--first-cycle`).
+2. No state file (`not_initialized`): a `design.org` without a Seams section (or none at all) wants the design round first; otherwise **start a new plan phase** (its agent runs `state.py init`, which needs the prior handshake, or `--first-cycle`).
 3. A legacy or invalid file: `status` says so; `state.md` § Recovery gives the steps. Do not write it by hand.
 
 Never silently start a new cycle while a prior cycle is open; `init` refuses, and `close --abandon --why` is the explicit exit.
@@ -141,10 +148,10 @@ Where the orchestrator reads the inbox and what it does with an answered file th
 - **Author-blind review is enforced at the harness level**, not by discipline. The reviewer-spawn helper has no path to the Implementor's report, observations, discoveries, identity, or scratch files.
 - **The design is the contract, and holds only contracts.** Tasks cite seam rows, briefs and reviews quote them, and integrate's conformance check amends them when the code has rightly outgrown them. Nothing else catalogues interfaces. A row or Decision that names a guard, error string, encoding, helper or test is wrong by construction and is cut, not amended (`templates/design.md`). A stale row or sentence beside right code is a **record correction**: fixed, committed, one journal line; never an ask.
 - **Phase exit gates are mandatory.** A later phase refuses to start if a prior gate hasn't passed.
-- **Every code change takes one of three paths**: a batch task (Implementor + author-blind Reviewer), the inline path (`flows/inline.md`, within its triage), or an inline fix for a review finding (`flows/execute.md` § 8). The orchestrator never edits the code root directly, not to apply an ask's answer, not to add scope to a running task. **A change is reported done only after the whole-change review** (`flows/integrate.md` § 9) has run and its blocking findings are resolved.
+- **Every code change takes one of three paths**: a batch task (Implementor + author-blind Reviewer), the inline path (`flows/inline.md`, within its triage), or an inline fix for a review finding (`flows/execute.md` § 8). The orchestrator never edits the code directly, not to apply an ask's answer, not to add scope to a running task. The record under `docs/` is not code: the design round, an applied answer, a record correction and integrate write it in the code root's main checkout; an Implementor never does. **A change is reported done only after the whole-change review** (`flows/integrate.md` § 9) has run and its blocking findings are resolved.
 - **Provenance fields are mandatory on follow-up tasks.** The orchestrator refuses to externalise without them.
 - **The integrate→plan handshake artifact is the loop-closure contract.** Without every required field (see `state.md`), plan refuses to start.
-- **A finding, discovery or observation becomes a task only on a demonstrated reason**: something that happened, a prior or the user's request, or a measured cost; a reasoning-only finding is `noted`. The one statement is `templates/architect-finding.md` § Demonstrated reason. The user's own words (a prior, an ask decision, a proposal sentence) outrank a `design.md` sentence.
+- **A finding, discovery or observation becomes a task only on a demonstrated reason**: something that happened, a prior or the user's request, or a measured cost; a reasoning-only finding is `noted`. The one statement is `templates/architect-finding.md` § Demonstrated reason. The user's own words (a prior, an ask decision, an intent sentence) outrank a `design.org` sentence.
 - **Every question to the user is an org file in `.orchestrator/inbox/`** per `templates/ask.md`, written the moment it is raised, in any phase, and triaged by kind. Only `decision` kinds reach the user as questions; the user answers in the file; an answer outside the offered options is read back before it is applied. When a question blocks the session is stated once, in `templates/ask.md` § The inline rule; the call is the dispatcher's, since a phase agent has no user (§ Two contexts). Nothing else blocks a session on a question.
-- **Process artifacts are tracked in git, in the home repo.** `.orchestrator/` is never gitignored there (`state.py init` refuses when the home ignores it and when the code root contains a `.orchestrator/` of its own; it writes `.orchestrator/.gitignore` for the test outputs). When the orchestrator commits is listed once, in `templates/ask.md` § Commit rule. Artifact commits are made in the home; code commits in the code root. When the code root is nested inside the home, the home's `.gitignore` ignores it (`where` warns when it does not), so the code checkout never appears as an embedded repository in the home's history.
-- **When the home and the code root differ, "in one commit" means one commit per repository.** Every rule that says so (an applied ask with the change that applies it; the design round's `design.md` with its pending tests; an inline record correction with the edit) is then one commit in each repository with the same subject, the code commit's message naming the ask id or the change.
+- **Process artifacts are tracked in git, in the home repo.** `.orchestrator/` is never gitignored there (`state.py init` refuses when the home ignores it and when the code root contains a `.orchestrator/` of its own; it writes `.orchestrator/.gitignore` for the test outputs). When the orchestrator commits is listed once, in `templates/ask.md` § Commit rule. Process commits are made in the home; record (`docs/`) and code commits in the code root. When the code root is nested inside the home, the home's `.gitignore` ignores it (`where` warns when it does not), so the code checkout never appears as an embedded repository in the home's history.
+- **When the home and the code root differ, "in one commit" means one commit per repository.** Every rule that says so (an applied ask: its file moves in the home, the edit it applies lands in the code root) is then one commit in each repository with the same subject, the code-root commit's message naming the ask id or the change. The record and the code share the code root, so the design round's `design.org` with its pending tests, and a record correction with its edit, are one commit there.

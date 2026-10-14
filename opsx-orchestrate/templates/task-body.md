@@ -2,7 +2,7 @@
 
 A task body is the unit-of-work document the implementor reads. It carries: what to build, which seam rows and scenarios it implements, which pending tests it promotes, what counts as a discovery, and the provenance that makes the meta-discovery loop possible.
 
-Tasks live at `<change>/tasks/open/<task-name>.md` (active) or `<change>/tasks/closed/<task-name>.md` (after merge), or `.tasks/<task-name>.md` (externalised — out of scope for the active change).
+Tasks live at the home, `.orchestrator/changes/<change>/tasks/open/<task-name>.md` (active) or `…/tasks/closed/<task-name>.md` (after merge), or `.tasks/<task-name>.md` (externalised — out of scope for the active change).
 
 ## Frontmatter
 
@@ -15,10 +15,10 @@ status: ready | blocked | needs_review | done | failed | externalised   # the st
 task_class: feature | test | doc | refactor | bug | contract | infrastructure
 on_critical_path: true | false
 
-cites_seams:                       # rows of design.md § Seams; also held in state
+cites_seams:                       # rows of design.org § Seams; also held in state
   - seam/violation-info
   - seam/canonical-constructor
-cites_scenarios:                   # rows of design.md § Scenario coverage; task file only
+cites_scenarios:                   # '<capability> § <title>' in docs/specs/; task file only
   - scope § A violation names its resource
 
 relations:
@@ -52,13 +52,13 @@ reviewed_at: <iso-ts>
 One paragraph. What this task accomplishes.
 
 ### Cited seams
-For each id in `cites_seams`, the row from `design.md` quoted verbatim and a short paragraph on what the implementor should pressure-test about it. Seam rows are *reference material to pressure-test, not authority to defer to*: "This row was written before the code existed; if implementation reveals it's wrong, push back in `## Discoveries`."
+For each id in `cites_seams`, the row from `design.org` quoted verbatim and a short paragraph on what the implementor should pressure-test about it. Seam rows are *reference material to pressure-test, not authority to defer to*: "This row was written before the code existed; if implementation reveals it's wrong, push back in `## Discoveries`."
 
 ### Implementation steps
 Numbered list. Concrete. Names files, functions, signatures.
 
 ### Verification
-The exact command(s) to run, and the list of pending tests this task promotes (from the coverage rows in `cites_scenarios`): the implementor removes their pending marker in the implementation commit and reports the last 10 lines of output.
+The exact command(s) to run, and the list of pending tests this task promotes (the tests `coverage.py --scenario` shows `pending` for its `cites_scenarios`): the implementor removes their pending marker in the implementation commit and reports the last 10 lines of output.
 
 ### Out-of-scope
 What's deliberately not in this task. Reduces the "while I was there I also fixed Y" surface.
@@ -96,8 +96,8 @@ Discoveries are read by the orchestrator in integrate phase alongside the confor
 The orchestrator assembles the implementor's prompt by concatenating:
 
 1. The task body (this file).
-2. The cited seam rows and the coverage rows the task promotes, verbatim from `design.md`.
-3. The `design.md` decisions those rows link to.
+2. The cited seam rows, verbatim from `design.org`, and the cited scenarios from `docs/specs/` with their `coverage.py` rows.
+3. The `design.org` decisions those rows link to.
 4. The project standards (from overlay's `roles/implementor.md` if present) and the project priors.
 
 The implementor sees all of this **before starting work**. The brief framing is fixed and lives in `roles/implementor.md`: seam rows are reference material to pressure-test, not authority to defer to.
