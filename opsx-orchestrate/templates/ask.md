@@ -57,7 +57,7 @@ Docs corrected at this integrate; code untouched.
 | `:RAISED_BY:` | `architect | reviewer | implementor | pm | orchestrator`. |
 | `:REF:` | The artifact that raised it: a finding id, a discovery id, a review file path, the premise check, a signal name. Tasks and notes point back with `discovered_from: <id>` or `ask: <id>`; the ask does not list them. |
 | `:HAPPENED:` | `yes` only if the problem has occurred: a failing run, a wrong output, a user report, a false statement in a shipped document. An agent's reading of what *could* go wrong is `no`. With the first sentence of `* What happened` this is the finding's `observed`. |
-| `:BLOCKS:` | Task names, `merge:<task>`, `next-plan`, `archive`. Absent means nothing waits on this. Decides the inline rule below and the routing in `flows/execute.md` § 9. |
+| `:BLOCKS:` | Task names, `merge:<task>`, `plan` (a design-round question: plan drafts nothing until it is answered, `flows/design.md` § 5), `next-plan`, `archive`. Absent means nothing waits on this. Decides the inline rule below and the routing in `flows/execute.md` § 9. |
 | `:APPLIED_VIA:` | Set with `status=applied`: the edit, task or commit that applied the decision. |
 | `:REVISED_FROM:` | On a reversal, the id of the ask whose decision this one replaces; the old file becomes `superseded`. |
 
