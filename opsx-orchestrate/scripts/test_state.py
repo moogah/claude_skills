@@ -1240,3 +1240,28 @@ def test_at_file_falls_back_to_home(run, repo, tmp_path, monkeypatch):
     assert state._arg_path("refs.json", str(repo)) == "refs.json"  # cwd wins when both exist
     (elsewhere / "refs.json").unlink()
     assert state._arg_path("refs.json", str(repo)) == str(repo / "refs.json")
+
+
+# 43
+def test_red_baseline_without_compare_warns_at_set_and_next_init(run, repo):
+    cfg = repo / ".claude" / "orchestrator" / "config.yaml"
+    for text, want in {"test:\n  command: ./t\n  compare: ./cmp.py  # ids\n": "./cmp.py",
+                       "test:\n  command: ./t\n  # compare: ./cmp.py\n": None,
+                       "test:\n  command: ./t\nother:\n  compare: ./no.py\n": None,
+                       "name: x\n": None}.items():
+        cfg.write_text(text)
+        assert state.read_test_compare(str(repo)) == want, text
+    init(run, "cycle-1", "--first-cycle")
+    code, out, _ = run("set", "baseline_status=0")
+    assert code == 0 and "warnings" not in out
+    code, out, _ = run("set", "baseline_status=1")
+    assert code == 0 and "test.compare" in out["warnings"][0]
+    add_task(run, "t1")
+    run("task", "set", "t1", "done")
+    run("handshake")
+    run("close", "--abandon", "--why", "test")
+    code, out, _ = init(run, "cycle-2", "--prior-handshake", ".orchestrator/handshake-cycle-1.json")
+    assert code == 0 and any("last cycle's baseline_status=1" in w for w in out["warnings"])
+    cfg.write_text("test:\n  command: ./t\n  compare: ./cmp.py\n")
+    code, out, _ = run("set", "baseline_status=1")
+    assert code == 0 and "warnings" not in out

@@ -211,6 +211,36 @@ def read_code_root(home):
     return None, None
 
 
+def read_test_compare(home):
+    """The overlay's `test.compare` command, or None when the `test:` block has none."""
+    p = config_path(home)
+    if not os.path.exists(p):
+        return None
+    in_test = False
+    for line in open(p, encoding="utf-8"):
+        if re.match(r"^test:\s*(#.*)?$", line):
+            in_test = True
+            continue
+        if in_test:
+            if line.strip() and not line[0].isspace():
+                return None
+            m = re.match(r"^\s+compare:\s*(.*?)\s*$", line)
+            if m:
+                raw = re.split(r"\s+#", m.group(1))[0].strip().strip("\"'")
+                return raw if raw and not raw.startswith("#") else None
+    return None
+
+
+def red_baseline_warnings(store, baseline_status, which="baseline_status"):
+    """A red baseline with no `test.compare` leaves the regression check unable to decide
+    (flows/execute.md § 4); the agent must raise the environment ask before the first merge."""
+    if not baseline_status or read_test_compare(store.home):
+        return []
+    return [f"{which}={baseline_status} and the overlay has no test.compare: the exit code "
+            "cannot decide a regression; set test.compare or raise the environment ask before the "
+            "first merge (flows/execute.md § 4)"]
+
+
 def _same_path(a, b):
     return os.path.realpath(a) == os.path.realpath(b)
 
@@ -1213,8 +1243,10 @@ def verb_init(store, args):
         raise Refusal("no_home", f"no .claude/orchestrator/config.yaml found walking up from {os.getcwd()}; "
                       "create the overlay at the intended home (the repo, or the workspace above it) or "
                       "pass --home")
+    prior_baseline = None
     if store.exists():
         cur = store.load()
+        prior_baseline = cur.get("baseline_status")
         if not cur.get("closed_at"):
             raise Refusal("cycle_open", f"cycle {cur.get('cycle_id')} is still open (phase "
                           f"{cur.get('phase')}); run `close` (or `close --abandon`) first")
@@ -1279,7 +1311,9 @@ def verb_init(store, args):
     return {"ok": True, "cycle_id": cycle_id, "path": store.path,
             "history_cycles": [h["cycle_id"] for h in state["cycle_log"]["history"]],
             "inbox_carried": [a["id"] for a in carried], "gitignore_written": wrote_gitignore,
-            "home": store.home, "code_root": store.code_root, "warnings": code_root_warnings(store)}
+            "home": store.home, "code_root": store.code_root,
+            "warnings": code_root_warnings(store) + red_baseline_warnings(store, prior_baseline,
+                                                                       "the last cycle's baseline_status")}
 
 
 def _git_branch(code_root):
@@ -1816,7 +1850,11 @@ def verb_set(store, args):
                 raise Refusal("not_settable", f"{k!r} cannot be set directly",
                               settable=sorted(TOP_LEVEL_SETTABLE))
             state[k] = v
-        return {"ok": True, "changed": sorted(updates)}
+        out = {"ok": True, "changed": sorted(updates)}
+        warnings = red_baseline_warnings(store, updates.get("baseline_status"))
+        if warnings:
+            out["warnings"] = warnings
+        return out
     return store.mutate(fn)
 
 
