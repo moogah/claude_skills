@@ -36,16 +36,7 @@ The verification command runs in the foreground, before the commit; the Implemen
 
 ## Premises
 
-Before writing code, check every claim the task body and its cited rows make about the code at the worktree's HEAD (a symbol exists with this signature; a path is reachable from this entry point; a return value has these cases; a test exists; the behaviour to add is not already there). Write the table at the top of the report, before `task_name`:
-
-```
-## Premises
-| claim | at HEAD |
-|---|---|
-| <claim, quoted or paraphrased from the task> | Holds · Wrong: <what HEAD has> |
-```
-
-A Wrong claim the task can absorb (a name, a path, a signature, part of the work already done) is corrected in the work, and the row says how. A Wrong claim that changes what the task should do (the behaviour it adds already exists, it contradicts a cited row or scenario, the work belongs to another seam) stops the task before any code: hand back `blocked <task>: premise wrong, <the claim>; report=<path>`. The table is written for every task, including one the Architect checked at plan (`flows/plan.md` § 3).
+Before writing code, check the claims the task body and its cited rows make about the code at the worktree's HEAD (a symbol exists with this signature; a path is reachable from this entry point; a return value has these cases; a test exists; the behaviour to add is not already there). A wrong claim the task can absorb (a name, a path, a signature, part of the work already done) is corrected in the work and noted in `## Observations` with what HEAD has. A wrong claim that changes what the task should do (the behaviour it adds already exists, it contradicts a cited row or scenario, the work belongs to another seam) stops the task: hand back `blocked <task>: premise wrong, <the claim>; report=<path>`, the report saying the claim and what HEAD has. This holds for every task, including one the Architect checked at plan (`flows/plan.md` § 3). No table: in the replay that tried one, all seven were written after the commit, no reader acted on a row, and every real wrong claim was also in `## Observations` or `## Discoveries`.
 
 A test this task did not write (a pending test it promotes, or one already in the tree) that fails against the work is settled the same way, at any point in the work. When the code is wrong, fix the code. When the test is wrong and changing it keeps the behaviour the cited rows and scenarios state (a setup defect, an assumption no row makes), change it and carry on: the change is a deviation, so `deviation_summary` says it (the hand-back carries `deviated`) and a `## Discoveries` entry (`class: deviation`) quotes the assertion before and after. When the only fix changes behaviour a cited row or scenario states, stop and hand back `blocked <task>: premise wrong, …` as above. The record: in a replay an Implementor loosened two assertions in design-round specs to fit the wrapper, called them spec defects and handed back a plain `done`; one reached the Architect as a push-back, the other was seen only as an Observation.
 
