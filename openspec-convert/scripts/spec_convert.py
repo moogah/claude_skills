@@ -22,7 +22,8 @@ Verbs (each prints a plain-text report on stdout; exit 1 on a refusal):
                                MODIFIED block that differs from SPECS_ORG's, the block is a
                                three-way merge (git merge-file), reported, conflicts marked
   file SRC OUT [--cap ID] [--kind spec|change]
-  count PATH...                requirements and scenarios per file (.md or .org)
+  count PATH...                requirements and scenarios per file (.md or .org; a directory
+                               is walked) and a total line
 """
 
 import argparse
@@ -640,9 +641,19 @@ def cmd_apply(change_dir, specs_org, base_org=None):
 
 
 def cmd_count(paths):
+    files = []
     for p in paths:
+        if os.path.isdir(p):
+            files += sorted(os.path.join(d, f) for d, _, fs in os.walk(p)
+                            for f in fs if f.endswith((".md", ".org")))
+        else:
+            files.append(p)
+    tr = ts = 0
+    for p in files:
         r, s = titles(_read(p))
+        tr, ts = tr + len(r), ts + len(s)
         print(f"{p}\t{len(r)}\t{len(s)}")
+    print(f"total: {tr} requirements, {ts} scenarios in {len(files)} files")
     return 0
 
 

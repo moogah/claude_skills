@@ -261,3 +261,12 @@ def test_apply_refusals(delta):
 
 if __name__ == "__main__":
     raise SystemExit(pytest.main([__file__, "-q"]))
+
+
+def test_count_walks_a_directory_and_totals(tmp_path, capsys):
+    d = tmp_path / "specs" / "cap"
+    d.mkdir(parents=True)
+    (d / "spec.md").write_text("## Requirements\n\n### Requirement: R\n\n#### Scenario: S\n- **WHEN** x\n- **THEN** y\n")
+    assert sc.main(["count", str(tmp_path / "specs")]) == 0
+    out = capsys.readouterr().out
+    assert out.rstrip().endswith("total: 1 requirements, 1 scenarios in 1 files")
