@@ -389,14 +389,26 @@ def touched_lines(root, specs_dir, since):
     r = subprocess.run(["git", "-C", root, "diff", "-U0", since, "--", rel], capture_output=True, text=True)
     if r.returncode:
         raise Refusal("git diff failed: " + r.stderr.strip())
-    out, path = {}, None
+    # A line counts when it carries text: an added blank line or rule at a scenario's end (a
+    # requirement appended after it) does not touch it. A pure deletion touches the line before it.
+    out, path, new_line = {}, None, 0
     for line in r.stdout.split("\n"):
         if line.startswith("+++ "):
             path = None if line[4:] == "/dev/null" else os.path.join(root, line[6:])
+            continue
+        if line.startswith("--- "):
+            continue
         m = re.match(r"^@@ -\d+(?:,\d+)? \+(\d+)(?:,(\d+))? @@", line)
         if m and path:
-            start, count = int(m.group(1)), int(m.group(2) or 1)
-            out.setdefault(path, set()).update(range(start, start + count) if count else {start, start + 1})
+            new_line, count = int(m.group(1)), int(m.group(2) or 1)
+            if not count:
+                out.setdefault(path, set()).add(new_line)
+                new_line += 1
+            continue
+        if line.startswith("+") and path:
+            if line[1:].strip() not in ("", "-----"):
+                out.setdefault(path, set()).add(new_line)
+            new_line += 1
     r = subprocess.run(["git", "-C", root, "ls-files", "--others", "--exclude-standard", "--", rel],
                        capture_output=True, text=True)
     for f in r.stdout.split():

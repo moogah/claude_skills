@@ -228,6 +228,7 @@ def test_since_selects_touched_scenarios(tree, capsys):
     _git(tree, "-c", "user.email=t@t", "-c", "user.name=t", "commit", "-qm", "base")
     p = tree / "docs/specs/ws.org"
     p.write_text(p.read_text().replace("*** Scenario: Failing one\n- *WHEN* a", "*** Scenario: Failing one\n- *WHEN* b"))
+    p.write_text(p.read_text().replace("- *WHEN* a\n#+begin_example", "- *WHEN* a\n\n-----\n\n#+begin_example"))  # blank and rule after Nobody
     (tree / "docs/specs/new.org").write_text("* Requirements\n** Requirement: N\n*** Scenario: Fresh\n")
     assert cov.main(["--root", str(tree), "--since", "HEAD", "--json"]) == 0
     rows = json.loads(capsys.readouterr().out)["rows"]
