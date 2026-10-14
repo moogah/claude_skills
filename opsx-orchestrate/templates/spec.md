@@ -57,4 +57,4 @@ A contract test also cites `seam/<name>`. The `:TEST:` property holds what a tes
 
 ## Who edits `docs/specs/`
 
-The change's author before the design round (the user, or the orchestrator opening or splitting a change), the design round, an applied answer (`templates/ask.md` § Answer protocol) and a record correction. Never an Implementor: a scenario an implementation shows to be wrong is a push-back in `## Discoveries`.
+The change's author before the design round (the user, or the orchestrator opening or splitting a change, `flows/open.md`), the design round, an applied answer (`templates/ask.md` § Answer protocol) and a record correction. Never an Implementor: a scenario an implementation shows to be wrong is a push-back in `## Discoveries`.

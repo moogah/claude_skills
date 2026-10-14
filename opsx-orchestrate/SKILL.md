@@ -19,7 +19,7 @@ Full overlay contract: **[overlay.md](overlay.md)**.
 
 ## Before the first cycle: the design round
 
-A change enters the orchestrator with its intent and its spec edits, committed in the code root: `docs/changes/<change>/intent.org` (`templates/intent.md`) and the requirements and scenarios it adds, changes or removes, edited in place in `docs/specs/` (`templates/spec.md`). The Architect's **design round** (`flows/design.md`) then writes `docs/changes/<change>/design.org` (`templates/design.md`), Context, Decisions and the Seams table, and the pending tests the scenarios imply. It runs once per change, before `state.py init --first-cycle`, and needs no state file. The orchestrator does not write a design before the round, itself or through another agent: a change it opens or splits gets an intent and spec edits, and the round writes the design (`flows/design.md` § When it runs). Plan drafts tasks from the seams and the scenarios still pending; integrate checks merged code against them.
+A change enters the orchestrator with its intent and its spec edits, committed in the code root: `docs/changes/<change>/intent.org` (`templates/intent.md`) and the requirements and scenarios it adds, changes or removes, edited in place in `docs/specs/` (`templates/spec.md`). The user may write both; otherwise an **opening** phase agent writes them from the user's words, `.tasks/` items or a split (`flows/open.md`). The Architect's **design round** (`flows/design.md`) then writes `docs/changes/<change>/design.org` (`templates/design.md`), Context, Decisions and the Seams table, and the pending tests the scenarios imply. It runs once per change, before `state.py init --first-cycle`, and needs no state file. The orchestrator does not write a design before the round, itself or through another agent: a change it opens or splits gets an intent and spec edits, and the round writes the design (`flows/design.md` § When it runs). Plan drafts tasks from the seams and the scenarios still pending; integrate checks merged code against them.
 
 ## Two contexts: the dispatcher and the phase agent
 
@@ -33,7 +33,7 @@ In the flow, role and template docs, **"the orchestrator" is the phase agent run
 
 1. `state.py status` (orientation in about 2 KB: phase, gates, tasks, the inbox, `resume`). `state.py where` prints the home and the code root and works with no state file.
 2. Handle the inbox first if `status` says an answer is waiting: that is a sync point (`templates/ask.md` § Sync points), done by the phase agent the next step spawns, not by the dispatcher.
-3. Spawn the phase agent `resume` calls for: the design round (no state file yet, `design.org` has no Seams section), `plan` (including `init`), `execute`, `integrate` (including `close` and its commit), or the inline path. The brief is fixed and short:
+3. Spawn the phase agent `resume` calls for: opening a change (the user asks for one, takes up `.tasks/` items or answers a split; the brief carries the source, `flows/open.md` § The brief), the design round (no state file yet, `design.org` has no Seams section), `plan` (including `init`), `execute`, `integrate` (including `close` and its commit), or the inline path. The brief is fixed and short:
 
    > You are the phase agent for `<phase>` of change `<change>` in cycle `<cycle-id>` (or: for the design round of `<change>`). Home: `<path>`. Run `state.py status`, then read and follow `~/.claude/skills/opsx-orchestrate/flows/<phase>.md` to its exit gate and close commit. Read a role file at the moment you spawn that role and a template at the moment you produce its artifact; do not read `SKILL.md`. When nothing can run until a worker reports, end your turn; you are woken when it hands back. You cannot ask the user: an ask that would take the blocking call is a file, and you hand back `stopped` naming it after finishing everything that does not wait on it. Hand back one line (§ Hand-back lines), never a report.
 
@@ -49,6 +49,7 @@ Every agent the orchestrator spawns hands back **one line of at most 200 charact
 | Agent | Line | Detail lives in |
 |---|---|---|
 | Phase agent | `<phase> <cycle-id>: gate passed` · `<phase> <cycle-id>: stopped, ask <id> blocks <task\|merge\|phase>; <path>` (several: `asks <ids> block …`) · `<phase> <cycle-id>: failed, <why>; <path>` | `state.json`, the cycle's artifacts, the ask file |
+| Opening agent | `open <change>: <c> capabilities, <s> scenarios, <q> open questions; <intent path>` · `open: failed, <why>` | `intent.org`, the spec edits, the `Open: <change>` commit |
 | Implementor | `done <task> <sha> report=<path>` with `deviated` / `candidates=<n>` appended when true · `blocked <task>: <one line>` · `failed <task>: <one line>` | `cycles/<id>/reports/<task>.md`, written by the Implementor; the task file's `## Observations` and `## Discoveries` |
 | Reviewer | `reviewed <task> findings=<n> blocking=<n> spec-signal=<n> path=<path>` | `cycles/<id>/reviews/<task>.md` |
 | Architect | `design-round <change>: <n> seams, <k> pending tests, <u> uncited scenarios, <q> open questions` · `premise-check <cycle-id>: <n> holds, <m> wrong, <f> findings; <path>` · `conformance <cycle-id>: <f> findings, <a> rows amended; <path>` | `design.org`, `premise-check.md`, `findings/`, `design-diff.json` |
@@ -61,6 +62,7 @@ Each phase has its own flow doc and exit gate. **A later phase refuses to start 
 
 | Phase | Flow doc | Defining ops |
 |---|---|---|
+| Opening | [flows/open.md](flows/open.md) | Once per change the orchestrator opens: `intent.org` and the spec edits from the user's words, `.tasks/` items or a split, committed in the code root; no code read, no question asked (they join the round's sitting) |
 | Design round | [flows/design.md](flows/design.md) | Once per change, before the first cycle: Architect writes `design.org` and the pending tests until `coverage.py --since <base>` shows no uncited scenario; open questions become ask files blocking plan, asked by the dispatcher |
 | Plan | [flows/plan.md](flows/plan.md) | Consume prior integrate's handshake → draft candidate tasks from `design.org` and the pending scenarios → Architect premise check against HEAD → batch composition → implementor briefs |
 | Execute | [flows/execute.md](flows/execute.md) | Per-task: worktree + Implementor + author-blind Reviewer (with probe licence); each task merged as it lands (serial chain) with regression check |
@@ -130,7 +132,7 @@ This is the structural fix for "learns and forgets" — without it, the orchestr
 When invoked without an explicit phase, the dispatcher runs its loop (§ Two contexts):
 
 1. Run `state.py status`. Its `resume` line says which of these applies: resume the current phase; advance (`phase set`) because the prior gate passed; `close` because integrate passed; or `init` a new cycle because the last one is closed. The dispatcher spawns the phase agent that line calls for; the phase agent runs the verb.
-2. No state file (`not_initialized`): a `design.org` without a Seams section (or none at all) wants the design round first; otherwise **start a new plan phase** (its agent runs `state.py init`, which needs the prior handshake, or `--first-cycle`).
+2. No state file (`not_initialized`): a change with no `intent.org` wants opening first (`flows/open.md`); a `design.org` without a Seams section (or none at all) wants the design round first; otherwise **start a new plan phase** (its agent runs `state.py init`, which needs the prior handshake, or `--first-cycle`).
 3. A legacy or invalid file: `status` says so; `state.md` § Recovery gives the steps. Do not write it by hand.
 
 Never silently start a new cycle while a prior cycle is open; `init` refuses, and `close --abandon --why` is the explicit exit.
