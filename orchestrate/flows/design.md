@@ -57,6 +57,8 @@ A question only the user can settle (which of two seams; whether a scenario is i
 
 The intent's `* Open Questions` (written when the change was opened, `flows/open.md` § 4) join the same sitting: the Architect copies each into § Open Questions as written, marked `(intent)`, with the seam rows and pending tests its recommendation implies, and they are asked and answered like the round's own. An intent question's answer is written into the spec and the intent it settles, its entry is deleted from the intent, and it gets a Decision only when it moves a seam.
 
+The intent's `* New terms` not marked `(agreed <date>)` join the sitting as one more entry, `(intent) New terms`, asked first: each term with what it is and its example, the options "agree all as written" or a free-text answer that renames or rejects some. On the answer each agreed term is written into `docs/glossary.org` (`templates/glossary.md`; created with the first term) and marked agreed in the intent; a renamed term is renamed in the intent and the spec edits; a rejected one is replaced by the plain phrase the user gives. One commit in the code root, with the ask's application.
+
 The record shows why. In one change the four questions asked at the round held; in the next the Architect wrote provisional decisions for five, two cycles built on them, the user answered sixteen hours later, two of the five were reversed, and a cycle of its own was spent on the rework (`ws-agent-tools-ask-answers`). On the eight decisions of those changes the user chose the recommended option every time, yet the lean default rule (`templates/ask.md` § Recommendation) would have chosen the opposite on exactly the two later reversed; the system does not decide these.
 
 ### 6. Commit

@@ -14,6 +14,9 @@ The intent is written with the change's spec edits, before the design round: by 
 * Why
 <What prompted the change, in the user's terms.>
 
+* Research
+[[file:research/][research/]]: <what it holds: assumptions with their origin, failure modes, evidence>
+
 * Goals
 - <An outcome the change commits to.>
 
@@ -30,6 +33,9 @@ The intent is written with the change's spec edits, before the design round: by 
 * Removals
 - workspaces § <requirement or scenario title>: <why it goes; what a user who relied on it does instead>
 
+* New terms
+- *<term>*: <what it is, one or two sentences>. Example: <the user's own use>. Avoid: <rejected words>. <(agreed <date>)>
+
 * Open Questions
 ** <The question in plain terms>
 - <Option>: <the consequence the user would notice>
@@ -40,7 +46,9 @@ Recommendation: <option>, because <…>. The spec is written to it. Affects: wor
 - **`#+BASE:`** is written once, with the change's first record commit: `git -C "$CODE_ROOT" rev-parse HEAD` before that commit. `coverage.py --since <base>` scopes coverage to the scenarios the change touched; the whole-change review diffs from it (`flows/integrate.md` § 9).
 - **Capabilities** names each spec file the change edits by its capability id (`templates/spec.md`).
 - **Capabilities** may also name a scenario the spec already states and the code does not meet (`workspaces § <title>: stated, not met`); the round takes it as one of the change's (`flows/open.md` § 3).
-- **`* Open Questions`**, after Removals, holds what the source left to the user and the spec text depends on; each entry is deleted when the round's sitting answers it (`flows/open.md` § 4, `flows/design.md` § 5).
+- **`* Research`** links the research that preceded the change: `docs/changes/<change>/research/`, or a home's research brief by path (`~/.claude/skills/research/SKILL.md` § Hand-off). The design round reads its assumptions and failure modes. Left out when no research preceded the change.
+- **`* New terms`** lists each domain term the intent or the spec edits use that `docs/glossary.org` does not have (`templates/glossary.md`): the term, what it is, an example from the user's own use, and words to avoid. Agents coined almost every term that later confused the user, in documents the user had approved, and explained them in chat during execution; this list is where they are agreed instead. A term agreed during research carries `(agreed <date>)`; the rest are agreed in the design round's sitting (`flows/design.md` § 5). An agreed term is written into `docs/glossary.org` in the same commit; the list stays as the change's record of the terms it introduced.
+- **`* Open Questions`**, after New terms, holds what the source left to the user and the spec text depends on; each entry is deleted when the round's sitting answers it (`flows/open.md` § 4, `flows/design.md` § 5).
 - **Removals** lists each requirement or scenario the change deletes from `docs/specs/`, with its reason: the diff shows that a scenario went, never why. Empty sections are left out.
 - **Goals** and **Non-goals** are the stated outcome: plan's critical-path read and integrate's goal-drift check measure against them.
 

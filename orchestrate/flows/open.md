@@ -22,7 +22,7 @@ The dispatcher copies the user's words; it reads nothing to write the brief.
 
 ### 1. Read
 
-The source; the `* Purpose` of every file under `docs/specs/`, to find the capabilities the source touches, and those files in full; `priors.md`; the two templates. **Not the code.** The round is the design side's one read of HEAD (`flows/design.md` § When it runs); a claim the source makes about the code ("the layout switch autosaves without the predicate check") goes into the intent's Why as the source states it, and the round checks it.
+The source; the `* Purpose` of every file under `docs/specs/`, to find the capabilities the source touches, and those files in full; `docs/glossary.org` if it exists; `priors.md`; the two templates. **Not the code.** The round is the design side's one read of HEAD (`flows/design.md` § When it runs); a claim the source makes about the code ("the layout switch autosaves without the predicate check") goes into the intent's Why as the source states it, and the round checks it.
 
 ### 2. Name and base
 
@@ -40,7 +40,9 @@ In place, in the form `templates/spec.md` gives:
 
 ### 4. Intent and open questions
 
-The intent per `templates/intent.md`, `#+STATUS: speculated`: Why in the user's terms (quoting them when the source is their words), Goals, Non-goals, Capabilities, Removals.
+The intent per `templates/intent.md`, `#+STATUS: speculated`: Why in the user's terms (quoting them when the source is their words), Goals, Non-goals, Capabilities, Removals, New terms.
+
+Use the glossary's terms and the user's own words. Every domain term the intent or the spec edits use that the glossary does not have goes in `* New terms`, to be agreed in the round's sitting; a plain phrase is better than a new term where one will do.
 
 A question the source leaves to the user and the spec text depends on (which of two behaviours is intended, whether something is in scope, a default the product should have) goes in the intent's `* Open Questions`: the question in plain terms, two to four options with the consequence the user would notice, the recommendation and why, and the requirements and scenarios it affects. The spec is written in the form the recommendation implies, and the entry says so. Nothing about how to build it; that is the round's.
 

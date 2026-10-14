@@ -102,7 +102,7 @@ Set `#+STATUS: done <date>` with a paragraph naming the hand-off, and commit.
 
 | Outcome | What is written |
 |---|---|
-| One change | In the code root: `docs/changes/<change>/intent.org` per `~/.claude/skills/orchestrate/templates/intent.md`, with its `* New terms` and a `* Research` line linking `docs/changes/<change>/research/`; the spec edits per `templates/spec.md`; the glossary additions. The research directory keeps the change's assumptions with their origin and its failure modes; the design round reads them. Then orchestrate's design round takes over (it reads an intent the user's side wrote as it is; `flows/open.md` is not run). |
+| One change | In the code root: `docs/changes/<change>/intent.org` per `~/.claude/skills/orchestrate/templates/intent.md`, with its `* New terms` (each agreed during research marked `(agreed <date>)` and already written into `docs/glossary.org`) and a `* Research` line linking `docs/changes/<change>/research/`; the spec edits per `templates/spec.md`; the glossary additions. The research directory keeps the change's assumptions with their origin and its failure modes; the design round reads them. Then orchestrate's design round takes over (it reads an intent the user's side wrote as it is; `flows/open.md` is not run). |
 | Changes from a home effort | Zero or more changes opened as above, each intent's `* Why` linking back to the brief by path. |
 | A new project | A workspace whose `research/` is the effort; its first changes follow later. |
 | A new practice skill | The brief goes to the user and the agent writing the skill by hand. The skill names what it borrowed and from where (source and commit). |
