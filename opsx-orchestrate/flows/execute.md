@@ -125,6 +125,8 @@ The Reviewer's findings file lands at `<home>/.orchestrator/cycles/<cycle-id>/re
 
 The orchestrator's inline fixes are committed with `Co-Authored-By: <reviewer>` style attribution; follow-up tasks carry the provenance fields.
 
+**A fix for a defect the Reviewer demonstrated on a real surface is pinned on that surface.** When the finding's `evidence` is a probe of a real process, daemon, client, `git` or file system, the regression test for its fix (inline fix, re-spawned Implementor, or follow-up task) drives that same surface and reproduces the probe: it fails before the fix and passes after. A test against a fake or stub of the surface is not the pin. Where the test tree cannot drive the surface, the fix commit and the task's `## Observations` say so; a fake is not substituted silently. The record: in a replay, a Reviewer found two defects by probing real Emacs daemons, and the rework pinned them with four specs against a fake `emacsclient`; the original run pinned the same defect with the real one, without a rule.
+
 When all inline fixes are applied: `state.py task set <name> done`. Follow-up tasks it created go in `followups_created=[...]` on the same command.
 
 ### 9. Asks raised during execute

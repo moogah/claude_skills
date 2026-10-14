@@ -30,6 +30,8 @@ The Implementor produces, **all in one go before reporting back**:
 4. **A structured report**, written to the report path the brief names — for the orchestrator only. Never seen by the reviewer.
 5. **A hand-back of one line** (below). The report is never pasted into the hand-back.
 
+When the task fixes a review finding whose evidence probed a real surface (a running process, daemon, client, `git`, the file system), the regression test drives that surface and reproduces the probe; a fake of it is not the pin, and when the test tree cannot drive it the report and `## Observations` say so (`flows/execute.md` § 8).
+
 The verification command runs in the foreground, before the commit; the Implementor never leaves a test run in the background and reports once. The record shows eight extra wake-ups of the orchestrator from Implementors that reported done while their own run continued.
 
 ## Reference material is for pressure-testing, not deference
