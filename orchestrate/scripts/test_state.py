@@ -38,11 +38,25 @@ def _parse(text):
         return None
 
 
+CH = ".orchestrator/changes/chg"  # the test change's directory, relative to the home
+
+
+def open_change(home, name="chg", *extra):
+    """Open (adopt) a change on the home itself, silently; returns the parsed result."""
+    import contextlib, io
+    out, err = io.StringIO(), io.StringIO()
+    with contextlib.redirect_stdout(out), contextlib.redirect_stderr(err):
+        code = state.main(["--home", str(home), "change", "open", name, *extra])
+    return code, _parse(out.getvalue()), _parse(err.getvalue())
+
+
 @pytest.fixture
 def repo(tmp_path):
     (tmp_path / ".claude" / "orchestrator").mkdir(parents=True)
     (tmp_path / ".claude" / "orchestrator" / "config.yaml").write_text("name: scratch\n")
     (tmp_path / ".orchestrator").mkdir()
+    code, out, err = open_change(tmp_path, "chg", "--worktree", str(tmp_path))
+    assert code == 0, err
     return tmp_path
 
 
@@ -59,7 +73,7 @@ def run(repo, capsys):
 
 
 def read_state(repo):
-    return json.loads((repo / ".orchestrator" / "state.json").read_text())
+    return json.loads((repo / ".orchestrator" / "changes" / "chg" / "state.json").read_text())
 
 
 def init(run, cycle="cycle-1", *extra):
@@ -121,10 +135,10 @@ def test_needs_review_requires_merge_commit(run, repo):
     init(run, "cycle-1", "--first-cycle")
     add_task(run, "t1")
     run("task", "set", "t1", "in_progress")
-    before = (repo / ".orchestrator" / "state.json").read_bytes()
+    before = (repo / ".orchestrator" / "changes" / "chg" / "state.json").read_bytes()
     code, out, err = run("task", "set", "t1", "needs_review")
     assert code == 1 and err["error"] == "merge_commit_required"
-    assert (repo / ".orchestrator" / "state.json").read_bytes() == before
+    assert (repo / ".orchestrator" / "changes" / "chg" / "state.json").read_bytes() == before
 
 
 # 4
@@ -173,7 +187,7 @@ def test_record_findings(run):
            "evidence": "foo.py:10 and bar.py:22 carry the same body"}
     code, out, _ = run("record", "add", "findings", json.dumps(rec))
     assert code == 0 and out["id"] == "arch-cycle-1-1"
-    assert out["record"]["path"] == ".orchestrator/cycles/cycle-1/findings/arch-cycle-1-1.md"
+    assert out["record"]["path"] == ".orchestrator/changes/chg/cycles/cycle-1/findings/arch-cycle-1-1.md"
     assert out["record"]["seam"] == "seam/violation-info"
     assert out["record"]["decoration"] is None
     code, _, err = run("record", "add", "findings", json.dumps({**rec, "finding_id": "arch-cycle-1-1"}))
@@ -223,7 +237,7 @@ def test_load_fills_new_record_defaults(run, repo):
         "finding_id": "arch-cycle-1-1", "trigger": "conformance", "kind": "issue", "class": None,
         "title": "old", "path": "x.md", "locations": [], "why_tests_missed": None, "evidence": "x.py:1",
         "discovered_from": None, "resolution": "pending", "blocking_merge_until_resolved": False})
-    (repo / ".orchestrator" / "state.json").write_text(json.dumps(st))
+    (repo / ".orchestrator" / "changes" / "chg" / "state.json").write_text(json.dumps(st))
     assert run("validate")[0] == 0
     code, out, _ = run("status")
     assert code == 0
@@ -246,7 +260,7 @@ def test_counts_and_gate_by_kind_and_decoration(run, repo):
                "resolution=hardening-list")[0] == 0
     _, out, _ = run("counts")
     assert out["findings"]["hardening_list"] == 1 and out["findings"]["unrouted"] == 0
-    (repo / ".orchestrator" / "cycles" / "cycle-1").mkdir(parents=True, exist_ok=True)
+    (repo / ".orchestrator" / "changes" / "chg" / "cycles" / "cycle-1").mkdir(parents=True, exist_ok=True)
     _, out, _ = run("gate", "check", "integrate")
     assert out["checks"]["blocking_findings_resolved"]["value"] is False
     assert run("record", "set", "findings", "arch-cycle-1-1", "resolution=followup-task-fix-a")[0] == 0
@@ -269,7 +283,7 @@ def test_migrate_1_4_findings(run, repo):
          "observed": {"happened": False, "evidence": "reasoning only: a third consumer would diverge"}},
         {**old, "finding_id": "arch-3", "severity": "informational", "resolution": "pending", "observed": None},
     ]
-    (repo / ".orchestrator" / "state.json").write_text(json.dumps(s))
+    (repo / ".orchestrator" / "changes" / "chg" / "state.json").write_text(json.dumps(s))
     code, out, err = run("migrate")
     assert code == 0, err
     f = {x["finding_id"]: x for x in read_state(repo)["architect_findings"]}
@@ -278,7 +292,7 @@ def test_migrate_1_4_findings(run, repo):
     assert f["arch-2"]["evidence"] == "a third consumer would diverge" and f["arch-2"]["resolution"] == "noted"
     assert (f["arch-3"]["kind"], f["arch-3"]["evidence"]) == ("issue", "t")
     assert all(x["severity"] is None and "observed" not in x for x in f.values())
-    parked = json.loads((repo / ".orchestrator" / "cycles" / "cycle-1" / "legacy-state-extras.json").read_text())
+    parked = json.loads((repo / ".orchestrator" / "changes" / "chg" / "cycles" / "cycle-1" / "legacy-state-extras.json").read_text())
     ex = parked["record_extras"]["architect_findings"]
     assert ex["arch-1"]["_legacy_severity"] == "blocking" and ex["arch-2"]["observed"]["happened"] is False
     assert run("validate")[1]["ok"] is True
@@ -289,7 +303,7 @@ def test_migrate_1_4_findings(run, repo):
 def test_record_asks_and_caps(run, repo):
     init(run, "cycle-1", "--first-cycle")
     code, out, _ = run("record", "add", "asks", json.dumps(ASK))
-    assert code == 0 and out["id"] == "ask-cycle-1-1" and out["path"] == ".orchestrator/inbox/ask-cycle-1-1.org"
+    assert code == 0 and out["id"] == "ask-cycle-1-1" and out["path"] == ".orchestrator/changes/chg/inbox/ask-cycle-1-1.org"
     assert (repo / out["path"]).exists()
     assert read_state(repo)["asks_for_user"][0] == {"id": "ask-cycle-1-1", "kind": "decision", "status": "open",
                                                     "blocks": [], "path": out["path"]}
@@ -325,7 +339,7 @@ def test_validate_corrupted(run, repo):
     init(run, "cycle-1", "--first-cycle")
     s = read_state(repo)
     s["plan_note"] = "prose"
-    (repo / ".orchestrator" / "state.json").write_text(json.dumps(s))
+    (repo / ".orchestrator" / "changes" / "chg" / "state.json").write_text(json.dumps(s))
     code, out, _ = run("validate")
     assert code == 1 and out["ok"] is False
     assert any("plan_note" in e and "`note`" in e for e in out["errors"])
@@ -436,7 +450,7 @@ def test_counts(run, repo):
     code, out, _ = run("counts", "--write")
     assert code == 0 and out["thresholds"]["drainage_trigger_ratio"] == 0.8
     assert out["thresholds"]["review_starvation_ratio"] == 2
-    written = repo / ".orchestrator" / "cycles" / "cycle-1" / "pm-signals.json"
+    written = repo / ".orchestrator" / "changes" / "chg" / "cycles" / "cycle-1" / "pm-signals.json"
     assert written.exists() and json.loads(written.read_text())["counts"]["created"] == 5
 
 
@@ -450,11 +464,11 @@ def test_handshake(run, repo, tmp_path):
              "status": "answered", "decision": "Continue", "decision_readback": "keep going"}
     run("record", "add", "asks", json.dumps(drift))  # ask-cycle-1-2 answered in the file
     code, out, _ = run("record", "add", "asks", json.dumps({**ASK, "status": "declined", "decision": "no"}))
-    assert code == 0 and out["path"] == ".orchestrator/cycles/cycle-1/asks/ask-cycle-1-3.org"  # terminal
+    assert code == 0 and out["path"] == ".orchestrator/changes/chg/cycles/cycle-1/asks/ask-cycle-1-3.org"  # terminal
     ref = tmp_path / "refinements.json"
     ref.write_text(json.dumps([{"task": "t9", "refinement": "narrow scope"}]))
     code, out, _ = run("handshake", "--task-refinements", f"@{ref}")
-    assert code == 0 and out["path"] == ".orchestrator/handshake-cycle-1.json"
+    assert code == 0 and out["path"] == ".orchestrator/changes/chg/handshake-cycle-1.json"
     h = json.loads((repo / out["path"]).read_text())
     assert all(k in h for k in state.HANDSHAKE_REQUIRED)
     assert h["design_diff"] == [] and "register_diff" not in h
@@ -481,12 +495,12 @@ def test_handshake_design_diff_from_file_and_flag(run, repo, tmp_path):
     assert h["design_diff"] == [{"seam": "seam/other", "change": "added", "ref": ""}]
     code, out, _ = run("handshake", "--design-diff", json.dumps([]))
     assert code == 0 and out["design_diff"] == 0 and out["design_diff_source"] == "--design-diff"
-    cyc = repo / ".orchestrator" / "cycles" / "cycle-1"
+    cyc = repo / ".orchestrator" / "changes" / "chg" / "cycles" / "cycle-1"
     cyc.mkdir(parents=True)
     (cyc / "design-diff.json").write_text(json.dumps(diff))
     code, out, _ = run("handshake", "--design-diff", f"@{flag}")  # the file wins over the flag
     assert code == 0 and out["design_diff"] == 1
-    assert out["design_diff_source"] == ".orchestrator/cycles/cycle-1/design-diff.json"
+    assert out["design_diff_source"] == ".orchestrator/changes/chg/cycles/cycle-1/design-diff.json"
     h = json.loads((repo / out["path"]).read_text())
     assert h["design_diff"] == diff
     _, out, _ = run("gate", "check", "integrate")
@@ -507,8 +521,8 @@ def test_handshake_design_diff_shape_refused(run, repo, tmp_path):
     for d in bad:
         code, _, err = run("handshake", "--design-diff", json.dumps(d))
         assert code == 1 and err["error"] == "bad_design_diff", d
-        assert not (repo / ".orchestrator" / "handshake-cycle-1.json").exists()
-    cyc = repo / ".orchestrator" / "cycles" / "cycle-1"
+        assert not (repo / ".orchestrator" / "changes" / "chg" / "handshake-cycle-1.json").exists()
+    cyc = repo / ".orchestrator" / "changes" / "chg" / "cycles" / "cycle-1"
     cyc.mkdir(parents=True)
     (cyc / "design-diff.json").write_text(json.dumps(bad[0]))
     code, _, err = run("handshake")
@@ -521,23 +535,23 @@ def test_handshake_design_diff_shape_refused(run, repo, tmp_path):
 # 15c
 def test_init_accepts_prior_handshake_with_register_diff(run, repo):
     """A handshake written by the installed checkout before schema 1.2 carries `register_diff`."""
-    hp = repo / ".orchestrator" / "handshake-cycle-0.json"
+    hp = repo / ".orchestrator" / "changes" / "chg" / "handshake-cycle-0.json"
     hp.write_text(json.dumps(handshake_fixture("register_diff", [{"entry_id": "e1"}])))
-    code, out, _ = init(run, "cycle-1", "--prior-handshake", ".orchestrator/handshake-cycle-0.json")
+    code, out, _ = init(run, "cycle-1", "--prior-handshake", ".orchestrator/changes/chg/handshake-cycle-0.json")
     assert code == 0 and out["cycle_id"] == "cycle-1"
     _, out, _ = run("gate", "check", "plan")
     assert out["checks"]["prior_integrate_consumed"]["value"] is True
     # The handshake this cycle writes is checked strictly: register_diff alone does not satisfy it.
-    (repo / ".orchestrator" / "handshake-cycle-1.json").write_text(
+    (repo / ".orchestrator" / "changes" / "chg" / "handshake-cycle-1.json").write_text(
         json.dumps(handshake_fixture("register_diff")))
-    (repo / ".orchestrator" / "cycles" / "cycle-1").mkdir(parents=True)
+    (repo / ".orchestrator" / "changes" / "chg" / "cycles" / "cycle-1").mkdir(parents=True)
     _, out, _ = run("gate", "check", "integrate")
     c = out["checks"]["handshake_artifact_written"]
     assert c["value"] is False and "design_diff" in c["reason"]
     # A prior handshake with neither field is still refused.
     run("close", "--abandon", "--why", "test")
-    (repo / ".orchestrator" / "handshake-cycle-1.json").write_text(json.dumps(handshake_fixture(None)))
-    code, _, err = init(run, "cycle-2", "--prior-handshake", ".orchestrator/handshake-cycle-1.json")
+    (repo / ".orchestrator" / "changes" / "chg" / "handshake-cycle-1.json").write_text(json.dumps(handshake_fixture(None)))
+    code, _, err = init(run, "cycle-2", "--prior-handshake", ".orchestrator/changes/chg/handshake-cycle-1.json")
     assert code == 1 and err["error"] == "bad_prior_handshake" and "design_diff" in err["message"]
 
 
@@ -545,7 +559,7 @@ def test_init_accepts_prior_handshake_with_register_diff(run, repo):
 def test_integrate_gate(run, repo):
     init(run, "cycle-1", "--first-cycle")
     run("record", "add", "asks", json.dumps(ASK))
-    cyc = repo / ".orchestrator" / "cycles" / "cycle-1"
+    cyc = repo / ".orchestrator" / "changes" / "chg" / "cycles" / "cycle-1"
     cyc.mkdir(parents=True)
     _, out, _ = run("gate", "check", "integrate")
     c = out["checks"]
@@ -560,7 +574,7 @@ def test_integrate_gate(run, repo):
     c = out["checks"]
     assert c["pm_digest_produced"]["value"] is True and c["handshake_artifact_written"]["value"] is True
     assert c["user_asks_routed"]["value"] is True  # the open ask is in the handshake and in the inbox
-    p = repo / ".orchestrator" / "inbox" / "ask-cycle-1-1.org"
+    p = repo / ".orchestrator" / "changes" / "chg" / "inbox" / "ask-cycle-1-1.org"
     p.write_text(p.read_text().replace("* Answer\n", "* Answer\n\nDo it\n"))  # the user answers in the file
     _, out, _ = run("gate", "check", "integrate")
     r = out["checks"]["user_asks_routed"]
@@ -590,10 +604,10 @@ def test_close_and_next_cycle(run, repo):
     assert code == 1 and err["error"] == "gate_not_passed"
     code, out, _ = run("close", "--abandon", "--why", "scope changed")
     assert code == 0 and out["abandoned"] and out["counts"]["done"] == 1
-    archived = json.loads((repo / ".orchestrator" / "cycles" / "cycle-1" / "state.json").read_text())
+    archived = json.loads((repo / ".orchestrator" / "changes" / "chg" / "cycles" / "cycle-1" / "state.json").read_text())
     assert archived["closed_at"] and archived["journal"][-1]["kind"] == "deviation"
     assert "scope changed" in archived["journal"][-1]["text"]
-    code, out, _ = init(run, "cycle-2", "--prior-handshake", ".orchestrator/handshake-cycle-1.json")
+    code, out, _ = init(run, "cycle-2", "--prior-handshake", ".orchestrator/changes/chg/handshake-cycle-1.json")
     assert code == 0 and out["history_cycles"] == ["cycle-1"]
     s = read_state(repo)
     assert s["cycle_id"] == "cycle-2" and s["cycle_log"]["history"][0]["counts"]["done"] == 1
@@ -605,7 +619,7 @@ def test_close_and_next_cycle(run, repo):
 def test_atomic_write(run, repo):
     init(run, "cycle-1", "--first-cycle")
     run("note", "note", "x")
-    d = repo / ".orchestrator"
+    d = repo / ".orchestrator" / "changes" / "chg"
     assert not (d / "state.json.tmp").exists() and (d / "state.lock").exists()
 
 
@@ -642,17 +656,17 @@ def test_migrate_legacy(run, repo):
             "integrate": {"passed": False, "checks": {"all_touched_entries_dispositioned": False,
                                                       "blocking_findings_resolved": True}}},
     }
-    (repo / ".orchestrator" / "state.json").write_text(json.dumps(legacy))
+    (repo / ".orchestrator" / "changes" / "chg" / "state.json").write_text(json.dumps(legacy))
     code, out, _ = run("validate")
     assert code == 1 and out["migration"]["register_touched_parked"] == 1
     assert out["migration"]["task_fields_parked"] == {"a": ["merge_order"]}
     code, out, _ = run("migrate")
     assert code == 0 and out["ok"] and out["from"] == "1.0" and out["to"] == "1.5"
-    assert out["rehomed_from"] is None and out["paths"] == {"home": str(repo), "code_root": str(repo)}
+    assert out["rehomed_from"] is None and out["paths"] == {"home": str(repo), "change": "chg", "code_root": str(repo)}
     assert sorted(out["parked_top_level_keys"]) == ["orchestrator_discoveries", "phase_gates.integrate",
                                                     "phase_gates.plan", "plan_note", "register_touched"]
     assert out["register_touched_parked"] == 1 and sorted(out["records"]) == ["architect_findings", "asks_for_user"]
-    parked = json.loads((repo / ".orchestrator" / "cycles" / "cycle-9" / "legacy-state-extras.json").read_text())
+    parked = json.loads((repo / ".orchestrator" / "changes" / "chg" / "cycles" / "cycle-9" / "legacy-state-extras.json").read_text())
     assert parked["top_level"]["plan_note"] == "free prose" and parked["tasks"]["a"]["merge_order"] == 1
     assert parked["top_level"]["register_touched"] == legacy["register_touched"]
     assert parked["top_level"]["phase_gates.plan"] == {"_dropped_checks": {
@@ -661,14 +675,14 @@ def test_migrate_legacy(run, repo):
         "all_touched_entries_dispositioned": False}}
     assert parked["cycle_log"] == {"counts": {"created": 1}} and parked["asks_for_user"] == []
     assert parked["record_extras"]["asks_for_user"]["ask-1"]["_legacy_kind"] is None
-    assert glob.glob(str(repo / ".orchestrator" / "state.json.pre-migrate-*"))
+    assert glob.glob(str(repo / ".orchestrator" / "changes" / "chg" / "state.json.pre-migrate-*"))
     s = read_state(repo)
     assert "register_touched" not in s and "repo_root" not in s
     assert s["home"] == str(repo) and s["code_root"] == str(repo)
     assert s["tasks"][0]["status"] == "completed"
     ask = s["asks_for_user"][0]
     assert ask == {"id": "ask-1", "kind": "decision", "status": "open", "blocks": [],
-                   "path": ".orchestrator/inbox/ask-1.org"}
+                   "path": ".orchestrator/changes/chg/inbox/ask-1.org"}
     assert out["ask_files"] == {"written": [ask["path"]], "existing": []}
     assert out["records"]["asks_for_user"] == {"kept": 1, "parked": 0, "with_extras": 1}
     text = (repo / ask["path"]).read_text()
@@ -693,7 +707,7 @@ def legacy_state(repo, **over):
          "cycle_log": {"started_at": "2026-01-01T00:00:00Z", "phase_started_at": {}, "history": []},
          "phase_gates": {}}
     s.update(over)
-    (repo / ".orchestrator" / "state.json").write_text(json.dumps(s))
+    (repo / ".orchestrator" / "changes" / "chg" / "state.json").write_text(json.dumps(s))
     return s
 
 
@@ -718,7 +732,7 @@ def test_migrate_renames_citations(run, repo):
     assert by["b"]["cites_seams"] == ["register/shape/x", "register/invariant/y"]
     assert by["c"]["cites_seams"] == ["seam/kept"]
     assert all("cites_register_entries" not in t and "reconciled_into" not in t for t in s["tasks"])
-    parked = json.loads((repo / ".orchestrator" / "cycles" / "cycle-9" / "legacy-state-extras.json").read_text())
+    parked = json.loads((repo / ".orchestrator" / "changes" / "chg" / "cycles" / "cycle-9" / "legacy-state-extras.json").read_text())
     assert parked["tasks"] == {"b": {"reconciled_into": "register/shape/x-v2"},
                                "c": {"cites_register_entries": ["register/shape/x", "register/invariant/y"]}}
     _, out, _ = run("gate", "check", "plan")
@@ -742,7 +756,7 @@ def test_migrate_maps_legacy_triggers(run, repo):
     s = read_state(repo)
     assert [f["trigger"] for f in s["architect_findings"]] == [
         "conformance", "conformance", "conformance", "premise-check", "conformance", "conformance"]
-    parked = json.loads((repo / ".orchestrator" / "cycles" / "cycle-9" / "legacy-state-extras.json").read_text())
+    parked = json.loads((repo / ".orchestrator" / "changes" / "chg" / "cycles" / "cycle-9" / "legacy-state-extras.json").read_text())
     ex = parked["record_extras"]["architect_findings"]
     assert {k: v["_legacy_trigger"] for k, v in ex.items() if "_legacy_trigger" in v} == {
         "arch-1": "on-touch", "arch-2": "end-of-cycle", "arch-3": "between-cycle",
@@ -756,7 +770,7 @@ def test_replay_real_data(run, repo, capsys, src):
     """Project A's archived cycle-4 (index 0) and Project B's archived cycle-2 (index 1), both schema 1.0."""
     if not os.path.exists(src):
         pytest.skip(f"{src} absent")
-    shutil.copy(src, repo / ".orchestrator" / "state.json")
+    shutil.copy(src, repo / ".orchestrator" / "changes" / "chg" / "state.json")
     original = json.loads(pathlib.Path(src).read_text())
     # The prior handshake, written by the installed checkout, carries register_diff.
     orch = pathlib.Path(src).parent
@@ -785,7 +799,7 @@ def test_replay_real_data(run, repo, capsys, src):
     n_asks = len(original.get("asks_for_user") or [])
     assert len(out["ask_files"]["written"]) == n_asks == out["records"]["asks_for_user"]["kept"]
     assert all("/asks/" in p for p in out["ask_files"]["written"])
-    assert not glob.glob(str(repo / ".orchestrator" / "inbox" / "*.org"))
+    assert not glob.glob(str(repo / ".orchestrator" / "changes" / "chg" / "inbox" / "*.org"))
     if n_asks:
         text = (repo / out["ask_files"]["written"][0]).read_text()
         assert ":STATUS: applied" in text and ":APPLIED_VIA:" in text and "* Answer" in text
@@ -840,7 +854,7 @@ def test_record_add_asks_from_org_draft_keeps_prose(run, repo):
     draft.write_text(text)
     code, out, err = run("record", "add", "asks", f"@{draft}")
     assert code == 0, err
-    assert out["id"] == "ask-cycle-1-1" and out["path"] == ".orchestrator/inbox/ask-cycle-1-1.org"
+    assert out["id"] == "ask-cycle-1-1" and out["path"] == ".orchestrator/changes/chg/inbox/ask-cycle-1-1.org"
     body = (repo / out["path"]).read_text()
     assert ":ID: ask-cycle-1-1" in body and "My own words." in body and body.count("* Answer") == 1
     assert read_state(repo)["asks_for_user"][0]["kind"] == "decision"
@@ -853,10 +867,10 @@ def test_record_add_asks_terminal_lands_in_cycle_dir_and_seq_skips_orphans(run, 
            "status": "applied", "decision": "Applied without asking: stage numbers corrected.",
            "applied_via": "design.md D4"}
     code, out, _ = run("record", "add", "asks", json.dumps(doc))
-    assert code == 0 and out["path"] == ".orchestrator/cycles/cycle-1/asks/ask-cycle-1-1.org"
-    assert (repo / out["path"]).exists() and not (repo / ".orchestrator" / "inbox").exists()
-    (repo / ".orchestrator" / "inbox").mkdir()
-    (repo / ".orchestrator" / "inbox" / "ask-cycle-1-2.org").write_text("stray\n")
+    assert code == 0 and out["path"] == ".orchestrator/changes/chg/cycles/cycle-1/asks/ask-cycle-1-1.org"
+    assert (repo / out["path"]).exists() and not (repo / ".orchestrator" / "changes" / "chg" / "inbox").exists()
+    (repo / ".orchestrator" / "changes" / "chg" / "inbox").mkdir()
+    (repo / ".orchestrator" / "changes" / "chg" / "inbox" / "ask-cycle-1-2.org").write_text("stray\n")
     code, out, _ = run("record", "add", "asks", json.dumps(ASK))
     assert code == 0 and out["id"] == "ask-cycle-1-3"  # an orphan file is never overwritten
     code, _, err = run("record", "add", "asks", json.dumps({**ASK, "id": "ask-cycle-1-2"}))
@@ -877,8 +891,8 @@ def test_record_set_asks_updates_drawer_index_and_moves(run, repo):
     assert code == 1 and err["error"] == "applied_via_required"
     code, out, _ = run("record", "set", "asks", "ask-cycle-1-1", "status=applied", "applied_via=commit abc")
     assert code == 0 and out["moved_via"] == "rename"
-    assert out["path"] == ".orchestrator/cycles/cycle-1/asks/ask-cycle-1-1.org"
-    assert not (repo / ".orchestrator" / "inbox" / "ask-cycle-1-1.org").exists()
+    assert out["path"] == ".orchestrator/changes/chg/cycles/cycle-1/asks/ask-cycle-1-1.org"
+    assert not (repo / ".orchestrator" / "changes" / "chg" / "inbox" / "ask-cycle-1-1.org").exists()
     idx = read_state(repo)["asks_for_user"][0]
     assert idx["status"] == "applied" and idx["path"] == out["path"] and idx["blocks"] == ["t1"]
     assert ":APPLIED_VIA: commit abc" in (repo / out["path"]).read_text()
@@ -903,7 +917,7 @@ def test_record_set_asks_git_mv_when_tracked(run, repo):
     code, out, _ = run("record", "set", "asks", "ask-cycle-1-1", "decision=Do nothing", "status=declined")
     assert code == 0 and out["moved_via"] == "git mv"
     tracked = g("ls-files").stdout
-    assert out["path"] in tracked and ".orchestrator/inbox/ask-cycle-1-1.org" not in tracked
+    assert out["path"] in tracked and ".orchestrator/changes/chg/inbox/ask-cycle-1-1.org" not in tracked
 
 
 # 27
@@ -913,7 +927,7 @@ def test_record_add_asks_revised_from_supersedes(run, repo):
     code, out, _ = run("record", "add", "asks", json.dumps({**ASK, "revised_from": "ask-cycle-1-1"}))
     assert code == 0 and out["id"] == "ask-cycle-1-2" and out["superseded"]["id"] == "ask-cycle-1-1"
     old = read_state(repo)["asks_for_user"][0]
-    assert old["status"] == "superseded" and old["path"] == ".orchestrator/cycles/cycle-1/asks/ask-cycle-1-1.org"
+    assert old["status"] == "superseded" and old["path"] == ".orchestrator/changes/chg/cycles/cycle-1/asks/ask-cycle-1-1.org"
     assert ":STATUS: superseded" in (repo / old["path"]).read_text()
     assert ":REVISED_FROM: ask-cycle-1-1" in (repo / out["path"]).read_text()
     code, _, err = run("record", "add", "asks", json.dumps({**ASK, "revised_from": "ask-cycle-1-7"}))
@@ -925,7 +939,7 @@ def test_inbox_reports_answers_and_tolerates_edits(run, repo):
     init(run, "cycle-1", "--first-cycle")
     for _ in range(4):
         run("record", "add", "asks", json.dumps(ASK))
-    inbox = repo / ".orchestrator" / "inbox"
+    inbox = repo / ".orchestrator" / "changes" / "chg" / "inbox"
 
     def answer(n, text):
         p = inbox / f"ask-cycle-1-{n}.org"
@@ -970,7 +984,7 @@ def test_validate_reports_index_file_mismatches_and_set_reconciles(run, repo):
     init(run, "cycle-1", "--first-cycle")
     run("record", "add", "asks", json.dumps(ASK))
     run("record", "add", "asks", json.dumps(ASK))
-    inbox = repo / ".orchestrator" / "inbox"
+    inbox = repo / ".orchestrator" / "changes" / "chg" / "inbox"
     p1 = inbox / "ask-cycle-1-1.org"
     p1.write_text(p1.read_text().replace(":STATUS: open", ":STATUS: deferred").replace("* Answer\n", "* Answer\n\nlater\n"))
     (inbox / "ask-cycle-1-2.org").unlink()
@@ -1012,7 +1026,7 @@ def test_init_carries_inbox_writes_gitignore_refuses_when_ignored(run, repo):
     assert [a["status"] for a in read_state(repo)["asks_for_user"]] == ["open", "deferred"]
     code, out, _ = run("record", "set", "asks", "ask-cycle-1-1", "decision=Do it", "status=applied",
                        "applied_via=cycle-2 task")
-    assert code == 0 and out["path"] == ".orchestrator/cycles/cycle-1/asks/ask-cycle-1-1.org"
+    assert code == 0 and out["path"] == ".orchestrator/changes/chg/cycles/cycle-1/asks/ask-cycle-1-1.org"
     if shutil.which("git"):
         subprocess.run(["git", "-C", str(repo), "init", "-q"])
         (repo / ".gitignore").write_text(".orchestrator/\n")
@@ -1025,13 +1039,13 @@ def test_init_carries_inbox_writes_gitignore_refuses_when_ignored(run, repo):
 def test_migrate_1_2_asks_to_files(run, repo):
     src = json.loads((FIX / "state-1.2.json").read_text())
     src["repo_root"] = str(repo)
-    (repo / ".orchestrator" / "state.json").write_text(json.dumps(src))
+    (repo / ".orchestrator" / "changes" / "chg" / "state.json").write_text(json.dumps(src))
     code, out, err = run("migrate")
     assert code == 0, err
     assert out["from"] == "1.2" and out["ask_files"]["existing"] == []
     written = out["ask_files"]["written"]
-    assert written[0] == ".orchestrator/inbox/ask-cycle-1790604160-1.org" and len(written) == 4
-    assert all(w.startswith(".orchestrator/cycles/cycle-1790604160/asks/") for w in written[1:])
+    assert written[0] == ".orchestrator/changes/chg/inbox/ask-cycle-1790604160-1.org" and len(written) == 4
+    assert all(w.startswith(".orchestrator/changes/chg/cycles/cycle-1790604160/asks/") for w in written[1:])
     s = read_state(repo)
     assert s["home"] == str(repo) and s["code_root"] == str(repo) and out["rehomed_from"] is None
     assert out["gitignore_written"] is True and (repo / ".orchestrator" / ".gitignore").exists()
@@ -1058,7 +1072,8 @@ def _g(path, *a):
 
 
 def split_repo(repo, name="code", worktree=False, git=True):
-    """Point the home's config.yaml at a nested code root and create it."""
+    """Point the home's config.yaml at a nested code root, create it, and re-open the test change
+    on it (the fixture opened it on the home)."""
     cfg = repo / ".claude" / "orchestrator" / "config.yaml"
     cfg.write_text(cfg.read_text() + f"code-root: {name}\n")
     code = repo / name
@@ -1076,6 +1091,9 @@ def split_repo(repo, name="code", worktree=False, git=True):
         code.mkdir()
         if git:
             _g(code, "init", "-q")
+    (repo / ".orchestrator" / "changes" / "chg" / "change.json").unlink()
+    rc, out, err = open_change(repo, "chg", "--worktree", str(code))
+    assert rc == 0, err
     return code
 
 
@@ -1084,11 +1102,15 @@ def test_where_single_repo(run, repo):
     code, out, _ = run("where")
     assert code == 0 and out["state"] == "absent" and out["split"] is False and out["home_found"] is True
     assert out["home"] == out["code_root"] == str(repo) and out["problems"] == [] and out["config"]
+    assert out["shape"] == "repo-root" and list(out["repos"].values())[0]["path"] == str(repo)
+    assert out["change"] == "chg" and out["change_resolved_by"] == "only" and out["legacy_layout"] is False
+    assert [c["name"] for c in out["changes"]] == ["chg"] and out["changes"][0]["worktree"] == str(repo)
+    assert out["worktrees"] == {"parent": str(repo / ".worktrees"), "pattern": "<branch>"}
     init(run, "cycle-1", "--first-cycle")
     s = read_state(repo)
-    assert s["home"] == s["code_root"] == str(repo) and "repo_root" not in s
+    assert s["home"] == s["code_root"] == str(repo) and "repo_root" not in s and s["change_name"] == "chg"
     code, out, _ = run("status")
-    assert out["paths"] == {"home": str(repo), "code_root": str(repo)}
+    assert out["paths"] == {"home": str(repo), "change": "chg", "code_root": str(repo)}
     code, out, _ = run("where")
     assert out["state"] == "present"
     assert out["warnings"] == []
@@ -1104,11 +1126,13 @@ def test_where_and_init_with_split_code_root(run, repo):
     code_dir = split_repo(repo)
     code, out, _ = run("where")
     assert code == 0 and out["split"] is True and out["code_root"] == str(code_dir)
-    assert out["code_root_from_config"] == "code" and out["problems"] == []
+    assert out["shape"] == "code-root" and out["repos"] == {"code": {"path": str(code_dir), "from_config": "code",
+                                                                   "test_command": None}}
+    assert out["problems"] == [] and out["repo"] == "code"
     code, out, err = init(run, "cycle-1", "--first-cycle")
     assert code == 0, err
     assert out["home"] == str(repo) and out["code_root"] == str(code_dir) and out["warnings"] == []
-    assert (repo / ".orchestrator" / "state.json").exists() and not (code_dir / ".orchestrator").exists()
+    assert (repo / ".orchestrator" / "changes" / "chg" / "state.json").exists() and not (code_dir / ".orchestrator").exists()
     s = read_state(repo)
     assert s["home"] == str(repo) and s["code_root"] == str(code_dir)
 
@@ -1138,7 +1162,10 @@ def test_home_flag_and_repo_alias(repo, capsys):
         assert code == 0 and out["home"] == str(repo)
     code = state.main(["--home", str(repo), "where", "--sh"])
     text = capsys.readouterr().out
-    assert text.splitlines() == [f"ORCH_HOME={repo}", f"CODE_ROOT={repo}"]
+    assert text.splitlines() == [f"export ORCH_HOME={repo}", f"export ORCH_WORKTREES={repo / '.worktrees'}",
+                                 "export ORCH_CHANGE=chg", f"export ORCH_REPO={repo.name}", f"export CODE_ROOT={repo}"]
+    code = state.main(["--home", str(repo), "worktree", "task-a-1", "--sh"])
+    assert capsys.readouterr().out.strip() == f"WORKTREE_PATH={repo / '.worktrees' / 'task-a-1'}"
 
 
 # 36
@@ -1178,7 +1205,7 @@ def test_init_refuses_code_root_missing_and_not_git(run, repo):
     if _git_ok():
         code, _, err = init(run, "cycle-1", "--first-cycle")
         assert code == 1 and err["error"] == "code_root_not_git"
-    assert not (repo / ".orchestrator" / "state.json").exists()
+    assert not (repo / ".orchestrator" / "changes" / "chg" / "state.json").exists()
 
 
 # 38
@@ -1235,7 +1262,7 @@ def test_orchestrator_ignored_is_checked_on_home_not_code_root(run, repo):
     assert code == 1 and err["error"] == "orchestrator_ignored"
     (repo / ".gitignore").write_text("")
     code, out, _ = run("where")
-    assert code == 0 and len(out["warnings"]) == 1 and "does not ignore the code root code/" in out["warnings"][0]
+    assert code == 0 and len(out["warnings"]) == 1 and "does not ignore the repository code code/" in out["warnings"][0]
     (repo / ".gitignore").write_text("code/\n")
     assert run("where")[1]["warnings"] == []
 
@@ -1248,7 +1275,7 @@ def test_migrate_1_3_rehomes(run, repo):
     s["schema_version"] = "1.3"
     s["repo_root"] = "/old/place"
     del s["home"], s["code_root"]
-    (repo / ".orchestrator" / "state.json").write_text(json.dumps(s))
+    (repo / ".orchestrator" / "changes" / "chg" / "state.json").write_text(json.dumps(s))
     (repo / ".orchestrator" / ".gitignore").unlink()
     code, out, _ = run("status")
     assert code == 0 and out["legacy"] is True
@@ -1309,8 +1336,217 @@ def test_red_baseline_without_compare_warns_at_set_and_next_init(run, repo):
     run("task", "set", "t1", "done")
     run("handshake")
     run("close", "--abandon", "--why", "test")
-    code, out, _ = init(run, "cycle-2", "--prior-handshake", ".orchestrator/handshake-cycle-1.json")
+    code, out, _ = init(run, "cycle-2", "--prior-handshake", ".orchestrator/changes/chg/handshake-cycle-1.json")
     assert code == 0 and any("last cycle's baseline_status=1" in w for w in out["warnings"])
     cfg.write_text("test:\n  command: ./t\n  compare: ./cmp.py\n")
     code, out, _ = run("set", "baseline_status=1")
     assert code == 0 and "warnings" not in out
+
+
+# 46
+def test_parse_yaml_subset_and_resolve_repos(repo):
+    cfg = repo / ".claude" / "orchestrator" / "config.yaml"
+    cfg.write_text("""# a workspace home
+project: ws
+language: elisp
+repos:
+  emacs:
+    path: ~/emacs
+    build:
+      pre-commit: ./bin/tangle.sh
+    test:
+      command: ./bin/run-tests.sh   # trailing comment
+      pending-style: xit
+  api:
+    path: "repos/api"
+    language: go
+    test: {command: go test ./..., parser: exit-code}
+test:
+  parser: tap
+  compare: python3 cmp.py
+worktrees:
+  parent: .worktrees
+  pattern: <repo>/<branch>
+architect:
+  drift-hotspots:
+    - module-system: "jf/resolve: contract"
+    - tangle: watch it
+taxonomy: [feature, test]
+reviewer:
+  checks:
+    - cl-lib-vs-seq
+asks:
+  reader: "a PM"
+""")
+    cfg_d = state.read_config(str(repo))
+    assert cfg_d["repos"]["emacs"]["test"] == {"command": "./bin/run-tests.sh", "pending-style": "xit"}
+    assert cfg_d["repos"]["api"]["test"] == "{command: go test ./..., parser: exit-code}"  # flow maps stay strings
+    assert cfg_d["architect"]["drift-hotspots"] == [{"module-system": "jf/resolve: contract"}, {"tangle": "watch it"}]
+    assert cfg_d["taxonomy"] == ["feature", "test"] and cfg_d["reviewer"]["checks"] == ["cl-lib-vs-seq"]
+    assert cfg_d["asks"]["reader"] == "a PM"
+    hc = state.resolve_home_config(str(repo))
+    assert hc["shape"] == "workspace" and sorted(hc["repos"]) == ["api", "emacs"]
+    assert hc["repos"]["emacs"]["path"] == os.path.expanduser("~/emacs")
+    assert hc["repos"]["emacs"]["test"] == {"parser": "tap", "compare": "python3 cmp.py",
+                                            "command": "./bin/run-tests.sh", "pending-style": "xit"}
+    assert hc["repos"]["api"]["path"] == str(repo / "repos" / "api") and hc["repos"]["api"]["language"] == "go"
+    assert hc["worktrees"] == {"parent": str(repo / ".worktrees"), "from_config": ".worktrees", "pattern": "<repo>/<branch>"}
+    assert state.worktree_path_for(hc, "api", "task-x-1") == str(repo / ".worktrees" / "api" / "task-x-1")
+    assert hc["problems"] == []
+    cfg.write_text("repos:\n  a:\n    path: a\n  b:\n    path: b\nworktrees:\n  pattern: <branch>\n")
+    hc = state.resolve_home_config(str(repo))
+    assert [p[0] for p in hc["problems"]] == ["bad_worktree_pattern"]
+    cfg.write_text("repos:\n  a:\n    language: go\n")
+    assert [p[0] for p in state.resolve_home_config(str(repo))["problems"]] == ["bad_repo"]
+    cfg.write_text("repos: []\n")
+    assert [p[0] for p in state.resolve_home_config(str(repo))["problems"]] == ["bad_repos"]
+
+
+# 47
+def test_change_open_creates_worktree_in_workspace(tmp_path, capsys):
+    if not _git_ok():
+        pytest.skip("no git")
+    home = tmp_path / "ws"
+    (home / ".claude" / "orchestrator").mkdir(parents=True)
+    origin = tmp_path / "origin"
+    origin.mkdir()
+    _g(origin, "init", "-q", "-b", "main")
+    (origin / "f.txt").write_text("x\n")
+    _g(origin, "add", ".")
+    _g(origin, "commit", "-qm", "init")
+    _g(origin, "branch", "integration")
+    (home / ".claude" / "orchestrator" / "config.yaml").write_text(
+        f"project: ws\nrepos:\n  app:\n    path: {origin}\n    test:\n      command: make test\n"
+        "worktrees:\n  parent: .worktrees\n  pattern: <repo>/<branch>\n")
+
+    def run(*argv):
+        code = state.main(["--home", str(home), *argv])
+        cap = capsys.readouterr()
+        return code, _parse(cap.out), _parse(cap.err)
+
+    code, out, _ = run("where")
+    assert code == 0 and out["shape"] == "workspace" and out["changes"] == [] and out["change"] is None
+    assert out["code_root"] is None and out["problems"] == []
+    code, _, err = run("init", "--first-cycle")
+    assert code == 1 and err["error"] == "no_change" and err["changes"] == []
+    code, out, err = run("change", "open", "feat-a", "--from", "integration")
+    assert code == 0, err
+    wt = home / ".worktrees" / "app" / "feat-a"
+    assert out["created"] is True and out["worktree"] == str(wt) and out["branch"] == "feat-a"
+    assert out["repo"] == "app" and out["from"] == "integration" and len(out["base"]) == 40
+    assert wt.is_dir() and (wt / ".git").is_file() and _g(wt, "branch", "--show-current").stdout.strip() == "feat-a"
+    assert json.loads((home / ".orchestrator" / "changes" / "feat-a" / "change.json").read_text())["change"] == "feat-a"
+    code, _, err = run("change", "open", "feat-a")
+    assert code == 1 and err["error"] == "change_exists"
+    code, out, err = run("change", "open", "feat-b")
+    assert code == 0, err
+    code, _, err = run("init", "--first-cycle")
+    assert code == 1 and err["error"] == "no_change" and err["changes"] == ["feat-a", "feat-b"]
+    code, out, err = run("--change", "feat-a", "init", "--first-cycle")
+    assert code == 0, err
+    assert out["change"] == "feat-a" and out["code_root"] == str(wt)
+    s = json.loads((home / ".orchestrator" / "changes" / "feat-a" / "state.json").read_text())
+    assert s["change_name"] == "feat-a" and s["test_command"] == "make test" and s["current_branch"] == "feat-a"
+    assert (home / ".orchestrator" / ".gitignore").exists()
+    code, out, err = run("--change", "feat-b", "init", "--first-cycle")
+    assert code == 0, err  # two cycles open at once, one per change
+    code, out, _ = run("where")
+    assert [(c["name"], c["cycle"] is not None, c["phase"]) for c in out["changes"]] == \
+        [("feat-a", True, "plan"), ("feat-b", True, "plan")]
+    code, out, _ = run("--change", "feat-b", "worktree", "task-t-9")
+    assert out["path"] == str(home / ".worktrees" / "app" / "task-t-9")
+    code, _, err = run("--change", "feat-a", "init", "--change", "feat-b", "--first-cycle")
+    assert code == 1 and err["error"] == "change_mismatch"
+    os.environ["ORCH_CHANGE"] = "feat-b"
+    try:
+        code, out, _ = run("status")
+        assert code == 0 and out["change_name"] == "feat-b"
+    finally:
+        del os.environ["ORCH_CHANGE"]
+    cwd = os.getcwd()
+    os.chdir(wt)
+    try:
+        code, out, _ = state.main(["where"]), None, None
+        out = _parse(capsys.readouterr().out)
+        assert out["home"] == str(home) and out["change"] == "feat-a" and out["change_resolved_by"] == "cwd"
+    finally:
+        os.chdir(cwd)
+    code, out, err = run("change", "open", "feat-c", "--worktree", str(origin))
+    assert code == 0 and out["adopted"] is True and out["branch"] == "main" and out["created"] is False
+    (origin / "sub").mkdir()
+    code, _, err = run("change", "open", "feat-d", "--worktree", str(origin / "nope"))
+    assert code == 1 and err["error"] == "worktree_missing"
+    code, _, err = run("change", "open", "bad/name")
+    assert code == 1 and err["error"] == "bad_change_name"
+    code, _, err = run("change", "open", "feat-e", "--repo", "nope")
+    assert code == 1 and err["error"] == "unknown_repo"
+
+
+# 48
+def test_migrate_moves_one_change_layout(repo, capsys):
+    """A home laid out before changes/<change>/: state.json, cycles/, inbox/, handshakes and
+    test outputs at .orchestrator/ itself, moved under the change the state names."""
+    (repo / ".orchestrator" / "changes" / "chg" / "change.json").unlink()
+    root = repo / ".orchestrator"
+    old = {
+        "schema_version": "1.5", "session_id": "s", "cycle_id": "cycle-2", "phase": "integrate",
+        "home": str(repo), "code_root": str(repo), "change_name": "old-change",
+        "baseline_snapshot": ".orchestrator/baseline-cycle-2.txt", "baseline_status": 0,
+        "current_branch": "main", "test_command": "t", "history_window": 5,
+        "prior_handshake": ".orchestrator/handshake-cycle-1.json", "closed_at": "2026-01-01T00:00:00Z",
+        "tasks": [dict(state.TASK_DEFAULTS, task_name="a", task_file=".orchestrator/changes/old-change/tasks/open/a.md",
+                       task_class="feature", status="done", after_snapshot=".orchestrator/after-a-1.txt",
+                       implementor_report_path=".orchestrator/cycles/cycle-2/reports/a.md")],
+        "architect_findings": [], "asks_for_user": [dict(state.ASK_DEFAULTS, id="ask-cycle-2-1", kind="decision",
+                                                         status="open", path=".orchestrator/inbox/ask-cycle-2-1.org")],
+        "journal": [], "cycle_log": {"started_at": "2026-01-01T00:00:00Z",
+                                     "phase_started_at": {"plan": None, "execute": None, "integrate": None},
+                                     "history": []},
+        "phase_gates": state.gates_fresh(),
+    }
+    (root / "state.json").write_text(json.dumps(old))
+    (root / "cycles" / "cycle-1").mkdir(parents=True)
+    (root / "cycles" / "cycle-1" / "state.json").write_text("{}")
+    (root / "inbox").mkdir()
+    (root / "inbox" / "ask-cycle-2-1.org").write_text("stub\n")
+    (root / "handshake-cycle-1.json").write_text(json.dumps({"pm_digest_path": ".orchestrator/cycles/cycle-1/pm-digest.md"}))
+    (root / "baseline-cycle-2.txt").write_text("")
+    (root / ".gitignore").write_text("x\n")
+
+    def run(*argv):
+        code = state.main(["--home", str(repo), *argv])
+        cap = capsys.readouterr()
+        return code, _parse(cap.out), _parse(cap.err)
+
+    code, out, _ = run("where")
+    assert code == 0 and out["legacy_layout"] is True and out["changes"] == [] and any("migrate" in w for w in out["warnings"])
+    code, out, _ = run("status")
+    assert code == 0 and out["legacy_layout"] is True and out["resume"] == "run `migrate`"
+    code, _, err = run("init", "--first-cycle")
+    assert code == 1 and err["error"] == "no_change"
+    code, out, err = run("migrate")
+    assert code == 0, err
+    assert out["unchanged"] is False and out["layout"]["change"] == "old-change"
+    assert sorted(out["layout"]["moved"]) == ["baseline-cycle-2.txt", "cycles", "handshake-cycle-1.json", "inbox", "state.json"]
+    new_dir = root / "changes" / "old-change"
+    assert not (root / "state.json").exists() and (root / ".gitignore").read_text() == "x\n"
+    assert (new_dir / "cycles" / "cycle-1" / "state.json").exists() and (new_dir / "inbox" / "ask-cycle-2-1.org").exists()
+    assert (new_dir / "baseline-cycle-2.txt").exists()
+    s = json.loads((new_dir / "state.json").read_text())
+    assert s["baseline_snapshot"] == ".orchestrator/changes/old-change/baseline-cycle-2.txt"
+    assert s["prior_handshake"] == ".orchestrator/changes/old-change/handshake-cycle-1.json"
+    assert s["tasks"][0]["task_file"] == ".orchestrator/changes/old-change/tasks/open/a.md"
+    assert s["tasks"][0]["after_snapshot"] == ".orchestrator/changes/old-change/after-a-1.txt"
+    assert s["asks_for_user"][0]["path"] == ".orchestrator/changes/old-change/inbox/ask-cycle-2-1.org"
+    hs = json.loads((new_dir / "handshake-cycle-1.json").read_text())
+    assert hs["pm_digest_path"] == ".orchestrator/changes/old-change/cycles/cycle-1/pm-digest.md"
+    rec = json.loads((new_dir / "change.json").read_text())
+    assert rec["change"] == "old-change" and rec["worktree"] == str(repo) and rec["branch"] == "main" and rec["adopted"]
+    code, out, _ = run("where")
+    assert out["legacy_layout"] is False and out["change"] == "old-change" and out["changes"][0]["closed"] is True
+    code, out, _ = run("migrate")
+    assert code == 0 and out["unchanged"] is True
+    code, _, err = run("init", "--first-cycle", "--cycle", "cycle-3")
+    assert code == 1 and err["error"] == "no_test_command"
+    code, out, err = run("init", "--first-cycle", "--cycle", "cycle-3", "--test-command", "t")
+    assert code == 0, err

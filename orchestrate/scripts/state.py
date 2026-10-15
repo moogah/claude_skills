@@ -175,14 +175,15 @@ def now_iso():
 
 def find_home(explicit=None):
     """(home, found). The nearest ancestor of cwd with .claude/orchestrator/config.yaml, else
-    with .orchestrator/state.json; (cwd, False) when neither exists."""
+    with .orchestrator/ holding a change or a legacy state.json; (cwd, False) when neither exists."""
     if explicit:
         return os.path.abspath(explicit), True
     d = os.getcwd()
     while True:
         if os.path.exists(os.path.join(d, ".claude", "orchestrator", "config.yaml")):
             return d, True
-        if os.path.exists(os.path.join(d, ".orchestrator", "state.json")):
+        if os.path.exists(os.path.join(d, ".orchestrator", "state.json")) \
+                or glob.glob(os.path.join(d, ".orchestrator", "changes", "*", "change.json")):
             return d, True
         parent = os.path.dirname(d)
         if parent == d:
@@ -194,9 +195,95 @@ def config_path(home):
     return os.path.join(home, ".claude", "orchestrator", "config.yaml")
 
 
+def _yaml_scalar(raw):
+    raw = raw.strip()
+    if len(raw) >= 2 and raw[0] in "\"'" and raw[-1] == raw[0]:
+        return raw[1:-1]
+    raw = re.split(r"\s+#", raw)[0].strip()
+    return "" if raw.startswith("#") else raw
+
+
+def parse_yaml_subset(text):
+    """The overlay's YAML, without a YAML library: nested maps, scalars, lists of scalars and
+    lists of one-key maps (`- <module>: <note>`), flow lists `[a, b]`, comments. Anything
+    stranger is kept as the string it was. Enough for config.yaml; never for state."""
+    lines = []
+    for raw in text.split("\n"):
+        if not raw.strip() or raw.lstrip().startswith("#"):
+            continue
+        lines.append((len(raw) - len(raw.lstrip(" ")), raw.strip()))
+    pos = [0]
+
+    def key_of(content):
+        if content[:1] in "\"'":
+            return None
+        m = re.match(r"^([^:#]+?):(?:\s+(.*))?$", content)
+        return (m.group(1).strip().strip("\"'"), m.group(2) or "") if m else None
+
+    def mapping(indent):
+        out = {}
+        while pos[0] < len(lines):
+            ind, content = lines[pos[0]]
+            if ind < indent or (ind == indent and content.startswith("- ")):
+                break
+            if ind > indent:
+                pos[0] += 1
+                continue
+            kv = key_of(content)
+            pos[0] += 1
+            if not kv:
+                continue
+            key, rest = kv
+            val = _yaml_scalar(rest)
+            if val == "":
+                if pos[0] < len(lines) and lines[pos[0]][0] > indent:
+                    out[key] = block(lines[pos[0]][0])
+                elif pos[0] < len(lines) and lines[pos[0]][0] == indent and lines[pos[0]][1].startswith("- "):
+                    out[key] = seq(indent)
+                else:
+                    out[key] = None
+            elif val.startswith("[") and val.endswith("]"):
+                out[key] = [_yaml_scalar(x) for x in val[1:-1].split(",") if x.strip()]
+            else:
+                out[key] = val
+        return out
+
+    def seq(indent):
+        out = []
+        while pos[0] < len(lines):
+            ind, content = lines[pos[0]]
+            if ind != indent or not content.startswith("- "):
+                break
+            item = content[2:].strip()
+            pos[0] += 1
+            kv = key_of(item)
+            if kv:
+                d = {kv[0]: _yaml_scalar(kv[1])}
+                if pos[0] < len(lines) and lines[pos[0]][0] > indent:
+                    d.update(mapping(lines[pos[0]][0]))
+                out.append(d)
+            else:
+                out.append(_yaml_scalar(item))
+        return out
+
+    def block(indent):
+        return seq(indent) if lines[pos[0]][1].startswith("- ") else mapping(indent)
+
+    return mapping(lines[0][0]) if lines else {}
+
+
+def read_config(home):
+    """config.yaml as a dict; {} when the home has none."""
+    p = config_path(home)
+    if not os.path.exists(p):
+        return {}
+    return parse_yaml_subset(open(p, encoding="utf-8").read())
+
+
 def read_code_root(home):
-    """(raw value, absolute path) of config.yaml's top-level `code-root:`; (None, None) when absent
-    or empty. One path only: a list is refused (multi-repo is deferred)."""
+    """(raw value, absolute path) of config.yaml's top-level `code-root:`, the one-repository
+    shorthand; (None, None) when absent or empty. A list is refused: several repositories go
+    under `repos:` (overlay.md § Repositories)."""
     p = config_path(home)
     if not os.path.exists(p):
         return None, None
@@ -210,7 +297,8 @@ def read_code_root(home):
             raw = ""
         nxt = lines[i + 1] if i + 1 < len(lines) else ""
         if raw.startswith("[") or (raw == "" and re.match(r"^\s*-\s", nxt)):
-            raise Refusal("bad_code_root", "code-root takes one path; multi-repo is not supported")
+            raise Refusal("bad_code_root", "code-root takes one path, the one-repository shorthand; "
+                          "several repositories are named under repos: (overlay.md § Repositories)")
         raw = raw.strip("\"'")
         if not raw:
             return None, None
@@ -218,30 +306,86 @@ def read_code_root(home):
     return None, None
 
 
+WORKTREE_PLACEHOLDERS = ("<repo>", "<branch>")
+
+
+def resolve_home_config(home, cfg=None):
+    """The home's shape and its repositories, from config.yaml (overlay.md § Repositories):
+    {shape: workspace | code-root | repo-root, repos: {name: {path, from_config, language, build,
+    test, worktree}}, worktrees: {parent, from_config, pattern}, code_root_raw, problems}.
+    `repos:` names each repository; `code-root:` is the one-repository shorthand; neither means
+    the home is the repository. Worktrees are placed from the home, never from a code root."""
+    cfg = read_config(home) if cfg is None else cfg
+    problems = []
+
+    def absolute(raw):
+        return os.path.abspath(os.path.join(home, os.path.expanduser(str(raw))))
+
+    def merged(spec):
+        out = {}
+        for k in ("build", "test", "worktree"):
+            base = cfg.get(k) if isinstance(cfg.get(k), dict) else {}
+            own = spec.get(k) if isinstance(spec.get(k), dict) else {}
+            out[k] = dict(base, **own)
+        return out
+
+    repos, code_root_raw = {}, None
+    if cfg.get("repos") is not None:
+        shape = "workspace"
+        block = cfg.get("repos")
+        if not isinstance(block, dict) or not block:
+            problems.append(("bad_repos", "repos: is a map, <name>: {path: <dir>, ...} (overlay.md § Repositories)"))
+        else:
+            for name, spec in block.items():
+                spec = spec if isinstance(spec, dict) else {}
+                if not spec.get("path"):
+                    problems.append(("bad_repo", f"repos.{name} needs path: <dir>, relative to the home"))
+                    continue
+                repos[name] = {"path": absolute(spec["path"]), "from_config": spec["path"],
+                               "language": spec.get("language") or cfg.get("language"), **merged(spec)}
+    else:
+        code_root_raw, path = read_code_root(home)
+        shape = "code-root" if path else "repo-root"
+        path = path or home
+        name = os.path.basename(os.path.realpath(path)) or "repo"
+        repos[name] = {"path": path, "from_config": code_root_raw, "language": cfg.get("language"), **merged({})}
+    wt = cfg.get("worktrees") if isinstance(cfg.get("worktrees"), dict) else {}
+    parent_raw = wt.get("parent") or ".worktrees"
+    pattern = wt.get("pattern") or ("<repo>/<branch>" if shape == "workspace" else "<branch>")
+    if "<branch>" not in pattern:
+        problems.append(("bad_worktree_pattern", f"worktrees.pattern {pattern!r} must contain <branch>"))
+    if len(repos) > 1 and "<repo>" not in pattern:
+        problems.append(("bad_worktree_pattern", f"worktrees.pattern {pattern!r} must contain <repo> when the "
+                         "home has several repositories (two of them may both have a main)"))
+    return {"shape": shape, "repos": repos, "code_root_raw": code_root_raw,
+            "worktrees": {"parent": absolute(parent_raw), "from_config": parent_raw, "pattern": pattern},
+            "problems": problems}
+
+
+def worktree_path_for(hc, repo, branch):
+    rel = hc["worktrees"]["pattern"].replace("<repo>", repo).replace("<branch>", branch)
+    return os.path.normpath(os.path.join(hc["worktrees"]["parent"], rel))
+
+
+def test_compare_of(store):
+    """The change's repository `test.compare` command, or None."""
+    repo = store.hc["repos"].get(store.repo or "") if store.hc else None
+    val = (repo or {}).get("test", {}).get("compare") if repo else None
+    return val or None
+
+
 def read_test_compare(home):
-    """The overlay's `test.compare` command, or None when the `test:` block has none."""
-    p = config_path(home)
-    if not os.path.exists(p):
-        return None
-    in_test = False
-    for line in open(p, encoding="utf-8"):
-        if re.match(r"^test:\s*(#.*)?$", line):
-            in_test = True
-            continue
-        if in_test:
-            if line.strip() and not line[0].isspace():
-                return None
-            m = re.match(r"^\s+compare:\s*(.*?)\s*$", line)
-            if m:
-                raw = re.split(r"\s+#", m.group(1))[0].strip().strip("\"'")
-                return raw if raw and not raw.startswith("#") else None
+    """The overlay's top-level `test.compare` command, or None (the one-repository shorthands)."""
+    hc = resolve_home_config(home)
+    for r in hc["repos"].values():
+        return r["test"].get("compare") or None
     return None
 
 
 def red_baseline_warnings(store, baseline_status, which="baseline_status"):
     """A red baseline with no `test.compare` leaves the regression check unable to decide
     (flows/execute.md § 4); the agent must raise the environment ask before the first merge."""
-    if not baseline_status or read_test_compare(store.home):
+    if not baseline_status or test_compare_of(store):
         return []
     return [f"{which}={baseline_status} and the overlay has no test.compare: the exit code "
             "cannot decide a regression; set test.compare or raise the environment ask before the "
@@ -252,22 +396,90 @@ def _same_path(a, b):
     return os.path.realpath(a) == os.path.realpath(b)
 
 
+# ---------------------------------------------------------------- changes
+
+def changes_root(home):
+    return os.path.join(home, ".orchestrator", "changes")
+
+
+def change_json_path(home, name):
+    return os.path.join(changes_root(home), name, "change.json")
+
+
+def read_change(home, name):
+    p = change_json_path(home, name)
+    if not os.path.exists(p):
+        return None
+    try:
+        rec = json.load(open(p, encoding="utf-8"))
+    except (json.JSONDecodeError, OSError):
+        return None
+    return rec if isinstance(rec, dict) and rec.get("change") == name else None
+
+
+def list_changes(home):
+    out = []
+    for p in sorted(glob.glob(os.path.join(changes_root(home), "*", "change.json"))):
+        rec = read_change(home, os.path.basename(os.path.dirname(p)))
+        if rec:
+            out.append(rec)
+    return out
+
+
+def _under(path, parent):
+    try:
+        rp, pp = os.path.realpath(path), os.path.realpath(parent)
+    except OSError:
+        return False
+    return rp == pp or rp.startswith(pp.rstrip(os.sep) + os.sep)
+
+
+def resolve_change(home, explicit=None):
+    """(name, how). The change named by --change or $ORCH_CHANGE; else the open change whose
+    worktree holds the cwd; else the only open change; else (None, None)."""
+    if explicit:
+        return explicit, "flag"
+    env = os.environ.get("ORCH_CHANGE")
+    if env:
+        return env, "env"
+    changes = list_changes(home)
+    cwd = os.getcwd()
+    for rec in changes:
+        if rec.get("worktree") and not _same_path(rec["worktree"], home) and _under(cwd, rec["worktree"]):
+            return rec["change"], "cwd"
+    if len(changes) == 1:
+        return changes[0]["change"], "only"
+    return None, None
+
+
 class Store:
-    def __init__(self, home, code_root=None):
+    def __init__(self, home, change=None, code_root=None, repo=None):
         self.home = home
+        self.change = change
+        self.repo = repo
         self.code_root = code_root or home
         self.split = not _same_path(self.code_root, self.home)
         self.home_found = True
         self.code_root_raw = None
-        self.dir = os.path.join(home, ".orchestrator")
+        self.hc = None
+        self.change_rec = None
+        self.root = os.path.join(home, ".orchestrator")
+        self.dir = os.path.join(self.root, "changes", change) if change else self.root
         self.path = os.path.join(self.dir, "state.json")
         self.lock_path = os.path.join(self.dir, "state.lock")
+
+    def legacy_layout(self):
+        """A state.json at .orchestrator/ itself: the one-change layout before changes/<change>/."""
+        return os.path.exists(os.path.join(self.root, "state.json"))
 
     def exists(self):
         return os.path.exists(self.path)
 
     def load(self):
         if not self.exists():
+            if self.change is None and self.legacy_layout():
+                raise Refusal("legacy_layout", f"{self.root}/state.json is the one-change layout; run "
+                              "`migrate` to move it under .orchestrator/changes/<change>/", exit_code=2)
             raise Refusal("not_initialized", f"no state file at {self.path}; run `init`", exit_code=2)
         with open(self.path) as f:
             state = json.load(f)
@@ -843,11 +1055,17 @@ def _cycle_of(ask_id, fallback):
     return m.group(1) if m else fallback
 
 
-def ask_path(ask_id, status, fallback_cycle):
-    """Relative to the home; a pure function of id and status."""
+def ask_path(ask_id, status, fallback_cycle, store=None):
+    """Relative to the home, under the change's directory; a pure function of id and status."""
+    pre = store_rel(store)
     if status in ASK_TERMINAL:
-        return f".orchestrator/cycles/{_cycle_of(ask_id, fallback_cycle)}/asks/{ask_id}.org"
-    return f".orchestrator/inbox/{ask_id}.org"
+        return f"{pre}/cycles/{_cycle_of(ask_id, fallback_cycle)}/asks/{ask_id}.org"
+    return f"{pre}/inbox/{ask_id}.org"
+
+
+def store_rel(store):
+    """The change's directory relative to the home (`.orchestrator/changes/<change>`)."""
+    return os.path.relpath(store.dir, store.home) if store is not None else ".orchestrator"
 
 
 def read_ask_file(store, rel):
@@ -1252,6 +1470,13 @@ def verb_init(store, args):
         raise Refusal("no_home", f"no .claude/orchestrator/config.yaml found walking up from {os.getcwd()}; "
                       "create the overlay at the intended home (the repo, or the workspace above it) or "
                       "pass --home")
+    _require_change(store)
+    if args.change and args.change != store.change:
+        raise Refusal("change_mismatch", f"--change {args.change!r} but the resolved change is {store.change!r}")
+    if not args.test_command:
+        args.test_command = (store.hc["repos"].get(store.repo) or {}).get("test", {}).get("command")
+        if not args.test_command:
+            raise Refusal("no_test_command", "pass --test-command, or set test.command in config.yaml")
     prior_baseline = None
     if store.exists():
         cur = store.load()
@@ -1274,7 +1499,7 @@ def verb_init(store, args):
         raise Refusal("orchestrator_ignored", ".orchestrator/ is ignored by this repository's "
                       ".gitignore; process artifacts are tracked (SKILL.md). Delete that line "
                       "and run `init` again (an environment ask)")
-    problems = code_root_problems(store)
+    problems = repo_problems(store.hc) + change_problems(store)
     if problems:
         slug, msg = problems[0]
         raise Refusal(slug, msg, problems=[{"error": a, "message": b} for a, b in problems])
@@ -1296,7 +1521,7 @@ def verb_init(store, args):
         "phase": "plan",
         "home": store.home,
         "code_root": store.code_root,
-        "change_name": args.change,
+        "change_name": store.change,
         "baseline_snapshot": None,
         "baseline_status": None,
         "current_branch": args.branch or _git_branch(store.code_root),
@@ -1320,8 +1545,8 @@ def verb_init(store, args):
     return {"ok": True, "cycle_id": cycle_id, "path": store.path,
             "history_cycles": [h["cycle_id"] for h in state["cycle_log"]["history"]],
             "inbox_carried": [a["id"] for a in carried], "gitignore_written": wrote_gitignore,
-            "home": store.home, "code_root": store.code_root,
-            "warnings": code_root_warnings(store) + red_baseline_warnings(store, prior_baseline,
+            "home": store.home, "change": store.change, "code_root": store.code_root,
+            "warnings": home_warnings(store) + red_baseline_warnings(store, prior_baseline,
                                                                        "the last cycle's baseline_status")}
 
 
@@ -1337,13 +1562,36 @@ def _git_branch(code_root):
     return ref
 
 
-def code_root_problems(store):
-    """[(slug, message)] about a code root that differs from the home; empty when they are one."""
+def _is_worktree_root(path):
+    rc, out = _git(path, "rev-parse", "--show-toplevel")
+    return rc == 0 and out.strip() and _same_path(out.strip(), path)
+
+
+def repo_problems(hc):
+    """[(slug, message)] about the repositories config.yaml names; empty for the home itself."""
+    out = list(hc["problems"])
+    slug = "code_root" if hc["shape"] == "code-root" else "repo"  # the shorthand keeps its old slugs
+    for name, r in hc["repos"].items():
+        if r.get("from_config") is None:
+            continue  # the home is the repository; nothing to check
+        key = "code-root" if hc["shape"] == "code-root" else f"repos.{name}.path"
+        if not os.path.isdir(r["path"]):
+            out.append((f"{slug}_missing", f"config.yaml {key}: {r['from_config']} -> {r['path']} is not a directory"))
+            continue
+        rc, _ = _git(r["path"], "rev-parse", "--show-toplevel")
+        if rc != 0:
+            out.append((f"{slug}_not_git", f"repository {name} at {r['path']} is not a git work tree"))
+    return out
+
+
+def change_problems(store):
+    """[(slug, message)] about the resolved change's code root, its worktree; empty when it is the home."""
     if not store.split:
         return []
     cr, home = store.code_root, store.home
     if not os.path.isdir(cr):
-        return [("code_root_missing", f"config.yaml code-root: {store.code_root_raw} -> {cr} is not a directory")]
+        return [("code_root_missing", f"change {store.change}: worktree {cr} is not a directory; "
+                 "`change open` again, or fix change.json")]
     rc, _ = _git(cr, "rev-parse", "--show-toplevel")
     out = []
     if rc != 0:
@@ -1354,29 +1602,284 @@ def code_root_problems(store):
                     "ignores it) and run init again"))
     if os.path.exists(config_path(cr)):
         out.append(("two_homes", f"the code root {cr} has its own .claude/orchestrator/config.yaml; one "
-                    f"home per code root. Move that overlay to {config_path(home)} or drop code-root "
+                    f"home per code root. Move that overlay to {config_path(home)} or drop the repository "
                     "from the home's config.yaml"))
     return out
 
 
-def code_root_warnings(store):
+def code_root_problems(store):
+    return change_problems(store)
+
+
+def home_warnings(store):
     out = []
     if os.path.isdir(os.path.join(store.home, "openspec", "specs")):
         out.append(f"openspec/specs/ is still in the home {store.home}; this skill reads the record from "
                    "docs/ in the code root (templates/spec.md). Convert it first with the openspec-convert "
                    "skill")
-    if not store.split:
+    hc = store.hc
+    if not hc or _git(store.home, "rev-parse", "--show-toplevel")[0] != 0:
         return out
-    rel = os.path.relpath(store.code_root, store.home)
-    if not rel.startswith("..") and _git(store.home, "rev-parse", "--show-toplevel")[0] == 0 \
-            and not _git_ignores(store.home, rel):
-        out.append(f"the home repo does not ignore the code root {rel}/; add it to {store.home}/.gitignore "
-                   "so the code checkout is not an embedded repository in the home's history")
+    nested = [(name, r["path"]) for name, r in hc["repos"].items() if r.get("from_config") is not None]
+    if os.path.isdir(hc["worktrees"]["parent"]):
+        nested.append(("worktrees", hc["worktrees"]["parent"]))
+    for name, path in nested:
+        rel = os.path.relpath(path, store.home)
+        if rel.startswith("..") or rel == ".":
+            continue
+        if not _git_ignores(store.home, rel):
+            what = "the worktrees folder" if name == "worktrees" else f"the repository {name}"
+            out.append(f"the home repo does not ignore {what} {rel}/; add it to {store.home}/.gitignore "
+                       "so no code checkout appears as an embedded repository in the home's history")
     return out
 
 
+def code_root_warnings(store):
+    return home_warnings(store)
+
+
+def _change_summary(store, rec):
+    s = Store(store.home, rec["change"])
+    out = {"name": rec["change"], "repo": rec.get("repo"), "branch": rec.get("branch"),
+           "worktree": rec.get("worktree"), "base": rec.get("base"),
+           "state": "present" if s.exists() else "absent", "cycle": None, "phase": None, "closed": None}
+    if s.exists():
+        try:
+            st = json.load(open(s.path))
+            out.update({"cycle": st.get("cycle_id"), "phase": st.get("phase"),
+                        "closed": bool(st.get("closed_at"))})
+        except (json.JSONDecodeError, OSError):
+            out["state"] = "unreadable"
+    return out
+
+
+def verb_where(store, args):
+    """Where am I: the home, its repositories, its changes, the resolved change's code root and
+    anything wrong with them. Needs no state file."""
+    cfg = config_path(store.home)
+    hc = store.hc or {"shape": None, "repos": {}, "worktrees": {}, "problems": []}
+    problems = repo_problems(hc) if store.hc else []
+    if store.change and store.change_rec:
+        problems += change_problems(store)
+    elif store.change:
+        problems.append(("change_not_open", f"no change {store.change!r} under {changes_root(store.home)}; "
+                         "`change open <name>` opens one"))
+    out = {"ok": True, "home": store.home, "home_found": store.home_found,
+           "config": cfg if os.path.exists(cfg) else None,
+           "shape": hc["shape"],
+           "repos": {n: {"path": r["path"], "from_config": r.get("from_config"),
+                         "test_command": r.get("test", {}).get("command")} for n, r in hc["repos"].items()},
+           "worktrees": {"parent": hc["worktrees"].get("parent"), "pattern": hc["worktrees"].get("pattern")},
+           "changes": [_change_summary(store, rec) for rec in list_changes(store.home)],
+           "change": store.change if store.change_rec else None,
+           "change_resolved_by": store.change_how if store.change_rec else None,
+           "repo": store.repo if store.change_rec else None,
+           "code_root": store.code_root if store.change_rec else None,
+           "split": store.split if store.change_rec else None,
+           "state": ("present" if store.exists() else "absent") if store.change_rec else None,
+           "legacy_layout": store.legacy_layout(),
+           "problems": [{"error": a, "message": b} for a, b in problems],
+           "warnings": home_warnings(store)}
+    if out["legacy_layout"]:
+        out["warnings"].append(f"{store.root}/state.json is the one-change layout; run `migrate` to move it "
+                               "under .orchestrator/changes/<change>/")
+    return out
+
+
+def where_sh(result, hc):
+    lines = [f"export ORCH_HOME={shlex.quote(result['home'])}"]
+    if hc and hc["worktrees"].get("parent"):
+        lines.append(f"export ORCH_WORKTREES={shlex.quote(hc['worktrees']['parent'])}")
+    if result.get("change"):
+        lines += [f"export ORCH_CHANGE={shlex.quote(result['change'])}",
+                  f"export ORCH_REPO={shlex.quote(result['repo'])}",
+                  f"export CODE_ROOT={shlex.quote(result['code_root'])}"]
+    return "\n".join(lines)
+
+
+def verb_worktree(store, args):
+    """The path a worktree of the change's repository takes for a branch (overlay.md § Worktrees)."""
+    _require_change(store)
+    path = worktree_path_for(store.hc, store.repo, args.branch)
+    return {"ok": True, "path": path, "repo": store.repo, "branch": args.branch,
+            "parent": store.hc["worktrees"]["parent"], "pattern": store.hc["worktrees"]["pattern"],
+            "exists": os.path.exists(path)}
+
+
+def _require_change(store):
+    if not store.hc:
+        raise Refusal("no_home", f"no .claude/orchestrator/config.yaml found walking up from {os.getcwd()}; "
+                      "create the overlay at the intended home (the repo, or the workspace above it) or "
+                      "pass --home")
+    if not store.change:
+        names = [c["change"] for c in list_changes(store.home)]
+        raise Refusal("no_change", "which change? pass --change <name>, set ORCH_CHANGE, or run from inside "
+                      f"its worktree; open ones: {names or 'none (`change open <name>` opens one)'}",
+                      changes=names)
+    if not store.change_rec:
+        raise Refusal("change_not_open", f"no change {store.change!r} under {changes_root(store.home)}; "
+                      "`change open <name>` opens one (or adopts its worktree with --worktree)")
+
+
+def _git_full(repo_root, *args):
+    try:
+        r = subprocess.run(["git", "-C", repo_root, *args], capture_output=True, text=True)
+        return r.returncode, r.stdout, r.stderr
+    except OSError as e:
+        return None, "", str(e)
+
+
+def verb_change_open(store, args):
+    """Open a change: its worktree of one repository, on a branch named after it, and its
+    directory under .orchestrator/changes/<change>/ with change.json. With --worktree an existing
+    checkout is adopted as it is (its branch is recorded). Refuses while the change is open."""
+    if not store.hc:
+        _require_change(store)
+    name = args.name
+    if not re.match(r"^[A-Za-z0-9][A-Za-z0-9._-]*$", name):
+        raise Refusal("bad_change_name", "a change name is one path segment: letters, digits, . _ -")
+    if read_change(store.home, name):
+        raise Refusal("change_exists", f"change {name} is already open: {change_json_path(store.home, name)}")
+    hc = store.hc
+    problems = repo_problems(hc)
+    if problems:
+        raise Refusal(problems[0][0], problems[0][1], problems=[{"error": a, "message": b} for a, b in problems])
+    repos = hc["repos"]
+    repo = args.repo
+    if not repo:
+        if len(repos) != 1:
+            raise Refusal("which_repo", f"pass --repo <name>; this home has {sorted(repos)}")
+        repo = next(iter(repos))
+    if repo not in repos:
+        raise Refusal("unknown_repo", f"no repository {repo!r} in config.yaml; it has {sorted(repos)}")
+    r = repos[repo]
+    adopted, created, from_ref = False, False, None
+    if args.worktree:
+        path = os.path.abspath(os.path.expanduser(args.worktree))
+        if not os.path.isdir(path):
+            raise Refusal("worktree_missing", f"--worktree {path} is not a directory")
+        adopted = True
+    else:
+        path = worktree_path_for(hc, repo, name)
+        if os.path.exists(path):
+            if not _is_worktree_root(path):
+                raise Refusal("worktree_occupied", f"{path} exists and is not a git work tree root")
+            if _git_branch(path) != name:
+                raise Refusal("worktree_occupied", f"{path} is checked out on {_git_branch(path)!r}, not {name!r}; "
+                              "adopt it with --worktree, or remove it")
+            adopted = True
+        else:
+            from_ref = args.from_ref or "HEAD"
+            os.makedirs(os.path.dirname(path), exist_ok=True)
+            rc, _o, err = _git_full(r["path"], "rev-parse", "--verify", "--quiet", f"refs/heads/{name}")
+            if rc == 0:
+                rc, _o, err = _git_full(r["path"], "worktree", "add", path, name)
+            else:
+                rc, _o, err = _git_full(r["path"], "worktree", "add", "-b", name, path, from_ref)
+            if rc != 0:
+                raise Refusal("git_failed", f"git worktree add failed in {r['path']}: {err.strip()}")
+            created = True
+    if _same_path(path, store.home) and hc["shape"] != "repo-root":
+        raise Refusal("worktree_is_home", "the home is not a code root unless it is the repository "
+                      "(config.yaml without repos: or code-root:)")
+    if not _same_path(path, store.home):
+        if os.path.exists(os.path.join(path, ".orchestrator")):
+            raise Refusal("misplaced_artifacts", f".orchestrator/ found in {path}; artifacts live at the home "
+                          f"{store.home}. Move it there and open the change again")
+        if os.path.exists(config_path(path)):
+            raise Refusal("two_homes", f"{path} has its own .claude/orchestrator/config.yaml; one home per "
+                          "code root. Move that overlay to the home or drop it")
+    rc, sha = _git(path, "rev-parse", "HEAD")
+    rec = {"change": name, "repo": repo, "branch": _git_branch(path), "worktree": path,
+           "base": sha.strip() if rc == 0 and sha.strip() else None, "from": from_ref,
+           "opened_at": now_iso(), "adopted": adopted}
+    os.makedirs(os.path.dirname(change_json_path(store.home, name)), exist_ok=True)
+    _atomic_write(change_json_path(store.home, name), json.dumps(rec, indent=2) + "\n")
+    new = Store(store.home, name, path, repo)
+    new.hc, new.change_rec = hc, rec
+    return {"ok": True, **rec, "created": created, "path": change_json_path(store.home, name),
+            "problems": [{"error": a, "message": b} for a, b in change_problems(new)],
+            "warnings": home_warnings(new)}
+
+
+def _rewrite_layout_paths(obj, change):
+    """`.orchestrator/<x>` -> `.orchestrator/changes/<change>/<x>` through a JSON tree, except what
+    was always under changes/ (the task files) and the root .gitignore."""
+    pre, keep = ".orchestrator/", ".orchestrator/changes/"
+    if isinstance(obj, dict):
+        return {k: _rewrite_layout_paths(v, change) for k, v in obj.items()}
+    if isinstance(obj, list):
+        return [_rewrite_layout_paths(v, change) for v in obj]
+    if isinstance(obj, str) and obj.startswith(pre) and not obj.startswith(keep) \
+            and obj != ".orchestrator/.gitignore":
+        return f"{keep}{change}/{obj[len(pre):]}"
+    return obj
+
+
+def _move_into(home, src, dst):
+    """Move a file or directory inside the home, with git mv when tracked; merge a directory into
+    one that already exists."""
+    if os.path.isdir(src) and os.path.isdir(dst):
+        for child in sorted(os.listdir(src)):
+            _move_into(home, os.path.join(src, child), os.path.join(dst, child))
+        if not os.listdir(src):
+            os.rmdir(src)
+        return
+    os.makedirs(os.path.dirname(dst), exist_ok=True)
+    rel_src, rel_dst = os.path.relpath(src, home), os.path.relpath(dst, home)
+    rc, out = _git(home, "ls-files", "--", rel_src)
+    if rc == 0 and out.strip():
+        rc2, _ = _git(home, "mv", "-k", "--", rel_src, rel_dst)
+        if rc2 == 0 and os.path.exists(dst) and not os.path.exists(src):
+            return
+    os.replace(src, dst)
+
+
+def migrate_layout(store):
+    """Move the one-change layout (.orchestrator/state.json and its siblings) under
+    .orchestrator/changes/<change>/ and write that change's change.json. Returns the report."""
+    root = store.root
+    legacy = os.path.join(root, "state.json")
+    old = json.load(open(legacy))
+    name = old.get("change_name")
+    if not isinstance(name, str) or not name:
+        raise Refusal("legacy_no_change", f"{legacy} names no change_name; pass --change <name> to migrate")
+    if read_change(store.home, name):
+        raise Refusal("change_exists", f"change {name} is already open under changes/; move {legacy} by hand")
+    dest = os.path.join(root, "changes", name)
+    os.makedirs(dest, exist_ok=True)
+    moved = []
+    for entry in sorted(os.listdir(root)):
+        if entry in ("changes", ".gitignore", "state.lock", "tools") or entry.startswith("."):
+            continue
+        if entry in ("state.json", "cycles", "inbox") or entry.startswith(("handshake-", "baseline-", "after-",
+                                                                            "state.json.pre-migrate-")):
+            _move_into(store.home, os.path.join(root, entry), os.path.join(dest, entry))
+            moved.append(entry)
+    for p in [os.path.join(dest, "state.json")] + glob.glob(os.path.join(dest, "handshake-*.json")):
+        try:
+            doc = json.load(open(p))
+        except (json.JSONDecodeError, OSError):
+            continue
+        _atomic_write(p, json.dumps(_rewrite_layout_paths(doc, name), indent=2) + "\n")
+    hc = store.hc or resolve_home_config(store.home)
+    code_root = old.get("code_root") or old.get("repo_root") or store.home
+    repo = None
+    for n, r in hc["repos"].items():
+        if _same_path(r["path"], code_root):
+            repo = n
+    if repo is None and len(hc["repos"]) == 1:
+        repo = next(iter(hc["repos"]))
+    rec = {"change": name, "repo": repo, "branch": old.get("current_branch") or _git_branch(code_root),
+           "worktree": code_root, "base": None, "from": None, "opened_at": now_iso(), "adopted": True,
+           "migrated_from_layout": now_iso()}
+    _atomic_write(change_json_path(store.home, name), json.dumps(rec, indent=2) + "\n")
+    return {"change": name, "moved": moved, "to": os.path.relpath(dest, store.home), "change_json": rec}
+
+
 def _write_orchestrator_gitignore(store):
-    gi = os.path.join(store.dir, ".gitignore")
+    gi = os.path.join(store.root, ".gitignore")
+    os.makedirs(store.root, exist_ok=True)
     if os.path.exists(gi):
         return False
     _atomic_write(gi, ORCHESTRATOR_GITIGNORE)
@@ -1416,6 +1919,13 @@ def derive_counts_legacy(tasks):
 
 
 def verb_status(store, args):
+    if store.change is None and store.legacy_layout():
+        return {"ok": True, "legacy_layout": True, "resume": "run `migrate`",
+                "message": f"{store.root}/state.json is the one-change layout; run `migrate` to move it "
+                           "under .orchestrator/changes/<change>/"}
+    if store.hc is None and not store.change:
+        raise Refusal("not_initialized", f"no state file at {store.path}; run `init`", exit_code=2)
+    _require_change(store)
     state = store.load()
     if str(state.get("schema_version")) != SCHEMA_VERSION:
         return {"ok": True, "schema_version": state.get("schema_version"), "legacy": True,
@@ -1445,7 +1955,7 @@ def verb_status(store, args):
         "change_name": state["change_name"],
         "phase": state["phase"],
         "closed_at": state["closed_at"],
-        "paths": {"home": store.home, "code_root": store.code_root},
+        "paths": {"home": store.home, "change": store.change, "code_root": store.code_root},
         "resume": resume,
         "gates": gates,
         "counts": derive_counts(state["tasks"]),
@@ -1481,17 +1991,6 @@ def verb_inbox(store, args):
     return {"ok": True, "cycle_id": (state or {}).get("cycle_id"), "home": store.home,
             "answered": [e["id"] for e in entries if e["answer"]],
             "asks": entries, "problems": problems}
-
-
-def verb_where(store, args):
-    """Where am I: the home, the code root and anything wrong with them. Needs no state file."""
-    cfg = config_path(store.home)
-    return {"ok": True, "home": store.home, "code_root": store.code_root, "split": store.split,
-            "home_found": store.home_found, "config": cfg if os.path.exists(cfg) else None,
-            "code_root_from_config": store.code_root_raw,
-            "state": "present" if store.exists() else "absent",
-            "problems": [{"error": a, "message": b} for a, b in code_root_problems(store)],
-            "warnings": code_root_warnings(store)}
 
 
 def resume_hint(state):
@@ -1657,7 +2156,7 @@ def _supersede(store, state, old_id, new_id):
         raise Refusal("ask_file_missing", f"{old['path']} is missing (restore it from git)")
     doc.set_prop("STATUS", "superseded")
     _atomic_write(os.path.join(store.home, old["path"]), doc.text())
-    new_path = ask_path(old_id, "superseded", state["cycle_id"])
+    new_path = ask_path(old_id, "superseded", state["cycle_id"], store)
     moved = _move_ask_file(store, old["path"], new_path) if new_path != old["path"] else None
     old.update({"status": "superseded", "path": new_path})
     add_journal(state, "decision", f"{old_id} superseded by {new_id}", by="orchestrator", ref=new_id)
@@ -1679,7 +2178,7 @@ def verb_ask_add(store, args):
         validate_ask_full(rec, "asks[new]", errors)
         if errors:
             raise Refusal("invalid_record", "ask does not fit templates/ask.md", errors=errors)
-        path = ask_path(rec["id"], rec["status"], state["cycle_id"])
+        path = ask_path(rec["id"], rec["status"], state["cycle_id"], store)
         abs_path = os.path.join(store.home, path)
         in_place = draft_path and os.path.abspath(draft_path) == os.path.abspath(abs_path)
         if os.path.exists(abs_path) and not in_place:
@@ -1775,7 +2274,7 @@ def verb_ask_set(store, args):
         _atomic_write(os.path.join(store.home, old_path), doc.text())
         final = ask_from_org(doc, entry["id"])
         final["id"] = entry["id"]
-        new_path = ask_path(entry["id"], final["status"], state["cycle_id"])
+        new_path = ask_path(entry["id"], final["status"], state["cycle_id"], store)
         moved = _move_ask_file(store, old_path, new_path) if new_path != old_path else None
         entry.update(_index_entry(final, new_path))
         out = {"ok": True, "list": "asks_for_user", "id": entry["id"], "changed": sorted(updates),
@@ -2109,12 +2608,20 @@ def migration_plan(state, store=None):
 
 
 def verb_migrate(store, args):
+    layout = None
+    if store.change is None and store.legacy_layout():
+        layout = migrate_layout(store)
+        new = Store(store.home, layout["change"], layout["change_json"]["worktree"], layout["change_json"]["repo"])
+        new.hc, new.change_rec, new.home_found = store.hc, read_change(store.home, layout["change"]), store.home_found
+        store = new
+    _require_change(store)
+    os.makedirs(store.dir, exist_ok=True)
     with open(store.lock_path, "w") as lock:
         fcntl.flock(lock, fcntl.LOCK_EX)
         try:
             old = store.load()
             if str(old.get("schema_version")) == SCHEMA_VERSION:
-                return {"ok": True, "unchanged": True}
+                return {"ok": True, "unchanged": layout is None, "layout": layout}
             parked = {"parked_at": now_iso(), "from_schema": old.get("schema_version"), "top_level": {},
                       "tasks": {}, "architect_findings": [], "asks_for_user": [], "cycle_log": {}}
             new = {}
@@ -2214,7 +2721,7 @@ def verb_migrate(store, args):
                     if key == "architect_findings":
                         if not u.get("path"):
                             u["path"] = extra.get("findings_path") or (
-                                f".orchestrator/cycles/{old.get('cycle_id')}/findings/{u.get('finding_id')}.md")
+                                f"{store_rel(store)}/cycles/{old.get('cycle_id')}/findings/{u.get('finding_id')}.md")
                         if u.get("class") not in FINDING_CLASSES:
                             extra["_legacy_class"], u["class"] = u.get("class"), None
                         if u.get("severity") not in SEVERITIES and u.get("severity") is not None:
@@ -2304,7 +2811,7 @@ def verb_migrate(store, args):
                     if extra:
                         extras_here[str(u[id_field])] = extra
                     if key == "asks_for_user":
-                        path = ask_path(u["id"], u["status"], new.get("cycle_id") or old.get("cycle_id"))
+                        path = ask_path(u["id"], u["status"], new.get("cycle_id") or old.get("cycle_id"), store)
                         abs_path = os.path.join(store.home, path)
                         if os.path.exists(abs_path):
                             ask_files["existing"].append(path)
@@ -2365,7 +2872,8 @@ def verb_migrate(store, args):
             wrote_gitignore = _write_orchestrator_gitignore(store)
             store.write(new)
             return {"ok": True, "from": old.get("schema_version"), "to": SCHEMA_VERSION,
-                    "paths": {"home": store.home, "code_root": store.code_root},
+                    "paths": {"home": store.home, "change": store.change, "code_root": store.code_root},
+                    "layout": layout,
                     "rehomed_from": rehomed_from, "gitignore_written": wrote_gitignore,
                     "parked": os.path.relpath(parked_path, store.home),
                     "backup": os.path.relpath(backup, store.home),
@@ -2387,11 +2895,28 @@ def build_parser():
     p.add_argument("--home", "--repo", dest="home",
                    help="the home: the directory holding .claude/orchestrator/config.yaml and "
                         ".orchestrator/ (default: walk up from cwd)")
+    p.add_argument("--change", dest="change_sel",
+                   help="the change to act on (default: $ORCH_CHANGE, the change whose worktree holds "
+                        "the cwd, or the only open change)")
     sub = p.add_subparsers(dest="verb", required=True)
 
-    s = sub.add_parser("where", help="the home and the code root, and any problem with them (needs no state)")
-    s.add_argument("--sh", action="store_true", help="print ORCH_HOME=... CODE_ROOT=... for eval")
+    s = sub.add_parser("where", help="the home, its repositories and open changes, the resolved change's "
+                       "code root, and any problem with them (needs no state)")
+    s.add_argument("--sh", action="store_true", help="print export ORCH_HOME=... ORCH_CHANGE=... CODE_ROOT=... for eval")
     s.set_defaults(fn=verb_where)
+
+    c = sub.add_parser("change", help="change open: a change's worktree and its directory under .orchestrator/changes/").add_subparsers(dest="sub", required=True)
+    s = c.add_parser("open", help="open <name> [--repo <r>] [--from <ref> | --worktree <path>]")
+    s.add_argument("name")
+    s.add_argument("--repo", help="the repository (default: the home's only one)")
+    s.add_argument("--from", dest="from_ref", help="the ref the new branch starts from (default HEAD of the repository checkout)")
+    s.add_argument("--worktree", help="adopt this existing checkout as the change's code root")
+    s.set_defaults(fn=verb_change_open)
+
+    s = sub.add_parser("worktree", help="the path a worktree of the change's repository takes for a branch")
+    s.add_argument("branch")
+    s.add_argument("--sh", action="store_true", help="print WORKTREE_PATH=... for eval")
+    s.set_defaults(fn=verb_worktree)
 
     s = sub.add_parser("status", help="orientation: phase, gates, tasks, open asks and inbox answers (run first)")
     s.set_defaults(fn=verb_status)
@@ -2403,9 +2928,9 @@ def build_parser():
                        "parks non-schema content in a sidecar; rehomes the paths")
     s.set_defaults(fn=verb_migrate)
 
-    s = sub.add_parser("init", help="start a new cycle (refuses while one is open)")
-    s.add_argument("--change", required=True)
-    s.add_argument("--test-command", required=True)
+    s = sub.add_parser("init", help="start a new cycle of the change (refuses while one is open)")
+    s.add_argument("--change", help="must match the resolved change (kept for the flows' spelling)")
+    s.add_argument("--test-command", help="default: the repository's test.command in config.yaml")
     s.add_argument("--cycle", help="cycle id (default cycle-<unix-ts>)")
     s.add_argument("--branch")
     s.add_argument("--history-window", type=int, default=5)
@@ -2499,9 +3024,15 @@ def main(argv=None):
     args = parser.parse_args(argv)
     try:
         home, found = find_home(args.home)
-        raw, code_root = read_code_root(home)
-        store = Store(home, code_root)
-        store.home_found, store.code_root_raw = found, raw
+        hc = resolve_home_config(home) if found or os.path.exists(config_path(home)) else None
+        sel = args.change_sel or (getattr(args, "change", None) if args.verb == "init" else None)
+        change, how = resolve_change(home, sel)
+        rec = read_change(home, change) if change else None
+        repo = rec.get("repo") if rec else None
+        code_root = rec.get("worktree") if rec else None
+        store = Store(home, change, code_root, repo)
+        store.hc, store.change_rec, store.change_how = hc, rec, how
+        store.home_found, store.code_root_raw = found, (hc or {}).get("code_root_raw")
         result = args.fn(store, args)
     except Refusal as r:
         err = {"ok": False, "error": r.slug, "message": r.message}
@@ -2509,7 +3040,10 @@ def main(argv=None):
         print(json.dumps(err, indent=2), file=sys.stderr)
         return r.exit_code
     if args.verb == "where" and args.sh:
-        print(f"ORCH_HOME={shlex.quote(result['home'])}\nCODE_ROOT={shlex.quote(result['code_root'])}")
+        print(where_sh(result, hc))
+        return 0
+    if args.verb == "worktree" and args.sh:
+        print(f"WORKTREE_PATH={shlex.quote(result['path'])}")
         return 0
     print(json.dumps(result, indent=2 if args.verb in ("status", "counts", "validate", "migrate", "inbox", "where") else None))
     return 0 if result.get("ok", True) else 1
