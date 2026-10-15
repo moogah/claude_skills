@@ -87,7 +87,7 @@ If you find nothing, say what you looked for and why you ruled it out: silence i
 
 ## Probes
 
-The Reviewer may run the project's test command and its own probe scripts, read-only, in a scratch directory of its own against the `merge_commit` checkout: drive the real code on a temp directory, a fake `$HOME`, a real `git`, `emacs --batch -Q`, whatever the surface allows. The catches in the record that paid (a case-variant path defeating a containment check, a git call that prompts under TRAMP, a symlink escape) came from probes of the merge candidate, not from reading. Probe output goes in the findings file's `evidence`; nothing the probe writes enters the repository, and the scratch directory is deleted afterwards.
+The Reviewer may run the project's test command and its own probe scripts, read-only, in a scratch directory of its own against the `merge_commit` checkout: drive the real code on a temp directory, a fake `$HOME`, a real `git`, `emacs --batch -Q`, whatever the surface allows. The catches in the record that paid (a case-variant path defeating a containment check, a git call that prompts under TRAMP, a symlink escape) came from probes of the merge candidate, not from reading. Probe output goes in the findings file's `evidence`; nothing the probe writes enters the repository, and the scratch directory is deleted afterwards. Runs are made in the foreground: the Reviewer never ends a turn with a test run still going and hands back once, after it (the record: three Reviewers left runs in the background and woke the execute agent five times for nothing).
 
 ## Output contract
 
@@ -133,6 +133,8 @@ clean_review: false      # true if no findings
 ## Thoughts
 
 - thought: <one line — a speculative need; omit the section when there is none>
+
+A line that names a defect present at `merge_commit` (a variable read where nothing on the declared load path defines it, a guard that passes what it should refuse) is not a thought: it is a finding with `happened: yes`, whatever its severity, so the orchestrator routes it. The record: two Reviewers wrote the same void variable under Thoughts and the Architect wrote it as a `thought:` journal line; `/code-review` reported it as a bug after the cycle closed.
 
 ## What I looked for and ruled out
 
