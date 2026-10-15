@@ -22,9 +22,9 @@ cites_scenarios:                   # '<capability> § <title>' in docs/specs/; t
   - scope § A violation names its resource
 
 relations:
-  blocked_by:
-    - <task-name>: { status: done }
-    - <task-name>: { status: done }
+  blocked_by:                      # spawned once each named task has merged (flows/execute.md § 1), not after its review
+    - <task-name>: { status: merged }
+    - <task-name>: { status: merged }
 
 # Provenance — REQUIRED on follow-up tasks (i.e. when this task was
 # discovered, not user-authored). For top-level tasks, leave unset.
@@ -39,7 +39,7 @@ merge_commit: <SHA>
 findings_path: <path to reviewer findings file>
 
 # Audit
-created_at: <iso-ts>
+created_at: <iso-ts>                # written by `state.py task add`, never by hand
 started_at: <iso-ts>
 completed_at: <iso-ts>
 reviewed_at: <iso-ts>

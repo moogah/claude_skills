@@ -1,0 +1,38 @@
+Running 619 tests (2026-10-15 13:24:45-0400, selector ‘t’)
+   FAILED  190/619  test-corpus-integration-002 (0.011807 sec) at config/bash-parser/test/corpus/runners/test-corpus-file-operations.el:1
+   FAILED  436/619  test-pattern-flow-cat-find (0.011782 sec) at config/bash-parser/test/integration/test-pattern-flow.el:16
+   FAILED  437/619  test-pattern-flow-cat-grep (0.012130 sec) at config/bash-parser/test/integration/test-pattern-flow.el:142
+   FAILED  438/619  test-pattern-flow-cat-ls (0.012003 sec) at config/bash-parser/test/integration/test-pattern-flow.el:115
+   FAILED  439/619  test-pattern-flow-head-find (0.011844 sec) at config/bash-parser/test/integration/test-pattern-flow.el:59
+   FAILED  440/619  test-pattern-flow-multiple-patterns (0.012352 sec) at config/bash-parser/test/integration/test-pattern-flow.el:204
+   FAILED  441/619  test-pattern-flow-nested (0.023721 sec) at config/bash-parser/test/integration/test-pattern-flow.el:174
+   FAILED  444/619  test-pattern-flow-rm-ls (0.011671 sec) at config/bash-parser/test/integration/test-pattern-flow.el:87
+   FAILED  445/619  test-pattern-flow-with-redirection (0.011944 sec) at config/bash-parser/test/integration/test-pattern-flow.el:228
+Ran 619 tests, 610 results as expected, 9 unexpected (2026-10-15 13:24:50-0400, 4.918525 sec)
+9 unexpected results:
+   FAILED  test-corpus-integration-002
+   FAILED  test-pattern-flow-cat-find
+   FAILED  test-pattern-flow-cat-grep
+   FAILED  test-pattern-flow-cat-ls
+   FAILED  test-pattern-flow-head-find
+   FAILED  test-pattern-flow-multiple-patterns
+   FAILED  test-pattern-flow-nested
+   FAILED  test-pattern-flow-rm-ls
+   FAILED  test-pattern-flow-with-redirection
+[31m  registers no palette/agent tools yet (out of scope for this change)[0m[31m  FAILED[0m (0.45ms)
+========================================
+[31mCorpus file operations via jf/bash-extract-semantics all corpus cases integration-002: Pipeline with pattern substitution and redirect[0m
+[31mFAILED[0m: Expected `(length (or fs-ops 'nil))' to be `equal' to `4', but instead it was `3' which does not match because: (different-atoms (3 "#x3" "?") (4 "#x4" "?")).
+========================================
+[31mworkspace-assistant preset registers no palette/agent tools yet (out of scope for this change)[0m
+Traceback (most recent call last):
+========================================
+[31mBug 4: end-to-end add-to-scope should enable retry success gptel callback receives success after add-to-scope correctly expands scope[0m
+[31mFAILED[0m: Expected `(plist-get bug--callback-result :success)' to be `eq' to `t', but instead it was `nil'.
+========================================
+[31mBug: multi-violation add-to-scope leaks subsequent denials drawer contains every denied path after user approves Add to scope[0m
+[31mFAILED[0m: Expected `read-paths' to be a list containing `"/foo"', but instead it was `nil'.
+========================================
+[31mBug: multi-violation add-to-scope leaks subsequent denials real-world session case: ls ABSPATH 2>/dev/null adds both paths[0m
+[31mFAILED[0m: Expected `read-paths' to be a list containing `"/usr/local/bin/brew"', but instead it was `nil'.
+Ran 3432 out of 3456 specs, [31m5 failed[0m, in 3.05m.

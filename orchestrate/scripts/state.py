@@ -69,6 +69,7 @@ TASK_FIELDS = {
     "cites_seams": list, "blocked_by": list, "blocker_note": (str, type(None)),
     "rejections": int,
     "started_at": (str, type(None)), "completed_at": (str, type(None)), "reviewed_at": (str, type(None)),
+    "created_at": (str, type(None)),
 }
 TASK_DEFAULTS = {
     "on_critical_path": False, "worktree_path": None, "branch_name": None, "agent_task_id": None,
@@ -78,7 +79,7 @@ TASK_DEFAULTS = {
     "dependents_repointed": [], "implementor_report_path": None, "discovered_from": None,
     "discovered_by": None, "discovered_class": None,
     "cites_seams": [], "blocked_by": [], "blocker_note": None, "rejections": 0,
-    "started_at": None, "completed_at": None, "reviewed_at": None,
+    "started_at": None, "completed_at": None, "reviewed_at": None, "created_at": None,
 }
 
 # A finding's labels (templates/architect-finding.md): kind and severity are the reporter's,
@@ -1791,17 +1792,54 @@ def verb_change_open(store, args):
         if os.path.exists(config_path(path)):
             raise Refusal("two_homes", f"{path} has its own .claude/orchestrator/config.yaml; one home per "
                           "code root. Move that overlay to the home or drop it")
-    rc, sha = _git(path, "rev-parse", "HEAD")
+    base = _change_base(path, from_ref)
+    intent = os.path.join(path, "docs", "changes", name, "intent.org")
+    if base and os.path.isfile(intent):
+        m = re.search(r"^#\+BASE:\s*([0-9a-fA-F]{7,40})", open(intent, encoding="utf-8").read(), re.M)
+        if m and not (base.startswith(m.group(1)) or m.group(1).startswith(base)):
+            raise Refusal("base_mismatch", f"{intent} says #+BASE: {m.group(1)} but the branch's base is "
+                          f"{base} (the merge-base with {from_ref or 'HEAD'}); correct the intent, or pass "
+                          "the --from ref the change was cut from", intent_base=m.group(1), base=base)
     rec = {"change": name, "repo": repo, "branch": _git_branch(path), "worktree": path,
-           "base": sha.strip() if rc == 0 and sha.strip() else None, "from": from_ref,
-           "opened_at": now_iso(), "adopted": adopted}
+           "base": base, "from": from_ref, "opened_at": now_iso(), "adopted": adopted}
     os.makedirs(os.path.dirname(change_json_path(store.home, name)), exist_ok=True)
     _atomic_write(change_json_path(store.home, name), json.dumps(rec, indent=2) + "\n")
     new = Store(store.home, name, path, repo)
     new.hc, new.change_rec = hc, rec
+    init_hook = _run_worktree_init(hc, r, name, store.home, path) if not getattr(args, "no_init", False) else None
     return {"ok": True, **rec, "created": created, "path": change_json_path(store.home, name),
+            "init_hook": init_hook,
             "problems": [{"error": a, "message": b} for a, b in change_problems(new)],
             "warnings": home_warnings(new)}
+
+
+def _change_base(path, from_ref):
+    """The commit the change starts from: the merge-base of its branch with the ref it was cut from
+    (an adopted branch may already carry its hand-off commit, so HEAD is not it), else HEAD. The
+    record: `change open --from workspace-notes-location` wrote the hand-off commit as the base
+    while intent.org held the fork point; coverage.py --since then saw 3 scenarios, not 34."""
+    rc, sha = _git(path, "rev-parse", "HEAD")
+    head = sha.strip() if rc == 0 and sha.strip() else None
+    if head and from_ref and from_ref != "HEAD":
+        rc, mb = _git(path, "merge-base", from_ref, "HEAD")
+        if rc == 0 and mb.strip():
+            return mb.strip()
+    return head
+
+
+def _run_worktree_init(hc, repo_spec, change, home, path):
+    """Run the overlay's worktree.init hook inside the change's worktree (flows/execute.md § 1 runs it
+    for task worktrees; the design round's probes run in this one). The hook sees ORCH_HOME,
+    ORCH_CHANGE and CODE_ROOT. A failure is reported, not a refusal: the change is open."""
+    hook = (repo_spec.get("worktree") or {}).get("init") or (hc.get("worktree") or {}).get("init")
+    if not hook:
+        return None
+    env = dict(os.environ, ORCH_HOME=home, ORCH_CHANGE=change, CODE_ROOT=path)
+    try:
+        r = subprocess.run(hook, shell=True, cwd=path, env=env, capture_output=True, text=True)
+        return {"hook": hook, "rc": r.returncode, "stderr_tail": r.stderr[-400:]}
+    except OSError as e:
+        return {"hook": hook, "rc": None, "stderr_tail": str(e)}
 
 
 # ---------------------------------------------------------------- the overlay: bootstrap and drift
@@ -2250,9 +2288,26 @@ def verb_task_add(store, args):
         if args.critical:
             t["on_critical_path"] = True
         t.update(_task_field_updates(parse_assignments(args.fields), t))
+        t["created_at"] = now_iso()  # the tool stamps it; the record shows agents inventing timestamps
+        _stamp_task_file(store, t)
         state["tasks"].append(t)
         return {"ok": True, "task": t}
     return store.mutate(fn)
+
+
+def _stamp_task_file(store, t):
+    """Write the index's created_at into the task file's frontmatter when the file exists and has the
+    key (templates/task-body.md), so the two agree. The record: two task files carried created_at
+    30-35 minutes after the commit that holds them."""
+    if not t.get("task_file"):
+        return
+    path = t["task_file"] if os.path.isabs(t["task_file"]) else os.path.join(store.home, t["task_file"])
+    if not os.path.isfile(path):
+        return
+    text = open(path, encoding="utf-8").read()
+    new = re.sub(r"^(created_at:)[^\n]*$", rf"\1 {t['created_at']}", text, count=1, flags=re.M)
+    if new != text:
+        _atomic_write(path, new)
 
 
 def _task_field_updates(updates, task):
@@ -2426,6 +2481,9 @@ def verb_ask_add(store, args):
 
 def verb_ask_set(store, args):
     updates = parse_assignments(args.fields)
+    confirm = updates.pop("readback", None)  # readback=confirmed: the user's yes under * Readback
+    if confirm is not None and _norm(str(confirm)) not in ("confirmed", "yes"):
+        raise Refusal("bad_value", "readback takes `confirmed` (writes the user's yes under * Readback)")
     allowed = set(ASK_FILE_FIELDS) | {"kind", "status", "blocks"}
     for k in updates:
         if k not in allowed:
@@ -2490,6 +2548,14 @@ def verb_ask_set(store, args):
                 doc.set_prop("APPLIED_VIA", v)
             elif k == "revised_from":
                 doc.set_prop("REVISED_FROM", v)
+        if confirm is not None:
+            rb = doc.section_text("Readback") or ""
+            if not rb.strip():
+                raise Refusal("no_readback", f"{entry['id']} has no * Readback to confirm; write one with "
+                              "decision_readback=<text> first")
+            if not any(_norm(l) in ("yes", "confirmed", "ok") for l in rb.splitlines()):
+                doc.set_section("Readback", rb.rstrip() + "\n\nyes")
+            updates["readback"] = "confirmed"
         old_path = entry["path"]
         _atomic_write(os.path.join(store.home, old_path), doc.text())
         final = ask_from_org(doc, entry["id"])
@@ -3144,6 +3210,7 @@ def build_parser():
     s.add_argument("--from", dest="from_ref", help="the ref the new branch starts from (default HEAD of the repository "
                    "checkout); the workspace integration branch when the hand-off made one. With --worktree it is recorded only")
     s.add_argument("--worktree", help="adopt this existing checkout as the change's code root")
+    s.add_argument("--no-init", action="store_true", help="do not run the overlay's worktree.init hook in the worktree")
     s.set_defaults(fn=verb_change_open)
 
     s = sub.add_parser("worktree", help="the path a worktree of the change's repository takes for a branch")

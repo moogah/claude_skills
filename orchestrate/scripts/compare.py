@@ -39,7 +39,13 @@ def parse_emacs(text):
     """ERT and Buttercup output as ./bin/run-tests.sh prints it (either suite may be absent):
     ERT `Ran N tests, M results as expected, K unexpected` with `FAILED <name>` lines (an
     unexpected failure carries `(N sec) at FILE`; a bare name is an expected failure);
-    Buttercup `Ran N (out of M) specs, K failed` with `FAILED:` lines preceded by the spec name."""
+    Buttercup `Ran N (out of M) specs, K failed` with a detail block per failure: the spec's full
+    description on one line, then `FAILED: <expectation>` or, when the spec signalled an error,
+    `Traceback (most recent call last):`. The per-spec marker on the spec's own line
+    (`<it description>  FAILED (0.54ms)`) names the failure too, by its leaf description; it is
+    read when no detail block names it. The record: a traceback failure carried no `FAILED:` line,
+    the parser named four of five failures in each file, and one fixed and one new failure
+    cancelled to NO-REGRESSION (package-boundaries cycle-1792083023)."""
     t = _strip_ansi(text)
     ids, ran, not_passing, found = set(), 0, 0, False
     e = re.search(r"^Ran (\d+) tests?, (\d+) results? as expected, (\d+) unexpected", t, re.M)
@@ -56,9 +62,19 @@ def parse_emacs(text):
         ran += int(b.group(1))
         not_passing += int(b.group(3))
         lines = t.splitlines()
+        blocks, leaves = set(), set()
         for i in range(1, len(lines)):
-            if lines[i].startswith("FAILED:") and not lines[i - 1].startswith("FAILED:"):
-                ids.add(lines[i - 1].strip())
+            if (lines[i].startswith("FAILED:") or lines[i].startswith("Traceback (most recent call last)")) \
+                    and not lines[i - 1].startswith(("FAILED:", "Traceback")):
+                j = i - 1
+                while j > 0 and not lines[j].strip():
+                    j -= 1
+                blocks.add(lines[j].strip())
+            m = re.match(r"^\s+(.+?)\s+FAILED \([0-9.]+m?s\)\s*$", lines[i])
+            if m:
+                leaves.add(m.group(1).strip())
+        ids |= blocks
+        ids |= {leaf for leaf in leaves if not any(b.endswith(leaf) for b in blocks)}
     if not found and re.search(r"^## (ERT|Buttercup)", t, re.M):  # a hand-made baseline-failures file
         found = True
         section = None

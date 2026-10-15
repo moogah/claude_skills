@@ -1676,3 +1676,100 @@ thresholds:
     cfg.write_text("overlay-version: 7\nproject: p\n")
     code = state.main(["--home", str(repo), "where"])
     assert "overlay-version 7" in _parse(capsys.readouterr().out)["warnings"][0]
+
+
+# 49
+def test_change_open_base_is_merge_base_and_runs_init_hook(tmp_path, capsys):
+    """An adopted branch that already carries its hand-off commit has the fork point as its base;
+    an intent whose #+BASE: disagrees refuses; the overlay's worktree.init runs in a new worktree."""
+    if not _git_ok():
+        pytest.skip("no git")
+    home = tmp_path / "ws"
+    (home / ".claude" / "orchestrator").mkdir(parents=True)
+    origin = tmp_path / "origin"
+    origin.mkdir()
+    _g(origin, "init", "-q", "-b", "main")
+    (origin / "f.txt").write_text("x\n")
+    _g(origin, "add", ".")
+    _g(origin, "commit", "-qm", "init")
+    _g(origin, "branch", "integration")
+    fork = _g(origin, "rev-parse", "integration").stdout.strip()
+    # the hand-off commit on the change branch, carrying the intent with the fork point as its base
+    wt = tmp_path / "feat-x"
+    _g(origin, "worktree", "add", "-q", "-b", "feat-x", str(wt), "integration")
+    (wt / "docs" / "changes" / "feat-x").mkdir(parents=True)
+    (wt / "docs" / "changes" / "feat-x" / "intent.org").write_text(f"#+TITLE: feat-x\n#+BASE: {fork}\n")
+    _g(wt, "add", ".")
+    _g(wt, "commit", "-qm", "Record: feat-x intent")
+    head = _g(wt, "rev-parse", "HEAD").stdout.strip()
+    assert head != fork
+    (home / ".claude" / "orchestrator" / "config.yaml").write_text(
+        f"project: ws\nrepos:\n  app:\n    path: {origin}\n    test:\n      command: make test\n"
+        "worktree:\n  init: printf hook > init-ran.txt\n"
+        "worktrees:\n  parent: .worktrees\n  pattern: <repo>/<branch>\n")
+
+    def run(*argv):
+        code = state.main(["--home", str(home), *argv])
+        cap = capsys.readouterr()
+        return code, _parse(cap.out), _parse(cap.err)
+
+    code, out, err = run("change", "open", "feat-x", "--worktree", str(wt), "--from", "integration")
+    assert code == 0, err
+    assert out["base"] == fork and out["adopted"] is True
+    assert out["init_hook"]["rc"] == 0 and (wt / "init-ran.txt").read_text() == "hook"
+    assert json.loads((home / ".orchestrator" / "changes" / "feat-x" / "change.json").read_text())["base"] == fork
+    # the intent disagrees with the branch: refused, both values named
+    wt2 = tmp_path / "feat-y"
+    _g(origin, "worktree", "add", "-q", "-b", "feat-y", str(wt2), "integration")
+    (wt2 / "docs" / "changes" / "feat-y").mkdir(parents=True)
+    (wt2 / "docs" / "changes" / "feat-y" / "intent.org").write_text("#+TITLE: feat-y\n#+BASE: 0123456789ab\n")
+    _g(wt2, "add", ".")
+    _g(wt2, "commit", "-qm", "Record: feat-y intent")
+    code, _, err = run("change", "open", "feat-y", "--worktree", str(wt2), "--from", "integration")
+    assert code == 1 and err["error"] == "base_mismatch" and err["base"] == fork and err["intent_base"] == "0123456789ab"
+    # a new worktree from --from: base is that ref's commit; --no-init skips the hook
+    code, out, err = run("change", "open", "feat-z", "--from", "integration", "--no-init")
+    assert code == 0, err
+    assert out["base"] == fork and out["created"] is True and out["init_hook"] is None
+    assert not (home / ".worktrees" / "app" / "feat-z" / "init-ran.txt").exists()
+
+
+# 50
+def test_task_add_stamps_created_at(run, repo):
+    code, out, err = init(run, "cycle-1", "--first-cycle")
+    assert code == 0, err
+    tf = repo / ".orchestrator" / "changes" / "chg" / "tasks" / "open"
+    tf.mkdir(parents=True)
+    (tf / "t1.md").write_text("---\ntask_name: t1\ncreated_at: 2026-01-01T00:00:00Z\n---\n\n## Summary\n")
+    code, out, err = run("task", "add", "t1", "--file", str(tf / "t1.md"), "--class", "feature")
+    assert code == 0, err
+    stamp = out["task"]["created_at"]
+    assert stamp and stamp != "2026-01-01T00:00:00Z" and stamp.endswith("Z")
+    assert f"created_at: {stamp}\n" in (tf / "t1.md").read_text()
+    # no file yet: the entry is still stamped
+    code, out, err = run("task", "add", "t2", "--file", "tasks/t2.md", "--class", "feature")
+    assert code == 0 and out["task"]["created_at"].endswith("Z")
+
+
+# 51
+def test_record_set_asks_readback_confirmed(run, repo):
+    code, out, err = init(run, "cycle-1", "--first-cycle")
+    assert code == 0, err
+    code, out, err = run("record", "add", "asks", json.dumps(ASK))
+    assert code == 0, err
+    aid = out["id"]
+    p = repo / ".orchestrator" / "changes" / "chg" / "inbox" / f"{aid}.org"
+    p.write_text(p.read_text().replace("* Answer\n", "* Answer\n\nSomething else entirely\n"))
+    code, _, err = run("record", "set", "asks", aid, "readback=confirmed")
+    assert code == 1 and err["error"] == "no_readback"
+    assert run("record", "set", "asks", aid, "decision_readback=It will be done.")[0] == 0
+    _, st, _ = run("status")
+    assert st["inbox"]["awaiting_confirmation"] == 1
+    code, out, err = run("record", "set", "asks", aid, "readback=confirmed")
+    assert code == 0, err
+    assert "readback" in out["changed"]
+    assert "It will be done.\n\nyes\n" in p.read_text()
+    _, st, _ = run("status")
+    assert st["inbox"]["awaiting_confirmation"] == 0 and st["inbox"]["readback_confirmed"] == 1
+    code, _, err = run("record", "set", "asks", aid, "readback=maybe")
+    assert code == 1 and err["error"] == "bad_value"
