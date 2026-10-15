@@ -53,7 +53,7 @@ def open_change(home, name="chg", *extra):
 @pytest.fixture
 def repo(tmp_path):
     (tmp_path / ".claude" / "orchestrator").mkdir(parents=True)
-    (tmp_path / ".claude" / "orchestrator" / "config.yaml").write_text("name: scratch\n")
+    (tmp_path / ".claude" / "orchestrator" / "config.yaml").write_text("overlay-version: 1\nproject: scratch\n")
     (tmp_path / ".orchestrator").mkdir()
     code, out, err = open_change(tmp_path, "chg", "--worktree", str(tmp_path))
     assert code == 0, err
@@ -446,7 +446,7 @@ def test_counts(run, repo):
     assert out["ratios"]["drainage"] == 0.2
     assert out["thresholds"]["drainage_trigger_ratio"] == 1.0
     (repo / ".claude" / "orchestrator" / "config.yaml").write_text(
-        "name: scratch\nthresholds:\n  drainage_trigger_ratio: 0.8\n  review_starvation_ratio: 2\nother: 1\n")
+        "overlay-version: 1\nproject: scratch\nthresholds:\n  drainage_trigger_ratio: 0.8\n  review_starvation_ratio: 2\nother: 1\n")
     code, out, _ = run("counts", "--write")
     assert code == 0 and out["thresholds"]["drainage_trigger_ratio"] == 0.8
     assert out["thresholds"]["review_starvation_ratio"] == 2
@@ -1172,7 +1172,7 @@ def test_home_flag_and_repo_alias(repo, capsys):
 # 36
 def test_read_code_root_parsing(repo):
     cfg = repo / ".claude" / "orchestrator" / "config.yaml"
-    base = "name: scratch\nworktree:\n  code-root: nested-not-this\n"
+    base = "overlay-version: 1\nproject: scratch\nworktree:\n  code-root: nested-not-this\n"
     cases = {
         "code-root: sub\n": ("sub", str(repo / "sub")),
         "code-root: 'quoted dir'  # comment\n": ("quoted dir", str(repo / "quoted dir")),
@@ -1197,7 +1197,7 @@ def test_read_code_root_parsing(repo):
 # 37
 def test_init_refuses_code_root_missing_and_not_git(run, repo):
     cfg = repo / ".claude" / "orchestrator" / "config.yaml"
-    cfg.write_text("name: scratch\ncode-root: gone\n")
+    cfg.write_text("overlay-version: 1\nproject: scratch\ncode-root: gone\n")
     code, _, err = init(run, "cycle-1", "--first-cycle")
     assert code == 1 and err["error"] == "code_root_missing"
     code, out, _ = run("where")
@@ -1551,3 +1551,126 @@ def test_migrate_moves_one_change_layout(repo, capsys):
     assert code == 1 and err["error"] == "no_test_command"
     code, out, err = run("init", "--first-cycle", "--cycle", "cycle-3", "--test-command", "t")
     assert code == 0, err
+
+
+# 49
+def test_home_init_writes_config_for_each_shape(tmp_path, capsys):
+    if not _git_ok():
+        pytest.skip("no git")
+
+    def run(home, *argv):
+        code = state.main(["--home", str(home), *argv])
+        cap = capsys.readouterr()
+        return code, _parse(cap.out), _parse(cap.err)
+
+    # a workspace with two repositories
+    ws = tmp_path / "ws"
+    ws.mkdir()
+    for name in ("app", "api"):
+        r = ws / "checkouts" / name
+        r.mkdir(parents=True)
+        _g(r, "init", "-q")
+    code, out, err = run(ws, "home", "init", "--repo", "app=checkouts/app", "--repo", "api=checkouts/api",
+                         "--test-command", "make check", "--parser", "tap", "--language", "go")
+    assert code == 0, err
+    assert out["shape"] == "workspace" and sorted(out["repos"]) == ["api", "app"] and out["problems"] == []
+    assert out["worktrees"]["pattern"] == "<repo>/<branch>" and out["add_to_home_gitignore"] == []
+    text = (ws / ".claude" / "orchestrator" / "config.yaml").read_text()
+    assert "overlay-version: 1" in text and "project: ws" in text and "  command: make check" in text
+    assert "compare: python3 ~/.claude/skills/orchestrate/scripts/compare.py --parser tap" in text
+    assert (ws / ".claude" / "orchestrator" / "roles").is_dir()
+    code, out, _ = run(ws, "where")
+    assert out["shape"] == "workspace" and out["warnings"] == [] and out["problems"] == []
+    code, _, err = run(ws, "home", "init")
+    assert code == 1 and err["error"] == "overlay_exists"
+    code, out, err = run(ws, "change", "open", "c1", "--repo", "app")
+    assert code == 1 and err["error"] == "git_failed"  # an empty repository has no HEAD to branch from
+    r = ws / "checkouts" / "app"
+    (r / "f").write_text("x")
+    _g(r, "add", ".")
+    _g(r, "commit", "-qm", "i")
+    code, out, err = run(ws, "change", "open", "c1", "--repo", "app")
+    assert code == 0, err
+    assert out["worktree"] == str(ws / ".worktrees" / "app" / "c1")
+
+    # a repository root as its own home, inside a git repo
+    rr = tmp_path / "rr"
+    rr.mkdir()
+    _g(rr, "init", "-q")
+    code, out, err = run(rr, "home", "init", "--test-command", "pytest")
+    assert code == 0, err
+    assert out["shape"] == "repo-root" and list(out["repos"].values()) == [str(rr)]
+    assert out["worktrees"]["pattern"] == "<branch>" and out["add_to_home_gitignore"] == [".worktrees/"]
+    text = (rr / ".claude" / "orchestrator" / "config.yaml").read_text()
+    assert "\nrepos:" not in text and "\ncode-root:" not in text and "# compare:" in text
+    (rr / ".worktrees").mkdir()
+    assert run(rr, "where")[1]["warnings"] == [w for w in run(rr, "where")[1]["warnings"] if "worktrees folder" in w]
+
+    # the one-repository shorthand
+    cr = tmp_path / "cr"
+    (cr / "emacs").mkdir(parents=True)
+    _g(cr / "emacs", "init", "-q")
+    _g(cr, "init", "-q")
+    code, out, err = run(cr, "home", "init", "--code-root", "emacs", "--parser", "emacs-results-txt")
+    assert code == 0, err
+    assert out["shape"] == "code-root" and out["repos"] == {"emacs": str(cr / "emacs")}
+    assert out["add_to_home_gitignore"] == ["emacs/", ".worktrees/"]
+
+    # refusals
+    nogit = tmp_path / "nogit"
+    nogit.mkdir()
+    code, _, err = run(nogit, "home", "init")
+    assert code == 1 and err["error"] == "home_not_git"
+    code, _, err = run(nogit, "home", "init", "--repo", "x=missing")
+    assert code == 1 and err["error"] == "repo_missing"
+    code, _, err = run(nogit, "home", "init", "--repo", "bad")
+    assert code == 1 and err["error"] == "bad_repo_arg"
+
+
+# 50
+def test_where_warns_on_overlay_drift(repo, capsys):
+    cfg = repo / ".claude" / "orchestrator" / "config.yaml"
+    cfg.write_text("""project: p
+language: elisp
+code-root: .
+test:
+  command: ./t
+  compare: python3 ../../.orchestrator/tools/compare-baseline.py
+scaffolding:
+  enabled: false
+artifacts:
+  register: interfaces.org
+  specs-root: docs/specs
+architect:
+  interfaces-document: interfaces.org
+  drift-hotspots:
+    - a: b
+roles-overlay:
+  implementor: roles/implementor.md
+worktree:
+  parent: .worktrees
+  init: ./x.sh
+mystery: 1
+thresholds:
+  history-window: 5
+  nope: 2
+""")
+    roles = repo / ".claude" / "orchestrator" / "roles"
+    roles.mkdir()
+    (roles / "architect.md").write_text("Check the interfaces register and interfaces.org for load-bearing entries.\n")
+    (roles / "reviewer.md").write_text("Prefer seq.el.\n")
+    code = state.main(["--home", str(repo), "where"])
+    out = _parse(capsys.readouterr().out)
+    w = "\n".join(out["warnings"])
+    for needle in ("no overlay-version", "scaffolding:", "artifacts.register:", "architect.interfaces-document:",
+                   "roles-overlay:", "worktree.parent:", "mystery:", "thresholds.nope:", "test.compare climbs",
+                   "roles/architect.md names retired concepts (interfaces register, interfaces.org, load-bearing)"):
+        assert needle in w, needle
+    assert "reviewer.md" not in w and "drift-hotspots" not in w and "worktree.init" not in w
+    cfg.write_text("overlay-version: 1\nproject: p\ntest:\n  command: ./t\n")
+    (roles / "architect.md").write_text("fine\n")
+    code = state.main(["--home", str(repo), "where"])
+    assert _parse(capsys.readouterr().out)["warnings"] == []
+    cfg.write_text("overlay-version: 7\nproject: p\n")
+    code = state.main(["--home", str(repo), "where"])
+    assert "overlay-version 7" in _parse(capsys.readouterr().out)["warnings"][0]

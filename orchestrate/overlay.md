@@ -19,12 +19,13 @@ The core skill is project-agnostic. Each project carries its own overlay at `<ho
     worktree-init.sh       # OPTIONAL — submodules, runtime setup
 ```
 
-The directory is **flat under `.claude/`** — not nested under `.claude/skills/` — to signal that this is config the central skill consumes, not a self-contained skill.
+The directory is **flat under `.claude/`** — not nested under `.claude/skills/` — to signal that this is config the central skill consumes, not a self-contained skill. It is created by `state.py home init` (§ Bootstrap) and checked by `state.py where` (§ Drift).
 
 ## config.yaml schema
 
 ```yaml
-# Required: project identity
+# Required: the schema version this file was written against (§ Drift) and the project identity
+overlay-version: 1
 project: <slug>
 language: elisp | go | typescript | python | rust | other
 
@@ -224,6 +225,22 @@ Hooks are bash scripts run by the orchestrator at fixed lifecycle points:
 
 Hooks must be idempotent. The orchestrator may re-run them on retry. Every hook sees `ORCH_HOME`, `ORCH_CHANGE`, `ORCH_CHANGE_DIR`, `ORCH_REPO`, `ORCH_WORKTREES` and `CODE_ROOT` (what `state.py where --sh` exports), so a script that needs the home writes `$ORCH_HOME/…`.
 
+## Bootstrap
+
+A home is made by `state.py home init`, never by copying another home's overlay: a copy carries the other project's knowledge and whatever the skill has since retired (the record: one overlay copied on 2026-10-15 brought an interfaces register, a `scaffolding.md` and a `roles-overlay` key the skill no longer had). The verb writes `config.yaml` from this schema, with `overlay-version`, the required keys filled and the optional blocks as comments, and an empty `roles/`; it refuses when a config exists.
+
+```bash
+state.py --home <dir> home init --repo <name>=<path> [--repo …] [--test-command <cmd>] [--parser <p>] [--worktrees-pattern <p>]   # a workspace
+state.py --home <dir> home init --code-root <path> …      # a workspace holding one repository
+state.py --home <dir> home init …                        # a repository root as its own home
+```
+
+The dispatcher runs it with the user present, in one sitting, one question per call (`templates/ask.md` § The inline rule applies to the session, not to a file: there is no change yet): the repositories and their checkouts; the test command and its parser; the worktree placement when the workspace has a convention (§ Worktrees); the pre-commit and worktree-init hooks; the pending-test style. Then the optional blocks the user wants, from what they know of the project: taxonomy, drift hot spots, reviewer checks, the asks' reader, priors. The result's `add_to_home_gitignore` lists what the home's `.gitignore` must ignore. Role overlays are written by hand, against the current `roles/*.md`, with only what this project adds. The home is done when `state.py where` reports no problems and no warnings; the first change follows with `state.py change open`.
+
+## Drift
+
+The overlay is the project's; the schema is the skill's, and the skill moves. `config.yaml` carries `overlay-version: 1`, and `state.py where` warns when the version is missing or differs, when a key is not in this schema or names a retired concept (`scaffolding`, `artifacts.register`, `architect.interfaces-document`, `architect.severity-overrides`, `roles-overlay`, `worktree.parent`, each with what replaced it), when a hook or `test.compare` climbs to the home with `../` (hooks see `$ORCH_HOME`), and when a role overlay or `priors.md` names a retired concept (the interfaces register, scaffolding, load-bearing entries). A warning is a review item for the user, not a refusal: the home keeps running, and the overlay is corrected by hand. The version is bumped when a key changes meaning, not when one is added.
+
 ## Validation
 
 The orchestrator validates `config.yaml` at start of every phase:
@@ -232,5 +249,6 @@ The orchestrator validates `config.yaml` at start of every phase:
 - Hook scripts exist and are executable.
 - `taxonomy` values match what's in flight on existing tasks.
 - `thresholds.*` numerical fields are positive numbers.
+- `state.py where` reports no problem (§ Drift warnings are relayed to the user once per session).
 
 Validation failure is a hard stop. The orchestrator does not invent missing config.

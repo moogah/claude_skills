@@ -1680,7 +1680,7 @@ def verb_where(store, args):
            "state": ("present" if store.exists() else "absent") if store.change_rec else None,
            "legacy_layout": store.legacy_layout(),
            "problems": [{"error": a, "message": b} for a, b in problems],
-           "warnings": home_warnings(store)}
+           "warnings": home_warnings(store) + overlay_drift(store.home, read_config(store.home))}
     if out["legacy_layout"]:
         out["warnings"].append(f"{store.root}/state.json is the one-change layout; run `migrate` to move it "
                                "under .orchestrator/changes/<change>/")
@@ -1802,6 +1802,224 @@ def verb_change_open(store, args):
     return {"ok": True, **rec, "created": created, "path": change_json_path(store.home, name),
             "problems": [{"error": a, "message": b} for a, b in change_problems(new)],
             "warnings": home_warnings(new)}
+
+
+# ---------------------------------------------------------------- the overlay: bootstrap and drift
+
+OVERLAY_VERSION = 1
+# overlay.md § config.yaml schema. A key not here is drift: either removed (REMOVED_KEYS says why)
+# or never part of the schema.
+OVERLAY_KEYS = {
+    "overlay-version": None, "project": None, "language": None,
+    "repos": {"*": {"path", "language", "build", "test", "worktree"}},
+    "code-root": None,
+    "build": {"pre-commit"},
+    "test": {"command", "parser", "compare", "pending-style"},
+    "worktrees": {"parent", "pattern"},
+    "worktree": {"init", "needs-submodules"},
+    "artifacts": {"tasks-root", "externalised-root", "specs-root", "intent-pattern", "design-pattern"},
+    "taxonomy": None,
+    "thresholds": {"history-window", "drainage-trigger-ratio", "drainage-trigger-consecutive-cycles",
+                   "cascade-trigger-followup-count", "stale-task-cycles", "review-starvation-ratio",
+                   "externalisation-pressure-growth"},
+    "critical-path": {"inference", "override-tasks", "override-labels"},
+    "architect": {"drift-hotspots"},
+    "reviewer": {"checks"},
+    "asks": {"reader"},
+    "priors": None,
+}
+REMOVED_KEYS = {
+    "scaffolding": "scaffolding.md and the scaffolding gates were removed (2026-10-09); the design round's pending tests replaced them",
+    "artifacts.register": "the interfaces register was replaced by design.org's Seams table (2026-09-28); the record lives under docs/",
+    "architect.interfaces-document": "the interfaces register was replaced by design.org's Seams table (2026-09-28)",
+    "architect.severity-overrides": "severity is the reporter's and routing is by the change's main path (templates/architect-finding.md, 2026-10-14)",
+    "roles-overlay": "role overlays are found by name under roles/ (overlay.md § Layout); the key named nothing",
+    "worktree.parent": "moved to worktrees.parent, relative to the home, with worktrees.pattern (2026-10-15)",
+}
+# Words in a role overlay or priors file that name a retired concept; the file is the user's and
+# is reviewed by hand, so this is a warning naming the words.
+RETIRED_CONCEPTS = ["interfaces register", "interfaces.org", "register entry", "register entries", "entry_tier",
+                    "entry tier", "load-bearing", "scaffolding", "scaffold", "register_touched", "architecture.md",
+                    "cites_register_entries"]
+
+
+def overlay_drift(home, cfg):
+    """Warnings about config.yaml and the role overlays against the skill's schema."""
+    out = []
+    if not cfg:
+        return out
+    v = cfg.get("overlay-version")
+    if v is None:
+        out.append(f"config.yaml has no overlay-version; the skill's is {OVERLAY_VERSION}. Check its keys against "
+                   "overlay.md (the warnings below), then add `overlay-version: 1` (overlay.md § Drift)")
+    elif str(v) != str(OVERLAY_VERSION):
+        out.append(f"config.yaml is overlay-version {v}; the skill's is {OVERLAY_VERSION} (overlay.md § Drift)")
+
+    def removed(path):
+        why = REMOVED_KEYS.get(path)
+        return f"config.yaml {path}: {why}; delete it" if why else None
+
+    for key, val in cfg.items():
+        if key in REMOVED_KEYS:
+            out.append(removed(key))
+            continue
+        if key not in OVERLAY_KEYS:
+            out.append(f"config.yaml {key}: not in overlay.md's schema; delete it or move it")
+            continue
+        sub = OVERLAY_KEYS[key]
+        if not sub or not isinstance(val, dict):
+            continue
+        for k2, v2 in val.items():
+            path = f"{key}.{k2}"
+            if path in REMOVED_KEYS:
+                out.append(removed(path))
+            elif "*" in sub:
+                if isinstance(v2, dict):
+                    for k3 in v2:
+                        if k3 not in sub["*"]:
+                            out.append(f"config.yaml {key}.{k2}.{k3}: not in overlay.md's schema")
+            elif k2 not in sub:
+                out.append(f"config.yaml {path}: not in overlay.md's schema; delete it or move it")
+    # a path that climbs from a code root to the home
+    for key in ("build", "test", "worktree"):
+        blocks = [(key, cfg.get(key))] + [(f"repos.{n}.{key}", (r or {}).get(key))
+                                          for n, r in (cfg.get("repos") or {}).items()
+                                          if isinstance(cfg.get("repos"), dict)]
+        for name, block in blocks:
+            if not isinstance(block, dict):
+                continue
+            for k2, v2 in block.items():
+                if isinstance(v2, str) and re.search(r"(^|\s|=)\.\./", v2):
+                    out.append(f"config.yaml {name}.{k2} climbs to the home with ../ ({v2!r}); the code root's depth is "
+                               "the workspace's, not the skill's: write $ORCH_HOME/… (hooks see it) or ship the tool")
+    # role overlays and priors naming retired concepts
+    d = os.path.join(home, ".claude", "orchestrator")
+    files = sorted(glob.glob(os.path.join(d, "roles", "*.md"))) + [os.path.join(d, "priors.md")]
+    for f in files:
+        if not os.path.exists(f):
+            continue
+        text = open(f, encoding="utf-8", errors="replace").read().lower()
+        hits = sorted({w for w in RETIRED_CONCEPTS if w in text})
+        if hits:
+            out.append(f"{os.path.relpath(f, home)} names retired concepts ({', '.join(hits)}); rewrite those "
+                       "parts against the current roles/*.md (overlay.md § Drift)")
+    return [w for w in out if w]
+
+
+def render_config(args, shape, repos):
+    """config.yaml text for `home init`: the schema's required keys filled, the optional ones as comments."""
+    lines = ["# Orchestrator overlay (overlay.md). Written by `state.py home init`; edited by hand.",
+             "# `state.py where` warns when a key here drifts from the skill's schema.",
+             f"overlay-version: {OVERLAY_VERSION}", f"project: {args.project}", f"language: {args.language}", ""]
+    tc = args.test_command or "make test"
+    if shape == "workspace":
+        lines += ["# The repositories: a change belongs to one and is worked in its own worktree of it",
+                  "# (overlay.md § Repositories). path: a checkout of the repository, relative to the home or absolute.",
+                  "repos:"]
+        for name, path in repos:
+            lines += [f"  {name}:", f"    path: {path}"]
+        lines.append("")
+    elif shape == "code-root":
+        lines += ["# The one repository's checkout, relative to the home (overlay.md § Repositories).",
+                  f"code-root: {repos[0][1]}", ""]
+    else:
+        lines += ["# No repos: or code-root: — this directory is the repository and the home (overlay.md § Repositories).", ""]
+    lines += ["build:",
+              "  # pre-commit: ./bin/tangle-org.sh   # OPTIONAL, run in the worktree before each commit",
+              "test:",
+              f"  command: {tc}",
+              f"  parser: {args.parser}   # emacs-results-txt | exit-code | junit-xml | tap",
+              ("  compare: python3 ~/.claude/skills/orchestrate/scripts/compare.py --parser " + args.parser
+               if args.parser != "exit-code" else
+               "  # compare: python3 ~/.claude/skills/orchestrate/scripts/compare.py --parser <parser>   # needed when the baseline is red; exit-code cannot compare"),
+              "  # pending-style: xfail-strict | xit   # how the design round marks a pending test (default by runner)",
+              "",
+              "# Where worktrees go, from the home (overlay.md § Worktrees). The pattern is the workspace's convention.",
+              "worktrees:",
+              f"  parent: {args.worktrees_parent}",
+              f"  pattern: {args.worktrees_pattern}",
+              "",
+              "worktree:",
+              "  # init: ./bin/init-worktree-runtime.sh   # OPTIONAL, run inside a new worktree",
+              "  # needs-submodules: false",
+              "",
+              "# OPTIONAL blocks, as overlay.md gives them: artifacts, taxonomy, thresholds, critical-path,",
+              "# architect (drift-hotspots), reviewer (checks), asks (reader), priors.",
+              "# taxonomy:",
+              "#   - feature",
+              "#   - test",
+              "#   - doc",
+              "#   - refactor",
+              "#   - bug",
+              "#   - contract",
+              "#   - infrastructure",
+              "# architect:",
+              "#   drift-hotspots:",
+              "#     - <module>: <what to watch>",
+              "# reviewer:",
+              "#   checks:",
+              "#     - <check>",
+              ""]
+    return "\n".join(lines)
+
+
+def verb_home_init(store, args):
+    """Write a new home's .claude/orchestrator/config.yaml from the skill's schema (overlay.md
+    § Bootstrap). Refuses when one exists. The home is --home or the cwd."""
+    home = os.path.abspath(args.home or (store.home if store.home_found else os.getcwd()))
+    cfg = config_path(home)
+    if os.path.exists(cfg):
+        raise Refusal("overlay_exists", f"{cfg} exists; edit it, or move it away to start over")
+    repos = []
+    for spec in args.repo or []:
+        if "=" not in spec:
+            raise Refusal("bad_repo_arg", "--repo takes <name>=<path>")
+        name, path = spec.split("=", 1)
+        if not re.match(r"^[A-Za-z0-9][A-Za-z0-9._-]*$", name) or not path:
+            raise Refusal("bad_repo_arg", f"--repo {spec!r}: <name> is one path segment, <path> non-empty")
+        repos.append((name, path))
+    if args.code_root and repos:
+        raise Refusal("bad_repo_arg", "--code-root is the one-repository shorthand; with --repo use neither")
+    if args.code_root:
+        shape, repos = "code-root", [(os.path.basename(os.path.normpath(args.code_root)), args.code_root)]
+    elif repos:
+        shape = "workspace"
+    else:
+        shape = "repo-root"
+    for name, path in repos:
+        p = os.path.abspath(os.path.join(home, os.path.expanduser(path)))
+        if not os.path.isdir(p):
+            raise Refusal("repo_missing", f"repository {name}: {path} -> {p} is not a directory")
+        if _git(p, "rev-parse", "--show-toplevel")[0] != 0:
+            raise Refusal("repo_not_git", f"repository {name}: {p} is not a git work tree")
+    if shape == "repo-root" and _git(home, "rev-parse", "--show-toplevel")[0] != 0:
+        raise Refusal("home_not_git", f"{home} is not a git work tree; a repository-root home is the repository. "
+                      "Name the repositories with --repo <name>=<path> for a workspace")
+    if not args.worktrees_pattern:
+        args.worktrees_pattern = "<repo>/<branch>" if shape == "workspace" else "<branch>"
+    if not args.project:
+        args.project = os.path.basename(os.path.normpath(home))
+    text = render_config(args, shape, repos)
+    os.makedirs(os.path.dirname(cfg), exist_ok=True)
+    os.makedirs(os.path.join(os.path.dirname(cfg), "roles"), exist_ok=True)
+    _atomic_write(cfg, text)
+    hc = resolve_home_config(home)
+    gitignore = []
+    if _git(home, "rev-parse", "--show-toplevel")[0] == 0:
+        for name, r in hc["repos"].items():
+            rel = os.path.relpath(r["path"], home)
+            if r.get("from_config") is not None and not rel.startswith("..") and not _git_ignores(home, rel):
+                gitignore.append(rel + "/")
+        rel = os.path.relpath(hc["worktrees"]["parent"], home)
+        if not rel.startswith("..") and not _git_ignores(home, rel):
+            gitignore.append(rel + "/")
+    return {"ok": True, "home": home, "config": cfg, "shape": shape,
+            "repos": {n: r["path"] for n, r in hc["repos"].items()},
+            "worktrees": hc["worktrees"], "problems": [{"error": a, "message": b} for a, b in hc["problems"]],
+            "add_to_home_gitignore": gitignore,
+            "next": "review config.yaml with the user (test command, parser, pending-style, hooks, taxonomy, "
+                    "drift hot spots, reviewer checks); add roles/<role>.md and priors.md as overlay.md says; "
+                    "then `state.py change open <name>`"}
 
 
 def _rewrite_layout_paths(obj, change):
@@ -2907,6 +3125,18 @@ def build_parser():
     s.add_argument("--sh", action="store_true", help="print export ORCH_HOME=... ORCH_CHANGE=... CODE_ROOT=... for eval")
     s.set_defaults(fn=verb_where)
 
+    h = sub.add_parser("home", help="home init: write a new home's config.yaml from the skill's schema").add_subparsers(dest="sub", required=True)
+    s = h.add_parser("init", help="init [--repo <name>=<path> ...] | [--code-root <dir>] (neither: this directory is the repository)")
+    s.add_argument("--repo", action="append", help="a repository: <name>=<path to a checkout>, relative to the home; repeatable")
+    s.add_argument("--code-root", help="the one repository's checkout, relative to the home")
+    s.add_argument("--project", help="slug (default: the home directory's name)")
+    s.add_argument("--language", default="other")
+    s.add_argument("--test-command", help="default: make test")
+    s.add_argument("--parser", default="exit-code", choices=["emacs-results-txt", "exit-code", "junit-xml", "tap"])
+    s.add_argument("--worktrees-parent", default=".worktrees")
+    s.add_argument("--worktrees-pattern", help="default: <repo>/<branch> for a workspace, <branch> otherwise")
+    s.set_defaults(fn=verb_home_init)
+
     c = sub.add_parser("change", help="change open: a change's worktree and its directory under .orchestrator/changes/").add_subparsers(dest="sub", required=True)
     s = c.add_parser("open", help="open <name> [--repo <r>] [--from <ref> | --worktree <path>]")
     s.add_argument("name")
@@ -3026,6 +3256,8 @@ def main(argv=None):
     args = parser.parse_args(argv)
     try:
         home, found = find_home(args.home)
+        if args.verb == "home":
+            found = os.path.exists(config_path(home))
         hc = resolve_home_config(home) if found or os.path.exists(config_path(home)) else None
         sel = args.change_sel or (getattr(args, "change", None) if args.verb == "init" else None)
         change, how = resolve_change(home, sel)
