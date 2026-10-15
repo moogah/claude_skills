@@ -10,6 +10,7 @@ The intent is written with the change's spec edits, before the design round: by 
 #+TITLE: <change>
 #+STATUS: speculated
 #+BASE: <the commit the change starts from, on its repository>
+#+APPROVED: <date> <by the user, in the hand-off review or the design round's sitting>
 
 * Why
 <What prompted the change, in the user's terms.>
@@ -44,6 +45,7 @@ Recommendation: <option>, because <…>. The spec is written to it. Affects: wor
 ```
 
 - **`#+BASE:`** is written once, with the change's first record commit: the `base` of `change.json` (`git -C "$CODE_ROOT" rev-parse HEAD` at `state.py change open`, before that commit). `coverage.py --since <base>` scopes coverage to the scenarios the change touched; the whole-change review diffs from it (`flows/integrate.md` § 9).
+- **`#+APPROVED:`** is the user's approval of the Goals and Non-goals as written, dated. An intent the user wrote carries it from the start. One an agent wrote (a research hand-off, `flows/open.md`) gets it when the user approves it: in the research skill's hand-off review, or, absent, as the first entry of the design round's sitting (`flows/design.md` § 5). The round does not run plan on an unapproved intent. The record: five intents written by hand-off agents carried nineteen open questions and nine coined terms, and nothing had asked the user whether the goals were theirs.
 - **Capabilities** names each spec file the change edits by its capability id (`templates/spec.md`).
 - **Capabilities** may also name a scenario the spec already states and the code does not meet (`workspaces § <title>: stated, not met`); the round takes it as one of the change's (`flows/open.md` § 3).
 - **`* Research`** links the research that preceded the change: `docs/changes/<change>/research/`, or a home's research brief by path (`~/.claude/skills/research/SKILL.md` § Hand-off). The design round reads its assumptions and failure modes. Left out when no research preceded the change.

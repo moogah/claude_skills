@@ -1472,8 +1472,10 @@ def test_change_open_creates_worktree_in_workspace(tmp_path, capsys):
         assert out["home"] == str(home) and out["change"] == "feat-a" and out["change_resolved_by"] == "cwd"
     finally:
         os.chdir(cwd)
-    code, out, err = run("change", "open", "feat-c", "--worktree", str(origin))
+    code, out, err = run("change", "open", "feat-c", "--worktree", str(origin), "--from", "integration")
     assert code == 0 and out["adopted"] is True and out["branch"] == "main" and out["created"] is False
+    assert out["from"] == "integration"
+    assert [c["from"] for c in run("where")[1]["changes"]] == ["integration", "HEAD", "integration"]
     (origin / "sub").mkdir()
     code, _, err = run("change", "open", "feat-d", "--worktree", str(origin / "nope"))
     assert code == 1 and err["error"] == "worktree_missing"

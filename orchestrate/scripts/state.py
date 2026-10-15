@@ -1641,7 +1641,7 @@ def code_root_warnings(store):
 def _change_summary(store, rec):
     s = Store(store.home, rec["change"])
     out = {"name": rec["change"], "repo": rec.get("repo"), "branch": rec.get("branch"),
-           "worktree": rec.get("worktree"), "base": rec.get("base"),
+           "worktree": rec.get("worktree"), "base": rec.get("base"), "from": rec.get("from"),
            "state": "present" if s.exists() else "absent", "cycle": None, "phase": None, "closed": None}
     if s.exists():
         try:
@@ -1760,7 +1760,7 @@ def verb_change_open(store, args):
         path = os.path.abspath(os.path.expanduser(args.worktree))
         if not os.path.isdir(path):
             raise Refusal("worktree_missing", f"--worktree {path} is not a directory")
-        adopted = True
+        adopted, from_ref = True, args.from_ref  # recorded, not acted on: the branch exists
     else:
         path = worktree_path_for(hc, repo, name)
         if os.path.exists(path):
@@ -1769,7 +1769,7 @@ def verb_change_open(store, args):
             if _git_branch(path) != name:
                 raise Refusal("worktree_occupied", f"{path} is checked out on {_git_branch(path)!r}, not {name!r}; "
                               "adopt it with --worktree, or remove it")
-            adopted = True
+            adopted, from_ref = True, args.from_ref
         else:
             from_ref = args.from_ref or "HEAD"
             os.makedirs(os.path.dirname(path), exist_ok=True)
@@ -3141,7 +3141,8 @@ def build_parser():
     s = c.add_parser("open", help="open <name> [--repo <r>] [--from <ref> | --worktree <path>]")
     s.add_argument("name")
     s.add_argument("--repo", help="the repository (default: the home's only one)")
-    s.add_argument("--from", dest="from_ref", help="the ref the new branch starts from (default HEAD of the repository checkout)")
+    s.add_argument("--from", dest="from_ref", help="the ref the new branch starts from (default HEAD of the repository "
+                   "checkout); the workspace integration branch when the hand-off made one. With --worktree it is recorded only")
     s.add_argument("--worktree", help="adopt this existing checkout as the change's code root")
     s.set_defaults(fn=verb_change_open)
 
