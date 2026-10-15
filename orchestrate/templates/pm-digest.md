@@ -6,7 +6,7 @@ The structure is fixed; the contents are derived. Every count traces to a state-
 
 ## Output location
 
-`<home>/.orchestrator/cycles/<cycle-id>/pm-digest.md`
+`<change-dir>/cycles/<cycle-id>/pm-digest.md`
 
 `state.py gate check integrate` computes `pm_digest_produced` from this file: it must exist with a non-empty `## Signals` section. A cycle with nothing to ask closes cleanly.
 
@@ -53,8 +53,8 @@ drainage         1.00       0.83       0.50       0.57       0.45  ⚠ trending 
 
 | # | Question | Blocks | Recommendation | File |
 |---|---|---|---|---|
-| 1 | Should a video you fetch by hand be added to the archive? | — | Do nothing to the code | `.orchestrator/inbox/ask-cycle-N-9.org` |
-| 2 | Keep working through the refactor batch, or return to the critical path first? | next-plan | Return to the critical path | `.orchestrator/inbox/ask-cycle-N-3.org` |
+| 1 | Should a video you fetch by hand be added to the archive? | — | Do nothing to the code | `<change-dir>/inbox/ask-cycle-N-9.org` |
+| 2 | Keep working through the refactor batch, or return to the critical path first? | next-plan | Return to the critical path | `<change-dir>/inbox/ask-cycle-N-3.org` |
 
 Answer in the file's `* Answer` section (paths are relative to the home), or in chat.
 Applied without asking: 3 (`cycles/<cycle-id>/asks/`). Process notes: 1 (inbox).
@@ -99,7 +99,7 @@ The agent pass produces:
 - The candidate questions (the asks table's question column), from which the orchestrator writes the ask files; the PM writes none (`templates/ask.md`, opening).
 - The goal-drift recommendation (revise / split / abandon / continue) and its one-line reason.
 
-If the agent pass fails or hallucinates, the deterministic pass output remains in `.orchestrator/cycles/<cycle-id>/pm-signals.json` and is recoverable.
+If the agent pass fails or hallucinates, the deterministic pass output remains in `<change-dir>/cycles/<cycle-id>/pm-signals.json` and is recoverable.
 
 ## Threshold defaults (overlay-configurable)
 

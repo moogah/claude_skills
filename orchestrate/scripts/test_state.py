@@ -1163,7 +1163,8 @@ def test_home_flag_and_repo_alias(repo, capsys):
     code = state.main(["--home", str(repo), "where", "--sh"])
     text = capsys.readouterr().out
     assert text.splitlines() == [f"export ORCH_HOME={repo}", f"export ORCH_WORKTREES={repo / '.worktrees'}",
-                                 "export ORCH_CHANGE=chg", f"export ORCH_REPO={repo.name}", f"export CODE_ROOT={repo}"]
+                                 "export ORCH_CHANGE=chg", f"export ORCH_CHANGE_DIR={repo / CH}",
+                                 f"export ORCH_REPO={repo.name}", f"export CODE_ROOT={repo}"]
     code = state.main(["--home", str(repo), "worktree", "task-a-1", "--sh"])
     assert capsys.readouterr().out.strip() == f"WORKTREE_PATH={repo / '.worktrees' / 'task-a-1'}"
 

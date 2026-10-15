@@ -1675,6 +1675,7 @@ def verb_where(store, args):
            "change_resolved_by": store.change_how if store.change_rec else None,
            "repo": store.repo if store.change_rec else None,
            "code_root": store.code_root if store.change_rec else None,
+           "change_dir": store.dir if store.change_rec else None,
            "split": store.split if store.change_rec else None,
            "state": ("present" if store.exists() else "absent") if store.change_rec else None,
            "legacy_layout": store.legacy_layout(),
@@ -1692,6 +1693,7 @@ def where_sh(result, hc):
         lines.append(f"export ORCH_WORKTREES={shlex.quote(hc['worktrees']['parent'])}")
     if result.get("change"):
         lines += [f"export ORCH_CHANGE={shlex.quote(result['change'])}",
+                  f"export ORCH_CHANGE_DIR={shlex.quote(result['change_dir'])}",
                   f"export ORCH_REPO={shlex.quote(result['repo'])}",
                   f"export CODE_ROOT={shlex.quote(result['code_root'])}"]
     return "\n".join(lines)

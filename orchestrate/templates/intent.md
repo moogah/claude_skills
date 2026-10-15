@@ -2,14 +2,14 @@
 
 A change's intent is `docs/changes/<change>/intent.org` in the code root. It holds what the diff cannot carry: why the change exists, what it is for and not for, which capabilities it touches, and why it removes what it removes. The requirement and scenario edits are not here; they are the change's edits to `docs/specs/` (`templates/spec.md`), and `git diff <base>` is their record. When the change is done the file stays where it is, its status line saying so.
 
-The intent is written with the change's spec edits, before the design round: by the user, or by the orchestrator when it opens or splits a change (`flows/open.md`). It is committed in the code root on the branch the change's tasks merge into.
+The intent is written with the change's spec edits, before the design round: by the user, or by the orchestrator when it opens or splits a change (`flows/open.md`). It is committed in the code root, the change's worktree, on the change integration branch, the one its tasks merge into.
 
 ## Form
 
 ```org
 #+TITLE: <change>
 #+STATUS: speculated
-#+BASE: <the code-root commit the change starts from>
+#+BASE: <the commit the change starts from, on its repository>
 
 * Why
 <What prompted the change, in the user's terms.>
@@ -43,7 +43,7 @@ The intent is written with the change's spec edits, before the design round: by 
 Recommendation: <option>, because <…>. The spec is written to it. Affects: workspaces § <title>.
 ```
 
-- **`#+BASE:`** is written once, with the change's first record commit: `git -C "$CODE_ROOT" rev-parse HEAD` before that commit. `coverage.py --since <base>` scopes coverage to the scenarios the change touched; the whole-change review diffs from it (`flows/integrate.md` § 9).
+- **`#+BASE:`** is written once, with the change's first record commit: the `base` of `change.json` (`git -C "$CODE_ROOT" rev-parse HEAD` at `state.py change open`, before that commit). `coverage.py --since <base>` scopes coverage to the scenarios the change touched; the whole-change review diffs from it (`flows/integrate.md` § 9).
 - **Capabilities** names each spec file the change edits by its capability id (`templates/spec.md`).
 - **Capabilities** may also name a scenario the spec already states and the code does not meet (`workspaces § <title>: stated, not met`); the round takes it as one of the change's (`flows/open.md` § 3).
 - **`* Research`** links the research that preceded the change: `docs/changes/<change>/research/`, or a home's research brief by path (`~/.claude/skills/research/SKILL.md` § Hand-off). The design round reads its assumptions and failure modes. Left out when no research preceded the change.

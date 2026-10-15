@@ -1,6 +1,6 @@
 # Overlay convention
 
-The core skill is project-agnostic. Each project carries its own overlay at `<home>/.claude/orchestrator/`, where the home is the repo or a workspace directory above it. The overlay supplies the project's test command, build hooks, role-prompt extensions, threshold tuning, and task taxonomy.
+The core skill is project-agnostic. Each project carries its own overlay at `<home>/.claude/orchestrator/`, where the home is a workspace directory holding worktrees of the project's repositories, or a repository's own root. The overlay names the repositories and supplies each one's test command and build hooks, the worktree placement, role-prompt extensions, threshold tuning, and task taxonomy.
 
 ## Layout
 
@@ -28,18 +28,34 @@ The directory is **flat under `.claude/`** — not nested under `.claude/skills/
 project: <slug>
 language: elisp | go | typescript | python | rust | other
 
-# OPTIONAL: the code root, where worktrees are made, code is merged and tested, and code commits land.
-# One path relative to the home (the directory holding this file); default: the home. A list is refused; multi-repo is deferred.
-code-root: <dir>
+# The repositories (§ Repositories). A workspace home names each one; a change belongs to one of them
+# and is worked in its own worktree of it. `path` is a checkout of the repository (any work tree of it),
+# relative to the home or absolute; the per-repository build/test/worktree blocks override the top-level ones.
+repos:
+  <name>:
+    path: <dir>
+    language: elisp | go | typescript | python | rust | other   # OPTIONAL; default: the top-level language
+    build: { … }        # OPTIONAL, same keys as below
+    test: { … }         # OPTIONAL, same keys as below
+    worktree: { … }     # OPTIONAL, same keys as below
+# One-repository shorthands, instead of repos:
+#   code-root: <dir>   # the repository checkout, relative to the home (a workspace holding one repository)
+#   neither            # the home is the repository (a repository root as its own home)
 
-# Required: build & test
+# Required: build & test (top level: shared by every repository; per repository under repos.<name>)
 build:
   pre-commit: ./bin/tangle-org.sh   # OPTIONAL
 test:
   command: ./bin/run-tests.sh       # REQUIRED
   parser: emacs-results-txt | exit-code | junit-xml | tap   # default: exit-code
-  compare: ./bin/compare-baseline.py   # OPTIONAL; required when the baseline is red: `<cmd> <baseline-file> <after-file>` exits non-zero and prints the test ids that fail after but not before (flows/execute.md § 4)
+  compare: python3 ~/.claude/skills/orchestrate/scripts/compare.py --parser <parser>   # OPTIONAL; required when the baseline is red: `<cmd> <baseline-file> <after-file>` exits non-zero and prints the test ids that fail after but not before (flows/execute.md § 4)
   pending-style: xfail-strict | xit | <project value>   # how the design round marks a pending test; must be a style the runner reports as pending, never as failing (a red baseline disables regression detection). Default: xfail-strict for pytest, xit for buttercup
+
+# Where worktrees go (§ Worktrees): under the home, never under a code root. `pattern` is the path under
+# `parent` for a branch; it must contain <branch>, and <repo> when the home has several repositories.
+worktrees:
+  parent: .worktrees             # default: .worktrees, relative to the home
+  pattern: <repo>/<branch>       # default: <repo>/<branch> for a workspace, <branch> for a repository root
 
 # Optional: where the process and the record live (defaults shown); <change> is a placeholder
 artifacts:
@@ -49,11 +65,10 @@ artifacts:
   intent-pattern: docs/changes/<change>/intent.org   # relative to the code root
   design-pattern: docs/changes/<change>/design.org   # relative to the code root
 
-# Required: worktree handling
+# Required: worktree handling (per repository; top level is shared)
 worktree:
-  init: ./bin/init-worktree-runtime.sh   # OPTIONAL — runs after `git worktree add`
+  init: ./bin/init-worktree-runtime.sh   # OPTIONAL — runs after `git worktree add`, inside the new worktree
   needs-submodules: true                  # default: false
-  parent: .worktrees                       # default: .worktrees
 
 # OPTIONAL: task taxonomy — what classes are valid for this project
 taxonomy:
@@ -103,26 +118,43 @@ asks:
 priors: priors.md
 ```
 
+## Repositories
+
+Three shapes of home, one model: a home has one or more **repositories**, and a **change belongs to exactly one** of them, worked in its own worktree of that repository on a branch named after the change (its change integration branch). That worktree is the change's **code root**. A feature that spans two repositories is two changes, sequenced by the hand-off that produced them.
+
+| Shape | `config.yaml` | The repositories | Typical |
+|---|---|---|---|
+| **Workspace** (the usual case) | `repos:` | Each named entry's `path`, a checkout of that repository anywhere (`~/emacs`, or a worktree under the home); several repositories, and several worktrees of one, live side by side under the home | A workspace directory holding worktrees of a frontend monorepo and a backend service |
+| **Workspace, one repository** | `code-root: <dir>` | That checkout, named after its directory | A workspace holding one repository's checkout |
+| **Repository root** | neither | The home itself, named after its directory | A repository whose root carries the overlay, no workspace above it |
+
+The same flows run in all three. `state.py where` prints the shape, the repositories and every open change (its repository, branch, worktree and phase); `state.py change open <name> [--repo <name>] [--from <ref>]` creates the change's worktree from a ref of the repository (default: the checkout's HEAD; the hand-off's workspace integration branch when there is one) and writes `<home>/.orchestrator/changes/<name>/change.json`; `--worktree <path>` adopts a checkout the user made by hand. A change's state, cycles, inbox, handshakes and test outputs live in that directory, so changes run cycles independently; the task files were always there.
+
+## Worktrees
+
+Worktrees are placed **from the home**, by `worktrees.parent` (relative to the home) and `worktrees.pattern` (the path under it for a branch, with `<repo>` and `<branch>` placeholders): a change's worktree is the pattern applied to its branch; a task's worktree (`flows/execute.md` § 1) is the pattern applied to the task branch, so it lands beside the change's, never inside it. The pattern must contain `<branch>`, and `<repo>` when the home has several repositories, since two of them may both have a `main`. The workspace's own tooling owns the convention; the overlay states it and the skill follows it (`state.py worktree <branch>` prints the path). The home's `.gitignore` ignores the parent, and any repository checkout nested in the home (`where` warns).
+
 ## Resolution rule
 
 At skill invocation:
 
-1. The orchestrator resolves the overlay by **walking up from `$cwd`** looking for `.claude/orchestrator/config.yaml`. The first hit wins; record its directory as the home (`$ORCH_HOME`). It holds the process, `.orchestrator/` and `.tasks/`; the record is under `docs/` in the code root.
+1. The orchestrator resolves the overlay by **walking up from `$cwd`** looking for `.claude/orchestrator/config.yaml`. The first hit wins; record its directory as the home (`$ORCH_HOME`). It holds the process, `.orchestrator/` and `.tasks/`; the record is under `docs/` in each change's code root.
 2. If found, parse `config.yaml`. Required fields are validated; missing-required is a hard error (orchestrator refuses to start).
 3. Optional fields fall through to core defaults.
 4. Role overlays are found by role name, `roles/<role>.md` (§ Layout; no key names them), and are read and **appended** to the corresponding core role briefs at agent-spawn time, followed by `priors.md` when it exists.
-5. `code-root`, when set, names the code root (`$CODE_ROOT`) relative to the home; absent, the code root is the home.
-6. Hook scripts referenced by `build.pre-commit`, `test.command`, `worktree.init` are resolved relative to the code root and run there, or in a worktree under it (§ Hook contract).
+5. The change is resolved (`--change`, `$ORCH_CHANGE`, the worktree holding `$cwd`, or the only open one); its `change.json` names the repository and the worktree, which is the code root (`$CODE_ROOT`).
+6. Hook scripts referenced by `build.pre-commit`, `test.command`, `worktree.init` are resolved relative to the code root and run there, or in a task worktree (§ Hook contract), with `ORCH_HOME`, `ORCH_CHANGE`, `ORCH_CHANGE_DIR`, `ORCH_REPO`, `ORCH_WORKTREES` and `CODE_ROOT` in their environment: an overlay never spells a relative path from a code root to the home (`../`), since the code root's depth under the home is the workspace's convention, not the skill's.
 
 If no overlay is found, the orchestrator warns explicitly and falls back to:
 
 | Default |
 |---|
-| `code-root`: the home |
+| repositories: the home itself |
 | `test.command`: `make test` if Makefile present, else error |
 | `test.parser`: `exit-code` |
 | `test.compare`: none (the exit-code rule; an `environment` ask at the first red baseline) |
-| `worktree.parent`: `.worktrees` |
+| `worktrees.parent`: `.worktrees` (relative to the home) |
+| `worktrees.pattern`: `<repo>/<branch>` for a workspace, `<branch>` for a repository root |
 | `worktree.needs-submodules`: false |
 | `artifacts.tasks-root`: `.orchestrator/changes/<change>/tasks` (home) |
 | `artifacts.externalised-root`: `.tasks` (home) |
@@ -185,11 +217,12 @@ Hooks are bash scripts run by the orchestrator at fixed lifecycle points:
 
 | Hook | When | Cwd | Failure semantics |
 |---|---|---|---|
-| `worktree.init` | After `git worktree add`, before agent spawn | inside the new worktree (under the code root) | Failure aborts task setup; status → failed |
+| `worktree.init` | After `git worktree add`, before agent spawn | inside the new worktree (beside the change's, under `worktrees.parent`) | Failure aborts task setup; status → failed |
 | `build.pre-commit` | Before commit in a worktree (after agent finishes) | inside the worktree | Failure aborts commit; status → failed; worktree retained |
-| `test.command` | After every merge to integration branch, and as the final implementor verification step | inside the code root or worktree (depending on phase) | Non-zero status indicates regression; baseline-vs-after comparison runs |
+| `test.command` | After every merge to the change integration branch, and as the final implementor verification step | inside the code root or worktree (depending on phase) | Non-zero status indicates regression; baseline-vs-after comparison runs |
+| `test.compare` | At a red baseline, after each merge (`flows/execute.md` § 4) | inside the code root | Non-zero: a test fails after that did not before |
 
-Hooks must be idempotent. The orchestrator may re-run them on retry.
+Hooks must be idempotent. The orchestrator may re-run them on retry. Every hook sees `ORCH_HOME`, `ORCH_CHANGE`, `ORCH_CHANGE_DIR`, `ORCH_REPO`, `ORCH_WORKTREES` and `CODE_ROOT` (what `state.py where --sh` exports), so a script that needs the home writes `$ORCH_HOME/…`.
 
 ## Validation
 

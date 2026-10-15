@@ -10,7 +10,7 @@ A cycle that leaves the design saying something the merged code no longer does h
 
 The Architect runs against the seams this cycle's tasks cited (`roles/architect.md` § Conformance): for each cited row in `design.org` § Seams, do the owning symbols exist and remain the single producer or mapping; do the scenarios the cycle's tasks cite (`cites_scenarios`) pass: `coverage.py --scenario … --output <the cycle's last after-file>` shows each `pass`, not `pending`, `failed`, `not run` or `uncited`. Plus a dead-branch scan across every diff merged this cycle: is any replaced implementation still on a live path; is any touched function now unreachable. The check reads each merged diff in full (its divergence from its merge base), the modules it touched and their immediate neighbours, and the project priors.
 
-Output: zero or more findings written to `<home>/.orchestrator/cycles/<cycle-id>/findings/`, each indexed with `state.py record add findings '{...}'` (`trigger: conformance`; the id comes back), and a `thought:` journal line per speculative need; a check with zero findings is one `state.py note note "conformance: zero findings" --by architect`. The Architect hands back one line with the counts (`SKILL.md` § Hand-back lines); the orchestrator reads the findings files, not the hand-back, and routes each by `templates/architect-finding.md` § Routing, reading `intent.org`'s Goals for the main path (the task-file write, when one is needed, happens in step 7's curation sweep so creation and refinement are unified). The routing lands as `state.py record set findings <id> decoration=<blocking|hardening> resolution=<value>`, one of the values `state.md` § Architect finding entry lists:
+Output: zero or more findings written to `<change-dir>/cycles/<cycle-id>/findings/`, each indexed with `state.py record add findings '{...}'` (`trigger: conformance`; the id comes back), and a `thought:` journal line per speculative need; a check with zero findings is one `state.py note note "conformance: zero findings" --by architect`. The Architect hands back one line with the counts (`SKILL.md` § Hand-back lines); the orchestrator reads the findings files, not the hand-back, and routes each by `templates/architect-finding.md` § Routing, reading `intent.org`'s Goals for the main path (the task-file write, when one is needed, happens in step 7's curation sweep so creation and refinement are unified). The routing lands as `state.py record set findings <id> decoration=<blocking|hardening> resolution=<value>`, one of the values `state.md` § Architect finding entry lists:
 
 - **Which side is right is decided by a test, not by the code.** An edit that makes the design say what the code does is a record correction only when a test pins the code's behaviour on the point the edit changes; the finding's resolution names that test. An edit that removes or weakens something the design promised and the code does not do ("each call has its own timeout" where no call has one) is never a record correction, whatever the spec scenarios require: the code not keeping a promise is behaviour present in merged code, so it is a finding against the code (`roles/architect.md` § What the Architect reports). It is a `decision` ask only when the user's own words (a spec scenario, the intent, a prior) conflict with the promise; a product question the Architect sees is not enough, and the finding's recommended resolution carries it. With no pinning test, a disagreement is **Design in question** below. The record: one replay arm's conformance cut "with its own timeout" from a Decision because the spec did not require it; in another arm of the same cycle the Reviewer filed the same untimed call as blocking (a stop on a hung target never returns), and the rework bounded it. Earlier, conformance amended the design twice to match untested code, once each way (D14). A re-run of that arm's conformance under this rule turned the cut into a finding against the code; with "a `decision` ask when the promise is in doubt" as the escape, it also sent a defect it recommended fixing (a state call that fails on raw bytes) to the user as a question, hence the user's-words test.
 - **Code right, row stale** (`interface-drift` where the merged code is what the change wanted and a test pins it): a record correction (`templates/design.md` § Seams). The Architect amends the seam row in place, and with it the Decision and the spec scenario steps that named the same thing, keeping each at the contract: when the drift is a guard, error string, encoding or helper the Implementor added, the row is cut back, never extended with it, and a Decision never gains one. It sets `resolution: design-amended`; the orchestrator writes one journal line, `state.py note note "record-correction: <what>" --ref <seam-id>`, and commits the amended text with a subject naming the row. Every commit that corrects record text says `record correction` in its subject, and one that corrects a scenario in `docs/specs/` names the pinning test in its body (`Pinned by: <test>`, one line per scenario), so the MVP decision and the closing summary can list each spec correction with its diff and test (`templates/hardening.md`). No ask file, no question: the record shows 47 of 47 such files were questions nobody answered, and 39 of them would not have existed under this rule. The correction reaches whatever the row cites: a scenario in `docs/specs/` that states the stale thing is corrected in the same commit, in place. A record correction does not rename a scenario, since tests cite its title; a title that must change is a task. Not Implementor work. `design-diff.json` lists the seam row only, with the finding id as `ref` (one per row; the first finding when two amended the same row).
@@ -18,7 +18,7 @@ Output: zero or more findings written to `<home>/.orchestrator/cycles/<cycle-id>
 - **`blocking`** (any other finding that breaks the main path, or an untrue sentence that is not a record correction) → routed for an in-change follow-up task in step 7, whose first step is the reproduction; the integrate gate doesn't close until the finding's `resolution` is no longer `pending`. (`blocking` at integrate holds the gate; there is no merge left to pause.)
 - **`hardening`** (any other defect) → an entry on the change's hardening list (`templates/hardening.md`), `resolution=hardening-list`. A stale sentence the finding also exposed is still corrected now, as above.
 
-Then the step writes `<home>/.orchestrator/cycles/<cycle-id>/design-diff.json`: a JSON array, one element per seam row this cycle added, amended or retired, `{"seam": "seam/<name>", "change": "added | amended | retired", "ref": "<finding-id or ask-id>"}`; an empty array when nothing changed. Step 8's handshake carries it as `design_diff`; step 7 uses it to find the open tasks whose cited rows moved. The amended `design.org` and spec text are committed in the code root (`Integrate <cycle-id>: record corrections`) before the home's close commit.
+Then the step writes `<change-dir>/cycles/<cycle-id>/design-diff.json`: a JSON array, one element per seam row this cycle added, amended or retired, `{"seam": "seam/<name>", "change": "added | amended | retired", "ref": "<finding-id or ask-id>"}`; an empty array when nothing changed. Step 8's handshake carries it as `design_diff`; step 7 uses it to find the open tasks whose cited rows moved. The amended `design.org` and spec text are committed in the code root (`Integrate <cycle-id>: record corrections`) before the home's close commit.
 
 The record shows why this is scoped to cited seams and the dead-branch scan rather than a full structural audit: across two projects the audit's structural classes fired rarely, the findings that paid were dead code the user's priors licensed deleting, and the catalogue the audit maintained was written more than it was read. Restore the wider audit on a structural class that fires in a real cycle and this check did not catch.
 
@@ -30,8 +30,8 @@ The end-of-cycle audit is the conformance check above. Nothing runs here.
 
 Two passes, per `roles/project-manager.md`:
 
-1. **Deterministic pass** — `state.py counts --write` produces `<home>/.orchestrator/cycles/<cycle-id>/pm-signals.json`: counts, ratios, history, by-status, critical-path readout, class table, follow-ups by source, open asks, blocked tasks, the findings by kind and how many are on the hardening list, and the fired signals it can compute. Blocked tasks whose `blocker_note` is an ask id re-surface that id rather than raising a new ask; a blocked task with another kind of blocker is a candidate ask the orchestrator writes per `templates/ask.md`.
-2. **Agent pass** — turns that into the digest prose at `<home>/.orchestrator/cycles/<cycle-id>/pm-digest.md` (per `templates/pm-digest.md`).
+1. **Deterministic pass** — `state.py counts --write` produces `<change-dir>/cycles/<cycle-id>/pm-signals.json`: counts, ratios, history, by-status, critical-path readout, class table, follow-ups by source, open asks, blocked tasks, the findings by kind and how many are on the hardening list, and the fired signals it can compute. Blocked tasks whose `blocker_note` is an ask id re-surface that id rather than raising a new ask; a blocked task with another kind of blocker is a candidate ask the orchestrator writes per `templates/ask.md`.
+2. **Agent pass** — turns that into the digest prose at `<change-dir>/cycles/<cycle-id>/pm-digest.md` (per `templates/pm-digest.md`).
 
 When § 9's whole-change review runs this cycle, the agent pass waits for its hand-back, so the digest counts its findings and corrections (§ 9).
 
@@ -68,7 +68,7 @@ Meta-discoveries land in the integrate→plan handshake artifact's `meta_discove
 }
 ```
 
-Write them as a JSON array to `<home>/.orchestrator/cycles/<cycle-id>/meta-discoveries.json`; step 8 passes it to the handshake. Per-cycle meta-discoveries surface in this digest and act on the next plan. Recurring meta-discoveries across many cycles distill, via the deferred curation cycle (v2), into durable design priors.
+Write them as a JSON array to `<change-dir>/cycles/<cycle-id>/meta-discoveries.json`; step 8 passes it to the handshake. Per-cycle meta-discoveries surface in this digest and act on the next plan. Recurring meta-discoveries across many cycles distill, via the deferred curation cycle (v2), into durable design priors.
 
 ### 5. Goal-drift check
 
@@ -159,7 +159,7 @@ Both modes preserve the task's frontmatter and any existing `## Observations` / 
 
 #### Record the refinement for the handshake
 
-For every refined task, append to `<home>/.orchestrator/cycles/<cycle-id>/task-refinements.json` (a JSON array; step 8 passes it to the handshake):
+For every refined task, append to `<change-dir>/cycles/<cycle-id>/task-refinements.json` (a JSON array; step 8 passes it to the handshake):
 
 ```json
 {
@@ -181,11 +181,11 @@ A task that was touched but not modified — i.e. impact set was non-empty but i
 
 ### 8. Write the integrate→plan handshake artifact
 
-The cycle's loop-closing artifact. Path: `<home>/.orchestrator/handshake-<cycle-id>.json`. Written by
+The cycle's loop-closing artifact. Path: `<change-dir>/handshake-<cycle-id>.json`. Written by
 
 ```bash
-state.py handshake --meta-discoveries @.orchestrator/cycles/<cycle-id>/meta-discoveries.json \
-                   --task-refinements @.orchestrator/cycles/<cycle-id>/task-refinements.json
+state.py handshake --meta-discoveries @$ORCH_CHANGE_DIR/cycles/<cycle-id>/meta-discoveries.json \
+                   --task-refinements @$ORCH_CHANGE_DIR/cycles/<cycle-id>/task-refinements.json
 ```
 
 which reads `design_diff` from `cycles/<cycle-id>/design-diff.json` (step 1; `--design-diff @path` overrides, and an absent file means `[]`; an `@path` resolves against the cwd first, then the home), fills `pm_digest_path`, `user_resolved_goal_drift`, the two ask lists and the journal from state, and validates the result. Its shape, with an example, is in `state.md` § Integrate→plan handshake artifact.

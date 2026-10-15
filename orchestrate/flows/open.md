@@ -25,10 +25,12 @@ The dispatcher copies the user's words; it reads nothing to write the brief.
 
 The source; the `* Purpose` of every file under `docs/specs/`, to find the capabilities the source touches, and those files in full; `docs/glossary.org` if it exists; `priors.md`; the two templates. **Not the code.** The round is the design side's one read of HEAD (`flows/design.md` § When it runs); a claim the source makes about the code ("the layout switch autosaves without the predicate check") goes into the intent's Why as the source states it, and the round checks it.
 
-### 2. Name and base
+### 2. Name, repository and base
 
-- `<change>`: the user's name for it, or a kebab-case phrase naming the outcome (`workspace-state-writes-honour-guards`). `docs/changes/<change>/` must not exist, except when revising a change in place (§ When it runs), which keeps its name and base.
-- `#+BASE:`: `git -C "$CODE_ROOT" rev-parse HEAD`, before the commit of § 5. The change is opened on the code root's current branch, the one `state.py init` will record.
+- `<change>`: the user's name for it, or a kebab-case phrase naming the outcome (`workspace-state-writes-honour-guards`). `docs/changes/<change>/` must not exist in the repository, except when revising a change in place (§ When it runs), which keeps its name, worktree and base.
+- The repository: the home's only one, or the one the source names (`--repo`); a change belongs to one repository (`overlay.md` § Repositories). A source that needs two repositories is two changes, the second opened after the first with its `* Why` naming it.
+- `state.py change open <change> [--repo <name>] [--from <ref>]` makes the change's worktree on the branch `<change>`, its change integration branch, from the repository checkout's HEAD or the ref given (the hand-off's workspace integration branch when the research skill made one; `research` § Hand-off), and writes `change.json`. From here `eval "$(state.py where --sh)"` gives `$CODE_ROOT`, that worktree; the intent and the spec edits are written and committed there. A change the user opened by hand (its intent already on its own branch) is adopted with `--worktree <path>` and the rest of this flow is skipped, as § When it runs says.
+- `#+BASE:`: the `base` in `change.json` (`git -C "$CODE_ROOT" rev-parse HEAD` at open), written before the commit of § 5.
 
 ### 3. Spec edits
 

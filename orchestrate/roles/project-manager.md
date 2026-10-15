@@ -24,7 +24,7 @@ It produces:
 
 Candidate asks come from the blocked-task list: a `blocker_note` that is an ask id re-surfaces that id; any other blocker is a candidate question, from which the orchestrator writes the ask file (`templates/ask.md`, opening). Cascade detection produces an Architect conformance run, not an ask.
 
-Output: `<home>/.orchestrator/cycles/<cycle-id>/pm-signals.json`.
+Output: `<change-dir>/cycles/<cycle-id>/pm-signals.json`.
 
 ### Agent pass
 
@@ -37,7 +37,7 @@ The agent pass produces:
 - The "trends to watch" section.
 - The "meta-discoveries" section.
 
-Output: `<home>/.orchestrator/cycles/<cycle-id>/pm-digest.md` (see `templates/pm-digest.md`).
+Output: `<change-dir>/cycles/<cycle-id>/pm-digest.md` (see `templates/pm-digest.md`).
 
 ### Why split
 
@@ -182,7 +182,7 @@ It cannot:
 
 ## Form-factor open questions
 
-- **Multi-change scope**: v1 is single-change at a time. Worth revisiting once a project routinely runs more than one change in parallel. (Brainstorm's open question; deferred.)
+- **Several changes at once**: supported since the home model of 2026-10-15 (`overlay.md` § Repositories); the digest is per change. A cross-change digest is deferred until a home runs several changes routinely.
 - **Critical-path inference**: per-batch LLM read of `intent.org` (default). Overlay can override with explicit `critical-path.override-tasks` / `override-labels`.
 - **Goal-drift query**: critical-path completion ratio stagnant or declining for K cycles while non-critical-path completions continue. Spec'd as the v1 query; revise if VCE/emacs validation shows it's wrong.
 

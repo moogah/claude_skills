@@ -1,6 +1,6 @@
 # Ask template
 
-An **ask** is a question the orchestrator needs the user to answer. It is one org file, `<home>/.orchestrator/inbox/<ask-id>.org`, written the moment the ask is raised, in any phase. The file is the record: the user answers in it, git carries its history, and the orchestrator reads it at its sync points. `state.json` keeps only an index entry `{id, kind, status, blocks, path}` (`state.md`) so `status`, `counts` and the gates can read the inbox without parsing it; when the two disagree the file wins and `record set` rewrites the index from it.
+An **ask** is a question the orchestrator needs the user to answer. It is one org file, `<change-dir>/inbox/<ask-id>.org`, written the moment the ask is raised, in any phase. The file is the record: the user answers in it, git carries its history, and the orchestrator reads it at its sync points. `state.json` keeps only an index entry `{id, kind, status, blocks, path}` (`state.md`) so `status`, `counts` and the gates can read the inbox without parsing it; when the two disagree the file wins and `record set` rewrites the index from it.
 
 Any role can raise one: a Reviewer `spec-signal`, an Architect `interface-drift` finding against a stale design doc, an Implementor push-back that only the user can settle, a PM blocked-path or goal-drift signal, a plan-time escalation. None of them writes the ask. **The orchestrator writes the ask** from the finding, because the PM does not read code and the finding roles do not know the reader. The finding must give the orchestrator what the file needs (see "What a finding must carry").
 
@@ -119,7 +119,7 @@ For every phase; this is the one statement of when a question blocks the session
 
 `.orchestrator/` is tracked by the home repo. `state.py init` writes `.orchestrator/.gitignore` (the test outputs `baseline-*.txt` and `after-*.txt`, `*.tmp`, the lock file, the migration backups) when absent and refuses to start when the home repo ignores the directory (an `environment` ask: delete the line). The orchestrator commits, in the home:
 
-- an ask file when it is created (`git add .orchestrator/inbox/<id>.org`; the subject names the id, so `git log --grep=ask-` finds the trail);
+- an ask file when it is created (`git add .orchestrator/changes/<change>/inbox/<id>.org`; the subject names the id, so `git log --grep=ask-` finds the trail);
 - a readback when it is written, together with the user's answer it restates (one commit, the subject naming the id), and with it any `priors.md` line and `confirmation` file the answer produced;
 - an applied ask alongside the change that applies it (the moved file and the edit or merge in one commit, as the `--download-video` reversal was; one commit per repository with the same subject when the change is in a separate code root; a spec or `design.org` edit is in the code root, since the record lives under `docs/` there);
 - everything else, `state.json` included, at phase close (`Orchestrator: <cycle-id> <phase> closed`). Between those commits the index at HEAD may lag the files; the files are the record.
@@ -159,7 +159,7 @@ As asked (Project A, cycle 3, 2026-09-23 17:47, in the blocking call):
 
 The user chose the in-change code fix, a critical-path task was created, and eleven minutes later the user reversed it: the flag is for one-off downloads that are not part of the archive. The question never said what the flag was for.
 
-As this template writes it: the file under "The file" above, at `.orchestrator/inbox/ask-cycle-1790026644-9.org`, committed when written. With `* About` in front of them, the user would have recognised the one-off use at once; the reversal turned on exactly that sentence. The answer `do nothing to the code` matches the label and is applied at the next sync point with no readback; the file moves to `cycles/cycle-1790026644/asks/` in the commit that corrects the docs.
+As this template writes it: the file under "The file" above, at `<change-dir>/inbox/ask-cycle-1790026644-9.org`, committed when written. With `* About` in front of them, the user would have recognised the one-off use at once; the reversal turned on exactly that sentence. The answer `do nothing to the code` matches the label and is applied at the next sync point with no readback; the file moves to `cycles/cycle-1790026644/asks/` in the commit that corrects the docs.
 
 ### 2. A doc correction that was asked seven times (historical: since 2026-10-13 this is a record correction, a journal line and a commit, not a file)
 
@@ -204,7 +204,7 @@ As asked (Project B, cycle 2, design question OD-3, 2026-09-24):
 
 The user answered: "Let's punt on this decision, I want to use this a while before we decide on polish like this."
 
-As this template writes it, at `.orchestrator/inbox/ask-cycle-1789935943-3.org`, shown after that answer and the orchestrator's readback:
+As this template writes it, at `<change-dir>/inbox/ask-cycle-1789935943-3.org`, shown after that answer and the orchestrator's readback:
 
 ```org
 :PROPERTIES:

@@ -10,13 +10,13 @@ A plan that doesn't consume the prior cycle's integrate output isn't planning �
 
 First, the MVP decision (`templates/hardening.md`). When `state.py status` lists an ask with `:BLOCKS: plan` that the prior integrate raised for it, plan does not run `init` while it is open: it hands back `plan: stopped, ask <id> blocks plan; <path>`, and nothing runs on the change until the user answers. An answer waiting in the file is applied first, as that template says: `stop` and `rethink` need no cycle, so plan opens none and hands back `plan: not started, change <stopped|rethink>; <intent path>`; `harden` goes on to `init`, and § 2 drafts from the hardening list.
 
-`state.py init --change <name> --test-command <cmd>` starts the cycle and reads `<home>/.orchestrator/handshake-<prior-cycle-id>.json` (the newest one, or `--prior-handshake <path>`; `--first-cycle` when none exists). Then read the handshake. It has:
+`state.py init --change <name>` starts the cycle (the test command comes from the overlay) and reads `<change-dir>/handshake-<prior-cycle-id>.json` (the newest one, or `--prior-handshake <path>`; `--first-cycle` when none exists). Then read the handshake. It has:
 
 - `design_diff` — the seam rows conformance added, amended or retired last cycle.
 - `pm_digest_path` — the prior digest, for context.
 - `meta_discoveries` — patterns to weigh when drafting this batch.
 - `user_resolved_goal_drift` — any revise / split / abandon decisions the user made.
-- `asks_for_user_open` (may be empty; each entry's `path` names the file in `.orchestrator/inbox/`, read the ask there), `asks_for_user_resolved` (may be empty).
+- `asks_for_user_open` (may be empty; each entry's `path` names the file in `<change-dir>/inbox/`, read the ask there), `asks_for_user_resolved` (may be empty).
 - `task_refinements` — which open tasks already absorbed cycle learning.
 - `journal` — the prior cycle's discoveries and decisions, one line each.
 
@@ -30,7 +30,7 @@ Read the overlay's `priors.md` alongside the handshake (`overlay.md` § Priors):
 
 ### 2. Read the design and draft the candidate tasks
 
-The input is the change's `design.org` (`templates/design.md`), its Seams table and Decisions, and `coverage.py --since <base>` (`templates/spec.md` § Coverage; `<base>` is `intent.org`'s `#+BASE:`), the change's scenarios with their status. A change with no Seams table, or with an `uncited` scenario among its own, has not finished its design round (`flows/design.md`); run it before this cycle, not inside it. A `design.org` whose § Open Questions has an entry with no Decision has not finished its round either, and plan drafts nothing, since a task drafted on a provisional answer is the rework the record paid for (`flows/design.md` § 5). Write each such entry as a `decision` ask file (`state.py record add asks`, `blocks: [plan]`, `ref: design.org § Open Questions`; an entry that already has an open file is not written twice), commit them in one commit, and hand back `plan <cycle-id>: stopped, asks <ids> block plan; .orchestrator/inbox/`. Resumed with the answers: write each into § Decisions and the spec it settles, in place (`templates/ask.md` § Answer protocol), apply the asks, run the scoped re-run any answer calls for, then draft.
+The input is the change's `design.org` (`templates/design.md`), its Seams table and Decisions, and `coverage.py --since <base>` (`templates/spec.md` § Coverage; `<base>` is `intent.org`'s `#+BASE:`), the change's scenarios with their status. A change with no Seams table, or with an `uncited` scenario among its own, has not finished its design round (`flows/design.md`); run it before this cycle, not inside it. A `design.org` whose § Open Questions has an entry with no Decision has not finished its round either, and plan drafts nothing, since a task drafted on a provisional answer is the rework the record paid for (`flows/design.md` § 5). Write each such entry as a `decision` ask file (`state.py record add asks`, `blocks: [plan]`, `ref: design.org § Open Questions`; an entry that already has an open file is not written twice), commit them in one commit, and hand back `plan <cycle-id>: stopped, asks <ids> block plan; <change-dir>/inbox/`. Resumed with the answers: write each into § Decisions and the spec it settles, in place (`templates/ask.md` § Answer protocol), apply the asks, run the scoped re-run any answer calls for, then draft.
 
 The orchestrator drafts the candidate task files for this cycle under `<change>/tasks/open/` at the home (`$ORCH_HOME/.orchestrator/changes/<change>/tasks/open/`, per `templates/task-body.md`) from three sources, in this order:
 
@@ -52,7 +52,7 @@ Who checks a task's claims against HEAD depends on who wrote its text. Kept afte
 
 The record behind the split: of 48 Wrong rows over two projects, 17 of the 27 design-wrong rows and all 12 task defects were in task text the orchestrator wrote, 14 of them in one bug task; the Implementor reads HEAD anyway, and the check's own agent cost about 6.6M tokens a run.
 
-The Architect runs against the candidate task files (`roles/architect.md` § Premise check): for each task, a `| claim | at HEAD |` table with **Holds** or **Wrong** per claim the task body makes about the code at the code root's HEAD (a function exists and has this signature; a path is reachable from this entry point; a return value has these cases; a defect of the task file's own form, such as a truncated seam quote, is a row too, flagged as such), and a one-line verdict. Output: `<home>/.orchestrator/cycles/<cycle-id>/premise-check.md` (the orchestrator creates the directory), and one hand-back line with the counts (`SKILL.md` § Hand-back lines). The check may run the suite and probes read-only in a scratch directory.
+The Architect runs against the candidate task files (`roles/architect.md` § Premise check): for each task, a `| claim | at HEAD |` table with **Holds** or **Wrong** per claim the task body makes about the code at the code root's HEAD (a function exists and has this signature; a path is reachable from this entry point; a return value has these cases; a defect of the task file's own form, such as a truncated seam quote, is a row too, flagged as such), and a one-line verdict. Output: `<change-dir>/cycles/<cycle-id>/premise-check.md` (the orchestrator creates the directory), and one hand-back line with the counts (`SKILL.md` § Hand-back lines). The check may run the suite and probes read-only in a scratch directory.
 
 Then:
 
@@ -132,7 +132,7 @@ Plan is the first; integrate (`flows/integrate.md`) is the second.
 - **Inline tasks**: plan collapses into "is this trivial enough?" (see `flows/inline.md`). The handshake-consumption step is skipped because inline tasks don't span cycles.
 - **Standard cycles**: full plan as described above.
 - **Long cycles**: plan runs once at the start; execute spans many sessions. PM digest may run periodically within execute via `/loop` or `/schedule`.
-- **Multi-change parallelism**: each in-flight change runs its own plan / execute / integrate cycle independently. V1 limits to single-change.
+- **Several changes at once**: each open change runs its own plan / execute / integrate cycle independently, from its own worktree and state (`overlay.md` § Repositories); every `state.py` call names its change. Two changes of one repository both move its workspace integration branch, so each takes it in before integrate (`flows/integrate.md`).
 
 ## What plan does **not** do
 

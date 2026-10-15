@@ -45,7 +45,7 @@ The triggers v2 will use are spec'd in v1 so the state file has the right fields
 - Closest to where externalisation already lives.
 - Lives outside the code root's worktrees.
 - One home per project.
-- Doesn't pollute the cycle archive at `.orchestrator/cycles/<cycle-id>/`.
+- Doesn't pollute the cycle archive at `<change-dir>/cycles/<cycle-id>/`.
 
 Closed-task bodies that get compressed (by v2) keep a back-reference to `<home>/.tasks/archive/<task-name>.md`.
 

@@ -18,7 +18,7 @@ The orchestrator assembles and hands the Implementor:
 4. **Project standards** — the project overlay's `roles/implementor.md` (if present), appended to this core brief at spawn time, followed by the project priors (`priors.md`, the user's standing rules; `overlay.md` § Priors).
 5. **Verification command** — resolved from the project overlay's `test.command` field, relative to the code root; run in the worktree.
 6. **Worktree path & branch name** — pre-created by the orchestrator; the Implementor does not create worktrees.
-7. **Report path** — `$ORCH_HOME/.orchestrator/cycles/<cycle-id>/reports/<task-name>.md`, where the structured report is written (below).
+7. **Report path** — `$ORCH_CHANGE_DIR/cycles/<cycle-id>/reports/<task-name>.md`, where the structured report is written (below).
 
 ## Output contract
 
