@@ -71,6 +71,12 @@ TASK_FIELDS = {
     "started_at": (str, type(None)), "completed_at": (str, type(None)), "reviewed_at": (str, type(None)),
     "created_at": (str, type(None)),
 }
+# Fields added to TASK_FIELDS within schema 1.5, after state files of that version existed. A file
+# without one gets the default on read (validate fills it; the next write persists it), so no
+# migration and no schema bump. The record: created_at joined the schema and every write to an open
+# change's state was refused as invalid until the nine tasks were given the key by hand.
+TASK_FIELDS_ADDED_IN_VERSION = {"created_at": None}
+
 TASK_DEFAULTS = {
     "on_critical_path": False, "worktree_path": None, "branch_name": None, "agent_task_id": None,
     "status": "ready", "merge_commit": None, "after_snapshot": None, "regression_detected": False,
@@ -626,6 +632,9 @@ def validate(state):
     seen = set()
     for i, t in enumerate(state["tasks"]):
         where = f"tasks[{i}]"
+        if isinstance(t, dict):
+            for k, v in TASK_FIELDS_ADDED_IN_VERSION.items():
+                t.setdefault(k, v)
         _validate_record(t, TASK_FIELDS, where, errors, "task_name")
         if isinstance(t, dict):
             _enum(t.get("status"), TASK_STATUSES, f"{where}.status", errors)

@@ -1773,3 +1773,22 @@ def test_record_set_asks_readback_confirmed(run, repo):
     assert st["inbox"]["awaiting_confirmation"] == 0 and st["inbox"]["readback_confirmed"] == 1
     code, _, err = run("record", "set", "asks", aid, "readback=maybe")
     assert code == 1 and err["error"] == "bad_value"
+
+
+# 52
+def test_task_field_added_in_version_is_defaulted_on_read(run, repo):
+    """A state file written before created_at joined TASK_FIELDS still validates and accepts writes."""
+    code, out, err = init(run, "cycle-1", "--first-cycle")
+    assert code == 0, err
+    assert add_task(run, "old-task")[0] == 0
+    sp = repo / ".orchestrator" / "changes" / "chg" / "state.json"
+    s = json.loads(sp.read_text())
+    for t in s["tasks"]:
+        del t["created_at"]
+    sp.write_text(json.dumps(s))
+    code, out, err = run("validate")
+    assert code == 0, err
+    code, out, err = run("task", "set", "old-task", "on_critical_path=true")
+    assert code == 0, err
+    s = json.loads(sp.read_text())
+    assert s["tasks"][0]["created_at"] is None and s["tasks"][0]["on_critical_path"] is True
