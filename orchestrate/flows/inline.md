@@ -65,7 +65,7 @@ The brainstorm names this explicitly. Even trivial edits can surface contract is
 
 - Did this edit touch a seam's owning symbols? → check `cites_seams` of the implicit "task" against the `## Seams` rows in `design.org`.
 - Did the verification command's output reveal anything new? → grep the after-file.
-- Was there an adjacent observation worth recording? → write it down in the task body's `## Observations`.
+- Did the edit expose a defect in adjacent code or text? → route it like a finding (`templates/architect-finding.md` § Routing): a task when it breaks the change's main path or is an untrue sentence, otherwise a hardening-list entry; a speculative need is one `thought:` line in the task body's `## Observations`.
 
 Most answers are "no; close." That's fine. The discipline is in asking, not in finding.
 

@@ -83,11 +83,8 @@ critical-path:
   override-tasks: []                   # explicit list, if known up front
   override-labels: []                  # task_class values that are always critical-path
 
-# OPTIONAL: Architect severity overrides
+# OPTIONAL: Architect extensions
 architect:
-  severity-overrides:
-    duplication: blocking         # promoted from advisory in this project
-    mutation: informational       # demoted from advisory; this project tolerates it
   drift-hotspots:
     - <module name>: <one-line — what to watch>
 
@@ -178,7 +175,7 @@ The orchestrator concatenates: core brief + `\n\n## Project-specific extensions\
 
 **Write rule.** When a decision or a free-text reply states a general rule rather than a one-off choice ("in general", "I don't want to keep", "overengineering", "use it a while before"), the orchestrator appends the line and writes a `confirmation`-kind ask file citing it, applied, into `cycles/<cycle-id>/asks/` (`templates/ask.md`). The user can object. The line is the quote, not a paraphrase.
 
-**Read rule.** The file is appended to every role brief after the role overlay, and the orchestrator reads it at plan § 1 and at integrate § 3a and § 7. A role may treat a prior as a user request: "removing leftovers" makes a dead-code finding actionable without an ask. A prior is never re-asked. A finding that a prior already answers is `noted` with the prior cited in `evidence`; no ask file is written for it, and one that already exists is `declined` with the prior as its readback. A prior is the user's own words and outranks a `design.org` sentence; a design sentence a prior contradicts is a record correction (`templates/design.md` § Seams).
+**Read rule.** The file is appended to every role brief after the role overlay, and the orchestrator reads it at plan § 1 and at integrate § 3a and § 7. A role may treat a prior as a user request: "removing leftovers" makes dead-code cleanup scope that passes the YAGNI check (`templates/architect-finding.md`) without an ask. A prior is never re-asked. A finding or a question that a prior already answers is handled as the prior says (a defect the user has accepted is `accepted-with-note` with the prior cited); no ask file is written for it, and one that already exists is `declined` with the prior as its readback. A prior is the user's own words and outranks a `design.org` sentence; a design sentence a prior contradicts is a record correction (`templates/design.md` § Seams).
 
 The file is markdown, not a `config.yaml` list, because the spawn contract already concatenates markdown and a quoted sentence is safer there than in YAML.
 

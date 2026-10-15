@@ -68,12 +68,12 @@ Empty in `tasks/open/`. The implementor appends here during execution. Per the b
 
 What belongs in `## Observations`:
 - Departures from the task body's prescribed approach (with evidence)
-- Latent issues noticed in adjacent code while implementing
 - Tests that pass but are weakly asserted; mocks that diverge from production
 - Spec/design contradictions or ambiguities the implementation forced you to resolve
 - Push-backs against seam rows the brief cited
+- Speculative needs, one line each labelled `thought:`
 
-What does NOT belong in `## Observations`: a defect outside the task that cannot wait for review. It is a `## Discoveries` entry with `observed.happened: true`, listed in the report's `candidate_tasks`; the orchestrator files the task (`roles/implementor.md` § What belongs in `## Observations`).
+What does NOT belong in `## Observations`: a defect in code or text that exists outside the task. It is a `## Discoveries` entry with its kind (`issue` or `question`), listed in the report's `candidate_tasks`; the orchestrator routes it (`roles/implementor.md` § What belongs in `## Observations`).
 
 ### Discoveries
 The structured form of significant findings. Implementor fills this when discoveries warrant integrate-phase attention. Each entry:
@@ -83,9 +83,9 @@ The structured form of significant findings. Implementor fills this when discove
   class: <one of the discovered_class values>
   description: <one paragraph>
   affected_seam: <seam-id, if any>
-  observed:
-    happened: true | false
-    evidence: <where it happened | reasoning only: <the reasoning>>
+  kind: issue | question                  # templates/architect-finding.md § Kind
+  severity: high | medium | low
+  evidence: <the line, run or output | for a question: the reasoning and the reproduction to try>
   recommendation: <one sentence — "amend seam/X to name Y as the constructor" or "split seam/Z into two">
 ```
 

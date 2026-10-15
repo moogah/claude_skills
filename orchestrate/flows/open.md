@@ -7,6 +7,7 @@ The step that turns what the user asked for into a change the design round can t
 - The user asks in the session for a feature, a fix or a change of behaviour. The source is their words.
 - The user takes up `.tasks/` items, by naming them or by answering "open a new change" on a cluster ask (`externalisation.md` § Externalisation pressure). The source is the items.
 - The user answers `split` on a goal-drift ask (`templates/intent.md` § Lifecycle). The source is the old intent and the answer; the new intent's Why names the change it came from.
+- The user answers `rethink` on the MVP decision (`templates/hardening.md`) or `revise` on a goal-drift ask. The source is the intent and the answer, and the change is revised in place: the Goals, Non-goals and spec edits are rewritten from the answer, `#+BASE:` is kept, the prior Goals are quoted under `* Status` and the status line returns to `speculated`. The commit is `Revise: <change>`; the design round then re-runs for the seams the new goals move.
 
 Not when the user wrote the intent and spec edits themselves: the round reads them as they are. Not for work a task in an open change covers.
 
@@ -26,7 +27,7 @@ The source; the `* Purpose` of every file under `docs/specs/`, to find the capab
 
 ### 2. Name and base
 
-- `<change>`: the user's name for it, or a kebab-case phrase naming the outcome (`workspace-state-writes-honour-guards`). `docs/changes/<change>/` must not exist.
+- `<change>`: the user's name for it, or a kebab-case phrase naming the outcome (`workspace-state-writes-honour-guards`). `docs/changes/<change>/` must not exist, except when revising a change in place (§ When it runs), which keeps its name and base.
 - `#+BASE:`: `git -C "$CODE_ROOT" rev-parse HEAD`, before the commit of § 5. The change is opened on the code root's current branch, the one `state.py init` will record.
 
 ### 3. Spec edits
@@ -44,7 +45,7 @@ The intent per `templates/intent.md`, `#+STATUS: speculated`: Why in the user's 
 
 Use the glossary's terms and the user's own words. Every domain term the intent or the spec edits use that the glossary does not have goes in `* New terms`, to be agreed in the round's sitting; a plain phrase is better than a new term where one will do.
 
-A question the source leaves to the user and the spec text depends on (which of two behaviours is intended, whether something is in scope, a default the product should have) goes in the intent's `* Open Questions`: the question in plain terms, two to four options with the consequence the user would notice, the recommendation and why, and the requirements and scenarios it affects. The spec is written in the form the recommendation implies, and the entry says so. Nothing about how to build it; that is the round's.
+A question the source leaves to the user and the spec text depends on (which of two behaviours is intended, whether something is in scope, a default the product should have) goes in the intent's `* Open Questions`; a question about a case the source never raised does not (`templates/architect-finding.md` § The YAGNI check). Each entry has the question in plain terms, two to four options with the consequence the user would notice, the recommendation and why, and the requirements and scenarios it affects. The spec is written in the form the recommendation implies, and the entry says so. Nothing about how to build it; that is the round's.
 
 These are asked with the round's own questions, in its one sitting before plan (`flows/design.md` § 5), not here: one sitting per change. The record: the round's one question was asked in a single call and answered in twelve minutes, and the spec text written before that answer stayed wrong until the whole-change review caught it (bookmarks `cycle-1791996711`). The answer protocol now edits the spec in place (`templates/ask.md` § Answer protocol).
 

@@ -168,79 +168,122 @@ def test_unknown_field_and_bad_status(run):
 # 7
 def test_record_findings(run):
     init(run, "cycle-1", "--first-cycle")
-    rec = {"trigger": "conformance", "severity": "advisory", "class": "duplication", "title": "dup",
-           "seam": "seam/violation-info",
-           "observed": {"happened": True, "evidence": "foo.py:10 and bar.py:22 carry the same body"}}
+    rec = {"trigger": "conformance", "kind": "issue", "severity": "low", "class": "duplication",
+           "title": "dup", "seam": "seam/violation-info",
+           "evidence": "foo.py:10 and bar.py:22 carry the same body"}
     code, out, _ = run("record", "add", "findings", json.dumps(rec))
     assert code == 0 and out["id"] == "arch-cycle-1-1"
     assert out["record"]["path"] == ".orchestrator/cycles/cycle-1/findings/arch-cycle-1-1.md"
     assert out["record"]["seam"] == "seam/violation-info"
+    assert out["record"]["decoration"] is None
     code, _, err = run("record", "add", "findings", json.dumps({**rec, "finding_id": "arch-cycle-1-1"}))
     assert code == 1 and err["error"] == "duplicate_id"
-    code, out, _ = run("record", "set", "findings", "arch-cycle-1-1", "resolution=fixed")
-    assert code == 0 and out["changed"] == ["resolution"]
+    code, out, _ = run("record", "set", "findings", "arch-cycle-1-1", "decoration=hardening",
+                       "resolution=hardening-list")
+    assert code == 0 and sorted(out["changed"]) == ["decoration", "resolution"]
+    code, _, err = run("record", "set", "findings", "arch-cycle-1-1", "decoration=advisory")
+    assert code == 1
     code, _, err = run("record", "set", "findings", "arch-cycle-1-1", "notes=x")
     assert code == 1 and err["error"] == "unknown_field"
 
 
 # 7a
-def test_finding_requires_observed(run):
+def test_finding_requires_kind_and_evidence(run):
     init(run, "cycle-1", "--first-cycle")
     base = {"trigger": "conformance", "class": "duplication", "title": "dup"}
-    code, _, err = run("record", "add", "findings", json.dumps({**base, "severity": "advisory"}))
-    assert code == 1 and err["error"] == "observed_required" and "happened" in err["message"]
-    code, _, err = run("record", "add", "findings", json.dumps({**base, "severity": "blocking"}))
-    assert code == 1 and err["error"] == "observed_required"
-    reasoning = {"happened": False, "evidence": "reasoning only: a third consumer would diverge"}
-    code, out, _ = run("record", "add", "findings", json.dumps({**base, "severity": "advisory", "observed": reasoning}))
-    assert code == 0 and out["record"]["observed"] == reasoning
-    code, out, _ = run("record", "add", "findings", json.dumps({**base, "severity": "informational"}))
-    assert code == 0 and out["record"]["observed"] is None
+    code, _, err = run("record", "add", "findings", json.dumps({**base, "evidence": "a.py:1"}))
+    assert code == 1 and err["error"] == "kind_required" and "thought" in err["message"]
+    code, _, err = run("record", "add", "findings", json.dumps({**base, "kind": "thought", "evidence": "x"}))
+    assert code == 1 and err["error"] == "kind_required"
+    code, _, err = run("record", "add", "findings", json.dumps({**base, "kind": "issue", "evidence": " "}))
+    assert code == 1 and err["error"] == "kind_required"
+    q = {**base, "kind": "question", "evidence": "a remote path may reach file-exists-p; try a /ssh: pane"}
+    code, out, _ = run("record", "add", "findings", json.dumps(q))
+    assert code == 0 and out["record"]["kind"] == "question" and out["record"]["severity"] is None
 
 
 # 7b
-def test_observed_shape(run):
+def test_finding_label_values(run):
     init(run, "cycle-1", "--first-cycle")
-    base = {"trigger": "premise-check", "severity": "advisory", "class": "duplication", "title": "dup"}
-    code, _, err = run("record", "add", "findings", json.dumps({**base, "observed": {"happened": "yes"}}))
-    assert code == 1 and err["error"] == "invalid_record"
-    assert any("observed.happened" in e for e in err["errors"])
-    assert any("observed.evidence" in e for e in err["errors"])
-    code, _, err = run("record", "add", "findings",
-                       json.dumps({**base, "observed": {"happened": True, "evidence": "x", "where": "y"}}))
-    assert code == 1 and any("observed.where" in e for e in err["errors"])
+    base = {"trigger": "premise-check", "kind": "issue", "class": "duplication", "title": "dup",
+            "evidence": "a.py:1"}
+    code, _, err = run("record", "add", "findings", json.dumps({**base, "severity": "advisory"}))
+    assert code == 1 and any("severity" in e for e in err["errors"])
+    code, _, err = run("record", "add", "findings", json.dumps({**base, "decoration": "noted"}))
+    assert code == 1 and any("decoration" in e for e in err["errors"])
+    code, _, err = run("record", "add", "findings", json.dumps({**base, "observed": {"happened": True}}))
+    assert code == 1 and any("observed" in e for e in err["errors"])
 
 
 # 7c
 def test_load_fills_new_record_defaults(run, repo):
     init(run, "cycle-1", "--first-cycle")
     st = read_state(repo)
-    st["architect_findings"].append({  # a 1.1 record written before `observed` existed
-        "finding_id": "arch-cycle-1-1", "trigger": "conformance", "severity": "advisory", "class": None,
-        "title": "old", "path": "x.md", "locations": [], "why_tests_missed": None,
+    st["architect_findings"].append({  # a record written before `decoration` and `severity` existed
+        "finding_id": "arch-cycle-1-1", "trigger": "conformance", "kind": "issue", "class": None,
+        "title": "old", "path": "x.md", "locations": [], "why_tests_missed": None, "evidence": "x.py:1",
         "discovered_from": None, "resolution": "pending", "blocking_merge_until_resolved": False})
     (repo / ".orchestrator" / "state.json").write_text(json.dumps(st))
     assert run("validate")[0] == 0
     code, out, _ = run("status")
     assert code == 0
     assert run("note", "note", "still fine")[0] == 0
-    assert read_state(repo)["architect_findings"][0]["observed"] is None
+    f = read_state(repo)["architect_findings"][0]
+    assert f["decoration"] is None and f["severity"] is None
 
 
 # 7d
-def test_counts_noted_findings(run, repo):
+def test_counts_and_gate_by_kind_and_decoration(run, repo):
     init(run, "cycle-1", "--first-cycle")
-    base = {"trigger": "conformance", "severity": "advisory", "class": "duplication", "title": "t"}
-    run("record", "add", "findings", json.dumps({**base, "observed": {"happened": True, "evidence": "a.py:1"}}))
-    run("record", "add", "findings", json.dumps({**base, "observed": {"happened": False, "evidence": "reasoning only: later"}}))
+    base = {"trigger": "conformance", "severity": "medium", "class": "duplication", "title": "t"}
+    run("record", "add", "findings", json.dumps({**base, "kind": "issue", "evidence": "a.py:1"}))
+    run("record", "add", "findings", json.dumps({**base, "kind": "question", "evidence": "try b"}))
     code, out, _ = run("counts")
-    assert code == 0 and out["findings"] == {"total": 2, "reasoning_only": 1, "reasoning_only_noted": 0}
-    assert run("record", "set", "findings", "arch-cycle-1-2", "resolution=noted")[0] == 0
+    assert code == 0 and out["findings"] == {"total": 2, "issue": 1, "question": 1, "blocking": 0,
+                                             "hardening_list": 0, "unrouted": 2}
+    assert run("record", "set", "findings", "arch-cycle-1-1", "decoration=blocking")[0] == 0
+    assert run("record", "set", "findings", "arch-cycle-1-2", "decoration=hardening",
+               "resolution=hardening-list")[0] == 0
     _, out, _ = run("counts")
-    assert out["findings"]["reasoning_only_noted"] == 1
+    assert out["findings"]["hardening_list"] == 1 and out["findings"]["unrouted"] == 0
     (repo / ".orchestrator" / "cycles" / "cycle-1").mkdir(parents=True, exist_ok=True)
     _, out, _ = run("gate", "check", "integrate")
+    assert out["checks"]["blocking_findings_resolved"]["value"] is False
+    assert run("record", "set", "findings", "arch-cycle-1-1", "resolution=followup-task-fix-a")[0] == 0
+    _, out, _ = run("gate", "check", "integrate")
     assert out["checks"]["blocking_findings_resolved"]["value"] is True
+
+
+# 7e
+def test_migrate_1_4_findings(run, repo):
+    init(run, "cycle-1", "--first-cycle")
+    s = read_state(repo)
+    s["schema_version"] = "1.4"
+    old = {"trigger": "conformance", "class": "duplication", "title": "t", "path": "p.md", "locations": [],
+           "why_tests_missed": None, "discovered_from": None, "seam": None,
+           "blocking_merge_until_resolved": False}
+    s["architect_findings"] = [
+        {**old, "finding_id": "arch-1", "severity": "blocking", "resolution": "pending",
+         "observed": {"happened": True, "evidence": "a.py:1"}},
+        {**old, "finding_id": "arch-2", "severity": "advisory", "resolution": "noted",
+         "observed": {"happened": False, "evidence": "reasoning only: a third consumer would diverge"}},
+        {**old, "finding_id": "arch-3", "severity": "informational", "resolution": "pending", "observed": None},
+    ]
+    (repo / ".orchestrator" / "state.json").write_text(json.dumps(s))
+    code, out, err = run("migrate")
+    assert code == 0, err
+    f = {x["finding_id"]: x for x in read_state(repo)["architect_findings"]}
+    assert (f["arch-1"]["kind"], f["arch-1"]["decoration"], f["arch-1"]["evidence"]) == ("issue", "blocking", "a.py:1")
+    assert (f["arch-2"]["kind"], f["arch-2"]["decoration"]) == ("question", None)
+    assert f["arch-2"]["evidence"] == "a third consumer would diverge" and f["arch-2"]["resolution"] == "noted"
+    assert (f["arch-3"]["kind"], f["arch-3"]["evidence"]) == ("issue", "t")
+    assert all(x["severity"] is None and "observed" not in x for x in f.values())
+    parked = json.loads((repo / ".orchestrator" / "cycles" / "cycle-1" / "legacy-state-extras.json").read_text())
+    ex = parked["record_extras"]["architect_findings"]
+    assert ex["arch-1"]["_legacy_severity"] == "blocking" and ex["arch-2"]["observed"]["happened"] is False
+    assert run("validate")[1]["ok"] is True
+    _, out, _ = run("gate", "check", "integrate")
+    assert "arch-1" in out["checks"]["blocking_findings_resolved"]["reason"]
 
 # 8
 def test_record_asks_and_caps(run, repo):
@@ -604,7 +647,7 @@ def test_migrate_legacy(run, repo):
     assert code == 1 and out["migration"]["register_touched_parked"] == 1
     assert out["migration"]["task_fields_parked"] == {"a": ["merge_order"]}
     code, out, _ = run("migrate")
-    assert code == 0 and out["ok"] and out["from"] == "1.0" and out["to"] == "1.4"
+    assert code == 0 and out["ok"] and out["from"] == "1.0" and out["to"] == "1.5"
     assert out["rehomed_from"] is None and out["paths"] == {"home": str(repo), "code_root": str(repo)}
     assert sorted(out["parked_top_level_keys"]) == ["orchestrator_discoveries", "phase_gates.integrate",
                                                     "phase_gates.plan", "plan_note", "register_touched"]
@@ -695,13 +738,13 @@ def test_migrate_maps_legacy_triggers(run, repo):
                                            finding(5, "conformance"), finding(6, "bogus")])
     code, out, err = run("migrate")
     assert code == 0, err
-    assert out["records"]["architect_findings"] == {"kept": 6, "parked": 0, "with_extras": 5}
+    assert out["records"]["architect_findings"] == {"kept": 6, "parked": 0, "with_extras": 6}
     s = read_state(repo)
     assert [f["trigger"] for f in s["architect_findings"]] == [
         "conformance", "conformance", "conformance", "premise-check", "conformance", "conformance"]
     parked = json.loads((repo / ".orchestrator" / "cycles" / "cycle-9" / "legacy-state-extras.json").read_text())
     ex = parked["record_extras"]["architect_findings"]
-    assert {k: v["_legacy_trigger"] for k, v in ex.items()} == {
+    assert {k: v["_legacy_trigger"] for k, v in ex.items() if "_legacy_trigger" in v} == {
         "arch-1": "on-touch", "arch-2": "end-of-cycle", "arch-3": "between-cycle",
         "arch-4": "forward-mode", "arch-6": "bogus"}
     assert run("validate")[1]["ok"] is True
@@ -1210,7 +1253,7 @@ def test_migrate_1_3_rehomes(run, repo):
     code, out, _ = run("status")
     assert code == 0 and out["legacy"] is True
     code, out, _ = run("validate")
-    assert code == 1 and out["migration"]["to"] == "1.4" and out["migration"]["top_level_parked"] == []
+    assert code == 1 and out["migration"]["to"] == "1.5" and out["migration"]["top_level_parked"] == []
     assert out["migration"]["rehome"] == {"from": "/old/place", "to": str(repo)}
     code, out, err = run("migrate")
     assert code == 0, err

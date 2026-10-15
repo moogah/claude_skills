@@ -15,7 +15,7 @@ Run `state.py status` before anything else in a session, in the dispatcher and i
 | `status` | Orientation, as above, plus `paths: {home, code_root}`. Read-only. Its `resume` hint names the inbox answers waiting, if any. |
 | `inbox` | Read-only. Every `.orchestrator/inbox/*.org` joined with the index: the question, the answer and the option it names (`exact` / `fuzzy` / `none`), other ask ids the answer mentions, a label written under another heading, whether git tracks the file, and every index/file mismatch. Works on a closed cycle. The sync points run it (`templates/ask.md` § Sync points). |
 | `validate` | Schema check, plus the inbox's file problems. On a file of an older schema, prints what `migrate` would do. |
-| `migrate` | Converts a file of an older schema (1.0 to 1.3) to the current one; `repo_root` becomes `home`, and an old `repo_root` that differs from the home is parked under `parked.top_level` and reported as `rehomed_from`; other non-schema content (the old `register_touched` list among it) is parked in `cycles/<id>/legacy-state-extras.json`, a backup is kept. Writes `.orchestrator/.gitignore` when absent (the same content `init` writes). Every ask record becomes a file (`ask_files` in the output); a legacy "resolved" ask is applied history under its cycle's `asks/`. |
+| `migrate` | Converts a file of an older schema (1.0 to 1.4) to the current one; `repo_root` becomes `home`, and an old `repo_root` that differs from the home is parked under `parked.top_level` and reported as `rehomed_from`; other non-schema content (the old `register_touched` list among it) is parked in `cycles/<id>/legacy-state-extras.json`, a backup is kept. Writes `.orchestrator/.gitignore` when absent (the same content `init` writes). Every ask record becomes a file (`ask_files` in the output); a legacy "resolved" ask is applied history under its cycle's `asks/`. |
 | `where [--sh]` | Prints the home and the code root: `{home, code_root, split, home_found, config, state: present \| absent, problems}`. Works with no state file. `--sh` prints `ORCH_HOME=… CODE_ROOT=…` shell assignments for the flows' bash blocks (`eval "$(state.py where --sh)"`). |
 | `init --change <name> --test-command <cmd> [--prior-handshake <path> \| --first-cycle] [--cycle <id>]` | Starts a cycle in `plan`. Refuses while a cycle is open; `no_home` when no `config.yaml` is found walking up and no `--home` is given; `orchestrator_ignored` when the home repo's `.gitignore` ignores `.orchestrator/` (the code repo may keep ignoring it as a guard); `code_root_missing`; `code_root_not_git` (`git -C <code-root> rev-parse --show-toplevel` fails); `misplaced_artifacts` (`<code-root>/.orchestrator/` exists; the message names the home: move it there with a plain `mv` and run `init` again); `two_homes` (`<code-root>/.claude/orchestrator/config.yaml` exists); `bad_code_root` (a list). An `openspec/specs/` left in the home (a record not yet moved to `docs/` in the code root) is a warning in the result, not a refusal. `current_branch` comes from `git -C <code-root> rev-parse --abbrev-ref HEAD`. Validates the prior handshake's required fields (plan's refusal). Carries `history` from the archived cycles and every file in the inbox into the new index (`inbox_carried`). Writes `.orchestrator/.gitignore` (test outputs, the lock, migration backups) when absent. |
 | `set field=value …` | The four settable scalars: `baseline_snapshot`, `baseline_status`, `current_branch`, `test_command`. |
@@ -47,7 +47,7 @@ Every verb prints JSON. A refusal is `{"ok": false, "error": "<slug>", "message"
 
 ```json
 {
-  "schema_version": "1.4",
+  "schema_version": "1.5",
   "session_id": "orch-<unix-ts>",
   "cycle_id": "cycle-<unix-ts>",
   "phase": "plan | execute | integrate",
@@ -146,7 +146,8 @@ The state record is the index line; the finding file (`templates/architect-findi
 {
   "finding_id": "arch-<cycle-id>-<seq>",
   "trigger": "premise-check | conformance",
-  "severity": "blocking | advisory | informational | spec-signal",
+  "kind": "issue | question",
+  "severity": "high | medium | low",
   "class": "shape-fragmentation | vocabulary-mismatch | responsibility-leakage | dead-branch | interface-drift | mutation | invariant-gap | duplication",
   "title": "<one-line>",
   "path": ".orchestrator/cycles/<cycle-id>/findings/<finding-id>.md",
@@ -154,13 +155,14 @@ The state record is the index line; the finding file (`templates/architect-findi
   "why_tests_missed": "<one sentence>",
   "discovered_from": "<task or batch>",
   "seam": "<seam/<name> or null>",
-  "observed": { "happened": true, "evidence": "<a line, a run, an output, a shipped sentence | reasoning only: <the reasoning>>" },
-  "resolution": "pending | inline-fixed | design-amended | followup-task-<task-name> | reverted | accepted-with-note | noted",
+  "evidence": "<the line, the run, the output, the shipped sentence | for a question: the reasoning and the reproduction to try>",
+  "decoration": "blocking | hardening | null",
+  "resolution": "pending | inline-fixed | design-amended | followup-task-<task-name> | reverted | accepted-with-note | hardening-list",
   "blocking_merge_until_resolved": true
 }
 ```
 
-Which role uses which severity: the Architect `blocking | advisory | informational` (`templates/architect-finding.md`); the Reviewer `blocking | advisory | spec-signal` (`roles/reviewer.md` § Severity routing). The `resolution` values above are the one list. `severity: blocking` with `resolution: pending` blocks the integrate exit gate. `record add findings` refuses a `blocking` or `advisory` finding without `observed` (`templates/architect-finding.md` § Observed); records written before the field existed read as `null`. `resolution: noted` is a reasoning-only finding kept in its file and not scheduled (`flows/integrate.md` § 7); `counts` reports how many.
+`kind`, `severity` and `evidence` are the Architect's (`templates/architect-finding.md` § Kind); `record add findings` refuses a finding without a `kind` of `issue` or `question` and a non-empty `evidence` (a `thought` is a journal line, not a finding). `decoration` is the orchestrator's routing (§ Routing of that file), `null` until it routes; `decoration: blocking` with `resolution: pending` blocks the integrate exit gate. The `resolution` values above are the one list; `hardening-list` is a finding on the change's hardening list (`templates/hardening.md`). `counts` reports the findings by kind and how many are on the hardening list. Files from schema 1.4 and earlier carry `severity` (blocking / advisory / informational) and `observed`; `migrate` converts them (§ Recovery).
 
 ## Ask entry
 
@@ -289,7 +291,7 @@ Computed by `gate check` from state and the files on disk: all of execute's chec
 
 `status` on a missing, legacy or invalid state file says which, and the orchestrator does not invent state:
 
-1. Older schema (`1.0` to `1.3`): `validate` shows the migration plan; `migrate` converts it, renames `repo_root` to `home` (an old value that differs from the home is parked under `parked.top_level` and reported as `rehomed_from`) and adds `code_root`, writes `.orchestrator/.gitignore` when absent, renames `cites_register_entries` to `cites_seams`, maps old finding triggers to the current two (the original kept as `_legacy_trigger` in the extras), writes every ask record as a file (open ones into the inbox, resolved ones under their cycle's `asks/`; a file already there is left alone, so the verb can be rerun), parks every other non-schema key and field, `register_touched` included, in `cycles/<id>/legacy-state-extras.json` (nothing is deleted) and keeps a `state.json.pre-migrate-<ts>` backup. A cycle migrated while at integrate re-runs `handshake` before `gate pass integrate`, since the handshake it wrote earlier carries the old field.
+1. Older schema (`1.0` to `1.4`): `validate` shows the migration plan; `migrate` converts it, renames `repo_root` to `home` (an old value that differs from the home is parked under `parked.top_level` and reported as `rehomed_from`) and adds `code_root`, writes `.orchestrator/.gitignore` when absent, renames `cites_register_entries` to `cites_seams`, maps old finding triggers to the current two (the original kept as `_legacy_trigger` in the extras), turns a finding's old `observed` and `severity` into `kind` (`happened: false` is a `question`, anything else an `issue`), `evidence` and, for a `blocking` one, `decoration: blocking` (the old values kept in the extras; such a finding's routing is redone at its next integrate), writes every ask record as a file (open ones into the inbox, resolved ones under their cycle's `asks/`; a file already there is left alone, so the verb can be rerun), parks every other non-schema key and field, `register_touched` included, in `cycles/<id>/legacy-state-extras.json` (nothing is deleted) and keeps a `state.json.pre-migrate-<ts>` backup. A cycle migrated while at integrate re-runs `handshake` before `gate pass integrate`, since the handshake it wrote earlier carries the old field.
 2. Invalid current-schema file (someone wrote it by hand): `validate` lists the offending keys; fix them by hand, then continue through the tool.
 3. Missing file mid-cycle: restore `cycles/<cycle-id>/state.json` if an archive exists for the cycle; otherwise ask the user whether to recover or to abandon the cycle. This is an `environment`-kind ask (`templates/ask.md`): the blocking call, at once, since there is no state file to index an ask file.
 4. An ask file and its index entry disagree (`validate` and `inbox` say how): a hand-edited `:STATUS:` is reconciled by `record set asks <id> status=<that value>`; a deleted drawer is restored by any `record set`; a file missing from its `path` is restored from git; a file in the inbox with no index entry is carried in by the next `init` or indexed now with `record add asks @<path>`.

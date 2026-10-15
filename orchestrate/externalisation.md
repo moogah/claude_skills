@@ -9,7 +9,7 @@ The rule, lifted from both existing skills and promoted to core:
 | **In-change** | `<change>/tasks/open/<task-name>.md` | The task contributes to the active change's stated outcome (per `intent.org`). Discovery happened *in* this change and resolution belongs *with* this change. |
 | **Externalised** | `<home>/.tasks/<task-name>.md` | The task is genuinely cross-cutting: it surfaced during this change but the work it requires is outside the active scope. Resolving it here would require reopening the proposal. |
 
-When in doubt about placement, externalise; when in doubt whether it meets the demonstrated-reason rule (`templates/architect-finding.md` § Demonstrated reason), note it: a finding that does not is never externalised. In-change task bloat is what produces "the change never finishes"; externalised task accumulation is what the PM's externalisation-pressure signal exists to manage.
+When in doubt about placement, externalise. What becomes a task at all is decided before placement: a defect by its routing (`templates/architect-finding.md` § Routing; one off the main path waits on the hardening list until the user chooses to harden), scope by the YAGNI check (same file); a `thought` is never externalised. In-change task bloat is what produces "the change never finishes"; externalised task accumulation is what the PM's externalisation-pressure signal exists to manage.
 
 ## Heuristic: would in-change resolution change the intent?
 
@@ -72,13 +72,13 @@ The Implementor's `## Observations` section is **the alternative to filing a tas
 
 → go in `## Observations` on the merged task body. They are *not* externalised and they are *not* in-change tasks. They live with the task that surfaced them.
 
-The Reviewer never sees them (`roles/reviewer.md` § Author-blind constraint). The orchestrator scans them in execute § 5 (`flows/execute.md`) and files a follow-up task from one only under the demonstrated-reason rule (`templates/architect-finding.md` § Demonstrated reason).
+The Reviewer never sees them (`roles/reviewer.md` § Author-blind constraint). The orchestrator scans them in execute § 5 (`flows/execute.md`) and routes each defect they name (`templates/architect-finding.md` § Routing).
 
 This is the brainstorm's "where do worker observations belong" answer: in the merged task body's `## Observations`, not as new tasks. New tasks fragment context.
 
 ## Who writes a task file
 
-Only the orchestrator writes task files, by one procedure: `templates/task-body.md`, `state.py task add` with the provenance fields, and the placement rule above, at the points the flows name (plan § 2 drafts the batch; integrate § 7 creates and refines from the cycle's outputs; execute § 5 and § 8 file the follow-ups an observation, a discovery or an advisory finding earns). Integrate § 7 is the one point where open tasks are *refined*. The Implementor, Reviewer, Architect and PM report a candidate task in their findings or discoveries; none of them files one.
+Only the orchestrator writes task files, by one procedure: `templates/task-body.md`, `state.py task add` with the provenance fields, and the placement rule above, at the points the flows name (plan § 2 drafts the batch; integrate § 7 creates and refines from the cycle's outputs; execute § 5 and § 8 file the follow-ups a blocking defect needs; plan § 2 drafts from the hardening list after the user chooses to harden). Integrate § 7 is the one point where open tasks are *refined*. The Implementor, Reviewer, Architect and PM report a candidate task in their findings or discoveries; none of them files one.
 
 ## Provenance is mandatory on externalised tasks
 

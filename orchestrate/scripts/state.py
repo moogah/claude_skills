@@ -33,7 +33,7 @@ import sys
 import time
 from datetime import datetime, timezone
 
-SCHEMA_VERSION = "1.4"
+SCHEMA_VERSION = "1.5"
 TEXT_CAP = 280
 LONG_TEXT_CAP = 600
 LONG_TEXT_FIELDS = {"question", "decision_readback"}
@@ -81,17 +81,24 @@ TASK_DEFAULTS = {
     "started_at": None, "completed_at": None, "reviewed_at": None,
 }
 
+# A finding's labels (templates/architect-finding.md): kind and severity are the reporter's,
+# decoration is the orchestrator's routing. A `thought` is a journal line, never a finding.
 FINDING_FIELDS = {
-    "finding_id": str, "trigger": str, "severity": str, "class": (str, type(None)), "title": str,
+    "finding_id": str, "trigger": str, "kind": str, "severity": (str, type(None)),
+    "class": (str, type(None)), "title": str,
     "path": str, "locations": list, "why_tests_missed": (str, type(None)),
-    "discovered_from": (str, type(None)), "seam": (str, type(None)), "observed": (dict, type(None)),
+    "discovered_from": (str, type(None)), "seam": (str, type(None)), "evidence": (str, type(None)),
+    "decoration": (str, type(None)),
     "resolution": str, "blocking_merge_until_resolved": bool,
 }
-FINDING_DEFAULTS = {"class": None, "locations": [], "why_tests_missed": None, "discovered_from": None,
-                    "seam": None, "observed": None, "resolution": "pending", "blocking_merge_until_resolved": False}
-OBSERVED_REQUIRED_SEVERITIES = {"blocking", "advisory"}
+FINDING_DEFAULTS = {"severity": None, "class": None, "locations": [], "why_tests_missed": None,
+                    "discovered_from": None, "seam": None, "evidence": None, "decoration": None,
+                    "resolution": "pending", "blocking_merge_until_resolved": False}
 TRIGGERS = ["premise-check", "conformance"]
-SEVERITIES = ["blocking", "advisory", "informational", "spec-signal"]
+KINDS = ["issue", "question"]
+SEVERITIES = ["high", "medium", "low"]
+DECORATIONS = ["blocking", "hardening"]
+LEGACY_SEVERITIES = ["blocking", "advisory", "informational", "spec-signal"]  # schema <= 1.4
 FINDING_CLASSES = ["shape-fragmentation", "vocabulary-mismatch", "responsibility-leakage",
                    "dead-branch", "interface-drift", "mutation", "invariant-gap", "duplication"]
 
@@ -370,7 +377,7 @@ def _validate_record(rec, fields, where, errors, id_field):
 
 
 def _validate_observed(obs, where, errors):
-    """observed = {happened: bool, evidence: str}; None means not filled (legacy or informational)."""
+    """An ask's observed = {happened: bool, evidence: str}; None means not filled."""
     if obs is None:
         return
     if not isinstance(obs.get("happened"), bool):
@@ -419,9 +426,10 @@ def validate(state):
         _validate_record(f, FINDING_FIELDS, where, errors, "finding_id")
         if isinstance(f, dict):
             _enum(f.get("trigger"), TRIGGERS, f"{where}.trigger", errors)
+            _enum(f.get("kind"), KINDS, f"{where}.kind", errors)
             _enum(f.get("severity"), SEVERITIES, f"{where}.severity", errors)
+            _enum(f.get("decoration"), DECORATIONS, f"{where}.decoration", errors)
             _enum(f.get("class"), FINDING_CLASSES, f"{where}.class", errors)
-            _validate_observed(f.get("observed"), f"{where}.observed", errors)
     for i, a in enumerate(state["asks_for_user"]):
         where = f"asks_for_user[{i}]"
         _validate_record(a, ASK_FIELDS, where, errors, "id")
@@ -1052,11 +1060,12 @@ def pm_signals(state, repo_root):
     findings = state["architect_findings"]
     fcounts = {
         "total": len(findings),
-        "reasoning_only": sum(1 for f in findings
-                              if (f.get("observed") or {}).get("happened") is False),
-        "reasoning_only_noted": sum(1 for f in findings
-                                    if (f.get("observed") or {}).get("happened") is False
-                                    and f.get("resolution") == "noted"),
+        "issue": sum(1 for f in findings if f.get("kind") == "issue"),
+        "question": sum(1 for f in findings if f.get("kind") == "question"),
+        "blocking": sum(1 for f in findings if f.get("decoration") == "blocking"),
+        "hardening_list": sum(1 for f in findings if f.get("resolution") == "hardening-list"),
+        "unrouted": sum(1 for f in findings if f.get("decoration") is None
+                        and f.get("resolution") == "pending"),
     }
     return {
         "cycle_id": state["cycle_id"],
@@ -1184,7 +1193,7 @@ def evaluate_gate(store, state, phase):
             f"in flight: {orphans}" if orphans else "no task in flight")
     elif phase == "integrate":
         blocking = [f["finding_id"] for f in state["architect_findings"]
-                    if f["severity"] == "blocking" and f["resolution"] == "pending"]
+                    if f.get("decoration") == "blocking" and f["resolution"] == "pending"]
         put("blocking_findings_resolved", not blocking,
             f"pending blocking findings: {blocking}" if blocking else "no pending blocking finding")
         digest = os.path.join(store.cycle_dir(state), "pm-digest.md")
@@ -1455,7 +1464,7 @@ def verb_status(store, args):
                   "unindexed_files": sum(1 for e in entries if not e["indexed"]),
                   "problems": len(problems)},
         "pending_blocking_findings": [f["finding_id"] for f in state["architect_findings"]
-                                      if f["severity"] == "blocking" and f["resolution"] == "pending"],
+                                      if f.get("decoration") == "blocking" and f["resolution"] == "pending"],
         "journal_tail": state["journal"][-5:],
         "prior_handshake": state["prior_handshake"],
         "validation_errors": errors,
@@ -1793,18 +1802,19 @@ def verb_record_add(store, args):
             rec[id_field] = prefix + str(next_seq([r.get(id_field) for r in state[key]], prefix))
         if any(r.get(id_field) == rec[id_field] for r in state[key]):
             raise Refusal("duplicate_id", f"{key} already has {rec[id_field]!r}; use `record set`")
-        if (args.list == "findings" and rec.get("severity") in OBSERVED_REQUIRED_SEVERITIES
-                and rec.get("observed") is None):
-            raise Refusal("observed_required",
-                          f"a {rec.get('severity')} finding must say whether it has happened: "
-                          "observed={\"happened\": true|false, \"evidence\": \"<where | reasoning only: ...>\"}")
+        if args.list == "findings" and (rec.get("kind") not in KINDS
+                                        or not isinstance(rec.get("evidence"), str)
+                                        or not rec["evidence"].strip()):
+            raise Refusal("kind_required",
+                          "a finding carries kind=issue|question and its evidence (the line, run or "
+                          "output; for a question the reasoning and the reproduction to try); a "
+                          "speculative need is a `note note \"thought: ...\"`, not a finding "
+                          "(templates/architect-finding.md § Kind)")
         if args.list == "findings" and not rec.get("path"):
             rec["path"] = os.path.relpath(os.path.join(store.cycle_dir(state), "findings",
                                                        rec["finding_id"] + ".md"), store.home)
         errors = []
         _validate_record(rec, fields, f"{key}[new]", errors, id_field)
-        if args.list == "findings":
-            _validate_observed(rec.get("observed"), f"{key}[new].observed", errors)
         if errors:
             raise Refusal("invalid_record", "record does not fit the schema", errors=errors)
         state[key].append(rec)
@@ -2207,8 +2217,26 @@ def verb_migrate(store, args):
                                 f".orchestrator/cycles/{old.get('cycle_id')}/findings/{u.get('finding_id')}.md")
                         if u.get("class") not in FINDING_CLASSES:
                             extra["_legacy_class"], u["class"] = u.get("class"), None
-                        if u.get("severity") not in SEVERITIES:
-                            extra["_legacy_severity"], u["severity"] = u.get("severity"), "advisory"
+                        if u.get("severity") not in SEVERITIES and u.get("severity") is not None:
+                            # Schema <= 1.4: severity was the routing (blocking | advisory |
+                            # informational); only `blocking` carries over, as the decoration.
+                            legacy = u.get("severity")
+                            extra["_legacy_severity"], u["severity"] = legacy, None
+                            if legacy == "blocking" and u.get("decoration") is None:
+                                u["decoration"] = "blocking"
+                        if u.get("kind") not in KINDS:
+                            # Schema <= 1.4: observed.happened false was a suspicion (a question);
+                            # true, or not filled, an issue. The old block is kept in the extras.
+                            obs = extra.get("observed") if isinstance(extra.get("observed"), dict) else {}
+                            if u.get("kind") is not None:
+                                extra["_legacy_kind"] = u.get("kind")
+                            u["kind"] = "question" if obs.get("happened") is False else "issue"
+                            if not u.get("evidence"):
+                                ev = obs.get("evidence")
+                                if isinstance(ev, str) and ev.strip():
+                                    u["evidence"] = re.sub(r"^\s*reasoning only:\s*", "", ev).strip() or ev
+                                else:
+                                    u["evidence"] = str(u.get("title") or "(no evidence recorded)")
                         if u.get("trigger") not in TRIGGERS:
                             extra["_legacy_trigger"] = u.get("trigger")
                             u["trigger"] = LEGACY_TRIGGERS.get(u.get("trigger"), "conformance")
@@ -2371,7 +2399,7 @@ def build_parser():
     s.set_defaults(fn=verb_inbox)
     s = sub.add_parser("validate", help="schema check; on a legacy file, what migrate would do")
     s.set_defaults(fn=verb_validate)
-    s = sub.add_parser("migrate", help=f"convert an older-schema file (1.0 to 1.3) to {SCHEMA_VERSION}; "
+    s = sub.add_parser("migrate", help=f"convert an older-schema file (1.0 to 1.4) to {SCHEMA_VERSION}; "
                        "parks non-schema content in a sidecar; rehomes the paths")
     s.set_defaults(fn=verb_migrate)
 

@@ -20,7 +20,7 @@ It produces:
 - All counts in the throughput table (created, started, completed, reviewed, rejected, externalised, blocked, failed, done), derived from task statuses and timestamps, for this cycle and the `history_window` before it.
 - All ratios (drainage, review balance, rejection rate, externalisation pressure).
 - The fired-signals list for the queries it can compute from state: throughput inversion, review starvation, priority inversion, cascade (follow-ups by source task).
-- The critical-path readout, the class-distribution table, follow-ups by source, the open asks and the blocked tasks with their `blocker_note`, and the findings count with how many are reasoning-only and `noted`.
+- The critical-path readout, the class-distribution table, follow-ups by source, the open asks and the blocked tasks with their `blocker_note`, and the findings by kind with how many are on the hardening list.
 
 Candidate asks come from the blocked-task list: a `blocker_note` that is an ask id re-surfaces that id; any other blocker is a candidate question, from which the orchestrator writes the ask file (`templates/ask.md`, opening). Cascade detection produces an Architect conformance run, not an ask.
 
@@ -102,7 +102,7 @@ Tasks blocked on an external dependency (user decision, upstream change, environ
 - The current `tasks/` tree (in-change tasks) and `.tasks/` store (externalised backlog).
 - Cycle history (last K cycles' counts and transitions; default K=5; overlay-configurable).
 - Provenance metadata on every task (`discovered_from`, `discovered_by`, `discovered_class`).
-- Architect findings (informational findings feed the digest's "trends to watch").
+- Architect findings (their classes and the hardening list feed the digest's "trends to watch").
 
 The PM does **not** read code. If a question requires reading code, that's a signal to spawn an Architect.
 
@@ -157,13 +157,12 @@ rows (owning symbols exist and remain the single producer or
 mapping; the scenarios those rows serve pass in
 `coverage.py --scenario …`)? Which rows need
 amending, and is any seam missing from the design?
-Produce structured findings per templates/architect-finding.md.
-
-Severity should bias to blocking: cascades that aren't gaps are
-rare; the cost of running this check on a non-gap is small.
+Report every defect you find as a structured finding per
+templates/architect-finding.md, with its kind and severity; the
+orchestrator routes them.
 ```
 
-The answer is routed through `flows/integrate.md` § 1's rules: code right, row stale is amended in place and journaled as a record correction; a design in question is a `decision` ask; other findings go to the bar.
+The answer is routed through `flows/integrate.md` § 1's rules: code right, row stale is amended in place and journaled as a record correction; a design in question is a `decision` ask; other findings are routed by the main path (`templates/architect-finding.md` § Routing).
 
 ## Escalation contract
 

@@ -6,7 +6,7 @@ The role used to maintain a project-wide catalogue of interfaces and audit every
 
 ## Responsibility statement
 
-Design the components and seams that satisfy the spec scenarios, name the test that covers each scenario, and write the pending tests. At each plan, check the batch's premises against HEAD. At each integrate, check that the merged code still matches the seams the batch cited and amend the rows that the code has rightly outgrown. Produce structured findings with severity, locations and a recommended resolution, at the Reviewer's bar.
+Design the components and seams that satisfy the spec scenarios, name the test that covers each scenario, and write the pending tests. At each plan, check the batch's premises against HEAD. At each integrate, check that the merged code still matches the seams the batch cited and amend the rows that the code has rightly outgrown. Report every defect found in code or text that exists as a structured finding with its kind, severity, locations and a recommended resolution, as the Reviewer does.
 
 ## Three runs
 
@@ -23,7 +23,7 @@ Once per change, after its intent and spec edits are committed and before the fi
 Every plan, over the candidate task files, before the batch freezes.
 
 - **Reads**: the candidate tasks, `design.org`, HEAD, the handshake's journal.
-- **Writes**: `cycles/<cycle-id>/premise-check.md`, one `| claim | at HEAD |` table per task with **Holds** or **Wrong** per claim, and a one-line verdict per task. A defect found outside every task's scope is a finding (`trigger: premise-check`) at the bar, routed by `flows/integrate.md` § 7's rules; one whose `blocks` names a batch task is settled before `batch_composed`.
+- **Writes**: `cycles/<cycle-id>/premise-check.md`, one `| claim | at HEAD |` table per task with **Holds** or **Wrong** per claim, and a one-line verdict per task. A defect found outside every task's scope is a finding (`trigger: premise-check`), routed by the orchestrator (`templates/architect-finding.md` § Routing); one whose `blocks` names a batch task is settled before `batch_composed`.
 - **Cost**: minutes; may run the suite and probes read-only in a scratch directory. Never amends the design (a stale row it finds is a record correction the orchestrator makes and journals, `templates/design.md` § Seams) and never writes catalogue text or test stubs outside the design round.
 
 ### Conformance (`flows/integrate.md` § 1)
@@ -37,17 +37,19 @@ Every integrate, scoped to the seams this cycle's tasks cited, plus a dead-branc
 
 There is no Architect run in execute. The Reviewer carries the probe licence that the old execute-time run used (`roles/reviewer.md` § Probes). Restore an execute-time run only on a demonstrated Reviewer miss that a seam-scoped run would have caught.
 
-## The bar
+## What the Architect reports
 
-The Architect raises findings at the Reviewer's bar (`roles/reviewer.md` § Reviewer mindset):
+The Architect reports as the Reviewer does (`roles/reviewer.md` § Reviewer mindset), with the labels of `templates/architect-finding.md` § Kind:
 
-> Would a thoughtful maintainer, familiar with this codebase, raise this in a PR review — and would the project be meaningfully worse if it shipped unchanged?
+- Every flag from the checklist below, or from reading and probing, that names a defect in code or text that exists is a finding file: an `issue` when you can point at it, a `question` when you suspect it and could not settle it. "X lacks a fallback for Y", "P is true in any Emacs whose server is named Q", "the path without `lsof` has no spec though the usage page describes it" each name what the code or a document does now, so each is a finding, whatever you think of its likelihood.
+- A speculative need (a third consumer, a future sweep, a future maintainer), and cleanup that changes no behaviour today (an uncalled function, two bodies that agree today), is one `state.py note note "thought: <one line>" --by architect`, and nothing more, unless a project prior asks for that kind of work (`overlay.md` § Priors), which makes it scope that passes the YAGNI check.
+- Style and preference are not reported.
 
-A flag from the checklist below becomes a finding only if it clears this bar *and* `observed` is filled (`templates/architect-finding.md` § Observed). A flag that fails the bar is one `state.py note note "<one line>" --by architect` and no file. **A flag that describes behaviour present in merged code today clears the bar by definition**: "X lacks a fallback for Y", "P is true in any Emacs whose server is named Q", "the path without `lsof` has no spec" each name what the code does now, not what it might do, so each is a finding with `observed.happened: true` and the line as evidence, whatever the Architect thinks of its likelihood. The journal line is for a flag whose defect has not been seen and cannot be pointed at. The record: four journal lines of this present-tense shape, written below the bar at conformance, were four of the nine defects `/code-review` found after the change was reported done. `severity: informational` is for a finding that clears the bar but blocks nothing. Speculative future-proofing (a third consumer, a future sweep, a future maintainer) fails the bar unless a project prior asks for that kind of work (`overlay.md` § Priors); a defect present in merged code today (a dead function, a present duplication) clears it. The bar decides whether a finding file exists; `observed` decides whether it is scheduled. A flag that clears the bar but rests on reasoning only is a finding with `happened: false`, and integrate marks it `noted`.
+You do not decide whether a finding is fixed now: the orchestrator routes it by whether it breaks the change's main path (`templates/architect-finding.md` § Routing). The record shows why the Architect no longer filters: four journal lines written below the old bar at conformance were four of the nine defects `/code-review` found after the change was reported done.
 
 ## Design checklist
 
-Eight questions. The design round asks them of its own Seams and of the tests it chose; conformance asks them of the merged diff. Each maps to the finding `class` it produces when the answer is no.
+Eight questions. The design round asks them of its own Seams and of the tests it chose; conformance asks them of the merged diff. Each maps to the `class` a finding or thought carries when the answer is no; the answer is a finding when behaviour or a document is wrong today, and a `thought` when only the shape is (§ What the Architect reports).
 
 | # | Question | `class` |
 |---|---|---|
@@ -64,7 +66,7 @@ The incidents that produced these questions (three constructions of one plist fo
 
 ## Output
 
-- Findings: `templates/architect-finding.md`, one file per finding under `cycles/<cycle-id>/findings/`, indexed with `state.py record add findings '{...}'` (title, severity, class, trigger, locations, `discovered_from`, `seam`, `observed`; the file carries the reasoning and the recommended resolution).
+- Findings: `templates/architect-finding.md`, one file per finding under `cycles/<cycle-id>/findings/`, indexed with `state.py record add findings '{...}'` (title, kind, severity, class, trigger, locations, `discovered_from`, `seam`, `evidence`; the file carries the reasoning and the recommended resolution). Thoughts are journal lines (above), not files.
 - The design: `templates/design.md`. A seam row holds current state only and the contract only: no status, no history, no line numbers, no message to a future role, no guard, error string, encoding, helper name or test name. Decisions the same. History is the file's `git log`.
 - Pending tests: in the test tree, in the file that already tests the owning module (a new file only when none exists), citing its scenario in the form `templates/spec.md` § A scenario's test gives (a contract test also cites `seam/<name>`), marked with the overlay's `test.pending-style` only when HEAD does not yet satisfy the behaviour. A scaffold that would pass at HEAD is not pending; it is a plain test.
 
@@ -72,14 +74,14 @@ Each run ends with a hand-back of **one line** and nothing else (`SKILL.md` § H
 
 ## Severity
 
-`blocking` when merged code breaks a cited seam's contract (a second producer, a mapping inlined, a promoted test failing); `advisory` otherwise, including a symbol rename that leaves the contract intact; `informational` when it clears the bar but blocks nothing. `blocking` at integrate blocks the integrate gate, not a merge. The overlay's `architect.severity-overrides` may raise or lower a class; a per-finding override carries `severity_override_reason`. A `blocking` finding that rests on reasoning only is a contradiction; re-grade it `advisory`.
+`severity` is your estimate of harm when the defect triggers (`templates/architect-finding.md` § Kind): `high` when merged code breaks a cited seam's contract (a second producer, a mapping inlined, a promoted test failing) or loses data, `medium` for a wrong result with a workaround, `low` for a minor wrong output or an untrue comment. It orders the hardening list; the routing, not the severity, decides whether a finding blocks.
 
 ## Escalation contract
 
-- **Blocking findings** produce a follow-up task in the batch (integrate § 7) and hold the integrate gate until `resolution` is no longer `pending`.
+- **Findings the routing decorates `blocking`** produce a follow-up task in the change (integrate § 7) and hold the integrate gate until `resolution` is no longer `pending`; those decorated `hardening` go on the change's hardening list (`templates/hardening.md`).
 - **Code right, design stale**: amend the seam row (and the Decision or scenario steps naming the same thing) in place at the contract level, `resolution: design-amended`; the orchestrator journals one record correction and commits it (`templates/design.md` § Seams). Not Implementor work, not an ask.
-- **Design in question**: the finding says what the seam or scenario is for, whether the drift is in merged code or reasoning only, and what it blocks; the orchestrator writes a `decision` ask file from it. The finding is not the ask.
-- **Cleanup proposals** land in the follow-up stream; the orchestrator decides this batch, next batch or `.tasks/`, and only under the demonstrated-reason rule (`templates/architect-finding.md` § Demonstrated reason); otherwise the finding is `noted`. An uncalled producer is a `dead-branch` finding, not a second producer.
+- **Design in question**: the finding says what the seam or scenario is for, its kind and evidence, and what it blocks; the orchestrator writes a `decision` ask file from it. The finding is not the ask.
+- **Cleanup**: a replaced implementation still on a live path is a defect, a finding like any other. Cleanup that changes no behaviour today (an uncalled function, two bodies that agree today) is a `thought`, and becomes work only when a project prior asks for cleanup (`templates/architect-finding.md` § The YAGNI check), as a task the orchestrator drafts. An uncalled producer is a `dead-branch` thought, not a second producer.
 - **PM-spawned runs**: when the cascade signal fires, the PM may spawn a conformance run scoped to the cluster it names.
 
 ## What the Architect may and may not do

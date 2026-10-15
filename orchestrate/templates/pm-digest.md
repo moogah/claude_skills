@@ -58,7 +58,7 @@ drainage         1.00       0.83       0.50       0.57       0.45  ⚠ trending 
 
 Answer in the file's `* Answer` section (paths are relative to the home), or in chat.
 Applied without asking: 3 (`cycles/<cycle-id>/asks/`). Process notes: 1 (inbox).
-Reasoning-only findings noted, not scheduled: 1.
+Findings: 3 issues, 1 question; on the hardening list: 2 (`.orchestrator/changes/<change>/hardening.org`).
 
 ## Trends to watch
 
@@ -89,7 +89,7 @@ The deterministic pass is `state.py counts --write` (`roles/project-manager.md`)
 
 - All counts in the throughput table, this cycle and the history window.
 - The critical-path readout and the class table.
-- The findings count and how many are reasoning-only and `noted` (the one line under the asks table).
+- The findings by kind and how many are on the hardening list (the one line under the asks table).
 - The list of fired signals it can compute (throughput inversion, review starvation, priority inversion, cascade).
 - The open asks (with their paths) and the blocked tasks with their `blocker_note`, from which the agent pass proposes candidate questions; the orchestrator writes each ask file (`templates/ask.md`). A subject that already carries an open ask id in `blocker_note` re-surfaces that id. Cascade detection produces an Architect conformance run scoped to the cluster, not an ask; the PM may spawn it alone.
 

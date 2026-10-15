@@ -25,7 +25,7 @@ The orchestrator assembles and hands the Implementor:
 The Implementor produces, **all in one go before reporting back**:
 
 1. **A working diff** — committed to the worktree's branch with a single conventional commit, message `Implement task <task-name>: <description>`. The commit removes the pending marker from every test the task's Verification section promotes; a strict marker left on a test that now passes fails the post-merge run.
-2. **`## Observations` appended to the task file** (at the home, by the path the brief gives) — out-of-scope findings, departures from the prescribed approach, latent issues spotted in adjacent code. See "What belongs in `## Observations`" below. **Committed as part of the implementation commit when the home is the code root, as before; when they differ, it is not in the implementation commit and the orchestrator commits it in the home at execute close.**
+2. **`## Observations` appended to the task file** (at the home, by the path the brief gives) — departures from the prescribed approach, weak tests, ambiguities you resolved, speculative needs. See "What belongs in `## Observations`" below. **Committed as part of the implementation commit when the home is the code root, as before; when they differ, it is not in the implementation commit and the orchestrator commits it in the home at execute close.**
 3. **`## Discoveries` appended to the task file** (the same file) — structured findings the integrate phase will read for the conformance check. See "Discoveries format" below. **Committed the same way as the Observations.**
 4. **A structured report**, written to the report path the brief names — for the orchestrator only. Never seen by the reviewer.
 5. **A hand-back of one line** (below). The report is never pasted into the hand-back.
@@ -54,11 +54,11 @@ When the Implementor pushes back:
 (Lifted from VCE; promoted to core.)
 
 - Departures from the task body's prescribed approach (and the evidence — e.g. "the recipe's claim X turned out to be empirically false; verified via probe Y; chose Z instead").
-- Latent issues you noticed in adjacent code while implementing (e.g. "saw an unstable sort one layer up; out of scope for this task but worth a follow-up").
 - Tests that pass but are weakly asserted, mocks that diverge from production, fixtures that don't reproduce real-shape inputs.
 - Spec/design contradictions or ambiguities the implementation forced you to resolve.
+- A speculative need, one line labelled `thought:` (it would matter only under a future change: another caller, platform or preset; `templates/architect-finding.md` § Kind).
 
-What does **NOT** belong in `## Observations`: a defect outside the task that you can point at and that cannot wait for review (a user-visible bug, a correctness regression). Record it as a `## Discoveries` entry with `observed.happened: true` and list its id under `candidate_tasks` in the report. You do not file the task; the orchestrator does, in execute § 5, under the demonstrated-reason rule (`templates/architect-finding.md` § Demonstrated reason; `externalisation.md` § Who writes a task file).
+What does **NOT** belong in `## Observations`: a defect in code or text that exists outside your task, in adjacent code or in a document (an unstable sort one layer up, a README sentence your change made untrue that the task does not cover). Record each as a `## Discoveries` entry with its kind (`issue` or `question`), severity and evidence, and list its id under `candidate_tasks` in the report, however small or unlikely it looks. You do not fix it outside your task and you do not file a task; the orchestrator routes it in execute § 5 (`templates/architect-finding.md` § Routing): fixed in the change when it breaks the change's main path, otherwise onto the change's hardening list. The record: of 38 items agents wrote as free-text remarks or journal lines, 27 left no later trace; of the six reasoned faults among them, three were found later by `/code-review`.
 
 The orchestrator scans `## Observations` after the merge (`flows/execute.md` § 5) and keeps related ones together in the task body; the Reviewer never sees them (author-blind, § 7). New tasks fragment that context.
 
@@ -78,15 +78,15 @@ The orchestrator scans `## Observations` after the merge (`flows/execute.md` § 
     Collapsed to single :reason in producers; consumers no longer
     need fallback chain.
   affected_seam: seam/violation-info
-  observed:
-    happened: true
-    evidence: every consumer reads :reason only; :message and :error are null at each (scope-expansion.el:504, scope-shell-tools.el:181)
+  kind: issue
+  severity: low
+  evidence: every consumer reads :reason only; :message and :error are null at each (scope-expansion.el:504, scope-shell-tools.el:181)
   recommendation: |
     Amend the row: required keys = [:tool, :resource, :command,
     :reason]; :message and :error gone.
 ```
 
-`class` must be one of: `shape-fragmentation`, `vocabulary-mismatch`, `responsibility-leakage`, `dead-branch`, `interface-drift`, `mutation`, `invariant-gap`, `spec-signal`, `deviation`, `scope-question`, `duplication`. A `spec-signal` or `scope-question` discovery that only the user can settle becomes an ask file in the inbox when the orchestrator reads it (`templates/ask.md`); write what the feature is for, fill `observed` (`templates/architect-finding.md` § Observed), and say what it blocks, so the orchestrator can write the ask without re-deriving it. Every discovery carries `observed`; whether it is scheduled is decided by the demonstrated-reason rule (`templates/architect-finding.md` § Demonstrated reason), so one that rests on reasoning only is recorded, not scheduled.
+`class` must be one of: `shape-fragmentation`, `vocabulary-mismatch`, `responsibility-leakage`, `dead-branch`, `interface-drift`, `mutation`, `invariant-gap`, `spec-signal`, `deviation`, `scope-question`, `duplication`. A `spec-signal` or `scope-question` discovery that only the user can settle becomes an ask file in the inbox when the orchestrator reads it (`templates/ask.md`); write what the feature is for, its kind and evidence, and what it blocks, so the orchestrator can write the ask without re-deriving it. Every discovery carries `kind`, `severity` and `evidence` (`templates/architect-finding.md` § Kind); a `question`'s evidence names the reproduction that would settle it. A `scope-question` about something no intent goal needs is a `thought` in `## Observations` instead (`templates/architect-finding.md` § The YAGNI check).
 
 `affected_seam` is optional but strongly preferred — without it the conformance check can't route the discovery to the right row.
 
@@ -102,7 +102,7 @@ test_output_tail: |
 observations_count: <number of bullets in ## Observations, 0 if none>
 discoveries_count: <number of entries in ## Discoveries, 0 if none>
 candidate_tasks:
-  - <discovery_id of a defect that cannot wait for review>
+  - <discovery_id of each defect (kind issue or question) outside the task>
 push_backs:
   - seam: <seam-id>
     summary: <one-line>
@@ -128,7 +128,7 @@ failed <task-name>: <why, one clause>
 ## Escalation contract
 
 The Implementor:
-- **Must not** create task files; a defect outside the task that cannot wait for review is a candidate task in `## Discoveries` (§ What belongs in `## Observations`).
+- **Must not** create task files; a defect outside the task is a candidate task in `## Discoveries` (§ What belongs in `## Observations`).
 - **Must not** silently expand scope on the in-progress task.
 - **Must** stop and ask the orchestrator if the task body itself appears to require revision before it can be implemented (rather than implementing a guess). Say what you observed and what it blocks; the orchestrator writes it as an ask file (`flows/execute.md` § 9) and your task waits as `blocked`.
 - **Must not** modify anything under `docs/` (the seam rows, the scenarios); push-backs are recommendations, the conformance check at integrate is the authority.
