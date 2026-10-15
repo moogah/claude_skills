@@ -82,13 +82,12 @@ When a sub-question needs its own sustained conversation with the user, or sever
 - A thread is a separate Claude session the user starts. Write `threads/<slug>/thread.org` with the question, why, the evidence to start from, sub-questions, bounds, and a `* Hand-back` section; add a row to the brief's `* Threads` table.
 - Tell the user how to start it: Claude Code in the workspace root (so the session loads the workspace's memory), with "Work the research thread at `<path>/thread.org`."
 - The thread session follows this skill's loop inside its bounds, records its decisions in its own file, and when the user calls it done writes them back to the brief (goal edits, Decided rows that link to the thread, open items marked critical or not) and commits.
+- A thread is a line of research, before the hand-off. Once the effort is `handing-off` or `done`, no thread is opened: what remains is a change's (its design round and tasks) or a `.tasks/` item of the home (§ Closing).
 - With Emacs available (below), offer a layout for the thread; add it only on the user's yes.
 
-## When it is done
+## Closing: the hand-off, then its review, then done
 
-The user calls it, and **no critical item is open**. An item is critical if its answer could change a goal, a non-goal, or a spec scenario in the hand-off. Other open items travel with the hand-off, marked not critical.
-
-Before the hand-off the brief must have:
+The user calls the research closed when the brief has:
 
 - the goals and non-goals, each passing the depth rule;
 - the new and changed terms, agreed with the user (for a change: as the intent's `* New terms`);
@@ -96,7 +95,20 @@ Before the hand-off the brief must have:
 - the purpose facts only the user knows;
 - every open question asked, none answered provisionally.
 
-Set `#+STATUS: done <date>` with a paragraph naming the hand-off, and commit.
+Then the hand-off is **written** (§ Hand-off), **reviewed** (§ Hand-off review), and only then is `#+STATUS: done <date>` set, with a paragraph under the title naming what was handed off and where, and committed. While the hand-off is being written and reviewed the status is `handing-off <date>`. The order matters: writing intents and spec edits is itself discovery, and the critical-item rule is checked **after** it. The record: an effort closed with no critical item open, and the five intents its hand-off agents then wrote carried nineteen open questions, several of them critical, nine coined terms and a glossary that was stale within the hour.
+
+### Hand-off review
+
+One sitting with the user, one question per message, over the files the hand-off wrote. It ends when every item below holds; the brief's hand-off paragraph records the date.
+
+1. **Each intent is the user's.** The user reads each intent's Why, Goals and Non-goals and approves them as written or changes them; the approval is the intent's `#+APPROVED: <date>` line (`~/.claude/skills/orchestrate/templates/intent.md`). An intent an agent wrote has no other approval step; the design round's sitting asks for it only when this review did not.
+2. **No term was coined after the vocabulary closed.** Every domain term in the intents and the spec edits is in the glossary or in that intent's `* New terms`; each New term is agreed here, dated, and written into the glossary, or replaced by a plain phrase. The agents that write the hand-off are told the glossary is closed and that a term they need goes in New terms, never in the text alone.
+3. **The glossary is right.** Its definitions match the spec text written after them, and its `Specs ::` lines name spec files that exist; it is written after the specs (§ Hand-off), and a line that cannot be kept right is left out.
+4. **No critical item is open.** An item is critical if its answer could change a goal, a non-goal, or a spec scenario in the hand-off. Each intent's `* Open Questions` is read; a critical one is asked now and its answer written into the spec and the intent; the rest travel with the change, marked not critical, to the design round's sitting.
+5. **The spec edits were partitioned by capability** (§ Hand-off), so no two changes' branches carry different edits to one file; where they do, one change keeps the edit and the other's intent names it.
+6. **Each change continues from its files alone.** The user's requirement: a fresh session, pointed at the intent, can run the design round with nothing from this effort's conversation. The intent's `* Research` line links the brief; the brief's hand-off paragraph names every change, its branch, its base and its place in the sequence.
+
+Work that comes up after the hand-off belongs to a change (its design round's sitting, its tasks) or to a `.tasks/` item of the home; it is never a research thread (§ Open a thread). The record: seven threads opened for post-hand-off work were withdrawn the same day.
 
 ## Hand-off
 
@@ -131,6 +143,7 @@ If `~/emacs/bin/emacs-agent` exists, the user's Emacs is reachable:
 |---|---|---|
 | spec-kit `/clarify` | One question at a time with a recommended answer; dated Q→A in the spec | github/spec-kit |
 | Shape Up (shaping) | No-gos as a hand-off section; a no-go is routine and nothing is queued | basecamp.com/shapeup |
+| git-flow | A shared branch the feature branches are cut from and merge back into before main: the workspace integration branch of a multi-change hand-off | nvie.com/posts/a-successful-git-branching-model |
 | XP spikes | Probes: one question, a time box, throwaway output | extremeprogramming.org (via secondary sources) |
 | Anthropic multi-agent research system | Background research agents with a fixed brief; effort scaled to the question; artifacts passed by reference | anthropic.com/engineering/multi-agent-research-system |
 | Co-STORM | Evidence tied to the question that found it; the user observes and occasionally steers | Stanford OVAL, Co-STORM |

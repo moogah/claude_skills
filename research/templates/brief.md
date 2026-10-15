@@ -77,4 +77,4 @@ Descriptive; each line cites its evidence file.
 - **Decided** is the user's decisions only, one row each, dated. A reversal is a new row naming what it replaces; the old row stays.
 - **Open Questions** say whether each is critical (its answer could change a goal, a non-goal or a spec scenario). A closed question keeps one line saying where it was closed.
 - Empty sections are left out.
-- **`#+STATUS:`** is `open`, `done <date>` (with a paragraph under the title naming the hand-off) or `no-go <date>` (with the reason).
+- **`#+STATUS:`** is `open`, `handing-off <date>` (the hand-off is being written and reviewed; `SKILL.md` § Closing), `done <date>` (with a paragraph under the title naming the hand-off: each change, its branch, its base, its place in the sequence, the workspace integration branch when there is one and what was decided about main, and the date of the hand-off review) or `no-go <date>` (with the reason).
