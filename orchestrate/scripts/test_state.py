@@ -258,6 +258,9 @@ def test_counts_and_gate_by_kind_and_decoration(run, repo):
     assert run("record", "set", "findings", "arch-cycle-1-1", "decoration=blocking")[0] == 0
     assert run("record", "set", "findings", "arch-cycle-1-2", "decoration=hardening",
                "resolution=hardening-list")[0] == 0
+    (repo / CH / "hardening.org").write_text(
+        "#+TITLE: Hardening list: chg\n\n* question (hardening): A thing\n:PROPERTIES:\n"
+        ":REF: arch-cycle-1-2\n:END:\nBody.\n")
     _, out, _ = run("counts")
     assert out["findings"]["hardening_list"] == 1 and out["findings"]["unrouted"] == 0
     (repo / ".orchestrator" / "changes" / "chg" / "cycles" / "cycle-1").mkdir(parents=True, exist_ok=True)
@@ -441,8 +444,9 @@ def test_counts(run, repo):
     run("task", "set", "e", "blocked")
     code, out, _ = run("counts")
     assert code == 0
-    assert out["counts"] == {"created": 5, "started": 2, "completed": 1, "reviewed": 1, "rejected": 0,
-                             "externalised": 1, "blocked": 1, "failed": 0, "done": 1}
+    assert out["counts"] == {"created": 5, "carried": 0, "started": 2, "completed": 1, "reviewed": 1,
+                             "rejected": 0, "inline_fixes": 0, "externalised": 1, "blocked": 1,
+                             "failed": 0, "done": 1}
     assert out["ratios"]["drainage"] == 0.2
     assert out["thresholds"]["drainage_trigger_ratio"] == 1.0
     (repo / ".claude" / "orchestrator" / "config.yaml").write_text(
@@ -1793,3 +1797,86 @@ def test_task_field_added_in_version_is_defaulted_on_read(run, repo):
     assert code == 0, err
     s = json.loads(sp.read_text())
     assert s["tasks"][0]["created_at"] is None and s["tasks"][0]["on_critical_path"] is True
+
+
+# 53
+def test_counts_read_the_queue(run, repo):
+    """A carried task is counted once, inline fixes and hardening.org entries are counted, and an
+    on-path task file no batch holds is in the on-path total."""
+    init(run, "cycle-1", "--first-cycle")
+    add_task(run, "carry-me", "--critical")
+    add_task(run, "done-1")
+    run("task", "set", "done-1", "done")
+    assert run("handshake")[0] == 0
+    assert run("close", "--abandon", "--why", "test")[0] == 0
+    code, out, err = init(run, "cycle-2", "--prior-handshake", f"{CH}/handshake-cycle-1.json")
+    assert code == 0, err
+    add_task(run, "carry-me", "--critical")
+    add_task(run, "new-1")
+    run("task", "set", "carry-me", "done")
+    run("note", "inline-fix", "guard the empty path", "--ref", "carry-me")
+    run("note", "inline-fix", "fix the help text", "--ref", "carry-me")
+    (repo / CH / "hardening.org").write_text(
+        "#+TITLE: Hardening list: chg\n\n* issue (hardening): One\n:PROPERTIES:\n:REF: r#1\n:END:\nA.\n\n"
+        "* decision (hardening): Two\n:PROPERTIES:\n:REF: ask-cycle-1-1\n:END:\nB.\n")
+    opened = repo / CH / "tasks" / "open"
+    opened.mkdir(parents=True)
+    (opened / "waiting.md").write_text("---\ntask_name: waiting\nstatus: ready\non_critical_path: true\n---\nBody\n")
+    (opened / "left-done.md").write_text("---\ntask_name: left-done\nstatus: done\non_critical_path: true\n---\n")
+    (opened / "side.md").write_text("---\ntask_name: side\nstatus: ready\non_critical_path: false\n---\n")
+    (opened / "new-1.md").write_text("---\ntask_name: new-1\nstatus: ready\non_critical_path: true\n---\n")
+    code, out, err = run("counts")
+    assert code == 0, err
+    c = out["counts"]
+    assert (c["created"], c["carried"], c["completed"], c["inline_fixes"], c["rejected"]) == (1, 1, 1, 2, 0)
+    assert out["ratios"]["drainage"] == 1.0
+    assert out["findings"]["hardening_list"] == 2
+    assert out["critical_path"]["on_path_unbatched"] == ["waiting"]
+    assert out["critical_path"]["on_path_total"] == 2 and out["critical_path"]["on_path_done"] == 1
+    assert out["history"][0]["counts"]["created"] == 2  # cycle-1 had no earlier cycle
+    assert run("status")[1]["counts"]["carried"] == 1
+
+
+# 54
+def test_record_add_asks_takes_ref_and_string_raised_by(run, repo):
+    init(run, "cycle-1", "--first-cycle")
+    rec = {k: v for k, v in ASK.items() if k != "raised_by"}
+    code, out, err = run("record", "add", "asks", json.dumps({**rec, "raised_by": "reviewer",
+                                                               "ref": "cycles/cycle-1/reviews/t.md"}))
+    assert code == 0, err
+    assert out["record"]["raised_by"] == {"role": "reviewer", "ref": "cycles/cycle-1/reviews/t.md"}
+    drawer = state.AskDoc((repo / out["path"]).read_text())
+    assert (drawer.prop("RAISED_BY"), drawer.prop("REF")) == ("reviewer", "cycles/cycle-1/reviews/t.md")
+    code, out, err = run("record", "add", "asks", json.dumps({**rec, "ref": "design.org § Open Questions"}))
+    assert code == 0, err
+    assert out["record"]["raised_by"] == {"role": "orchestrator", "ref": "design.org § Open Questions"}
+    code, _, err = run("record", "add", "asks", json.dumps({**rec, "raised_by": {"role": "pm", "ref": "a"},
+                                                             "ref": "b"}))
+    assert code == 1 and err["error"] == "bad_record"
+
+
+# 55
+def test_context_reads_the_last_call_of_an_agent_transcript(run, repo, tmp_path, monkeypatch):
+    cfg = tmp_path / "claude-config"
+    sub = cfg / "projects" / "-home" / "sess-1" / "subagents"
+    sub.mkdir(parents=True)
+    monkeypatch.setenv("CLAUDE_CONFIG_DIR", str(cfg))
+
+    def call(ctx, ts):
+        return json.dumps({"type": "assistant", "timestamp": ts, "message": {"id": ts, "usage": {
+            "input_tokens": 10, "cache_creation_input_tokens": 0, "cache_read_input_tokens": ctx - 10,
+            "output_tokens": 5}}})
+    (sub / "agent-a1b2c3.jsonl").write_text("\n".join([
+        json.dumps({"type": "user", "message": {"content": "brief"}}),
+        call(450000, "t1"), "not json", call(120000, "t2")]) + "\n")
+    code, out, err = run("context", "a1b2c3")
+    assert code == 0, err
+    assert (out["context"], out["limit"], out["over"], out["at"]) == (120000, 400000, False, "t2")
+    (repo / ".claude" / "orchestrator" / "config.yaml").write_text(
+        "overlay-version: 1\nproject: scratch\nthresholds:\n  phase-agent-context: 100000\n")
+    assert run("context", "agent-a1b2")[1]["over"] is True  # a prefix, with or without agent-
+    code, _, err = run("context", "zzz")
+    assert code == 1 and err["error"] == "no_transcript"
+    (sub / "agent-a1b2ff.jsonl").write_text(call(1, "t") + "\n")
+    code, _, err = run("context", "a1b2")
+    assert code == 1 and err["error"] == "ambiguous_agent"

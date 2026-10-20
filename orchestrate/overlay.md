@@ -91,6 +91,7 @@ thresholds:
   cascade-trigger-followup-count: 3
   stale-task-cycles: 3
   review-starvation-ratio: 1.5
+  phase-agent-context: 400000             # the dispatcher's: a phase agent past it hands over (SKILL.md)
   externalisation-pressure-growth: monotonic-3-cycles
 
 # OPTIONAL: critical-path declaration

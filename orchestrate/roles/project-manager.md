@@ -17,10 +17,10 @@ The PM operates as **two passes**:
 `state.py counts --write` produces the **instrument panel** and **raw signals** from the state file. No LLM involved. Output is structured (JSON), reproducible, auditable.
 
 It produces:
-- All counts in the throughput table (created, started, completed, reviewed, rejected, externalised, blocked, failed, done), derived from task statuses and timestamps, for this cycle and the `history_window` before it.
-- All ratios (drainage, review balance, rejection rate, externalisation pressure).
+- All counts in the throughput table (created, carried, started, completed, reviewed, rejected, inline fixes, externalised, blocked, failed, done), derived from task statuses, timestamps and the journal, for this cycle and the `history_window` before it. `created` leaves out a task carried in from an earlier cycle (`carried`); `rejected` is send-backs only, and `inline_fixes` beside it is the review findings fixed inline (`state.md` § Cycle log).
+- All ratios (drainage, review balance, rejection rate, externalisation pressure). The rejection rate reads with the inline fixes: a rate of 0.00 beside several inline fixes is not a clean batch.
 - The fired-signals list for the queries it can compute from state: throughput inversion, review starvation, priority inversion, cascade (follow-ups by source task).
-- The critical-path readout, the class-distribution table, follow-ups by source, the open asks and the blocked tasks with their `blocker_note`, and the findings by kind with how many are on the hardening list.
+- The critical-path readout, the class-distribution table, follow-ups by source, the open asks and the blocked tasks with their `blocker_note`, and the findings by kind, with the entries of `hardening.org`. The on-path total counts the on-path task files no batch holds (`on_path_unbatched`).
 
 Candidate asks come from the blocked-task list: a `blocker_note` that is an ask id re-surfaces that id; any other blocker is a candidate question, from which the orchestrator writes the ask file (`templates/ask.md`, opening). Cascade detection produces an Architect conformance run, not an ask.
 
@@ -110,7 +110,7 @@ The PM does **not** read code. If a question requires reading code, that's a sig
 
 | Query | Threshold | Action |
 |---|---|---|
-| Drainage trend | `completed/created < drainage-trigger-ratio` for ≥`drainage-trigger-consecutive-cycles` cycles | Signal: throughput inversion |
+| Drainage trend | `completed/created < drainage-trigger-ratio` for ≥`drainage-trigger-consecutive-cycles` cycles; `created` leaves out carried tasks, and a cycle that created none is not in the series | Signal: throughput inversion |
 | Cascade detection | `count(followups discovered_from=T) > cascade-trigger-followup-count` | Signal: cascade; **spawn conformance run** |
 | Review balance | `needs_review/in_progress > review-starvation-ratio` | Signal: review starvation |
 | Externalisation pressure | `.tasks/` count delta monotonic over ≥3 cycles | Signal: externalisation pressure |

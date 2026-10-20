@@ -24,7 +24,7 @@ Every plan, over the candidate task files, before the batch freezes.
 
 - **Reads**: the candidate tasks, `design.org`, HEAD, the handshake's journal.
 - **Writes**: `cycles/<cycle-id>/premise-check.md`, one `| claim | at HEAD |` table per task with **Holds** or **Wrong** per claim, and a one-line verdict per task. A defect found outside every task's scope is a finding (`trigger: premise-check`), routed by the orchestrator (`templates/architect-finding.md` § Routing); one whose `blocks` names a batch task is settled before `batch_composed`.
-- **Cost**: minutes; may run the suite and probes read-only in a scratch directory. Never amends the design (a stale row it finds is a record correction the orchestrator makes and journals, `templates/design.md` § Seams) and never writes catalogue text or test stubs outside the design round.
+- **Cost**: minutes; may run the suite and probes read-only in the scratch directory its brief names (below). Never amends the design (a stale row it finds is a record correction the orchestrator makes and journals, `templates/design.md` § Seams) and never writes catalogue text or test stubs outside the design round.
 
 ### Conformance (`flows/integrate.md` § 1)
 
@@ -66,7 +66,7 @@ The incidents that produced these questions (three constructions of one plist fo
 
 ## Output
 
-- Findings: `templates/architect-finding.md`, one file per finding under `cycles/<cycle-id>/findings/`, indexed with `state.py record add findings '{...}'` (title, kind, severity, class, trigger, locations, `discovered_from`, `seam`, `evidence`; the file carries the reasoning and the recommended resolution). Thoughts are journal lines (above), not files.
+- Findings: `templates/architect-finding.md`, one file per finding under `cycles/<cycle-id>/findings/`, indexed with `state.py record add findings '{...}'` (each string field at most 280 characters; title, kind, severity, class, trigger, locations, `discovered_from`, `seam`, `evidence`; the file carries the reasoning and the recommended resolution). Thoughts are journal lines (above), not files.
 - The design: `templates/design.md`. A seam row holds current state only and the contract only: no status, no history, no line numbers, no message to a future role, no guard, error string, encoding, helper name or test name. Decisions the same. History is the file's `git log`.
 - Pending tests: in the test tree, in the file that already tests the owning module (a new file only when none exists), citing its scenario in the form `templates/spec.md` § A scenario's test gives (a contract test also cites `seam/<name>`), marked with the overlay's `test.pending-style` only when HEAD does not yet satisfy the behaviour. A scaffold that would pass at HEAD is not pending; it is a plain test.
 
@@ -86,7 +86,7 @@ Each run ends with a hand-back of **one line** and nothing else (`SKILL.md` § H
 
 ## What the Architect may and may not do
 
-- **May** run the test suite and probes, read-only, in a scratch directory of its own, against HEAD or a merge commit. The useful findings in the record came from probes; the brief says so rather than forbidding them.
+- **May** run the test suite and probes, read-only, in the scratch directory its brief names (`architect-<run>/` under the session's scratch directory, `<run>` being `design-round`, `premise-check` or `conformance`), against HEAD or a merge commit; the brief points at `roles/implementor.md` § A machine shared with other agents, which holds for the Architect too. The useful findings in the record came from probes; the brief says so rather than forbidding them.
 - **May** write `design.org`, the pending tests and the scenarios' `:TEST:` properties during the design round (a seam link on a Decision heading, the Open Questions and Decisions entries the round produces; a scenario citation added to an existing test), and during conformance amend a seam row together with the Decision and scenario steps that name the same thing. These are the only files it writes.
 - **May not** modify any other file, spawn agents, commit (the orchestrator commits the design round in the code root), or create tasks directly (proposals go through integrate § 7).
 

@@ -59,7 +59,7 @@ After each merge, before that task's review, the orchestrator scans for discover
 - **Manual conflict-resolution decisions** — when the orchestrator dropped, restructured, or regenerated code while reconciling two branches, that decision is an unreviewed structural change, journaled as a `note decision` (below). If it touched a contract or dropped a test, that is a defect in merged code: a follow-up task, routed like a finding.
 - **Aborted merges where the abort reason is itself the finding** — journal the structural issue (not just the merge failure) as a `note discovery`; a defect it names is routed like a finding (`templates/architect-finding.md` § Routing), so the next cycle can address it.
 
-Each discovery is one `state.py note discovery "<one line>" --ref <task>` (with `--path` when a report holds the detail), naming where it was routed (`fixed: <task or inline fix>`, `hardening`); a conflict-resolution decision is `note decision`; a scan that found nothing is one `note note "scanned <what>; nothing"`. The journal is where these are recorded; they do not become state keys. A journal line is never where a defect ends: it ends in a fix, a task, an ask or a hardening-list entry. A follow-up task is written by the procedure in `externalisation.md` § Who writes a task file.
+Each discovery is one `state.py note discovery "<one line>" --ref <task>` (at most 280 characters, or the tool refuses `text_too_long`; with `--path` when a report or a file holds the detail), naming where it was routed (`fixed: <task or inline fix>`, `hardening`); a conflict-resolution decision is `note decision`; a scan that found nothing is one `note note "scanned <what>; nothing"`. The journal is where these are recorded; they do not become state keys. A journal line is never where a defect ends: it ends in a fix, a task, an ask or a hardening-list entry. A follow-up task is written by the procedure in `externalisation.md` § Who writes a task file.
 
 ### 6. Flip to `needs_review` (NOT `done`)
 
@@ -111,7 +111,7 @@ The helper is the load-bearing piece that makes the author-blind constraint stru
 - **Inline review**: the orchestrator (the execute phase agent) runs the review itself in its own context. Useful for small batches where the orchestrator wants to ride along closely. Default: when batch size ≤ 2.
 - **Delegated review**: spawn a separate general-purpose Agent per task. Default when batch size ≥ 3, or when the orchestrator's context is bloated. The Reviewer writes its findings file and hands back one line with the counts (`SKILL.md` § Hand-back lines); the orchestrator opens the file when the count is not zero.
 
-Either way, the input contract is identical and author-blind. The Reviewer may run the test command and its own probes read-only in a scratch directory against the `merge_commit` checkout (`roles/reviewer.md` § Probes); the probes' output goes in the findings file, never into the repository.
+Either way, the input contract is identical and author-blind. The Reviewer may run the test command and its own probes read-only in the scratch directory its brief names (`review-<task-name>/`, § 1) against the `merge_commit` checkout (`roles/reviewer.md` § Probes); the probes' output goes in the findings file, never into the repository.
 
 ### 8. Handle review findings
 
@@ -125,7 +125,7 @@ Each finding of kind `issue` or `question` is routed by `templates/architect-fin
 | `hardening` (any other defect) | One entry on the change's hardening list (`templates/hardening.md`), with `:REF:` the review file and finding number. The task can advance to `done`. |
 | `spec-signal` direction | Write an ask file at once (`templates/ask.md`; `:RAISED_BY: reviewer`, `:REF:` the review file's path, since Reviewer findings carry no id); presented inline only under § 9's rule, otherwise listed at integrate. Does not block the task itself; it signals that the design may need revision. It is the ask even when the orchestrator knows the answer: a step written into a later task's body in its place is not reviewed by anyone (the record: one spec-signal became step 5 of the next task, whose Reviewer then read a brief no premise check had seen). When the finding carries a `stopgap` (an `issue`, `roles/reviewer.md` § Routing of a finding), apply it as an inline fix before the task is `done`, pinned on the surface the probe used (below), and name it in the ask file; a stopgap that would answer the ask is not applied and the ask says so |
 
-An inline fix in the code root waits for a running after-test in that checkout to finish, or is made and tested in the review checkout; the record: a fix committed at 18:02 while an after-test ran in the same checkout from 18:01 to 18:04, so the after-file is of a mixture. The orchestrator's inline fixes are committed with `Co-Authored-By: <reviewer>` style attribution; follow-up tasks carry the provenance fields (`discovered_from=<task> discovered_by=reviewer discovered_class=<class>`) and are created in-change, since the defect blocks the change.
+An inline fix in the code root waits for a running after-test in that checkout to finish, or is made and tested in the review checkout; the record: a fix committed at 18:02 while an after-test ran in the same checkout from 18:01 to 18:04, so the after-file is of a mixture. To check something without its fix, the orchestrator sets work aside with a commit and never with `git stash`, whose one list every worktree of the repository shares (`roles/implementor.md` § A machine shared with other agents); the record: an inline-fix check popped another task's stash. The orchestrator's inline fixes are committed with `Co-Authored-By: <reviewer>` style attribution; follow-up tasks carry the provenance fields (`discovered_from=<task> discovered_by=reviewer discovered_class=<class>`) and are created in-change, since the defect blocks the change.
 
 **A fix for a defect the Reviewer demonstrated on a real surface is pinned on that surface.** When the finding's `evidence` is a probe of a real process, daemon, client, `git` or file system, the regression test for its fix (inline fix, re-spawned Implementor, or follow-up task) drives that same surface and reproduces the probe: it fails before the fix and passes after. A test against a fake or stub of the surface is not the pin. Where the test tree cannot drive the surface, the fix commit and the task's `## Observations` say so; a fake is not substituted silently. The record: in a replay, a Reviewer found two defects by probing real Emacs daemons, and the rework pinned them with four specs against a fake `emacsclient`; the original run pinned the same defect with the real one, without a rule.
 
@@ -149,6 +149,17 @@ Per `roles/reviewer.md`, the Reviewer may flag a choice the Implementor had a go
 - If the reasoning was load-bearing-but-undocumented: codify it as a comment, a test, or a seam row's statement — so the next reviewer doesn't flag it again. `state.py note push-back "<one line>" --ref <task>` records that it happened.
 
 The Reviewer never has to know which path was taken.
+
+### Handing over
+
+The dispatcher asks a phase agent to hand over when its context passes the overlay's limit (`SKILL.md` § The dispatcher's loop). Every phase hands over this way; execute is where it happens most. The agent:
+
+1. Starts nothing new: no Implementor, Reviewer, Architect run or merge not already under way.
+2. Reaches a clean point: every worker it spawned has reported, the merge queue is empty (each landed task merged and tested, § 3-4, or held by an ask), and state says where each task is (`state.py task set`).
+3. Writes the handover, `<change-dir>/cycles/<cycle-id>/<phase>-handover.md` (the design round before any cycle: `<change-dir>/design-handover.md`), under three headings: **Merged** (each task and its merge commit, with its review done or not yet spawned), **Open** (each task not started, blocked or failed, and each ask it raised, by id), **Next** (the flow's steps left, in order, and anything the agent had decided that no file holds). Pointers, not prose: state, the reports and the reviews hold the detail.
+4. Commits it in the home with the phase's other artifacts so far, and hands back `<phase> <cycle-id>: stopped, handover <path>`.
+
+The fresh agent runs `state.py status`, reads the handover and its flow doc, and goes on from **Next**. The record: a swap run by hand in the vault (`cycle-1792295307/execute-handover.md`) wrote where things stood, the asks, what was known and not acted on, and the close; it swapped with two workers still running, their hand-backs coming to the dispatcher. Waiting for the clean point keeps each worker's report with the agent that merges it.
 
 ## Inputs (from plan)
 

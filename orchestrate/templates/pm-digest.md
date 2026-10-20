@@ -24,8 +24,11 @@ The structure is fixed; the contents are derived. Every count traces to a state-
 ```
                 cycle-N-4  cycle-N-3  cycle-N-2  cycle-N-1  cycle-N
 created            4          6          8          7         11
+carried            0          1          2          4          3
 completed          4          5          4          4          5
 reviewed           3          4          4          3          4
+rejected           0          1          0          0          1
+inline fixes       1          0          2          3          2
 externalised       1          2          3          2          5
 drainage         1.00       0.83       0.50       0.57       0.45  ⚠ trending down
 ```
@@ -112,5 +115,6 @@ If the agent pass fails or hallucinates, the deterministic pass output remains i
 | `stale_task_cycles` | 3 |
 | `review_starvation_ratio` | (needs_review/in_progress) > 1.5 |
 | `externalisation_pressure_growth` | monotonic over 3 cycles |
+| `phase_agent_context` | 400000 tokens; read by the dispatcher (`state.py context`), not the PM |
 
 Per-project overlay overrides via `<home>/.claude/orchestrator/config.yaml` `thresholds.*`.

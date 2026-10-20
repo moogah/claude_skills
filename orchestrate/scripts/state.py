@@ -1177,7 +1177,10 @@ def scan_inbox(store, state):
 
 # ---------------------------------------------------------------- counts
 
-def derive_counts(tasks):
+def derive_counts(tasks, journal=(), earlier=frozenset()):
+    """`earlier` is the task names an earlier cycle of the change held: a task carried in from the
+    prior integrate is `carried`, not `created` again. The record: drainage read 0.5-0.71 and fired
+    throughput inversion while the queue shrank, every carried task counted as created twice."""
     def n(pred):
         return sum(1 for t in tasks if pred(t))
     main_index = {s: i for i, s in enumerate(MAIN_LINE)}
@@ -1185,18 +1188,79 @@ def derive_counts(tasks):
                or t["status"] in ("failed",))
     completed = n(lambda t: t.get("completed_at") or main_index.get(t["status"], 0) >= 3)
     reviewed = n(lambda t: t.get("reviewed_at") or main_index.get(t["status"], 0) >= 5)
+    carried = n(lambda t: t["task_name"] in earlier)
     counts = {
-        "created": len(tasks),
+        "created": len(tasks) - carried,
+        "carried": carried,
         "started": started,
         "completed": completed,
         "reviewed": reviewed,
         "rejected": sum(t.get("rejections", 0) for t in tasks),
+        # A review finding fixed by the orchestrator never sends the task back, so `rejected` misses
+        # it (the record: a rejection rate of 0.00 beside 7 and then 9 inline fixes).
+        "inline_fixes": sum(1 for e in journal if isinstance(e, dict) and e.get("kind") == "inline-fix"),
         "externalised": n(lambda t: t["status"] == "externalised"),
         "blocked": n(lambda t: t["status"] == "blocked"),
         "failed": n(lambda t: t["status"] == "failed"),
         "done": n(lambda t: t["status"] == "done"),
     }
     return counts
+
+
+def _archived_states(store):
+    """(cycle_id, state) of each archived cycle of the change, oldest first."""
+    out = []
+    for p in sorted(glob.glob(os.path.join(store.dir, "cycles", "*", "state.json"))):
+        try:
+            s = json.load(open(p))
+        except (json.JSONDecodeError, OSError):
+            continue
+        if isinstance(s, dict):
+            out.append((s.get("cycle_id") or os.path.basename(os.path.dirname(p)), s))
+    return out
+
+
+def _task_names(s):
+    return {t.get("task_name") for t in s.get("tasks") or [] if isinstance(t, dict)}
+
+
+def cycle_counts(store, state):
+    """The counts of the current cycle, with the tasks earlier cycles held and the journal."""
+    earlier = set()
+    for cid, s in _archived_states(store):
+        if cid != state["cycle_id"]:
+            earlier |= _task_names(s)
+    return derive_counts(state["tasks"], state.get("journal") or [], earlier)
+
+
+def hardening_entries(store):
+    """Entries of the change's hardening.org (templates/hardening.md): one `* <kind> (hardening):`
+    heading each, whoever routed it. The record: the count read architect findings only and showed
+    0 beside six entries the reviews had filed."""
+    p = os.path.join(store.dir, "hardening.org")
+    if not os.path.exists(p):
+        return 0
+    return sum(1 for line in open(p, encoding="utf-8") if re.match(r"^\* \S+ \(hardening\):", line))
+
+
+def unbatched_open_tasks(store, state):
+    """Task files in tasks/open/ that no batch of this cycle holds, with their frontmatter's
+    on_critical_path. Done and externalised files are left out."""
+    held = {t["task_name"] for t in state["tasks"]}
+    out = []
+    for p in sorted(glob.glob(os.path.join(store.dir, "tasks", "open", "*.md"))):
+        text = open(p, encoding="utf-8").read()
+        m = re.match(r"---\n(.*?)\n---", text, re.S)
+        fm = m.group(1) if m else ""
+
+        def key(k):
+            km = re.search(rf"^{k}:[ \t]*([^\s#]*)", fm, re.M)
+            return km.group(1) if km else None
+        name = key("task_name") or os.path.basename(p)[:-3]
+        if name in held or key("status") in ("done", "externalised"):
+            continue
+        out.append({"task": name, "critical": key("on_critical_path") == "true"})
+    return out
 
 
 def ratios(counts):
@@ -1217,11 +1281,15 @@ def by_status(tasks):
     return out
 
 
-def critical_path(tasks):
+def critical_path(tasks, unbatched=()):
+    """`unbatched` is the open task files no batch holds; an on-path one counts in the total (the
+    record: 8 on-path tasks never batched, "so state does not count them")."""
     on = [t for t in tasks if t.get("on_critical_path")]
     active = [t for t in tasks if t["status"] not in STOPPED]
+    off_batch = [u["task"] for u in unbatched if u["critical"]]
     return {
-        "on_path_total": len(on),
+        "on_path_total": len(on) + len(off_batch),
+        "on_path_unbatched": off_batch,
         "on_path_done": sum(1 for t in on if t["status"] == "done"),
         "on_path_blocked": [t["task_name"] for t in on if t["status"] == "blocked"],
         "on_path_active": sum(1 for t in on if t["status"] not in STOPPED),
@@ -1232,7 +1300,8 @@ def critical_path(tasks):
 def read_thresholds(repo_root):
     """Only the thresholds the tool uses, from the overlay's `thresholds:` block (flat YAML)."""
     out = {"drainage_trigger_ratio": 1.0, "drainage_trigger_consecutive_cycles": 3,
-           "review_starvation_ratio": 1.5, "cascade_trigger_followup_count": 3}
+           "review_starvation_ratio": 1.5, "cascade_trigger_followup_count": 3,
+           "phase_agent_context": 400000}
     p = os.path.join(repo_root, ".claude", "orchestrator", "config.yaml")
     if not os.path.exists(p):
         return out
@@ -1251,11 +1320,11 @@ def read_thresholds(repo_root):
     return out
 
 
-def pm_signals(state, repo_root):
-    counts = derive_counts(state["tasks"])
+def pm_signals(state, store):
+    counts = cycle_counts(store, state)
     r = ratios(counts)
     history = state["cycle_log"].get("history", [])
-    th = read_thresholds(repo_root)
+    th = read_thresholds(store.home)
     fired = []
     series = [h["counts"] for h in history[-(th["drainage_trigger_consecutive_cycles"] - 1):]] + [counts]
     drains = [ratios(c)["drainage"] for c in series if c.get("created")]
@@ -1268,7 +1337,7 @@ def pm_signals(state, repo_root):
     if st.get("in_progress") and st.get("needs_review", 0) / st["in_progress"] > th["review_starvation_ratio"]:
         fired.append({"signal": "review-starvation",
                       "detail": f"needs_review {st.get('needs_review', 0)} / in_progress {st['in_progress']}"})
-    cp = critical_path(state["tasks"])
+    cp = critical_path(state["tasks"], unbatched_open_tasks(store, state))
     if cp["active_total"] and cp["on_path_active"] / cp["active_total"] < 0.3 and cp["on_path_total"]:
         fired.append({"signal": "priority-inversion",
                       "detail": f"on-path active {cp['on_path_active']} of {cp['active_total']}"})
@@ -1291,7 +1360,7 @@ def pm_signals(state, repo_root):
         "issue": sum(1 for f in findings if f.get("kind") == "issue"),
         "question": sum(1 for f in findings if f.get("kind") == "question"),
         "blocking": sum(1 for f in findings if f.get("decoration") == "blocking"),
-        "hardening_list": sum(1 for f in findings if f.get("resolution") == "hardening-list"),
+        "hardening_list": hardening_entries(store),
         "unrouted": sum(1 for f in findings if f.get("decoration") is None
                         and f.get("resolution") == "pending"),
     }
@@ -2155,18 +2224,14 @@ def _write_orchestrator_gitignore(store):
 
 def collect_history(store, window):
     """Per-cycle counts from archived states, newest last, at most `window`."""
-    out = []
-    for p in sorted(glob.glob(os.path.join(store.dir, "cycles", "cycle-*", "state.json"))):
-        try:
-            s = json.load(open(p))
-        except (json.JSONDecodeError, OSError):
-            continue
-        cid = s.get("cycle_id") or os.path.basename(os.path.dirname(p))
+    out, earlier = [], set()
+    for cid, s in _archived_states(store):
         if str(s.get("schema_version")) == SCHEMA_VERSION:
-            counts = derive_counts(s["tasks"])
+            counts = derive_counts(s["tasks"], s.get("journal") or [], earlier)
         else:
             legacy = (s.get("cycle_log") or {}).get("counts") if isinstance(s.get("cycle_log"), dict) else None
             counts = legacy if isinstance(legacy, dict) else derive_counts_legacy(s.get("tasks") or [])
+        earlier |= _task_names(s)
         out.append({"cycle_id": cid, "counts": counts})
     return out[-window:]
 
@@ -2226,7 +2291,7 @@ def verb_status(store, args):
         "paths": {"home": store.home, "change": store.change, "code_root": store.code_root},
         "resume": resume,
         "gates": gates,
-        "counts": derive_counts(state["tasks"]),
+        "counts": cycle_counts(store, state),
         "tasks": [{"name": t["task_name"], "status": t["status"],
                    "merge": (t["merge_commit"] or "")[:10] or None,
                    "blocked_by": t["blocked_by"], "blocker_note": t["blocker_note"],
@@ -2418,7 +2483,25 @@ def _ask_input(raw, home=None):
     rec = load_json_arg(raw, home)
     if not isinstance(rec, dict):
         raise Refusal("bad_record", "record must be a JSON object")
-    return rec, None, None
+    return _ask_aliases(rec), None, None
+
+
+def _ask_aliases(rec):
+    """Two shapes agents write in every home, read as the org form reads :RAISED_BY: and :REF:
+    (ask_from_org): a top-level `ref` is `raised_by.ref`, a string `raised_by` is the role. The
+    record: asks refused `invalid_record` for these in all four homes on cf2577d."""
+    rec = dict(rec)
+    rb = rec.get("raised_by")
+    if isinstance(rb, str):
+        rec["raised_by"] = rb = {"role": rb, "ref": None}
+    if "ref" in rec:
+        ref = rec.pop("ref")
+        rb = dict(rb) if isinstance(rb, dict) else {"role": "orchestrator"}
+        if rb.get("ref") not in (None, ref):
+            raise Refusal("bad_record", f"ref {ref!r} and raised_by.ref {rb['ref']!r} differ; give one")
+        rb["ref"] = ref
+        rec["raised_by"] = rb
+    return rec
 
 
 def _ask_ids_on_disk(store, state):
@@ -2727,7 +2810,7 @@ def verb_gate_pass(store, args):
 def verb_counts(store, args):
     state = store.load()
     require_current_schema(state)
-    sig = pm_signals(state, store.home)
+    sig = pm_signals(state, store)
     if args.write:
         d = store.cycle_dir(state)
         os.makedirs(d, exist_ok=True)
@@ -2737,6 +2820,43 @@ def verb_counts(store, args):
         sig["written_to"] = os.path.relpath(p, store.home)
     sig["ok"] = True
     return sig
+
+
+def _agent_transcripts(agent_id):
+    base = os.environ.get("CLAUDE_CONFIG_DIR") or os.path.expanduser("~/.claude")
+    aid = agent_id[len("agent-"):] if agent_id.startswith("agent-") else agent_id
+    found = glob.glob(os.path.join(base, "projects", "*", "*", "subagents", f"agent-{aid}*.jsonl"))
+    exact = [p for p in found if os.path.basename(p) == f"agent-{aid}.jsonl"]
+    return exact or found
+
+
+def verb_context(store, args):
+    """A running agent's context, from the usage of the last call in its transcript, against the
+    overlay's thresholds.phase-agent-context. The dispatcher reads this line, never the transcript
+    (SKILL.md § The dispatcher's loop). The record: five phase agents passed 400k (the largest
+    568,815) and the users watched and swapped them by hand."""
+    paths = _agent_transcripts(args.agent)
+    if not paths:
+        raise Refusal("no_transcript", f"no subagents/agent-{args.agent}*.jsonl under the projects "
+                      "directory ($CLAUDE_CONFIG_DIR or ~/.claude); pass the id the Agent call returned")
+    if len(paths) > 1:
+        raise Refusal("ambiguous_agent", f"{len(paths)} transcripts match {args.agent!r}; give the full id",
+                      transcripts=sorted(paths))
+    used, at = None, None
+    with open(paths[0], encoding="utf-8") as f:
+        for line in f:
+            try:
+                r = json.loads(line)
+            except json.JSONDecodeError:
+                continue
+            u = (r.get("message") or {}).get("usage") if r.get("type") == "assistant" else None
+            if u:
+                used = (u.get("input_tokens", 0) + u.get("cache_creation_input_tokens", 0)
+                        + u.get("cache_read_input_tokens", 0))
+                at = r.get("timestamp")
+    limit = read_thresholds(store.home)["phase_agent_context"]
+    return {"ok": True, "agent": args.agent, "context": used, "limit": limit,
+            "over": used is not None and used > limit, "at": at, "transcript": paths[0]}
 
 
 def verb_handshake(store, args):
@@ -2827,7 +2947,7 @@ def verb_close(store, args):
             copied.append("handshake.json")
         return {"ok": True, "cycle_id": state["cycle_id"], "archived_to": os.path.relpath(d, store.home),
                 "copied": copied, "abandoned": bool(args.abandon),
-                "counts": derive_counts(state["tasks"]),
+                "counts": cycle_counts(store, state),
                 "inbox_left": {s: sum(1 for a in state["asks_for_user"] if a["status"] == s)
                                for s in ("open", "answered", "deferred")}}
     return store.mutate(fn)
@@ -3314,6 +3434,11 @@ def build_parser():
     s = sub.add_parser("counts", help="the PM deterministic pass: counts, ratios, history, signals")
     s.add_argument("--write", action="store_true", help="also write cycles/<id>/pm-signals.json")
     s.set_defaults(fn=verb_counts)
+
+    s = sub.add_parser("context", help="a running agent's context (tokens) against thresholds.phase-agent-context "
+                       "(needs no state)")
+    s.add_argument("agent", help="the agent id the Agent call returned")
+    s.set_defaults(fn=verb_context)
 
     s = sub.add_parser("handshake", help="assemble and write handshake-<cycle>.json from state")
     s.add_argument("--meta-discoveries", help="JSON array or @file")

@@ -41,7 +41,8 @@ Before the commit, re-read the prose beside each change (docstrings, comments, R
 Other Implementors, Reviewers and test runs work on this machine at the same time, in other worktrees of the same repository and in other homes. What they share, and the rule for each:
 
 - **`git stash`**: one stash list per repository, shared by every worktree, so another agent's pop takes your entry. Never stash; set work aside with a commit on your branch and fold it into the task's one commit.
-- **Scratch files**: only under the scratch directory your brief names; never edit or delete a file outside it.
+- **The repository's worktree list and object store**: one per repository, shared by every worktree. No `git worktree prune`, no `git gc`, and no `git worktree remove` of a worktree you did not create; the record: a whole-change Reviewer ran `git worktree prune` on the user's main checkout, and the user answered "Forbid it".
+- **Scratch files**: only under the scratch directory your brief names; never edit or delete a file outside it, including the top level of a scratchpad you share with the agent that spawned you (the record: a whole-change Reviewer ran `rm -f` there, and the user answered "Fix it in the skill").
 - **Containers, servers, ports, sockets**: name a compose project or a server after your worktree's branch, never a fixed name; a port or socket in use belongs to someone else and is not yours to free.
 - **Processes**: start no GUI or interactive program; stop only the processes you started. A stray process you did not start goes in `## Observations`; it is not yours to kill.
 - A failure that passes on a rerun while other runs were active is reported as such in `## Observations`, with both results.
