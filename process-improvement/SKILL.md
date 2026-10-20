@@ -36,7 +36,7 @@ Neither found: ask the user once which place is meant. A home not listed in the 
 
 ### 1. Measures first
 
-Before reading anything new, run every open after-measure in this place and report each as **held**, **failed** or **not yet measurable**. This step changes no text; it is the one thing the skill does before the user answers.
+Before reading anything new, run every open after-measure in this place and report each as **held**, **failed** or **not yet measurable**. This step changes no text; it is the one thing the skill does before the user answers. When a measure keys on cycles not yet read, the agents that read them (§ 2) collect its count, and the result is judged before § 3; the record: every measure of the first run keyed on the 56 unread cycles.
 
 - The open measures, in a home: every row of an earlier proposals file there with `:MEASURE:` set and `:MEASURED:` `open` or `not yet measurable`. In the skills workspace: every bullet of `roadmap.org` § Unmeasured after-measures, and the `:MEASURE:` of every applied row of an earlier proposals file there not yet in that list.
 - Each result names the file, script or output it read and the value it found (`templates/after-measure.md` § Results). "Not yet measurable" says why: no cycle since the change, the artifact it keys on not produced yet, a run needed.
@@ -79,7 +79,7 @@ Anything else goes under `* Seen once` in the proposals file, one line with its 
 
 The skill designs none of them; the design is that next step's work. Applying such a row writes the next step's entry point (§ 5).
 
-**Not the product.** The skill judges the process and the skills, never the product's code, specs or design. A product defect seen on the way goes to the change's record by the existing path: an `issue` entry on the open change's hardening list (`~/.claude/skills/orchestrate/templates/hardening.md`), or a `.tasks/` item of the home with its provenance when no change is open. It is not a proposal.
+**Not the product.** The skill judges the process and the skills, never the product's code, specs or design. A product defect seen on the way goes to the change's record by the existing path: an `issue` entry on the open change's hardening list (`~/.claude/skills/orchestrate/templates/hardening.md`), or a `.tasks/` item of the home with its provenance when no change is open. It is not a proposal. A run in the skills workspace writes nothing into a home (§ Intake): it lists each product defect under `* For the homes` in its proposals file, one line with the home and the citation, and the user routes it, or the next run in that home does.
 
 ### 4. Present and decide
 

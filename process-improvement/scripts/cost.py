@@ -62,14 +62,18 @@ def tokens(path, since):
 
 
 def typed(o):
-    """A prompt the user typed: not meta, not a command echo, a reminder or a tool result."""
+    """A prompt the user typed: a message, a command that sends a prompt (`<command-message>`, a
+    skill's `/name args`), or a message queued mid-turn (a `queued_command` attachment); not meta,
+    a local command's echo, a reminder or a tool result."""
+    if o.get("type") == "attachment":
+        return (o.get("attachment") or {}).get("type") == "queued_command"
     if o.get("type") != "user" or o.get("isMeta"):
         return False
     c = (o.get("message") or {}).get("content")
-    if isinstance(c, str):
-        return not c.lstrip().startswith("<")
-    return any(b.get("type") == "text" and not b.get("text", "").lstrip().startswith("<")
-               for b in c or [] if isinstance(b, dict))
+    texts = [c] if isinstance(c, str) else [b.get("text", "") for b in c or []
+                                             if isinstance(b, dict) and b.get("type") == "text"]
+    return any(not t.lstrip().startswith("<") or t.lstrip().startswith("<command-message>")
+               for t in texts)
 
 
 def user_side(path, since):
