@@ -1,0 +1,12 @@
+  registers the new session's file-level :ID: so org-id resolves it to the file without visiting it (seam/unindexed-id-targets) (Scenario: gptel/sessions-persistence § New session file carries an org ID)[GPTEL-INFO] Created branch directory: /tmp/trE9NokH/unit-0031.tmp/gptel-session-org-id-P0vhyQ/ided-20261015120000/branches/main
+[GPTEL-DEBUG] No scope defaults for preset: executor
+[GPTEL-WARN] No scope configuration available for preset: executor
+[GPTEL-INFO] Created session file: /tmp/trE9NokH/unit-0031.tmp/gptel-session-org-id-P0vhyQ/ided-20261015120000/branches/main/session.org
+ (7.91ms)
+
+the git-worktree entry's availability (seam/git-worktrees-availability)
+  offers no menu entry and runs no teardown while magit is not installed, with no error (Scenario: workspace-git-worktrees § Absent magit means no git integration, not an error)Loading /Users/jefffarr/emacs-workspaces/emacs-testing-speedup/.worktrees/emacs/fast-test-runner/config/workspaces/workspaces-transient.el (source)...
+ (0.57ms)
+  offers the add-worktree entry and runs the teardown while magit is installed but not loaded, loading it on use (Scenario: workspace-git-worktrees § magit installed but not yet loaded yields the git integration)Loading /Users/jefffarr/emacs-workspaces/emacs-testing-speedup/.worktrees/emacs/fast-test-runner/config/workspaces/workspaces-transient.el (source)...
+ (0.49ms)
+  evaluates configuration forms in the worktree's loaded configuration (Scenario: emacs-control-tools § Eval runs in the loaded configuration)  !! CANCELLED !! EMACS_AGENT_FULL_SMOKE is not set (opt-in full-configuration smoke) (0.01ms)

@@ -11,8 +11,9 @@ the named format (no run was found in it), which the caller must not read as "no
 a red baseline needs an `environment` ask.
 
 A parser returns (failing ids, ran, not_passing) from a run's output. `not_passing` counts
-failures the runner counted but did not name (Buttercup's error-type failures), so a higher
-count after is a regression too even when no new name appears.
+failures the runner counted but may not name (Buttercup's error-type failures, modules that
+fail to load on their own), so a higher count after is a regression too even when no new name
+appears.
 """
 
 import argparse
@@ -45,7 +46,12 @@ def parse_emacs(text):
     (`<it description>  FAILED (0.54ms)`) names the failure too, by its leaf description; it is
     read when no detail block names it. The record: a traceback failure carried no `FAILED:` line,
     the parser named four of five failures in each file, and one fixed and one new failure
-    cancelled to NO-REGRESSION (package-boundaries cycle-1792083023)."""
+    cancelled to NO-REGRESSION (package-boundaries cycle-1792083023).
+    ERT's lower-case `failed  N/M <name> (T sec)` line is an expected failure (`:expected-result
+    :failed`) and names no failing id: read as one, it gave 2,256 false ids over three homes (maps
+    24, 25, 27) and "6 spurious 'fixed'" in fast-test-runner. The lean runner's `Loaded N modules on
+    their own, K failed.` counts K in not_passing: a module that fails to load alone is a failure
+    whichever form, if any, names it."""
     t = _strip_ansi(text)
     ids, ran, not_passing, found = set(), 0, 0, False
     e = re.search(r"^Ran (\d+) tests?, (\d+) results? as expected, (\d+) unexpected", t, re.M)
@@ -53,9 +59,13 @@ def parse_emacs(text):
         found = True
         ran += int(e.group(1))
         for line in t.splitlines():
-            m = re.match(r"^\s+(FAILED|failed)\s+(?:\d+/\d+\s+)?(.+?)(?:\s+\([0-9.]+ sec\))?(\s+at\s+.*)?$", line)
+            m = re.match(r"^\s+FAILED\s+(?:\d+/\d+\s+)?(.+?)(?:\s+\([0-9.]+ sec\))?(\s+at\s+.*)?$", line)
             if m and (" sec)" in line or " at " in line):
-                ids.add(m.group(2).strip())
+                ids.add(m.group(1).strip())
+    mods = re.search(r"^Loaded (\d+) modules? on (?:their|its) own, (\d+) failed", t, re.M)
+    if mods:
+        found = True
+        not_passing += int(mods.group(2))
     b = re.search(r"^Ran (\d+) (?:out of (\d+) )?specs?, (\d+) failed", t, re.M)
     if b:
         found = True

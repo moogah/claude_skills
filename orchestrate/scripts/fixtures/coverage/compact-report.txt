@@ -1,0 +1,12 @@
+Log: /Users/jefffarr/emacs-workspaces/emacs-testing-speedup/.worktrees/emacs/fast-test-runner/runtime/state/test-runs/run-20261020-034338-67180.log
+Running 6 test files in 1 process and 1 module on its own, 8 at once
+========================================
+Over 100 ms (the limit):
+  the full run (seam/runner-cli, seam/test-result, seam/run-report) keeps each unit's output to its last line, in the output with -v and in the log, when many units print much and end at once (seam/run-report): 12704.9 ms
+  the full run (seam/runner-cli, seam/test-result, seam/run-report) stops a test process that runs past the limit, failing the file it was running and the files after it, naming that file and the limit, while the files it finished and the other processes keep their results (seam/test-result) (Scenario: testing § A failing run names its failures and keeps the log): 10351.8 ms
+
+Ran 108 out of 109 specs, 0 failed, in 2.09m.
+Ran 0 tests, 0 results as expected, 0 unexpected (2026-10-20 03:45:44-0400, 125.447625 sec)
+Loaded 1 module on its own, 0 failed.
+Log: /Users/jefffarr/emacs-workspaces/emacs-testing-speedup/.worktrees/emacs/fast-test-runner/runtime/state/test-runs/run-20261020-034338-67180.log
+✓ All tests passed

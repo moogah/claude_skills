@@ -4,23 +4,32 @@
 Reads every scenario of the org specs (`docs/specs/**/*.org`: a heading `Scenario: <title>`,
 its capability the file's path under the specs directory without `.org`, and its optional
 `:TEST:` property) and every citation in the code root's test files (`*-spec.el`, `*-test.el`,
-`test-*.el`):
+`test-*.el`, `test_*.py`, `*_test.py`):
 
   (a)  an `it` / `describe` string ending `(Scenario: <cap> § <title>[; <cap> § <title>])`
   (b)  a comment `;; Scenario: <cap> § <title>`, the title possibly finished on the next
        comment line
   (a') an `ert-deftest` docstring line `Scenario: <cap> § '<title>'`
+  (p)  a pytest function's or class's docstring line `Scenario: <cap> § <title>`, the title
+       possibly followed by prose or finished on the next line (the longest run of words from
+       its start that names a scenario)
 
 A citation naming a capability directory (`bash-parser`) resolves over its files.
 
 A `:TEST:` property stands in for a citation the test cannot carry (templates/spec.md):
-`none: <reason>`, or `<file>::"<start of the it string>"`, or `<file>::<ert test name>`;
-`:TEST+:` adds another.
+`none: <reason>`, or `<file>::"<start of the it string>"`, or `<file>::<ert test name>` (a
+pytest test: `<file>::<function>` or `<file>::<Class>::<function>`); `:TEST+:` adds another.
 
 Status per scenario, worst first: failed, not run (a run output was given and the test is
 not in it), pending (`xit`, an `it` with no body, or PENDING in the output), cited (no run
-output given), pass, none: <reason>, uncited. With `--output`, a raw `./bin/run-tests.sh`
-output: Buttercup lines join on the `it` string, ERT lines on the test name.
+output given), pass, none: <reason>, uncited. With `--output`, a raw test run's output, a log
+or a verbose run: Buttercup lines join on the `it` string (one that a message or a newline in the
+title splits over several lines is joined first), ERT lines on the test name, pytest `-v` lines
+on the node id. An output whose summary counts tests of a framework but holds no line per test
+(a compact report, pytest without -v) is refused, naming its `Log:` path when it gives one.
+
+Run from a home above the code root (no `docs/specs` at the git root and no --root), the code
+root is the resolved change's, from `state.py where`.
 
 Usage:
   coverage.py [--root CODE_ROOT] [--specs DIR] [--tests DIR ...] [--output RUN_OUTPUT]
@@ -31,10 +40,11 @@ Usage:
       rows and for rows naming a test that carries no citation; prints them, --write
       writes them into the spec files
 
-Exit 0 always for the report; 1 on a refusal (bad arguments, git failure).
+Exit 0 always for the report; 1 on a refusal (bad arguments, git failure, a compact output).
 """
 
 import argparse
+import ast
 import json
 import os
 import re
@@ -43,7 +53,7 @@ import sys
 
 TEST_HEADS = {"it", "xit", "describe", "xdescribe", "ert-deftest"}
 STATUS_ORDER = ["failed", "not run", "pending", "cited", "pass"]
-SKIP_DIRS = {"elpa", "eln-cache", "straight", "runtime", "node_modules"}
+SKIP_DIRS = {"elpa", "eln-cache", "straight", "runtime", "node_modules", "venv", "site-packages"}
 
 
 class Refusal(Exception):
@@ -117,6 +127,7 @@ class Form:
         self.kind, self.line, self.parent = kind, line, parent
         self.name = None
         self.nargs = 0
+        self.path = None  # a pytest Form's file, for its node id
 
     @property
     def pending(self):
@@ -166,8 +177,8 @@ def scan_el(text):
                 if text[j] == "\\" and j + 1 < n:
                     if text[j + 1] == "\n":
                         line += 1
-                    else:
-                        buf.append(text[j + 1])
+                    else:  # \n and \t as the runner prints them, so a title holding one matches its result
+                        buf.append({"n": "\n", "t": "\t"}.get(text[j + 1], text[j + 1]))
                     j += 2
                     continue
                 if text[j] == "\n":
@@ -241,9 +252,54 @@ def test_files(root, dirs=None):
         for dirpath, ds, files in os.walk(base):
             ds[:] = sorted(d for d in ds if not d.startswith(".") and d not in SKIP_DIRS)
             for f in sorted(files):
-                if f.endswith(("-spec.el", "-test.el")) or (f.startswith("test-") and f.endswith(".el")):
+                if f.endswith(("-spec.el", "-test.el", "_test.py")) or (f.startswith("test-") and f.endswith(".el")) \
+                        or (f.startswith("test_") and f.endswith(".py")):
                     found.append(os.path.join(dirpath, f))
     return found
+
+
+_P = re.compile(r"^\s*Scenarios?: (" + _CAP + r") § (.+?)\s*$")
+
+
+def py_citations(path, text):
+    """([Citation], [Form]) of one pytest file: docstring citations of its functions and classes.
+    A Form's name is its node id after the file (`Class::function`)."""
+    try:
+        tree = ast.parse(text)
+    except SyntaxError:
+        return [], []
+    out, forms = [], []
+
+    def readings(rest, nxt):
+        """The title's readings, longest first: each run of words from its start, over the line and
+        the next, since prose follows the title after ` — `, `. ` or ` (` and a title wraps."""
+        words = (rest + " " + (nxt or "").strip()).split()
+        seen = []
+        for k in range(len(words), 0, -1):
+            c = " ".join(words[:k]).rstrip(" —.,;:(")
+            if c and c not in seen:
+                seen.append(c)
+        return seen
+
+    def walk(node, prefix, parent):
+        for child in ast.iter_child_nodes(node):
+            if not isinstance(child, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)):
+                continue
+            form = Form("class" if isinstance(child, ast.ClassDef) else "def", child.lineno, parent)
+            form.name, form.path = prefix + child.name, path
+            forms.append(form)
+            doc = ast.get_docstring(child, clean=False)
+            if doc:
+                lines, first = doc.split("\n"), child.body[0].lineno
+                for k, text_line in enumerate(lines):
+                    m = _P.match(text_line)
+                    if m:
+                        r = readings(m.group(2), lines[k + 1] if k + 1 < len(lines) else None)
+                        out.append(Citation(m.group(1), r[0], path, first + k, form, "p", r[1:]))
+            walk(child, form.name + "::", form)
+
+    walk(tree, "", None)
+    return out, forms
 
 
 def citations_in(path, text=None):
@@ -251,6 +307,8 @@ def citations_in(path, text=None):
     if text is None:
         with open(path, encoding="utf-8", errors="replace") as fh:
             text = fh.read()
+    if path.endswith(".py"):
+        return py_citations(path, text)
     events, forms = scan_el(text)
     out = []
     for k, (kind, value, line, form) in enumerate(events):
@@ -308,34 +366,101 @@ def resolve(citations, scenarios):
 # ---------------------------------------------------------------- run output
 
 _ANSI = re.compile(r"\x1b\[[0-9;]*m")
-_ERT = re.compile(r"^\s*(passed|FAILED|skipped)\s+\d+/\d+\s+(\S+)")
+_ERT = re.compile(r"^\s*(passed|FAILED|failed|skipped)\s+\d+/\d+\s+(\S+)")
 # Buttercup's final line for an `it`: green pass, yellow pending, red failed (the failure
 # message follows in red, not the word FAILED); without colours, the words decide.
-_COLOURED = re.compile(r"^\x1b\[(3[123])m\s*(.*?)\x1b\[0m.*\(\d[\d.]*(?:ms|s|m)\)\s*$")
+_COLOURED = re.compile(r"^\x1b\[(3[123])m\s*(.*?)\x1b\[0m.*\(\d[\d.]*(?:ms|s|m)\)\s*$", re.S)
 _COLOUR = {"32": "pass", "33": "pending", "31": "failed"}
-_BUTTER = re.compile(r"^\s+(.*?)\s+(?:(PENDING|FAILED|SKIPPED)\s+)?\((\d[\d.]*(?:ms|s|m))\)\s*$")
+# A spec `buttercup-skip` cancelled prints `!! CANCELLED !! <reason>` before its time: pending.
+_BUTTER = re.compile(r"^\s+(.*?)\s+(?:(PENDING|FAILED|SKIPPED)\s+|(!! CANCELLED !!) .*)?\((\d[\d.]*(?:ms|s|m))\)\s*$")
+# A message the spec printed (a `load`'s "Loading …", a library's warning, on one line or several)
+# lands after the title and pushes the time to a line of its own: the title's line is the last
+# indented one before it.
+_TIME_ONLY = re.compile(r"^\s*(?:(?:PENDING|FAILED|SKIPPED)\s+)?\(\d[\d.]*(?:ms|s|m)\)\s*$")
+_PYTEST = re.compile(r"^(\S+?\.py)::(\S+?)(?:\[[^\]]*\])?\s+(PASSED|FAILED|ERROR|SKIPPED|XFAIL|XPASS)\b")
+_SUMMARIES = {"Buttercup": re.compile(r"^Ran (\d+) (?:out of \d+ )?specs?\b", re.M),
+              "ERT": re.compile(r"^Ran (\d+) tests?,", re.M),
+              "pytest": re.compile(r"^=+ .*?\b(\d+) (?:passed|failed|errors?|skipped|xfailed|xpassed)\b.* in [\d.]+s", re.M)}
+_SPLIT_MAX = 20  # lines a coloured title may span
+
+
+class Run:
+    """A run output's results: {it string: {status}}, {ert name: {status}}, {(file, node): {status}}
+    and the it lines a message split ({title and message: {status}}, read by prefix)."""
+    def __init__(self):
+        self.it, self.ert, self.py, self.glued = {}, {}, {}, {}
+        self.ran = {}  # framework -> the count its summary line gives
+        self.log = None
+
+    def tables(self):
+        return {"Buttercup": self.it or self.glued, "ERT": self.ert, "pytest": self.py}
 
 
 def parse_output(text):
-    """({it string: {status}}, {ert name: {status}}) from a raw run-tests.sh output."""
-    butter, ert = {}, {}
-    word = {"passed": "pass", "FAILED": "failed", "skipped": "pending",
-            None: "pass", "PENDING": "pending", "SKIPPED": "pending"}
-    for raw in text.split("\n"):
-        seg = raw.split("\r")[-1]
+    """Run from a raw test run's output."""
+    run = Run()
+    word = {"passed": "pass", "FAILED": "failed", "failed": "pending", "skipped": "pending",
+            None: "pass", "PENDING": "pending", "SKIPPED": "pending",
+            "PASSED": "pass", "XPASS": "pass", "ERROR": "failed", "XFAIL": "pending"}
+    plain = _ANSI.sub("", text)
+    for name, rx in _SUMMARIES.items():
+        counts = [int(m.group(1)) for m in rx.finditer(plain)]
+        if counts:
+            run.ran[name] = sum(counts)
+    m = re.search(r"^\s*Log: (\S.*?)\s*$", plain, re.M)
+    run.log = m and m.group(1)
+    lines = text.split("\n")
+    prev, i = "", 0
+    while i < len(lines):
+        seg = lines[i].split("\r")[-1]
+        i += 1
+        if re.match(r"^\x1b\[3[123]m", seg) and "\x1b[0m" not in seg:  # a title holding newlines
+            k = i
+            while k < len(lines) and k - i < _SPLIT_MAX and "\x1b[0m" not in lines[k]:
+                k += 1
+            if k < len(lines) and "\x1b[0m" in lines[k]:
+                seg = "\n".join([seg] + lines[i:k + 1])
+                i = k + 1
         line = _ANSI.sub("", seg)
         m = _ERT.match(line)
         if m:
-            ert.setdefault(m.group(2), set()).add(word[m.group(1)])
+            run.ert.setdefault(m.group(2), set()).add(word[m.group(1)])
+            continue
+        m = _PYTEST.match(line)
+        if m:
+            run.py.setdefault((m.group(1), m.group(2)), set()).add(word[m.group(3)])
             continue
         m = _COLOURED.match(seg)
         if m:
-            butter.setdefault(m.group(2), set()).add(_COLOUR[m.group(1)])
+            run.it.setdefault(m.group(2), set()).add(_COLOUR[m.group(1)])
+            continue
+        if _TIME_ONLY.match(line) and prev:
+            m = _BUTTER.match(prev + line)
+            if m:
+                run.glued.setdefault(m.group(1), set()).add("pending" if m.group(3) else word[m.group(2)])
+            prev = ""
             continue
         m = _BUTTER.match(line)
         if m:
-            butter.setdefault(m.group(1), set()).add(word[m.group(2)])
-    return butter, ert
+            run.it.setdefault(m.group(1), set()).add("pending" if m.group(3) else word[m.group(2)])
+            prev = ""
+        elif re.match(r"^\s+\S", line):
+            prev = line
+    return run
+
+
+def read_output(path):
+    """Run from the file at PATH; a Refusal when a framework's summary counts tests and the file
+    holds no line for any of them (a compact report: every citation would read "not run")."""
+    with open(path, encoding="utf-8", errors="replace") as fh:
+        run = parse_output(fh.read())
+    tables = run.tables()
+    bare = [name for name, n in run.ran.items() if n and not tables[name]]
+    if bare:
+        where = f"the run's log, {run.log}," if run.log else "the run's log"
+        raise Refusal(f"{path} counts {' and '.join(bare)} tests but holds no line per test (a compact "
+                      f"report, or pytest without -v); give --output {where} or a verbose run")
+    return run
 
 
 def worst(statuses):
@@ -350,10 +475,21 @@ def citation_status(form, run):
         return "cited"
     if form.pending:
         return "pending"
-    if run is None or form.kind in ("describe", "xdescribe") or form.name is None:
+    if run is None or form.kind in ("describe", "xdescribe", "class") or form.name is None:
         return "cited"
-    table = run[1] if form.kind == "ert-deftest" else run[0]
-    found = table.get(form.name)
+    if form.kind == "def":  # a node id from pytest's rootdir: the file matches by its tail
+        found = set()
+        for (f, node), st in run.py.items():
+            if node == form.name and (form.path == f or form.path.endswith(os.sep + f)):
+                found |= st
+    elif form.kind == "ert-deftest":
+        found = run.ert.get(form.name)
+    else:
+        found = run.it.get(form.name)
+        if not found:  # a line a message split: the title, then the message, with no space between
+            n = len(form.name)
+            found = set().union(*[st for k, st in run.glued.items()
+                                  if k.startswith(form.name) and len(k) > n and not k[n].isspace()])
     return worst(found) if found else "not run"
 
 
@@ -376,7 +512,7 @@ def resolve_test_prop(value, files_by_name, forms_of):
     for f in forms_of(paths[0]):
         if prefix is not None and f.kind in ("it", "xit") and f.name and f.name.startswith(prefix):
             return f, paths[0]
-        if name is not None and f.kind == "ert-deftest" and f.name == name:
+        if name is not None and f.kind in ("ert-deftest", "def") and f.name == name:
             return f, paths[0]
     return None, f"no test in {ref} matches"
 
@@ -435,10 +571,7 @@ def compute(root, specs_dir, tests=None, output=None):
         forms_cache[p] = forms
         citations.extend(cs)
     unresolved = resolve(citations, scenarios)
-    run = None
-    if output:
-        with open(output, encoding="utf-8", errors="replace") as fh:
-            run = parse_output(fh.read())
+    run = read_output(output) if output else None
     rows, bad_props = [], []
 
     def forms_of(p):
@@ -588,6 +721,16 @@ def _git_root(start):
     return r.stdout.strip() if r.returncode == 0 else os.path.abspath(start)
 
 
+def _where_code_root():
+    """The resolved change's code root by `state.py where` from here (a home above it), or None."""
+    state = os.path.join(os.path.dirname(os.path.abspath(__file__)), "state.py")
+    r = subprocess.run([sys.executable, state, "where"], capture_output=True, text=True)
+    try:
+        return json.loads(r.stdout).get("code_root")
+    except (ValueError, AttributeError):
+        return None
+
+
 def main(argv=None):
     argv = list(sys.argv[1:] if argv is None else argv)
     verb = argv.pop(0) if argv and argv[0] == "adopt-rows" else None
@@ -606,11 +749,17 @@ def main(argv=None):
     ap.add_argument("--json", action="store_true")
     args = ap.parse_args(argv)
     root = os.path.abspath(args.root or _git_root("."))
+    from_where = None
+    if not args.root and not args.specs and not os.path.isdir(os.path.join(root, "docs", "specs")):
+        from_where = _where_code_root()
+        root = os.path.abspath(from_where) if from_where else root
     specs = os.path.abspath(args.specs or os.path.join(root, "docs", "specs"))
     tests = [os.path.join(root, t) for t in args.tests] if args.tests else None
     try:
         if not os.path.isdir(specs):
-            raise Refusal(f"no specs directory at {specs}")
+            hint = "" if args.root or args.specs or from_where else \
+                "; from a home, `state.py where` resolves no change (set ORCH_CHANGE or pass --root \"$CODE_ROOT\")"
+            raise Refusal(f"no specs directory at {specs}{hint}")
         if verb:
             return adopt_rows(args.design, root, specs, tests, args.write)
         rows, unresolved, bad_props = compute(root, specs, tests, args.output)

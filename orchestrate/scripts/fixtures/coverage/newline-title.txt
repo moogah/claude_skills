@@ -1,0 +1,8 @@
+[32m  defvar or cond then TAB in Emacs Lisp after a ( closed further on, (| x) or (foo (| bar)), keeps the typed parenthesis and leaves the form balanced - seam/snippet-source (Scenario: in-buffer-completion § A snippet takes the place of the parenthesis typed before its key)[0m (78.88ms)
+[32m  defvar then TAB in Emacs Lisp after a ( closed after whitespace alone, (| ) or (|
+), leaves one opening parenthesis; after a comment, (| ; c
+), keeps the typed parenthesis - seam/snippet-source (Scenario: in-buffer-completion § A snippet takes the place of the parenthesis typed before its key)[0m (68.86ms)
+  in a snippet field, def then TAB with defaultdict showing inserts the suggestion (seam/inline-suggestion)Can’t guess python-indent-offset, using defaults: 4
+Can’t guess python-indent-offset, using defaults: 4
+
+[32m  in a snippet field, def then TAB with defaultdict showing inserts the suggestion (seam/inline-suggestion)[0m (101.64ms)

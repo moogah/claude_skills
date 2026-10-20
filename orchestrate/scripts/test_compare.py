@@ -87,3 +87,29 @@ def test_buttercup_traceback_failures_are_named():
     # the marker does not double-count a failure its detail block already names
     both = marker + "\n========================================\nsuite does z\nFAILED: boom\n"
     assert compare.parse_emacs(both)[0] == {"suite does z"}
+
+
+def test_ert_expected_failures_are_not_failing_ids():
+    # Trimmed from a workspace-notes-in-vault after-file (graph-navigator): ERT prints an expected
+    # failure (:expected-result :failed) as a lower-case `failed N/M` line; maps 24, 25 and 27 counted
+    # 2,256 of them named as failing ids. Only the upper-case FAILED lines are unexpected.
+    text = (FIX / "ert-expected-failure.txt").read_text()
+    ids, ran, _ = compare.parse_emacs(text)
+    assert ids == {"test-corpus-integration-002", "test-pattern-flow-with-redirection"} and ran == 49
+    # an expected failure appearing after is neither new nor fixed
+    without = text.replace("   failed  12/49  test-extraction-heredoc-dynamic-redirect (0.001318 sec)\n", "")
+    code, lines = compare.compare("emacs-results-txt", without, text)
+    assert code == 0 and "new: 0, fixed: 0" in lines[0]
+
+
+def test_module_failing_alone_is_counted():
+    # Trimmed from an emacs-testing-speedup after-file (test-requires-lists): the lean runner's
+    # summary counts a module that fails to load on its own; compare.py had no pattern for it.
+    after = (FIX / "module-alone-failed.txt").read_text()
+    _, _, np = compare.parse_emacs(after)
+    assert np == 44  # 43 Buttercup failures and one module
+    base = after.replace("on their own, 1 failed", "on their own, 0 failed")
+    code, lines = compare.compare("emacs-results-txt", base, after)
+    assert code == 1 and any("unnamed" in l for l in lines) and lines[-1] == "REGRESSION"
+    assert compare.compare("emacs-results-txt", after, after)[0] == 0
+    assert compare.parse_emacs("Loaded 1 module on its own, 0 failed.\n") == (set(), 0, 0)
