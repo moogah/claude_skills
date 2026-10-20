@@ -25,7 +25,7 @@ The orchestrator assembles and hands the Implementor:
 The Implementor produces, **all in one go before reporting back**:
 
 1. **A working diff** — committed to the worktree's branch with a single conventional commit, message `Implement task <task-name>: <description>`. The commit removes the pending marker from every test the task's Verification section promotes; a strict marker left on a test that now passes fails the post-merge run.
-2. **`## Observations` appended to the task file** (at the home, by the path the brief gives) — departures from the prescribed approach, weak tests, ambiguities you resolved, speculative needs. See "What belongs in `## Observations`" below. **Committed as part of the implementation commit when the home is the code root, as before; when they differ, it is not in the implementation commit and the orchestrator commits it in the home at execute close.**
+2. **`## Observations` appended to the task file** (at the home, by the path the brief gives) — departures from the prescribed approach, weak tests, ambiguities you resolved, speculative needs. See "What belongs in `## Observations`" below. **Never in the implementation commit, even when the home is the code root: the orchestrator commits it in the home at execute close (`flows/execute.md` § 3), so the Reviewer's diff cannot carry it.**
 3. **`## Discoveries` appended to the task file** (the same file) — structured findings the integrate phase will read for the conformance check. See "Discoveries format" below. **Committed the same way as the Observations.**
 4. **A structured report**, written to the report path the brief names — for the orchestrator only. Never seen by the reviewer.
 5. **A hand-back of one line** (below). The report is never pasted into the hand-back.

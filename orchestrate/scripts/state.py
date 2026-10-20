@@ -2206,6 +2206,7 @@ def verb_status(store, args):
         gates[phase] = {"passed": state["phase_gates"][phase]["passed"],
                         "failing": [c for c, r in ev.items() if not r["value"]]}
     entries, problems = scan_inbox(store, state)
+    questions = {e["id"]: e["question"] for e in entries}
     answered = {e["id"]: e for e in entries if e["indexed"] and e["answer"] and not e["readback"]["present"]}
     confirming = {e["id"]: e for e in entries if e["indexed"] and e["answer"] and e["readback"]["present"]
                   and not e["readback"]["confirmed"]}
@@ -2230,8 +2231,8 @@ def verb_status(store, args):
                    "merge": (t["merge_commit"] or "")[:10] or None,
                    "blocked_by": t["blocked_by"], "blocker_note": t["blocker_note"],
                    "critical": t["on_critical_path"]} for t in state["tasks"]],
-        "open_asks": [{"id": a["id"], "kind": a["kind"], "blocks": a["blocks"], "path": a["path"],
-                       "answered_in_file": a["id"] in answered}
+        "open_asks": [{"id": a["id"], "kind": a["kind"], "question": questions.get(a["id"]),
+                       "blocks": a["blocks"], "path": a["path"], "answered_in_file": a["id"] in answered}
                       for a in state["asks_for_user"] if a["status"] == "open"],
         "inbox": {"open": sum(1 for a in state["asks_for_user"] if a["status"] == "open"),
                   "answered_in_file": len(answered),

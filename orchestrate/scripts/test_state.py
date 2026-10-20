@@ -972,6 +972,7 @@ def test_inbox_reports_answers_and_tolerates_edits(run, repo):
                            "deferred": 0, "unindexed_files": 0, "problems": 0}
     assert st["resume"].startswith("3 answer(s) waiting in the inbox")
     assert [a["answered_in_file"] for a in st["open_asks"]] == [True, True, True, False]
+    assert [a["question"] for a in st["open_asks"]] == [ASK["question"]] * 4  # SKILL.md: id, question, path
     # record set on the hand-edited file keeps every edit
     code, out, _ = run("record", "set", "asks", "ask-cycle-1-4", "decision=Do it", "status=answered")
     assert code == 0

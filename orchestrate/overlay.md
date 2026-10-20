@@ -140,7 +140,7 @@ Worktrees are placed **from the home**, by `worktrees.parent` (relative to the h
 At skill invocation:
 
 1. The orchestrator resolves the overlay by **walking up from `$cwd`** looking for `.claude/orchestrator/config.yaml`. The first hit wins; record its directory as the home (`$ORCH_HOME`). It holds the process, `.orchestrator/` and `.tasks/`; the record is under `docs/` in each change's code root.
-2. If found, parse `config.yaml`. Required fields are validated; missing-required is a hard error (orchestrator refuses to start).
+2. If found, parse `config.yaml` (§ Validation says what is checked, and what is not).
 3. Optional fields fall through to core defaults.
 4. Role overlays are found by role name, `roles/<role>.md` (§ Layout; no key names them), and are read and **appended** to the corresponding core role briefs at agent-spawn time, followed by `priors.md` when it exists.
 5. The change is resolved (`--change`, `$ORCH_CHANGE`, the worktree holding `$cwd`, or the only open one); its `change.json` names the repository and the worktree, which is the code root (`$CODE_ROOT`).
@@ -243,12 +243,4 @@ The overlay is the project's; the schema is the skill's, and the skill moves. `c
 
 ## Validation
 
-The orchestrator validates `config.yaml` at start of every phase:
-
-- All required fields present.
-- Hook scripts exist and are executable.
-- `taxonomy` values match what's in flight on existing tasks.
-- `thresholds.*` numerical fields are positive numbers.
-- `state.py where` reports no problem (§ Drift warnings are relayed to the user once per session).
-
-Validation failure is a hard stop. The orchestrator does not invent missing config.
+`state.py where` is the one check of the overlay: its warnings (§ Drift) are relayed to the user once per session and stop nothing. No tool checks that a hook is executable, that `taxonomy` matches the tasks in flight or that `thresholds` are positive; a hook that cannot run fails where it runs, with its own error. The orchestrator does not invent missing config.

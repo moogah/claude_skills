@@ -136,7 +136,7 @@ clean_review: false      # true if no findings
 
 - thought: <one line — a speculative need; omit the section when there is none>
 
-A line that names a defect present at `merge_commit` (a variable read where nothing on the declared load path defines it, a guard that passes what it should refuse) is not a thought: it is a finding with `happened: yes`, whatever its severity, so the orchestrator routes it. The record: two Reviewers wrote the same void variable under Thoughts and the Architect wrote it as a `thought:` journal line; `/code-review` reported it as a bug after the cycle closed.
+A line that names a defect present at `merge_commit` (a variable read where nothing on the declared load path defines it, a guard that passes what it should refuse) is not a thought: it is a finding of kind `issue`, whatever its severity, so the orchestrator routes it. The record: two Reviewers wrote the same void variable under Thoughts and the Architect wrote it as a `thought:` journal line; `/code-review` reported it as a bug after the cycle closed.
 
 ## What I looked for and ruled out
 
