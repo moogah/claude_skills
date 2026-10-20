@@ -98,7 +98,7 @@ Tasks blocked on an external dependency (user decision, upstream change, environ
 ## Input contract — what the PM reads
 
 - The orchestrator state file, through `state.py counts` and `state.py status`: every task and its status, `architect_findings`, the journal.
-- The change's `intent.org` — the stated outcome, used to define "done" and to identify the critical path. **One LLM read per plan phase**, not per PM tick.
+- The change's `intent.org` — the stated outcome, used to define "done". The critical path is each task's `on_critical_path`, set by its source at plan (`flows/plan.md` § 6): the main path's tasks, the ones the MVP decision waits for.
 - The current `tasks/` tree (in-change tasks) and `.tasks/` store (externalised backlog).
 - Cycle history (last K cycles' counts and transitions; default K=5; overlay-configurable).
 - Provenance metadata on every task (`discovered_from`, `discovered_by`, `discovered_class`).
@@ -183,7 +183,7 @@ It cannot:
 ## Form-factor open questions
 
 - **Several changes at once**: supported since the home model of 2026-10-15 (`overlay.md` § Repositories); the digest is per change. A cross-change digest is deferred until a home runs several changes routinely.
-- **Critical-path inference**: per-batch LLM read of `intent.org` (default). Overlay can override with explicit `critical-path.override-tasks` / `override-labels`.
+- **Critical-path inference**: by each task's source (`flows/plan.md` § 6), since 2026-10-20 (it was a per-batch LLM read of `intent.org`). Overlay can override with explicit `critical-path.override-tasks` / `override-labels`.
 - **Goal-drift query**: critical-path completion ratio stagnant or declining for K cycles while non-critical-path completions continue. Spec'd as the v1 query; revise if VCE/emacs validation shows it's wrong.
 
 ## Project overlay extensions

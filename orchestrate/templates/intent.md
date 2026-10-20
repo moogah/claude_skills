@@ -52,7 +52,7 @@ Recommendation: <option>, because <…>. The spec is written to it. Affects: wor
 - **`* New terms`** lists each domain term the intent or the spec edits use that `docs/glossary.org` does not have (`templates/glossary.md`): the term, what it is, an example from the user's own use, and words to avoid. Agents coined almost every term that later confused the user, in documents the user had approved, and explained them in chat during execution; this list is where they are agreed instead. A term agreed during research carries `(agreed <date>)`; the rest are agreed in the design round's sitting (`flows/design.md` § 5). An agreed term is written into `docs/glossary.org` in the same commit; the list stays as the change's record of the terms it introduced.
 - **`* Open Questions`**, after New terms, holds what the source left to the user and the spec text depends on; each entry is deleted when the round's sitting answers it (`flows/open.md` § 4, `flows/design.md` § 5).
 - **Removals** lists each requirement or scenario the change deletes from `docs/specs/`, with its reason: the diff shows that a scenario went, never why. Empty sections are left out.
-- **Goals** and **Non-goals** are the stated outcome: plan's critical-path read and integrate's goal-drift check measure against them. The uses the Goals name, worked end to end, are the change's **main path**: what the MVP must do (`templates/hardening.md`) and what decides whether a defect is fixed before the MVP decision or goes on the hardening list (`templates/architect-finding.md` § Routing). A goal that cares about an error or an input says so, since only what a goal names is on the main path.
+- **Goals** and **Non-goals** are the stated outcome: plan's `on_critical_path` and integrate's goal-drift check measure against them. The uses the Goals name, worked end to end, are the change's **main path**: what the MVP must do (`templates/hardening.md`), which tasks hold the MVP decision back (`flows/plan.md` § 6), and what decides whether a defect or a user's decision is worked before the MVP decision or goes on the hardening list (`templates/architect-finding.md` § Routing). A goal that cares about an error or an input says so, since only what a goal names is on the main path.
 
 ## The status line
 
@@ -65,7 +65,7 @@ The intent is the change's **outermost speculation**. Like the seam rows and Dec
 | `divergent <date> <ask-id>` | A goal-drift signal is open; the ask carries revise / split / abandon / continue |
 | `reconciled <date> <choice>` | The user answered the goal-drift ask with `<choice>` |
 | `mvp <date> <commit> <ask-id>` | The main path works end to end and the MVP decision (harden / rethink / stop) is with the user; `<commit>` is the code root's HEAD then |
-| `done <date> <commit>` | The user chose to stop at the MVP, or the hardening they chose is finished; the whole-change review found nothing blocking and no open task remains; `<commit>` is the code root's HEAD then |
+| `done <date> <commit>` | The user chose to stop at the MVP, or the hardening they chose is finished; the whole-change review found nothing blocking and no open task remains other than those the MVP answer left; `<commit>` is the code root's HEAD then |
 
 What a status needs beyond its line goes in a `* Status` section at the end of the file, newest first: for `confirmed`, one paragraph on what stabilised it; for `divergent`, the signal (`pm-cascade`, `reviewer-spec-signal`, `architect-conformance` or `user`) and one paragraph of evidence; for `reconciled`, the prior outcome statement verbatim and one paragraph on what changed and why; for `done`, the closing summary (`templates/hardening.md` § The closing summary). Older text is in `git log -- docs/changes/<change>/intent.org`.
 
@@ -74,9 +74,9 @@ What a status needs beyond its line goes in a `* Status` section at the end of t
 - **`speculated → confirmed`**: the PM digest sets it once the integrate→plan handshake has fired ≥2 cycles cleanly. No user action.
 - **`→ divergent`**: the PM goal-drift signal fires (`flows/integrate.md` § 5); integrate writes the line and the `* Status` entry and raises the `decision` ask with the four options.
 - **`divergent → reconciled`**: the user's answer in the ask file's `* Answer`; the handshake's `user_resolved_goal_drift` carries `{ask, decision, rationale}`. On `revise` or `split` the Goals are rewritten and the line returns to `speculated`, the prior outcome kept in `* Status`.
-- **`→ mvp`**: integrate § 9, the first time the whole-change review leaves no blocking finding and no open task remains. The orchestrator writes the line and raises the MVP decision.
+- **`→ mvp`**: integrate § 9, the first time the whole-change review leaves no blocking finding and no open task on the main path remains. The orchestrator writes the line and raises the MVP decision.
 - **`mvp →`**: on the user's answer: `harden` keeps the line until the hardening is finished; `rethink` makes it `divergent <date> <ask-id>` (signal `user`) and the change is revised (`flows/open.md`); `stop` makes it `done`.
-- **`→ done`**: integrate § 9, after `stop`, or after `harden` when the whole-change review again leaves no blocking finding and no open task remains. The orchestrator writes the line with the closing summary and commits it in the code root with a subject naming the change.
+- **`→ done`**: integrate § 9, after `stop`, or after `harden` when the whole-change review again leaves no blocking finding and no open task remains other than those the answer left. The orchestrator writes the line with the closing summary and commits it in the code root with a subject naming the change.
 
 Integrate writes the line in every case but one: an answer to the MVP decision applied at the next plan (`flows/plan.md` § 1) is written there. Execute never writes it. A file with no `#+STATUS:` line gets a warning at plan and nothing more.
 

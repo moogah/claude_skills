@@ -83,9 +83,16 @@ For each task in the batch, the orchestrator assembles the brief at agent-spawn 
 
 The brief framing is fixed — the seam rows are *reference material to pressure-test, not authority to defer to*. A row that turns out wrong is a push-back in `## Discoveries`; conformance amends the row at integrate.
 
-### 6. PM critical-path read
+### 6. The critical path is the main path
 
-One LLM read of `intent.org` (its Goals) to identify which tasks are on the critical path. An `intent.org` with no `#+STATUS:` line gets one warning line (`templates/intent.md`). `state.py task set <name> on_critical_path=true` for each (or `--critical` at `task add`). Cheap; runs once per plan phase, not per PM tick.
+`on_critical_path` says the task's work is on the change's main path (`templates/architect-finding.md` § Routing), so the MVP decision waits for it (`flows/integrate.md` § 9). It is set when the task is added (`--critical` at `task add`), by where the task came from, never by a separate read:
+
+- drafted from the design (§ 2, source 2): true when a scenario it makes pass is a use a Goal names; false for a scenario no goal names;
+- a follow-up of a finding or discovery: true when it was routed `blocking` as a defect on the main path; an untrue sentence is a text correction and makes no task;
+- from a user's decision (integrate § 7): true when the decision was routed to the main path;
+- drafted from a hardening entry after `harden`, from a meta-discovery, or as scope under the YAGNI check: false.
+
+A task whose source does not settle it is false, with the doubt in one `state.py note note` line; the user sees it with the MVP. After `rethink` every open task is set again against the new Goals. An `intent.org` with no `#+STATUS:` line gets one warning line (`templates/intent.md`). The record: a per-batch read of the Goals marked 143 of 168 tasks not drafted from the design as critical, in three homes, so the label said nothing about what held the MVP decision back.
 
 Overlay can override via `critical-path.override-tasks` (explicit task list) or `critical-path.override-labels` (task_class values that are always critical-path).
 
