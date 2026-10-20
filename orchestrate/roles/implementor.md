@@ -34,6 +34,18 @@ When the task fixes a review finding whose evidence probed a real surface (a run
 
 The verification command runs in the foreground, before the commit; the Implementor never leaves a test run in the background and reports once. The record shows eight extra wake-ups of the orchestrator from Implementors that reported done while their own run continued.
 
+## A machine shared with other agents
+
+Other Implementors, Reviewers and test runs work on this machine at the same time, in other worktrees of the same repository and in other homes. What they share, and the rule for each:
+
+- **`git stash`**: one stash list per repository, shared by every worktree, so another agent's pop takes your entry. Never stash; set work aside with a commit on your branch and fold it into the task's one commit.
+- **Scratch files**: only under the scratch directory your brief names; never edit or delete a file outside it.
+- **Containers, servers, ports, sockets**: name a compose project or a server after your worktree's branch, never a fixed name; a port or socket in use belongs to someone else and is not yours to free.
+- **Processes**: start no GUI or interactive program; stop only the processes you started. A stray process you did not start goes in `## Observations`; it is not yours to kill.
+- A failure that passes on a rerun while other runs were active is reported as such in `## Observations`, with both results.
+
+The overlay's `roles/implementor.md` may add the project's own resources. The record: over the 56 cycles on `cf2577d`, a shared stash rotated four of five Implementors' work, agents edited and deleted one another's scratch files, Docker ran out of networks, and a Reviewer opened an Emacs window on the user's screen; each home then wrote its own rule into its briefs.
+
 ## Premises
 
 Before writing code, check the claims the task body and its cited rows make about the code at the worktree's HEAD (a symbol exists with this signature; a path is reachable from this entry point; a return value has these cases; a test exists; the behaviour to add is not already there). A wrong claim the task can absorb (a name, a path, a signature, part of the work already done) is corrected in the work and noted in `## Observations` with what HEAD has. A wrong claim that changes what the task should do (the behaviour it adds already exists, it contradicts a cited row or scenario, the work belongs to another seam) stops the task: hand back `blocked <task>: premise wrong, <the claim>; report=<path>`, the report saying the claim and what HEAD has. This holds for every task, including one the Architect checked at plan (`flows/plan.md` § 3). No table: in the replay that tried one, all seven were written after the commit, no reader acted on a row, and every real wrong claim was also in `## Observations` or `## Discoveries`.

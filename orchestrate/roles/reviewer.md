@@ -89,6 +89,8 @@ If you find nothing, say what you looked for and why you ruled it out: silence i
 
 The Reviewer may run the project's test command and its own probe scripts, read-only, in a scratch directory of its own against the `merge_commit` checkout: drive the real code on a temp directory, a fake `$HOME`, a real `git`, `emacs --batch -Q`, whatever the surface allows. The catches in the record that paid (a case-variant path defeating a containment check, a git call that prompts under TRAMP, a symlink escape) came from probes of the merge candidate, not from reading. Probe output goes in the findings file's `evidence`; nothing the probe writes enters the repository, and the scratch directory is deleted afterwards. Runs are made in the foreground: the Reviewer never ends a turn with a test run still going and hands back once, after it (the record: three Reviewers left runs in the background and woke the execute agent five times for nothing).
 
+Other agents share the machine (`roles/implementor.md` § A machine shared with other agents holds for the Reviewer too): the scratch directory is the one the brief names; no `git stash`, whose list every worktree of the repository shares; servers and containers are named after the review's checkout, never a fixed name; no GUI or interactive program; no process stopped that the Reviewer did not start. The record: a Reviewer's probe opened Emacs.app on the user's screen through a socket path longer than macOS allows.
+
 ## Output contract
 
 The Reviewer writes findings to `<change-dir>/cycles/<cycle-id>/reviews/<task-name>.md`:
