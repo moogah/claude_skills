@@ -44,14 +44,14 @@ A phase agent with workers still running cannot hand back until they finish; an 
 
 ### Hand-back lines
 
-Every agent the orchestrator spawns hands back **one line of at most 200 characters** and writes everything else to the file the flow names for it. A path in the line is relative to the home (`.orchestrator/changes/<change>/cycles/<id>/reports/<task>.md`); the record: 13 of 14 role lines broke the limit with an absolute path of 149-170 characters. The line states the outcome and points at the file; the reader opens the file only when the next step needs it. The record: hand-backs and notifications carried 55% of the main thread's tokens.
+Every agent the orchestrator spawns hands back **one line of at most 200 characters** and writes everything else to the file the flow names for it. A path in the line is relative to the home (`.orchestrator/changes/<change>/cycles/<id>/premise-check.md`), and a line whose file the brief named carries none (the Implementor's and the Reviewer's); the record: 13 of 14 role lines broke the limit with an absolute path of 149-170 characters, and after the relative rule 509 of 1,105 lines on `cf2577d` still did, the Implementor's and the Reviewer's with the absolute path their brief handed them. The line states the outcome and points at the file; the reader opens the file only when the next step needs it. The record: hand-backs and notifications carried 55% of the main thread's tokens.
 
 | Agent | Line | Detail lives in |
 |---|---|---|
 | Phase agent | `<phase> <cycle-id>: gate passed` · `<phase> <cycle-id>: stopped, ask <id> blocks <task\|merge\|phase>; <path>` (several: `asks <ids> block …`) · `<phase> <cycle-id>: failed, <why>; <path>` · `plan: not started, change <stopped\|rethink>; <intent path>` (an MVP answer applied, `flows/plan.md` § 1) | `state.json`, the cycle's artifacts, the ask file, `intent.org` |
 | Opening agent | `open <change>: <c> capabilities, <s> scenarios, <q> open questions; <intent path>` · `open: failed, <why>` | `intent.org`, the spec edits, the `Open: <change>` commit |
-| Implementor | `done <task> <sha> report=<path>` with `deviated` / `candidates=<n>` appended when true · `blocked <task>: <one line>` · `failed <task>: <one line>` | `cycles/<id>/reports/<task>.md`, written by the Implementor; the task file's `## Observations` and `## Discoveries` |
-| Reviewer | `reviewed <task> issues=<n> questions=<n> spec-signal=<n> thoughts=<n> path=<path>` | `cycles/<id>/reviews/<task>.md` |
+| Implementor | `done <task> <sha>` with `deviated` / `candidates=<n>` appended when true · `blocked <task>: <one line>` · `failed <task>: <one line>` | `cycles/<id>/reports/<task>.md`, written by the Implementor; the task file's `## Observations` and `## Discoveries` |
+| Reviewer | `reviewed <task> issues=<n> questions=<n> spec-signal=<n> thoughts=<n>` | `cycles/<id>/reviews/<task>.md`, the path the brief named |
 | Architect | `design-round <change>: <n> seams, <k> pending tests, <u> uncited scenarios, <q> open questions` · `premise-check <cycle-id>: <n> holds, <m> wrong, <f> findings; <path>` · `conformance <cycle-id>: <f> findings, <a> rows amended; <path>` | `design.org`, `premise-check.md`, `findings/`, `design-diff.json` |
 
 A worker runs its test command in the foreground and reports once, after its commit; a report sent while a run continues in the background wakes the orchestrator twice (8 such wake-ups in one session of the record).

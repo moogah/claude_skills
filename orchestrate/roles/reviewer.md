@@ -147,10 +147,10 @@ that the silence on a direction is a real silence, not a missed pass.>
 Then the Reviewer hands back **one line** and nothing else (`SKILL.md` § Hand-back lines):
 
 ```
-reviewed <task-name> issues=<n> questions=<n> spec-signal=<n> thoughts=<n> path=<findings-path>
+reviewed <task-name> issues=<n> questions=<n> spec-signal=<n> thoughts=<n>
 ```
 
-The findings, their evidence and the probes' output are in the file; `issues` and `questions` count every finding by its kind, `spec-signal` the ones among them in that direction; the orchestrator opens the file when `issues` or `questions` is not zero. A summary in the hand-back is a process bug.
+The findings, their evidence and the probes' output are in the file the brief named, and the line names no path; `issues` and `questions` count every finding by its kind, `spec-signal` the ones among them in that direction; the orchestrator opens the file when `issues` or `questions` is not zero. A summary in the hand-back is a process bug.
 
 ## Routing of a finding
 
