@@ -34,6 +34,8 @@ When the task fixes a review finding whose evidence probed a real surface (a run
 
 The verification command runs in the foreground, before the commit; the Implementor never leaves a test run in the background and reports once. The record shows eight extra wake-ups of the orchestrator from Implementors that reported done while their own run continued.
 
+Before the commit, re-read the prose beside each change (docstrings, comments, README and help text, the cited spec and design sentences), and grep the tree for each name, flag, path or rule the task changed. A sentence the work made untrue is fixed in the same commit. The record: in one change four of five tasks went back for untrue prose, and the user answered "Yes, add the re-read"; in another, the whole-change review found untrue text the per-task reviews had missed four cycles running, one of them two lines from a sentence the task had fixed.
+
 ## A machine shared with other agents
 
 Other Implementors, Reviewers and test runs work on this machine at the same time, in other worktrees of the same repository and in other homes. What they share, and the rule for each:

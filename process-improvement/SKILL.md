@@ -79,7 +79,7 @@ Anything else goes under `* Seen once` in the proposals file, one line with its 
 
 The skill designs none of them; the design is that next step's work. Applying such a row writes the next step's entry point (§ 5).
 
-**Not the product.** The skill judges the process and the skills, never the product's code, specs or design. A product defect seen on the way goes to the change's record by the existing path: an `issue` entry on the open change's hardening list (`~/.claude/skills/orchestrate/templates/hardening.md`), or a `.tasks/` item of the home with its provenance when no change is open. It is not a proposal. A run in the skills workspace writes nothing into a home (§ Intake): it lists each product defect under `* For the homes` in its proposals file, one line with the home and the citation, and the user routes it, or the next run in that home does.
+**Not the product.** The skill judges the process and the skills, never the product's code, specs or design. A product defect seen on the way goes to the change's record by the existing path: an `issue` entry on the open change's hardening list (`~/.claude/skills/orchestrate/templates/hardening.md`), or a `.tasks/` item of the home with its provenance when no change is open. It is not a proposal. A run in the skills workspace writes nothing into a home but the marks on process asks (§ Intake): it lists each product defect under `* For the homes` in its proposals file, one line with the home and the citation, and the user routes it, or the next run in that home does.
 
 ### 4. Present and decide
 
@@ -111,9 +111,9 @@ Count the run's cost in both currencies with `scripts/cost.py` (below), write it
 
 ## Intake: process rows from the homes
 
-The home's proposals file is the channel. A run in a home marks its process rows `:FOR: skills`. A run in the skills workspace reads every listed home's `.orchestrator/proposals/*.org` in place and takes each row with `:FOR: skills` and `:DECISION: send` as an observation of its own, cited as `<home>/.orchestrator/proposals/<file>.org § P<n>`. Nothing is copied into the skills workspace, and nothing is written into the home from there: a row is taken once a proposals file in the skills workspace cites it.
+The home's proposals file is the channel. A run in a home marks its process rows `:FOR: skills`. A run in the skills workspace reads every listed home's `.orchestrator/proposals/*.org` in place and takes each row with `:FOR: skills` and `:DECISION: send` as an observation of its own, cited as `<home>/.orchestrator/proposals/<file>.org § P<n>`. Nothing is copied into the skills workspace, and nothing is written into the home from there but the marks below: a row is taken once a proposals file in the skills workspace cites it.
 
-The homes' `:KIND: process` ask files reach the skills the same way: a run in the home reads them and turns them into rows. Where a home has process asks and no proposals file yet, the skills run may read the ask files directly as working material, citing them in place.
+The homes' `:KIND: process` ask files reach the skills the same way: a run in the home reads them and turns them into rows. Where a home has process asks and no proposals file yet, the skills run may read the ask files directly as working material, citing them in place. A skills run that read them that way marks each one when the user agrees, the one write into a home: through that home's `state.py record set asks` (the status; `applied_via` for an applied one; the marking in `* Answer` only when the user left it empty), one commit per home. The record: the PMs flagged an open process ask as stale every cycle for a change's whole life.
 
 ## Counting the two currencies
 
