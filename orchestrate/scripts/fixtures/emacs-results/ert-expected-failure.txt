@@ -1,0 +1,8 @@
+Running 49 tests (2026-10-19 17:42:53-0400, selector ‘t’)
+   passed   1/49  test-confidence-degradation-for-unresolved (0.001261 sec)
+   passed   2/49  test-confidence-high-for-fully-resolved (0.001218 sec)
+   failed  12/49  test-extraction-heredoc-dynamic-redirect (0.001318 sec)
+   FAILED  28/73  test-corpus-integration-002 (0.002823 sec) at config/bash-parser/test/corpus/runners/test-corpus-file-operations.el:1
+   FAILED  10/10  test-pattern-flow-with-redirection (0.002546 sec) at config/bash-parser/test/integration/test-pattern-flow.el:228
+Ran 49 tests, 46 results as expected, 2 unexpected (2026-10-19 17:45:22-0400, 149.200953 sec)
+Loaded 27 modules on their own, 0 failed.

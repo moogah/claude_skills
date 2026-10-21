@@ -1,0 +1,300 @@
+{
+  "schema_version": "1.2",
+  "session_id": "orch-1790604160",
+  "cycle_id": "cycle-1790604160",
+  "phase": "integrate",
+  "repo_root": "/tmp/fixture",
+  "change_name": "workspace-portable-bookmarks",
+  "prior_handshake": ".orchestrator/handshake-cycle-1790453714.json",
+  "current_branch": "emacs-workspace-bookmarks",
+  "test_command": "./bin/run-tests.sh",
+  "baseline_snapshot": ".orchestrator/baseline-cycle-1790604160.txt",
+  "baseline_status": 1,
+  "history_window": 5,
+  "tasks": [
+    {
+      "on_critical_path": true,
+      "worktree_path": "/Users/jefffarr/emacs-workspaces/emacs-workspace-bookmarks/emacs/.worktrees/task-add-worktree-broken-workspace-gate-1790604160",
+      "branch_name": "task-add-worktree-broken-workspace-gate-1790604160",
+      "agent_task_id": "spawned-2026-09-28 (background implementor)",
+      "status": "done",
+      "merge_commit": "360ad60c",
+      "after_snapshot": null,
+      "regression_detected": false,
+      "worktree_removed": true,
+      "review_mode": "delegated",
+      "findings_path": ".orchestrator/cycles/cycle-1790604160/reviews/add-worktree-broken-workspace-gate.md",
+      "findings_count": 3,
+      "followups_created": [],
+      "dependents_repointed": [],
+      "implementor_report_path": ".orchestrator/cycles/cycle-1790604160/reports/impl-report-add-worktree-broken-workspace-gate.md",
+      "discovered_from": "eoc-1790453714-01",
+      "discovered_by": "architect",
+      "discovered_class": "vocabulary-mismatch",
+      "cites_seams": [
+        "register/invariant/add-worktree-offer-shares-workspace-health-gate",
+        "register/vocabulary/workspace-broken-disposition",
+        "register/vocabulary/bookmark-resolution-outcome",
+        "register/boundary/portable-bookmarks-consumer"
+      ],
+      "blocked_by": [],
+      "blocker_note": "DONE. merge 360ad60c; review 0/2/1; fix pass 7df847c0 merged 36ff20cf gated NO-REGRESSION (iso 812/812); on-touch 0 blocking; spec-signal 3 -> integrate.",
+      "rejections": 0,
+      "started_at": "2026-09-28T14:55:00+00:00",
+      "completed_at": "2026-09-28T16:25:00+00:00",
+      "reviewed_at": "2026-09-28T17:55:00+00:00",
+      "task_name": "add-worktree-broken-workspace-gate",
+      "task_file": "openspec/changes/workspace-portable-bookmarks/tasks/open/add-worktree-broken-workspace-gate.md",
+      "task_class": "bug"
+    },
+    {
+      "on_critical_path": true,
+      "worktree_path": "/Users/jefffarr/emacs-workspaces/emacs-workspace-bookmarks/emacs/.worktrees/task-doc-sync-cycle2-1790604160",
+      "branch_name": "task-doc-sync-cycle2-1790604160",
+      "agent_task_id": "spawned-2026-09-28 (background implementor)",
+      "status": "done",
+      "merge_commit": "24496974",
+      "after_snapshot": null,
+      "regression_detected": false,
+      "worktree_removed": true,
+      "review_mode": "delegated",
+      "findings_path": ".orchestrator/cycles/cycle-1790604160/reviews/doc-sync-cycle2.md",
+      "findings_count": 4,
+      "followups_created": [],
+      "dependents_repointed": [],
+      "implementor_report_path": ".orchestrator/cycles/cycle-1790604160/reports/impl-report-doc-sync-cycle2.md",
+      "discovered_from": "[eoc-1790453714-02, meta-discovery/doc-sync-lag]",
+      "discovered_by": "architect",
+      "discovered_class": "interface-drift",
+      "cites_seams": [
+        "register/vocabulary/buffer-reincarnation-fallback-chain",
+        "register/shape/workspace-integration-anchor-payload",
+        "register/vocabulary/workspace-creation-context",
+        "register/invariant/bookmark-jump-not-captured-as-working-state"
+      ],
+      "blocked_by": [],
+      "blocker_note": "DONE. merge 24496974; review 0/4/0 all inline-fixed 55cd2ccf; openspec validate ok; review tree removed.",
+      "rejections": 0,
+      "started_at": "2026-09-28T14:55:00+00:00",
+      "completed_at": "2026-09-28T15:50:00+00:00",
+      "reviewed_at": "2026-09-28T16:42:00+00:00",
+      "task_name": "doc-sync-cycle2",
+      "task_file": "openspec/changes/workspace-portable-bookmarks/tasks/open/doc-sync-cycle2.md",
+      "task_class": "doc"
+    }
+  ],
+  "architect_findings": [],
+  "asks_for_user": [
+    {
+      "about": "The revised process checks merged code against a contract table in design.md. This change was planned under the old process, so its contracts live in interfaces.org. The change is archived after this cycle.",
+      "observed": {
+        "happened": true,
+        "evidence": "Skill rewritten at 2026-09-28 16:36Z while execute was running; state migrated 1.0->1.2; design.md has no contract table."
+      },
+      "options": [
+        {
+          "label": "Check against interfaces.org",
+          "consequence": "Integrate runs the new flow, reading the existing contract entries as the table; nothing new is written into design.md before archive."
+        },
+        {
+          "label": "Write the table first",
+          "consequence": "An extra step builds the design.md contract table from interfaces.org before the check; the archived change carries both."
+        },
+        {
+          "label": "Do nothing",
+          "consequence": "Same as the first option: it is the default."
+        }
+      ],
+      "recommendation": {
+        "option": "Check against interfaces.org",
+        "why": "Observed: the change archives after this cycle, so a design.md table would be read once and then frozen."
+      },
+      "default_if_unanswered": "This integrate checks against interfaces.org entries; design-diff lists entry ids.",
+      "blocks": [],
+      "status": "open",
+      "decision": null,
+      "decision_readback": null,
+      "applied_via": null,
+      "revised_from": null,
+      "kind": "process",
+      "raised_by": {
+        "role": "orchestrator",
+        "ref": ".orchestrator/cycles/cycle-1790604160/skill-migration-note.md"
+      },
+      "question": "The orchestration process was revised during this cycle; should this change's last integrate check the merged code against its existing contract list (interfaces.org) instead of first writing the new-style contract table into design.md?",
+      "id": "ask-cycle-1790604160-1"
+    },
+    {
+      "about": "interfaces.org lists the contracts the bookmark feature's modules keep with each other; eleven entries still described the code as it was before this cycle's four tasks merged.",
+      "observed": {
+        "happened": true,
+        "evidence": "Conformance check at 84c0ee2d: all 11 cited entries lagged the merged code (e.g. named the removed --broken-workspace-p; a check that could not pass)."
+      },
+      "options": [
+        {
+          "label": "Update the entries",
+          "consequence": "The contract list matches the code; the health-gate rule is marked settled."
+        },
+        {
+          "label": "Do nothing",
+          "consequence": "The list keeps describing code that no longer exists."
+        }
+      ],
+      "recommendation": {
+        "option": "Update the entries",
+        "why": "Observed: the entries named functions and checks that are gone."
+      },
+      "default_if_unanswered": "Applied at this integrate.",
+      "blocks": [],
+      "status": "applied",
+      "decision": null,
+      "decision_readback": null,
+      "applied_via": "interfaces.org (11 entries; a1708dc6)",
+      "revised_from": null,
+      "kind": "doc-correction",
+      "raised_by": {
+        "role": "architect",
+        "ref": "arch-cycle-1790604160-2"
+      },
+      "question": "Should the contract list be updated to describe the code as merged this cycle?",
+      "id": "ask-cycle-1790604160-2"
+    },
+    {
+      "about": "The README describes what happens when a bookmark jump goes wrong. Since this cycle, a bookmark carrying repository coordinates declines and names the error; only a bookmark without them falls back to its stored path.",
+      "observed": {
+        "happened": true,
+        "evidence": "README.org:703-707 said any jump error opens the stored path; portable-bookmarks.el --plan-after-error declines for stamped records, pinned by two passing jump specs."
+      },
+      "options": [
+        {
+          "label": "Correct the sentence",
+          "consequence": "The README says a portable bookmark declines on an error."
+        },
+        {
+          "label": "Do nothing",
+          "consequence": "The README keeps describing the old fallback."
+        }
+      ],
+      "recommendation": {
+        "option": "Correct the sentence",
+        "why": "Observed: the shipped sentence is false of the merged code."
+      },
+      "default_if_unanswered": "Applied at this integrate.",
+      "blocks": [],
+      "status": "applied",
+      "decision": null,
+      "decision_readback": null,
+      "applied_via": "config/workspaces/docs/README.org:703 (a1708dc6)",
+      "revised_from": null,
+      "kind": "doc-correction",
+      "raised_by": {
+        "role": "architect",
+        "ref": "arch-cycle-1790604160-1"
+      },
+      "question": "Should the workspaces README stop saying a failed bookmark jump opens the stored path?",
+      "id": "ask-cycle-1790604160-3"
+    },
+    {
+      "about": "design.md D5 describes the deferred way of finding repositories no current checkout reaches. It said that path would replace projectile, but projectile already stopped being a worktree source earlier in this change.",
+      "observed": {
+        "happened": true,
+        "evidence": "design.md:156-157 vs DD-12 (design.md:302-303); git-worktrees.el has zero projectile hits."
+      },
+      "options": [
+        {
+          "label": "Correct the sentence",
+          "consequence": "D5 says projectile and project.el are already not sources."
+        },
+        {
+          "label": "Do nothing",
+          "consequence": "D5 keeps a stale claim."
+        }
+      ],
+      "recommendation": {
+        "option": "Correct the sentence",
+        "why": "Observed: the sentence contradicts the code and DD-12."
+      },
+      "default_if_unanswered": "Applied at this integrate.",
+      "blocks": [],
+      "status": "applied",
+      "decision": null,
+      "decision_readback": null,
+      "applied_via": "design.md D5 (a1708dc6)",
+      "revised_from": null,
+      "kind": "doc-correction",
+      "raised_by": {
+        "role": "architect",
+        "ref": ".orchestrator/cycles/cycle-1790604160/briefs/architect-conformance.md"
+      },
+      "question": "Should design.md stop saying the deferred cold path replaces projectile?",
+      "id": "ask-cycle-1790604160-4"
+    }
+  ],
+  "cycle_log": {
+    "started_at": "2026-09-28T14:02:40+00:00",
+    "phase_started_at": {
+      "plan": "2026-09-28T14:02:40+00:00",
+      "execute": "2026-09-28T14:55:00+00:00",
+      "integrate": "2026-09-28T17:59:12Z"
+    },
+    "history": []
+  },
+  "phase_gates": {
+    "plan": {
+      "passed": true,
+      "checks": {
+        "prior_integrate_consumed": true,
+        "batch_composed": true,
+        "briefs_cite_seams": false,
+        "user_signed_off_goal_drift": true
+      }
+    },
+    "execute": {
+      "passed": true,
+      "checks": {
+        "all_tasks_executed_or_stopped": true,
+        "all_reviews_completed": true,
+        "no_orphan_in_progress": true
+      },
+      "passed_at": "2026-09-28T17:59:12Z"
+    },
+    "integrate": {
+      "passed": true,
+      "checks": {
+        "blocking_findings_resolved": true,
+        "pm_digest_produced": true,
+        "user_asks_routed": true,
+        "open_tasks_refined_against_handshake": true,
+        "handshake_artifact_written": true
+      },
+      "passed_at": "2026-09-28T18:20:11Z"
+    }
+  },
+  "closed_at": "2026-09-28T18:20:11Z",
+  "journal": [
+    {
+      "at": "2026-09-28T16:47:02Z",
+      "kind": "note",
+      "by": "state.py",
+      "ref": null,
+      "text": "migrated state from schema 1.0 to 1.2; non-schema content parked",
+      "path": ".orchestrator/cycles/cycle-1790604160/legacy-state-extras.json"
+    },
+    {
+      "at": "2026-09-28T16:47:43Z",
+      "kind": "deviation",
+      "by": "orchestrator",
+      "ref": null,
+      "text": "Skill rewritten mid-cycle; state migrated 1.0->1.2 at execute (backup + extras sidecar kept); wave-3 brief adapted to new discovery form.",
+      "path": ".orchestrator/cycles/cycle-1790604160/skill-migration-note.md"
+    },
+    {
+      "at": "2026-09-28T17:25:38Z",
+      "kind": "decision",
+      "by": "orchestrator",
+      "ref": null,
+      "text": "Wave 3 merged 442b2989 (test-only: 14 spec/fixture files). New execute flow has no Architect run; review follows gates.",
+      "path": null
+    }
+  ]
+}
