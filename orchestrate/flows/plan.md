@@ -30,7 +30,7 @@ Read the overlay's `priors.md` alongside the handshake (`overlay.md` § Priors):
 
 ### 2. Read the design and draft the candidate tasks
 
-The input is the change's `design.org` (`templates/design.md`), its Seams table and Decisions, and `coverage.py --since <base>` (`templates/spec.md` § Coverage; `<base>` is `intent.org`'s `#+BASE:`), the change's scenarios with their status. A change with no Seams table, or with an `uncited` scenario among its own, has not finished its design round (`flows/design.md`); run it before this cycle, not inside it. A `design.org` whose § Open Questions has an entry with no Decision has not finished its round either, and plan drafts nothing, since a task drafted on a provisional answer is the rework the record paid for (`flows/design.md` § 5). Write each such entry as a `decision` ask file (`state.py record add asks`, `blocks: [plan]`, `ref: design.org § Open Questions`; an entry that already has an open file is not written twice), commit them in one commit, and hand back `plan <cycle-id>: stopped, asks <ids> block plan; <change-dir>/inbox/`. Resumed with the answers: write each into § Decisions and the spec it settles, in place (`templates/ask.md` § Answer protocol), apply the asks, run the scoped re-run any answer calls for, then draft.
+The input is the change's `design.org` (`templates/design.md`), its Seams table and Decisions, and `coverage.py --intent docs/changes/<change>/intent.org` (`templates/spec.md` § Coverage), the change's scenarios with their status. A change with no Seams table, or with an `uncited` scenario among its own, has not finished its design round (`flows/design.md`); run it before this cycle, not inside it. A `design.org` whose § Open Questions has an entry with no Decision has not finished its round either, and plan drafts nothing, since a task drafted on a provisional answer is the rework the record paid for (`flows/design.md` § 5). Write each such entry as a `decision` ask file (`state.py record add asks`, `blocks: [plan]`, `ref: design.org § Open Questions`; an entry that already has an open file is not written twice), commit them in one commit, and hand back `plan <cycle-id>: stopped, asks <ids> block plan; <change-dir>/inbox/`. Resumed with the answers: write each into § Decisions and the spec it settles, in place (`templates/ask.md` § Answer protocol), apply the asks, run the scoped re-run any answer calls for, then draft.
 
 The orchestrator drafts the candidate task files for this cycle under `<change>/tasks/open/` at the home (`$ORCH_HOME/.orchestrator/changes/<change>/tasks/open/`, per `templates/task-body.md`) from three sources, in this order:
 
@@ -105,7 +105,7 @@ If the prior integrate had no goal-drift recommendations, this step is a no-op.
 ## Inputs
 
 - The integrate→plan handshake artifact (mandatory).
-- The change's `design.org`, `intent.org`, `coverage.py --since <base>`, and the open task files.
+- The change's `design.org`, `intent.org`, `coverage.py --intent docs/changes/<change>/intent.org`, and the open task files.
 - The prior cycle's PM digest (informational).
 - The project overlay's `config.yaml` (for thresholds, taxonomy, critical-path).
 

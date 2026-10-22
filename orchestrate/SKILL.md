@@ -67,7 +67,7 @@ Each phase has its own flow doc and exit gate. **A later phase refuses to start 
 | Phase | Flow doc | Defining ops |
 |---|---|---|
 | Opening | [flows/open.md](flows/open.md) | Once per change the orchestrator opens: `intent.org` and the spec edits from the user's words, `.tasks/` items or a split, committed in the code root; no code read, no question asked (they join the round's sitting) |
-| Design round | [flows/design.md](flows/design.md) | Once per change, before the first cycle: Architect writes `design.org` and the pending tests until `coverage.py --since <base>` shows no uncited scenario; open questions become ask files blocking plan, asked by the dispatcher |
+| Design round | [flows/design.md](flows/design.md) | Once per change, before the first cycle: Architect writes `design.org` and the pending tests until `coverage.py --intent` shows no uncited scenario of the change's; open questions become ask files blocking plan, asked by the dispatcher |
 | Plan | [flows/plan.md](flows/plan.md) | Consume prior integrate's handshake → draft candidate tasks from `design.org` and the pending scenarios → Architect premise check against HEAD → batch composition → implementor briefs |
 | Execute | [flows/execute.md](flows/execute.md) | Per-task: worktree + Implementor + author-blind Reviewer (with probe licence); each task merged as it lands (serial chain) with regression check |
 | Integrate | [flows/integrate.md](flows/integrate.md) | Design conformance (Architect) + PM digest + meta-discovery + goal-drift check + open-task refinement + handshake artifact + `close`; the whole-change review at each integrate that merged code; when no task on the main path remains, the MVP decision, or done |

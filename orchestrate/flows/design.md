@@ -16,7 +16,7 @@ A change with no scenario that needs a seam (a doc change, a config tweak) skips
 
 ### 1. Spawn the Architect
 
-The orchestrator assembles the brief (`roles/architect.md` § Design round): `intent.org` and its `#+BASE:`, the change's spec edits (`git -C "$CODE_ROOT" diff <base> -- docs/specs/`) and the spec files they touch, the output of `coverage.py --since <base>` (the change's scenarios and the tests already citing them) and of `coverage.py --scenario` for each scenario the intent's Capabilities names as stated but not met (`flows/open.md` § 3; these are the change's too), the intent's `* Open Questions` if any, the existing `design.org` if any, the overlay's `roles/architect.md`, `priors.md`, the test command and the test tree's layout, and `test.pending-style` from the overlay. The Architect works in the code root, the change's worktree, not a task worktree: it writes `design.org`, the pending tests and the `:TEST:` properties of § 3, and nothing else.
+The orchestrator assembles the brief (`roles/architect.md` § Design round): `intent.org` and its `#+BASE:`, the change's spec edits (`git -C "$CODE_ROOT" diff <base> -- docs/specs/`) and the spec files they and the intent's Capabilities touch, the output of `coverage.py --intent docs/changes/<change>/intent.org` (the change's scenarios, both those the diff touched and those the intent names as stated but not met, `flows/open.md` § 3, with the tests already citing them; for a change cut from a workspace integration branch the named ones are most or all of them, and the diff may be empty), the intent's `* Open Questions` if any, the existing `design.org` if any, the overlay's `roles/architect.md`, `priors.md`, the test command and the test tree's layout, and `test.pending-style` from the overlay. The Architect works in the code root, the change's worktree, not a task worktree: it writes `design.org`, the pending tests and the `:TEST:` properties of § 3, and nothing else.
 
 ### 2. Seams
 
@@ -32,7 +32,7 @@ For each scenario, the Architect names the seam that satisfies it: a boundary th
 
 ### 3. How each scenario is tested
 
-For each scenario the change touched (`coverage.py --since <base>`), the Architect decides how it is tested:
+For each of the change's scenarios (`coverage.py --intent docs/changes/<change>/intent.org`), the Architect decides how it is tested:
 
 - **`acceptance`** when a test can drive the scenario through a surface the user or an operator would (a CLI entry point on a temp directory, a compose service, `emacs --batch` against the tangled file, a real `git`) and assert on what that surface shows or leaves behind (its output, its exit code, the file it wrote). These need no seam to write and survive design changes. The overlay's `roles/architect.md` says what surfaces the project has.
 - **`contract`** when the scenario has no such surface and a seam's test stands in for it.
@@ -65,16 +65,16 @@ The record shows why. In one change the four questions asked at the round held; 
 
 ### 6. Commit
 
-The Architect reports the files it wrote. The orchestrator reads `design.org` against the checklist and runs `coverage.py --since <base>` (no `uncited` scenario among the change's; `pending` is expected), runs `build.pre-commit` when the overlay defines it and the test command once, both in the code root, to confirm the baseline is green with the pending tests reported as pending (or, where the project's baseline is red before the change, that the overlay defines `test.compare` and the failing set is unchanged; `flows/execute.md` § 4), stages the reported files and commits `Design round: <change>` (or `Design round (<seam-id>): <change>` for a scoped re-run) in the code root: `design.org`, the spec properties and the tests in one commit. The Architect does not commit.
+The Architect reports the files it wrote. The orchestrator reads `design.org` against the checklist and runs `coverage.py --intent docs/changes/<change>/intent.org` (no `uncited` scenario among the change's and no name matching none; `pending` is expected), runs `build.pre-commit` when the overlay defines it and the test command once, both in the code root, to confirm the baseline is green with the pending tests reported as pending (or, where the project's baseline is red before the change, that the overlay defines `test.compare` and the failing set is unchanged; `flows/execute.md` § 4), stages the reported files and commits `Design round: <change>` (or `Design round (<seam-id>): <change>` for a scoped re-run) in the code root: `design.org`, the spec properties and the tests in one commit. The Architect does not commit.
 
 ## Inputs
 
-- `intent.org`, the change's spec edits since its `#+BASE:`, `coverage.py --since <base>`, `design.org` when one exists, HEAD, the test tree.
+- `intent.org`, the change's spec edits since its `#+BASE:`, `coverage.py --intent docs/changes/<change>/intent.org`, `design.org` when one exists, HEAD, the test tree.
 - The overlay: `test.command`, `test.pending-style`, `build.pre-commit`, `roles/architect.md`, `priors.md`.
 
 ## Exit
 
-No gate; the round is complete when `design.org` has a Seams table, `coverage.py --since <base>` shows no `uncited` scenario among the change's (every one is cited by a test that exists, pending or not, or carries `:TEST: none:`), every § Open Questions entry has its Decision (or, for an `(intent)` entry, its answer in the spec and the intent, which then has no `* Open Questions`), and the baseline run is green. The phase agent records the `coverage.py` summary line in its commit message. The phase agent hands back `design-round <change>: gate passed` only then; `state.py init --first-cycle` follows. With entries still open it hands back `stopped` (§ 5), and plan opens the cycle to ask them.
+No gate; the round is complete when `design.org` has a Seams table, `coverage.py --intent docs/changes/<change>/intent.org` shows no `uncited` scenario among the change's and no name that matches none (every one is cited by a test that exists, pending or not, or carries `:TEST: none:`), every § Open Questions entry has its Decision (or, for an `(intent)` entry, its answer in the spec and the intent, which then has no `* Open Questions`), and the baseline run is green. The phase agent records the `coverage.py` summary line in its commit message. The phase agent hands back `design-round <change>: gate passed` only then; `state.py init --first-cycle` follows. With entries still open it hands back `stopped` (§ 5), and plan opens the cycle to ask them.
 
 ## What the round does not do
 

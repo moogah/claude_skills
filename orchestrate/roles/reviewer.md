@@ -15,7 +15,7 @@ The Reviewer's input is **strictly limited** to:
 3. The cited seam rows, verbatim from `design.org`, and the cited scenarios' text from `docs/specs/` with their `coverage.py` rows.
 4. Project standards (overlay extensions) and the project priors (`priors.md`, the user's standing rules).
 
-The **whole-change review** (`flows/integrate.md` § 9) is the same contract at change scale: the diff from the change's base to HEAD (its spec edits included), `intent.org`, the whole Seams table and `coverage.py --since <base>` in place of items 1-3. It looks for what no per-task review could see: interactions between tasks, a bypassed review, a scenario whose test passes while the user's surface does not.
+The **whole-change review** (`flows/integrate.md` § 9) is the same contract at change scale: the diff from the change's base to HEAD (its spec edits included), `intent.org`, the whole Seams table and `coverage.py --intent docs/changes/<change>/intent.org` in place of items 1-3. It looks for what no per-task review could see: interactions between tasks, a bypassed review, a scenario whose test passes while the user's surface does not.
 
 The Reviewer **never sees**:
 - The Implementor's structured report.

@@ -14,7 +14,7 @@ Design the components and seams that satisfy the spec scenarios, name the test t
 
 Once per change, after its intent and spec edits are committed and before the first cycle. Re-run only when a `decision` or a spec change alters a seam, and then for that seam alone.
 
-- **Reads**: `intent.org`, the change's spec edits since its `#+BASE:` and the spec files they touch, `coverage.py --since <base>`, the existing `design.org` if any, the code root's HEAD and test tree, the project priors, the overlay's `roles/architect.md`.
+- **Reads**: `intent.org`, the change's spec edits since its `#+BASE:` and the spec files they and the intent's Capabilities touch, `coverage.py --intent docs/changes/<change>/intent.org` (the change's scenarios), the existing `design.org` if any, the code root's HEAD and test tree, the project priors, the overlay's `roles/architect.md`.
 - **Writes**, all in the code root: `design.org` (Context, Decisions with a seam id on the heading of one that names it, the Seams table, the Open Questions entries the round produces, and the Decisions entries once the user has answered); one pending test per `acceptance` or `contract` scenario whose behaviour HEAD does not yet satisfy, citing it; and `:TEST: none: <reason>` on each scenario no test is worth writing for. The orchestrator commits. An open question is written with its options, its recommendation and the rows and tests that depend on it, drafted in the recommended form and marked so; the Architect writes no provisional Decision for it (`flows/design.md` § 5).
 - **Cost**: one agent run per change; the most expensive of the three, and the one whose output every later run consumes.
 

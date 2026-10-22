@@ -299,6 +299,40 @@ def test_scenario_filter(tree, capsys):
     assert sorted(r["scenario"] for r in json.loads(capsys.readouterr().out)["rows"]) == ["Nobody", "Pending one"]
 
 
+def test_unmatched_scenario_names_are_listed(tree, capsys):
+    assert cov.main(["--root", str(tree), "--scenario", "ws § Nobody", "--scenario", "ws § Nobdy", "--json"]) == 0
+    out = json.loads(capsys.readouterr().out)
+    assert [r["scenario"] for r in out["rows"]] == ["Nobody"]
+    assert out["unmatched_names"] == ["ws § Nobdy"]
+
+
+def test_intent_selects_touched_and_named_scenarios(tree, capsys):
+    """A change cut from an integration branch whose spec edits lie before its base: its intent
+    names them; the diff from #+BASE: adds what the change edits itself."""
+    _git(tree, "init", "-q")
+    _git(tree, "-c", "user.email=t@t", "-c", "user.name=t", "add", ".")
+    _git(tree, "-c", "user.email=t@t", "-c", "user.name=t", "commit", "-qm", "hand-off")
+    base = subprocess.run(["git", "-C", str(tree), "rev-parse", "HEAD"], capture_output=True, text=True).stdout.strip()
+    p = tree / "docs/specs/ws.org"
+    p.write_text(p.read_text().replace("*** Scenario: Failing one\n- *WHEN* a", "*** Scenario: Failing one\n- *WHEN* b"))
+    d = tree / "docs/changes/c"
+    d.mkdir(parents=True)
+    (d / "intent.org").write_text(
+        f"#+TITLE: c\n#+BASE: {base[:8]}\n\n* Capabilities\n- ws: adds R\n\n"
+        "- ws § Nobody: stated, not met (changed)\n- ws § Wrapped title\n  that goes: stated, not met\n"
+        "- ws § Gone away: stated, not met\n\n* Removals\n- ws § Pending one: stated, not met\n")
+    assert cov.main(["--root", str(tree), "--intent", "docs/changes/c/intent.org", "--json"]) == 0
+    out = json.loads(capsys.readouterr().out)
+    assert sorted(r["scenario"] for r in out["rows"]) == ["Failing one", "Nobody", "Wrapped title that goes"]
+    assert out["unmatched_names"] == ["ws § Gone away"]
+
+
+def test_intent_without_base_is_refused(tree, capsys):
+    (tree / "intent.org").write_text("#+TITLE: c\n* Capabilities\n")
+    assert cov.main(["--root", str(tree), "--intent", str(tree / "intent.org")]) == 1
+    assert "#+BASE:" in capsys.readouterr().err
+
+
 # ---------------------------------------------------------------- pytest
 
 PY_TESTS = '''import pytest
