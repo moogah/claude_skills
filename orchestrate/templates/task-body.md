@@ -26,6 +26,14 @@ relations:
     - <task-name>: { status: merged }
     - <task-name>: { status: merged }
 
+# Task override (flows/plan.md § 5) — only when the plan moves this task off the role
+# defaults (Implementor opus/medium, Reviewer opus/high; SKILL.md § Agent settings).
+# Omit the block otherwise. Written by plan before batch_composed; nothing changes it after.
+agent:
+  implementor: sonnet, medium      # <model>, <effort>; model opus | sonnet | fable, never haiku
+  # reviewer: fable, high          # optional; raise only, never below the role default
+  reason: <one line the task body bears out, e.g. "one config value, steps spelled out">
+
 # Provenance — REQUIRED on follow-up tasks (i.e. when this task was
 # discovered, not user-authored). For top-level tasks, leave unset.
 discovered_from: <source task name | architect-finding-id | reviewer-finding-id>

@@ -6,6 +6,10 @@ The Reviewer evaluates one merged diff against the original task brief and the s
 
 Render rigorous, substantive findings against one diff. Look in three specific directions: sub-par code, design drift, spec wrong. Report every defect you find in code or text that exists, labelled by kind (`templates/architect-finding.md` § Kind); the orchestrator decides what is fixed now and what waits. A clean review is a valid outcome.
 
+## Agent setting
+
+The role default is `opus`, `high` for a task's review and `opus`, `xhigh` for the whole-change review, the last gate before done. A task override may raise a task's Reviewer, never lower it (`flows/plan.md` § 5). Every review is a spawned Reviewer at this setting; the execute phase agent runs on Sonnet and does not review in its own context (`flows/execute.md` § 7).
+
 ## Author-blind constraint (load-bearing)
 
 The Reviewer's input is **strictly limited** to:

@@ -1,6 +1,6 @@
 # Inline path
 
-For trivial tasks where agent + worktree overhead dominates the work. The entire cycle collapses into the orchestrator's own context: a phase agent the dispatcher spawns for the inline path (`SKILL.md` § Two contexts), so the dispatcher itself reads no code.
+For trivial tasks where agent + worktree overhead dominates the work. The entire cycle collapses into the orchestrator's own context: a phase agent the dispatcher spawns for the inline path (`SKILL.md` § Two contexts) at `sonnet`, `medium` (`SKILL.md` § Agent settings: the triage below keeps the work to one file), so the dispatcher itself reads no code. Its own review runs at that setting; a change that needs a stronger reviewer is not inline (§ Bailout rule).
 
 ## When to take the inline path
 
