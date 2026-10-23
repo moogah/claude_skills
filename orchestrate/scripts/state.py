@@ -1252,16 +1252,23 @@ def derive_counts(tasks, journal=(), earlier=frozenset()):
 
 
 def _archived_states(store):
-    """(cycle_id, state) of each archived cycle of the change, oldest first."""
+    """(cycle_id, state) of each archived cycle of the change, oldest first: by the cycle's start,
+    then the number its id ends in, since a glob's order puts cycle-10 before cycle-2."""
     out = []
-    for p in sorted(glob.glob(os.path.join(store.dir, "cycles", "*", "state.json"))):
+    for p in glob.glob(os.path.join(store.dir, "cycles", "*", "state.json")):
         try:
             s = json.load(open(p))
         except (json.JSONDecodeError, OSError):
             continue
         if isinstance(s, dict):
             out.append((s.get("cycle_id") or os.path.basename(os.path.dirname(p)), s))
-    return out
+
+    def order(item):
+        cid, s = item
+        log = s.get("cycle_log") if isinstance(s.get("cycle_log"), dict) else {}
+        m = re.search(r"(\d+)$", cid)
+        return (str(log.get("started_at") or ""), int(m.group(1)) if m else 0, cid)
+    return sorted(out, key=order)
 
 
 def _task_names(s):
@@ -1364,36 +1371,40 @@ def read_thresholds(repo_root):
     return out
 
 
-def _all_agents(store, state):
-    """Every agent entry of the change: the archived cycles', then this state's, once each."""
+def _all_agents(store, state, archived):
+    """Every agent entry of the change, once each: the archived cycles', this state's, and those
+    still waiting in agents-pending.json (after the change's last `close`, the final integrate
+    phase agent waits there for an `init` that never comes)."""
     out, seen = [], set()
-    for _cid, s in _archived_states(store):
-        for a in s.get("agents") or []:
+    lists = [s.get("agents") or [] for _cid, s in archived]
+    lists += [state["agents"], _read_pending_agents(store)]
+    for recs in lists:
+        for a in recs:
             if isinstance(a, dict) and a.get("agent_id") not in seen:
                 seen.add(a.get("agent_id"))
                 out.append(a)
-    for a in state["agents"]:
-        if a["agent_id"] not in seen:
-            seen.add(a["agent_id"])
-            out.append(a)
     return out
 
 
-def quality_signals(store, state, agents):
+def quality_signals(state, agents, archived):
     """Reviewer rejections, rework tasks and defects found after done, in total and by the agent
     setting of each task's Implementor, so a cut in spend is read beside them (research
     agent-model-effort, R2). A defect found after done is a conformance finding of kind `issue`; a
     task the whole-change review raised (`discovered_from: whole-change-<cycle-id>`); or a follow-up
-    of a task already done, not raised by an Implementor and not one of that task's own review
-    follow-ups (`followups_created`)."""
-    done_before = set()
-    for cid, s in _archived_states(store):
-        if cid == state["cycle_id"]:
-            break
-        done_before |= {t.get("task_name") for t in s.get("tasks") or []
-                        if isinstance(t, dict) and t.get("status") == "done"}
+    of a task already done, not raised by an Implementor and not one of a review's own follow-ups
+    (`followups_created` in any cycle: one batched a cycle after its review is still the review's)."""
+    done_before, own_review = set(), set()
+    before = True
+    for cid, s in archived:
+        before = before and cid != state["cycle_id"]
+        for t in s.get("tasks") or []:
+            if not isinstance(t, dict):
+                continue
+            own_review |= set(t.get("followups_created") or [])
+            if before and t.get("status") == "done":
+                done_before.add(t.get("task_name"))
     tasks = {t["task_name"]: t for t in state["tasks"]}
-    own_review = {f for t in state["tasks"] for f in t.get("followups_created") or []}
+    own_review |= {f for t in state["tasks"] for f in t.get("followups_created") or []}
     setting = {}
     for a in agents:
         if a["role"] == "implementor" and a.get("task"):
@@ -1435,24 +1446,27 @@ def agent_signals(store, state):
     """Spend by role for this cycle's agents, with the quality signals, and the same per cycle of
     the history window: the readout R2 is judged on against E3's numbers (templates/pm-digest.md
     § Agents). An agent counts in the cycle it worked in (`cycle`); one recorded before the first
-    cycle counts under `before-first-cycle`."""
-    agents = _all_agents(store, state)
-    cur = spend_by_role([a for a in agents if a.get("cycle") == state["cycle_id"]])
-    cur["quality"] = quality_signals(store, state, agents)
+    cycle counts under `before-first-cycle`. The archives are read once and each transcript once."""
+    archived = _archived_states(store)
+    agents = _all_agents(store, state, archived)
     window = [h["cycle_id"] for h in state["cycle_log"].get("history", [])]
-    archived = dict(_archived_states(store))
+    wanted = {state["cycle_id"], None, *window}
+    spend = {a["agent_id"]: agent_spend(a["agent_id"]) for a in agents if a.get("cycle") in wanted}
+    cur = spend_by_role([a for a in agents if a.get("cycle") == state["cycle_id"]], spend)
+    cur["quality"] = quality_signals(state, agents, archived)
+    by_cycle = dict(archived)
     history = []
     for cid in [None] + window:
         group = [a for a in agents if a.get("cycle") == cid]
         if not group:
             continue
-        s = spend_by_role(group)
+        s = spend_by_role(group, spend)
         row = {"cycle_id": cid or "before-first-cycle",
                "by_role": {r: {k: v[k] for k in ("agents", "cost_weight", "priced_weight", "usd",
                                                   "cost_weight_per_agent")}
                            for r, v in s["by_role"].items()}}
-        if str((archived.get(cid) or {}).get("schema_version")) == SCHEMA_VERSION:
-            q = quality_signals(store, archived[cid], agents)
+        if str((by_cycle.get(cid) or {}).get("schema_version")) == SCHEMA_VERSION:
+            q = quality_signals(by_cycle[cid], agents, archived)
             row["quality"] = {"rejections": q["rejections"], "rework_tasks": len(q["rework_tasks"]),
                               "defects_after_done": len(q["defects_after_done"])}
         history.append(row)
@@ -1734,7 +1748,6 @@ def verb_init(store, args):
         if rec["kind"] not in ASK_KINDS or rec["status"] not in ASK_STATUSES:
             continue  # reported by `inbox` as a problem, not silently indexed
         carried.append(_index_entry(rec, rel))
-    pending_agents = _read_pending_agents(store)
     state = {
         "schema_version": SCHEMA_VERSION,
         "session_id": f"orch-{ts}",
@@ -1753,19 +1766,28 @@ def verb_init(store, args):
         "tasks": [],
         "architect_findings": [],
         "asks_for_user": carried,
-        "agents": pending_agents,
+        "agents": [],
         "journal": [],
         "cycle_log": {"started_at": now_iso(), "phase_started_at": {"plan": now_iso(), "execute": None,
                                                                     "integrate": None},
                       "history": collect_history(store, args.history_window)},
         "phase_gates": gates_fresh(),
     }
-    errors = validate(state)
-    if errors:
-        raise Refusal("invalid_state", "init produced an invalid state (bug)", errors=errors)
-    store.write(state)
-    if pending_agents:
-        os.remove(_pending_agents_path(store))
+    # The pending agents are taken in under the lock `record add agents` writes them under, so an
+    # entry recorded while init runs is in the new state or still pending, never dropped.
+    with open(store.lock_path, "w") as lock:
+        fcntl.flock(lock, fcntl.LOCK_EX)
+        try:
+            pending_agents = _read_pending_agents(store)
+            state["agents"] = pending_agents
+            errors = validate(state)
+            if errors:
+                raise Refusal("invalid_state", "init produced an invalid state (bug)", errors=errors)
+            store.write(state)
+            if pending_agents:
+                os.remove(_pending_agents_path(store))
+        finally:
+            fcntl.flock(lock, fcntl.LOCK_UN)
     return {"ok": True, "cycle_id": cycle_id, "path": store.path,
             "history_cycles": [h["cycle_id"] for h in state["cycle_log"]["history"]],
             "inbox_carried": [a["id"] for a in carried],
@@ -2660,23 +2682,26 @@ def verb_agent_add(store, args):
             raise Refusal("invalid_record", "record does not fit the schema", errors=errors)
         return rec
 
-    if store.exists():
-        cur = store.load()
-        if not cur.get("closed_at"):
-            def fn(state):
-                rec = build(state["cycle_id"], state["agents"] + _read_pending_agents(store))
-                state["agents"].append(rec)
-                return {"ok": True, "list": "agents", "id": rec["agent_id"], "record": rec}
-            return store.mutate(fn)
-        cycle = cur.get("cycle_id")
-    else:
-        cycle = None
+    # One lock for the whole choice, the one `init` takes the pending file in under: whether a
+    # cycle is open is read and acted on without an `init` in between.
     os.makedirs(store.dir, exist_ok=True)
     with open(store.lock_path, "w") as lock:
         fcntl.flock(lock, fcntl.LOCK_EX)
         try:
             pending = _read_pending_agents(store)
-            rec = build(cycle, pending + ((store.load().get("agents") or []) if store.exists() else []))
+            state = store.load() if store.exists() else None
+            if state is not None and not state.get("closed_at"):
+                require_current_schema(state)
+                errors = validate(state)
+                if errors:
+                    raise Refusal("invalid_state", "state file fails validation; fix it before writing",
+                                  errors=errors[:20])
+                rec = build(state["cycle_id"], state["agents"] + pending)
+                state["agents"].append(rec)
+                store.write(state)
+                return {"ok": True, "list": "agents", "id": rec["agent_id"], "record": rec}
+            rec = build(state.get("cycle_id") if state else None,
+                        pending + ((state.get("agents") or []) if state else []))
             pending.append(rec)
             _atomic_write(_pending_agents_path(store), json.dumps(pending, indent=2) + "\n")
         finally:
@@ -3066,13 +3091,17 @@ def agent_spend(agent_id):
     id), its usage, the model and effort it ran at, and its wall-clock. None when the transcript is
     gone or the id is ambiguous. `cost_weight` is E3's proxy (input + 0.1 cache read + 1.25 cache
     write + 5 output), blind to the model, so it compares with E3's numbers; `priced_weight` scales
-    each request's weight by its model's input price against Opus's; `usd` is list price."""
+    each request's weight by its model's input price against Opus's; `usd` is list price.
+    A request logged on several lines (one per content block) counts each usage field at its
+    largest: the record has 153 of 11,650 requests whose output_tokens grew from line to line. A
+    `<synthetic>` line (written on an API error, with zero usage and no effort) is no request."""
     paths = _agent_transcripts(agent_id)
     if len(paths) != 1:
         return None
     out = {"requests": 0, "input": 0, "cache_read": 0, "cache_create": 0, "output": 0,
            "cost_weight": 0.0, "priced_weight": 0.0, "usd": 0.0, "ran": {}, "minutes": None}
-    seen, first, last = set(), None, None
+    fields = ("input_tokens", "cache_read_input_tokens", "cache_creation_input_tokens", "output_tokens")
+    reqs, first, last = {}, None, None
     with open(paths[0], encoding="utf-8") as f:
         for n, line in enumerate(f):
             try:
@@ -3084,29 +3113,30 @@ def agent_spend(agent_id):
                 first, last = first or at, at
             msg = r.get("message") or {}
             u = msg.get("usage") if r.get("type") == "assistant" else None
-            if not u:
+            if not u or msg.get("model") == "<synthetic>":
                 continue
-            key = r.get("requestId") or msg.get("id") or n
-            if key in seen:
-                continue
-            seen.add(key)
-            i, cr = u.get("input_tokens", 0), u.get("cache_read_input_tokens", 0)
-            cc, o = u.get("cache_creation_input_tokens", 0), u.get("output_tokens", 0)
-            fam = _model_family(msg.get("model"))
-            ran = f"{fam or msg.get('model') or '?'}/{r.get('effort') or '?'}"
-            out["ran"][ran] = out["ran"].get(ran, 0) + 1
-            out["requests"] += 1
-            out["input"] += i
-            out["cache_read"] += cr
-            out["cache_create"] += cc
-            out["output"] += o
-            w = i + 0.1 * cr + 1.25 * cc + 5 * o
-            out["cost_weight"] += w
-            if fam:
-                p = (HAIKU_LONG_PROMPT_PRICES if fam == "haiku" and i + cr + cc > 100000
-                     else MODEL_PRICES[fam])
-                out["priced_weight"] += w * p[0] / MODEL_PRICES["opus"][0]
-                out["usd"] += (i * p[0] + o * p[1] + cr * p[2] + cc * p[3]) / 1e6
+            req = reqs.setdefault(r.get("requestId") or msg.get("id") or n,
+                                  {"model": msg.get("model"), "effort": r.get("effort"),
+                                   **{k: 0 for k in fields}})
+            for k in fields:
+                req[k] = max(req[k], u.get(k) or 0)
+    for req in reqs.values():
+        i, cr, cc, o = (req[k] for k in fields)
+        fam = _model_family(req["model"])
+        ran = f"{fam or req['model'] or '?'}/{req['effort'] or '?'}"
+        out["ran"][ran] = out["ran"].get(ran, 0) + 1
+        out["requests"] += 1
+        out["input"] += i
+        out["cache_read"] += cr
+        out["cache_create"] += cc
+        out["output"] += o
+        w = i + 0.1 * cr + 1.25 * cc + 5 * o
+        out["cost_weight"] += w
+        if fam:
+            p = (HAIKU_LONG_PROMPT_PRICES if fam == "haiku" and i + cr + cc > 100000
+                 else MODEL_PRICES[fam])
+            out["priced_weight"] += w * p[0] / MODEL_PRICES["opus"][0]
+            out["usd"] += (i * p[0] + o * p[1] + cr * p[2] + cc * p[3]) / 1e6
     if first and last:
         out["minutes"] = round((last - first).total_seconds() / 60, 1)
     for k in ("cost_weight", "priced_weight"):
@@ -3119,13 +3149,13 @@ SPEND_KEYS = ("requests", "input", "cache_read", "cache_create", "output", "cost
               "priced_weight", "usd")
 
 
-def spend_by_role(agents):
-    """Per agent and per role, from the agents' transcripts. A role's `settings` counts the agent
-    settings its agents were spawned at; `mismatches` lists agents that ran at another one (an
-    environment variable such as CLAUDE_CODE_EFFORT_LEVEL outranks the call, E1)."""
+def spend_by_role(agents, spend):
+    """Per agent and per role, from each agent's `agent_spend` in `spend`. A role's `settings`
+    counts the agent settings its agents were spawned at; `mismatches` lists agents that ran at
+    another one (an environment variable such as CLAUDE_CODE_EFFORT_LEVEL outranks the call, E1)."""
     rows, roles, missing, mismatches = [], {}, [], []
     for a in agents:
-        s = agent_spend(a["agent_id"])
+        s = spend.get(a["agent_id"])
         asked = f"{a['model']}/{a['effort']}"
         row = {k: a[k] for k in ("agent_id", "role", "task", "cycle", "source", "reason")}
         row["setting"] = asked

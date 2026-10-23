@@ -8,7 +8,7 @@ Render rigorous, substantive findings against one diff. Look in three specific d
 
 ## Agent setting
 
-The role default is `opus`, `high` for a task's review and `opus`, `xhigh` for the whole-change review, the last gate before done. A task override may raise a task's Reviewer, never lower it (`flows/plan.md` § 5). Every review is a spawned Reviewer at this setting; the execute phase agent runs on Sonnet and does not review in its own context (`flows/execute.md` § 7).
+The role default is `opus`, `high` for a task's review and `opus`, `xhigh` for the whole-change review, the last gate before done. A task override may raise a task's Reviewer, never lower it (`flows/plan.md` § 5). In a cycle every review is a spawned Reviewer at this setting; the execute phase agent runs on Sonnet and does not review in its own context (`flows/execute.md` § 7). The one review without a Reviewer is the inline path's, made by its phase agent at `sonnet`, `medium` on an edit its triage keeps to one file and off every seam (`flows/inline.md`).
 
 ## Author-blind constraint (load-bearing)
 

@@ -183,7 +183,7 @@ Where the orchestrator reads the inbox and what it does with an answered file th
 ## Critical requirements
 
 - **The dispatcher's context holds pointers only.** It reads `SKILL.md`, `state.py status` and `state.py context`; every phase runs in a phase agent from a fresh context (§ Two contexts). A dispatcher that reads a flow doc, a role file, an artifact or code is a process bug.
-- **Every spawned agent runs at a chosen agent setting, and the record says which and why** (§ Agent settings). An `Agent` call with no `model` and `effort`, or an agent spawned and not recorded with `state.py record add agents`, is a process bug.
+- **Every spawned agent runs at a chosen agent setting, and the record says which and why** (§ Agent settings). An `Agent` call with no `model` and `effort`, or an agent spawned and not recorded with `state.py record add agents`, is a process bug; the one exception is a read-only helper on its own agent type (`web-fetch`), spawned with neither and not recorded.
 - **Every spawned agent hands back one line; the detail is a file** (§ Hand-back lines). A report, a findings list or a narrative in a hand-back is a process bug; the orchestrator opens the file when the next step needs it.
 - **`state.json` is written only through `scripts/state.py`.** A heredoc, `jq`, `sed` or Write against it is a process bug. The tool owns the schema (unknown keys and long text are refused), the transitions, the timestamps, the gate evaluation and the handshake; narrative goes to `state.py note` or to the file that exists for it.
 - **Counts come from the state file, never from the LLM.** `state.py counts` is the PM digest's deterministic pass and the source of truth for every number; the agent pass only frames prose.

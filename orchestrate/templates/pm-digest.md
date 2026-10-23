@@ -41,7 +41,7 @@ drainage         1.00       0.83       0.50       0.57       0.45  ⚠ trending 
 
 ## Agents
 
-Spend by role (this cycle's agents; the integrate phase agent and this PM count in the next digest)
+Spend by role (this cycle's agents recorded when `counts` ran; this integrate's own phase agent and this PM, recorded later, appear under this cycle in the next digest's history)
 
 ```
 role                   agents  setting(s)                 cost wt  share   per agent  priced wt  usd    E3 share  E3 per agent

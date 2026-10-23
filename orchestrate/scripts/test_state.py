@@ -2032,3 +2032,53 @@ def test_counts_report_quality_by_implementor_setting(run, repo):
     assert bs["opus/medium"] == {"tasks": 2, "rejections": 1, "rework_tasks": 2, "defects_after_done": 1}
     assert bs["sonnet/medium"]["defects_after_done"] == 1  # t3-later, against t3
     assert bs["whole change"]["defects_after_done"] == 1
+
+
+# 61
+def test_spend_takes_each_usage_field_at_its_largest_and_skips_synthetic_lines(tmp_path, monkeypatch):
+    cfg = tmp_path / "claude-config"
+    monkeypatch.setenv("CLAUDE_CONFIG_DIR", str(cfg))
+    _transcript(cfg, "s1", [
+        ("r1", "claude-opus-5-5", "medium", (10, 1000, 0, 90), "2026-10-23T10:00:00Z"),
+        ("r1", "claude-opus-5-5", "medium", (10, 1000, 0, 165), "2026-10-23T10:00:01Z"),  # output grew
+        ("r2", "<synthetic>", None, (0, 0, 0, 0), "2026-10-23T10:00:02Z")])               # an API error
+    s = state.agent_spend("s1")
+    assert (s["requests"], s["output"], s["ran"]) == (1, 165, {"opus/medium": 1})
+    assert state.spend_by_role([{**AGENT, "agent_id": "s1", "cycle": "c", "source": "role-default",
+                                 "reason": "role default"}], {"s1": s})["setting_mismatches"] == []
+
+
+# 62
+def test_archives_are_ordered_by_cycle_start_not_by_name(run, repo):
+    for cid in ("cycle-2", "cycle-10"):
+        init(run, cid, "--first-cycle")
+        run("close", "--abandon", "--why", "test")
+    d = repo / CH / "cycles"
+    for cid, started in (("cycle-2", "2026-10-01T00:00:00Z"), ("cycle-10", "2026-10-02T00:00:00Z")):
+        st = json.loads((d / cid / "state.json").read_text())
+        st["cycle_log"]["started_at"] = started
+        (d / cid / "state.json").write_text(json.dumps(st))
+    store = state.Store(str(repo), "chg")
+    assert [c for c, _ in state._archived_states(store)] == ["cycle-2", "cycle-10"]
+
+
+# 63
+def test_quality_reads_review_followups_of_earlier_cycles_and_counts_read_pending_agents(run, repo):
+    init(run, "cycle-1", "--first-cycle")
+    add_task(run, "t1")
+    run("task", "set", "t1", "done", "followups_created=[\"t1-review\"]")
+    run("close", "--abandon", "--why", "test")
+    init(run, "cycle-2", "--first-cycle")
+    # t1's own review raised this follow-up in cycle 1; it is batched a cycle later.
+    add_task(run, "t1-review", "discovered_from=t1", "discovered_by=reviewer", "discovered_class=mutation")
+    add_task(run, "t1-later", "discovered_from=t1", "discovered_by=architect", "discovered_class=mutation")
+    q = run("counts")[1]["agents"]["quality"]
+    assert [d["source"] for d in q["defects_after_done"]] == ["t1-later"]
+    run("close", "--abandon", "--why", "the change's last close")
+    # The final integrate phase agent is recorded after the last close: no init takes it in, and
+    # counts still reports it under the cycle it worked in.
+    run("record", "add", "agents", json.dumps(
+        {"agent_id": "last-int", "role": "phase-integrate", "model": "sonnet", "effort": "high"}))
+    ag = run("counts")[1]["agents"]
+    assert ag["by_role"]["phase-integrate"]["agents"] == 1
+    assert ag["missing_transcripts"] == ["last-int"]
