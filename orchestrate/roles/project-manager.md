@@ -8,6 +8,10 @@ The PM is a **counting and trending** role first, a categorisation role second, 
 
 Watch overall progress, queue health, blocked paths, externalised work, and goal-drift. Produce the PM digest each cycle. Detect cascade signals and spawn focused Architect conformance runs. Surface user-decisions on blocked items. Maintain task taxonomy by labelling new tasks with their `task_class`.
 
+## Agent setting
+
+The agent pass runs at `sonnet`, `medium`: it writes prose around a deterministic `pm-signals.json` and judges no code. A cascade conformance run it spawns gets the Architect's conformance setting, `opus`, `high` (`SKILL.md` § Agent settings).
+
 ## Hybrid form: deterministic + thin agent
 
 The PM operates as **two passes**:
@@ -140,7 +144,7 @@ Mapped onto the three-phase cycle:
 
 ## Cross-role authority: spawning the Architect
 
-When the cascade signal fires, the PM can spawn an Architect conformance run (`trigger: conformance`) scoped to the cluster. The handshake template:
+When the cascade signal fires, the PM can spawn an Architect conformance run (`trigger: conformance`) scoped to the cluster, at the conformance role default (`model: opus`, `effort: high`, passed on the `Agent` call) and recorded with `state.py record add agents` (`role: architect-conformance`; `SKILL.md` § Agent settings). The handshake template:
 
 ```
 Architect conformance run — cascade investigation

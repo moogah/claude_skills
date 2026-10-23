@@ -27,6 +27,7 @@ Run `state.py status` before anything else in a session, in the dispatcher and i
 | `task remove <name> --why "<reason>"` | Only `ready` / `failed` / `externalised` tasks. |
 | `record add findings <json \| @file.json>` | Appends a finding. The id (`arch-<cycle>-<n>`) is assigned when omitted; `path` defaults to `cycles/<id>/findings/<finding-id>.md`. |
 | `record add asks <json \| @file.json \| @draft.org>` | Writes the ask file (`templates/ask.md`) and appends its index entry. Takes the full field set (`question`, `about`, `observed`, `options`, …); the prose lands in the file, not in state. An org draft's own prose is kept. A top-level `ref` is read as `raised_by.ref` and a string `raised_by` as the role, as the org form reads `:REF:` and `:RAISED_BY:`. The id is assigned when omitted, skipping any file already on disk; a `decision` without `about`, `observed` and two to four options is refused; `"revised_from": "<old-id>"` marks the old ask `superseded` and moves its file. A terminal status at add (`confirmation`, or the retired `doc-correction`, recorded `applied`) writes straight into `cycles/<id>/asks/`. |
+| `record add agents <json \| @file.json>` | Records one spawned agent's setting (§ Agent entry): `agent_id` (the id the `Agent` call returned), `role`, `task` when it has one, `model`, `effort`, and for a task override `source: task-override` with its `reason`. The tool sets `cycle` and `recorded_at`. Refuses `duplicate_id` (a resumed agent keeps its first entry) and `invalid_record` (an unknown role, model or effort; `haiku`; a task override with no task; an empty reason). With no open cycle (no state file, or the cycle closed) the entry is written to `agents-pending.json` beside the state, keeping the closed cycle's id as its `cycle`, and the next `init` takes it in (`agents_carried`). |
 | `record set findings <id> field=value …` | Updates fields on a finding: its resolution. |
 | `record set asks <id> field=value …` | Edits the file and the index together: re-reads the file (the file wins; a deleted drawer is restored from the index), applies the fields (`status`, `blocks`, `kind`, `about`, `observed`, `options`, `recommendation`, `default_if_unanswered`, `decision`, `decision_readback`, `applied_via`, `revised_from`), rewrites the index entry from the file. `readback=confirmed` writes the user's yes under `* Readback` (refuses when there is no readback), so a yes given in chat is recorded by a verb, not by hand; `status=answered\|applied\|declined\|deferred` refuses when `* Answer` is empty and no `decision=` is given; `applied` needs `applied_via`; crossing into or out of `applied` / `declined` / `superseded` moves the file (`git mv` when tracked, else rename; `moved_via` reported). `id` and `path` are not settable. |
 | `note <kind> "<text>" [--ref <id>] [--path <file>] [--by <role>]` | One journal line (≤ 280 chars). Kinds: `discovery`, `decision`, `inline-fix`, `deviation`, `push-back`, `note`. Longer text goes in a file and `--path` points at it. |
@@ -34,7 +35,7 @@ Run `state.py status` before anything else in a session, in the dispatcher and i
 | `gate check <phase>` | Evaluates every check that is a function of state or file existence and stores the results; lists the checks it cannot compute. |
 | `gate set <phase> <check>=true …` | Asserts a non-computable check (`batch_composed`, `open_tasks_refined_against_handshake`). Computed checks cannot be asserted. |
 | `gate pass <phase>` | Re-evaluates, then sets `passed` and `passed_at` if every check is true; otherwise names the failing checks. |
-| `counts [--write]` | The PM deterministic pass: counts, ratios, by-status, history, critical-path readout, class table, follow-ups by source, fired signals. `--write` saves `cycles/<id>/pm-signals.json`. |
+| `counts [--write]` | The PM deterministic pass: counts, ratios, by-status, history, critical-path readout, class table, follow-ups by source, fired signals, and `agents` (§ Agent entry: spend by role from the agents' transcripts, and the quality signals beside it). `--write` saves `cycles/<id>/pm-signals.json`. |
 | `context <agent-id>` | A running agent's context: the tokens of the last call in its transcript (`$CLAUDE_CONFIG_DIR` or `~/.claude`, `projects/*/*/subagents/agent-<id>.jsonl`; a unique prefix of the id will do), against the overlay's `thresholds.phase-agent-context` (default 400000), with `over`. The dispatcher's reading (`SKILL.md` § The dispatcher's loop). Refuses `no_transcript`, `ambiguous_agent`. Needs no state. |
 | `handshake [--meta-discoveries <json\|@file>] [--task-refinements <json\|@file>] [--design-diff <json\|@file>]` | Assembles `handshake-<cycle-id>.json` from state (asks, goal-drift decisions, digest path), the design diff (read from `cycles/<id>/design-diff.json` unless given) and the two judgment fields, and validates it. |
 | `close [--abandon --why "<reason>"]` | Archives state and handshake to `cycles/<id>/` and marks the cycle closed. Requires the integrate gate unless abandoning. Reports `inbox_left` (open, answered, deferred); those files stay in the inbox for the next `init`. |
@@ -68,6 +69,7 @@ Every verb prints JSON. A refusal is `{"ok": false, "error": "<slug>", "message"
   "tasks": [ /* see Task entry */ ],
   "architect_findings": [ /* see Finding entry */ ],
   "asks_for_user": [ /* see Ask entry */ ],
+  "agents": [ /* see Agent entry */ ],
   "journal": [ /* see Journal entry */ ],
   "cycle_log": { /* see Cycle log */ },
   "phase_gates": { /* see Phase gates */ }
@@ -183,6 +185,34 @@ Every question to the user, whichever role raised it, is one org file (`template
 ```
 
 `path` is a function of `id` and `status`: the inbox while `open`, `answered` or `deferred`; the asks directory of the cycle the id names once `applied`, `declined` or `superseded`. The question, the options, the answer and the readback are read from the file whenever a verb needs them (`inbox`, `handshake`, the gates). Only `decision` kinds are presented to the user (`flows/integrate.md` § 3a, `flows/execute.md` § 9). A task blocked on an ask carries the ask id in `blocker_note`. The goal-drift ask is recognised by its four options (`revise` / `split` / `abandon` / `continue`) in the file; the plan gate's `user_signed_off_goal_drift` passes only when its answer names one of them exactly, and the handshake's `user_resolved_goal_drift` carries that label.
+
+## Agent entry
+
+One per spawned agent: the agent setting it was spawned at and why (`SKILL.md` § Agent settings). The spawner writes it with `record add agents` once the `Agent` call has returned the id; the dispatcher writes a phase agent's at its first hand-back.
+
+```json
+{
+  "agent_id": "<the id the Agent call returned>",
+  "role": "phase-open | phase-design | phase-plan | phase-execute | phase-integrate | phase-inline | architect-design | architect-premise | architect-conformance | implementor | implementor-rework | reviewer-task | reviewer-whole-change | pm",
+  "task": "<task name, or null>",
+  "cycle": "<the cycle the agent worked in, or null before the first cycle>",
+  "model": "opus | sonnet | fable",
+  "effort": "low | medium | high | xhigh | max",
+  "source": "role-default | task-override",
+  "reason": "role default | <the task file's one-line reason>",
+  "recorded_at": "<iso-ts>"
+}
+```
+
+`haiku` is refused: it runs read-only helpers only, and those (`web-fetch`) are not recorded. A file of schema 1.5 written before this list existed gets an empty one on read, with no migration. An agent counts in the cycle it worked in, whichever file holds its entry: an integrate phase agent recorded after `close` sits in `agents-pending.json`, then in the next cycle's list, with the closed cycle's id. `counts` reads the archives, the state and the pending file, so after a change's last `close`, whose integrate agent no `init` ever takes in, a `counts` run still reports it under that cycle.
+
+`counts` joins each entry to the agent's transcript (`$CLAUDE_CONFIG_DIR` or `~/.claude`, `projects/*/*/subagents/agent-<id>.jsonl`, as `context` finds it) and reports under `agents`:
+
+- `by_role`: per role, the agents and how many had a transcript (`counted`), the settings they were spawned at, the task overrides, requests, tokens (input, cache read, cache write, output), `cost_weight` (input + 0.1 × cache read + 1.25 × cache write + 5 × output: E3's proxy, blind to the model, so it compares with E3's numbers), `priced_weight` (the same scaled by the model's input price against Opus's), `usd` at list price, the role's share of the cost weight, the cost weight per agent, and the median wall-clock minutes. Each API request counts once (by `requestId`).
+- `by_agent`: the same per agent, with the setting it ran at per request (`ran`, from `message.model` and `effort`). A request logged on several lines counts each usage field at its largest; a `<synthetic>` line (an API error, zero usage) is not a request.
+- `missing_transcripts` (the agent ids with no transcript found) and `setting_mismatches` (an agent that ran at another setting than its entry: an environment variable outranks the call).
+- `quality`: Reviewer rejections (`rejections` on the tasks), rework tasks (a task sent back to an Implementor, or with an `implementor-rework` agent), and defects found after done: a conformance finding of kind `issue`, a task whose `discovered_from` begins `whole-change` (`flows/integrate.md` § 9), or a follow-up of a task already done that an Implementor did not raise and that is not in that task's `followups_created`. All three again by the agent setting of each task's Implementor (`by_implementor_setting`; `unrecorded` when none was recorded, `whole change` for a defect no one task owns).
+- `history`: per cycle of the history window, and `before-first-cycle`, the cost weight, priced weight and dollars by role, and the three quality counts.
 
 ## Journal entry
 
@@ -326,6 +356,6 @@ The home is a workspace holding worktrees of one or more repositories, or a repo
   legacy-state-extras.json  # only when migrate ran in this cycle
 ```
 
-At the change's level, `.orchestrator/changes/<change>/`: `change.json` (the repository, branch, worktree, base and `from` recorded by `change open`); `state.json`; `inbox/<ask-id>.org`, every open, answered and deferred ask of the change across cycles (`init` indexes what it finds there); `handshake-<cycle-id>.json`; `tasks/open/` and `tasks/closed/`; `hardening.org`; the test outputs `baseline-<cycle-id>.txt` and `after-<task>-<ts>.txt`, named from state (`baseline_snapshot`, `tasks[].after_snapshot`). At the `.orchestrator/` level: `changes/`, and `.gitignore`, written by `init`, which keeps the test outputs, `*.tmp`, the locks and the migration backups out of git at any depth; everything else under `.orchestrator/` is tracked by the home repo and committed there at the points `templates/ask.md` § Commit rule lists.
+At the change's level, `.orchestrator/changes/<change>/`: `change.json` (the repository, branch, worktree, base and `from` recorded by `change open`); `state.json`; `inbox/<ask-id>.org`, every open, answered and deferred ask of the change across cycles (`init` indexes what it finds there); `handshake-<cycle-id>.json`; `agents-pending.json`, agent entries recorded while no cycle was open, until the next `init` takes them in (§ Agent entry); `tasks/open/` and `tasks/closed/`; `hardening.org`; the test outputs `baseline-<cycle-id>.txt` and `after-<task>-<ts>.txt`, named from state (`baseline_snapshot`, `tasks[].after_snapshot`). At the `.orchestrator/` level: `changes/`, and `.gitignore`, written by `init`, which keeps the test outputs, `*.tmp`, the locks and the migration backups out of git at any depth; everything else under `.orchestrator/` is tracked by the home repo and committed there at the points `templates/ask.md` § Commit rule lists.
 
 This directory is the long-tail audit trail. The curation cycle (v2, deferred) reads it.

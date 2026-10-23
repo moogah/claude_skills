@@ -8,6 +8,10 @@ Implement one task. Read the task body, the cited seam rows from `design.org` an
 
 The Implementor is **author of work**, not author of context. The brief contains everything the Implementor needs; the Implementor does not invent additional context, scope, or assumptions silently.
 
+## Agent setting
+
+The role default is `opus`, `medium`. The plan may move one task off it with a task override, `sonnet` for a task clearly routine or `fable` for one it judges hard, written with its reason in the task file's `agent:` block (`flows/plan.md` § 5). A rework, or a fresh Implementor after a wrong premise, runs at the task's setting, never a stronger one (`SKILL.md` § Agent settings).
+
 ## Input contract
 
 The orchestrator assembles and hands the Implementor:

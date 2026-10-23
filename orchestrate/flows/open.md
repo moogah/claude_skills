@@ -1,6 +1,6 @@
 # Opening a change
 
-The step that turns what the user asked for into a change the design round can take: `docs/changes/<change>/intent.org` (`templates/intent.md`) and the change's edits to `docs/specs/` (`templates/spec.md`), committed in the code root. Like the round, it is not a cycle and needs no state file; it runs in a phase agent the dispatcher spawns (`SKILL.md` § Two contexts), which writes the record, commits it and hands back one line. The design round follows (`flows/design.md`).
+The step that turns what the user asked for into a change the design round can take: `docs/changes/<change>/intent.org` (`templates/intent.md`) and the change's edits to `docs/specs/` (`templates/spec.md`), committed in the code root. Like the round, it is not a cycle and needs no state file; it runs in a phase agent the dispatcher spawns (`SKILL.md` § Two contexts) at `opus`, `medium` (`SKILL.md` § Agent settings: the intent and the spec edits are what every later role cites), which writes the record, commits it and hands back one line. The design round follows (`flows/design.md`).
 
 ## When it runs
 

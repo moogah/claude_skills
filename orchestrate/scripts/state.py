@@ -109,6 +109,25 @@ LEGACY_SEVERITIES = ["blocking", "advisory", "informational", "spec-signal"]  # 
 FINDING_CLASSES = ["shape-fragmentation", "vocabulary-mismatch", "responsibility-leakage",
                    "dead-branch", "interface-drift", "mutation", "invariant-gap", "duplication"]
 
+# An agent's setting (SKILL.md § Agent settings): one entry per spawned agent, written by its
+# spawner with the id the Agent call returned; `counts` joins it to the agent's transcript for
+# spend. `cycle` is the cycle the agent worked in, null before the first one. The record: no
+# cycle file held a model or an effort; only the transcripts did (research agent-model-effort, E3).
+AGENT_ROLES = ["phase-open", "phase-design", "phase-plan", "phase-execute", "phase-integrate",
+               "phase-inline", "architect-design", "architect-premise", "architect-conformance",
+               "implementor", "implementor-rework", "reviewer-task", "reviewer-whole-change", "pm"]
+AGENT_MODELS = ["fable", "opus", "sonnet", "haiku"]
+AGENT_EFFORTS = ["low", "medium", "high", "xhigh", "max"]
+AGENT_SOURCES = ["role-default", "task-override"]
+AGENT_FIELDS = {"agent_id": str, "role": str, "task": (str, type(None)), "cycle": (str, type(None)),
+                "model": str, "effort": str, "source": str, "reason": str, "recorded_at": str}
+AGENT_DEFAULTS = {"task": None, "cycle": None, "source": "role-default", "reason": "role default"}
+# Per MTok at list price: input, output, cache read, 5-minute cache write. Haiku has a second
+# price above 100k tokens of prompt. Source: research agent-model-effort, E1.
+MODEL_PRICES = {"fable": (10, 50, 0.25, 12.5), "opus": (4, 20, 0.20, 5), "sonnet": (2, 10, 0.10, 2.5),
+                "haiku": (0.10, 0.50, 0.01, 0.125)}
+HAIKU_LONG_PROMPT_PRICES = (0.50, 2.50, 0.05, 0.625)
+
 # An ask is one org file (templates/ask.md); state.json keeps only this index entry.
 ASK_FIELDS = {"id": str, "kind": str, "status": str, "blocks": list, "path": str}
 ASK_DEFAULTS = {"blocks": [], "status": "open"}
@@ -161,9 +180,11 @@ TOP_LEVEL = {
     "change_name": str, "baseline_snapshot": (str, type(None)), "baseline_status": (int, type(None)),
     "current_branch": str, "test_command": str, "history_window": int,
     "prior_handshake": (str, type(None)), "closed_at": (str, type(None)),
-    "tasks": list, "architect_findings": list, "asks_for_user": list,
+    "tasks": list, "architect_findings": list, "asks_for_user": list, "agents": list,
     "journal": list, "cycle_log": dict, "phase_gates": dict,
 }
+# Top-level keys added within schema 1.5, filled on read like TASK_FIELDS_ADDED_IN_VERSION.
+TOP_LEVEL_ADDED_IN_VERSION = {"agents": []}
 TOP_LEVEL_SETTABLE = {"baseline_snapshot", "baseline_status", "current_branch", "test_command"}
 LEGACY_ALIASES = {"prior_handshake_path": "prior_handshake", "repo_root": "home"}
 
@@ -491,6 +512,8 @@ class Store:
         with open(self.path) as f:
             state = json.load(f)
         if isinstance(state, dict):  # a field added to a record schema later defaults on read
+            for k, v in TOP_LEVEL_ADDED_IN_VERSION.items():
+                state.setdefault(k, list(v))
             for key, _fields, defaults, _id in RECORD_LISTS.values():
                 for rec in state.get(key, []) or []:
                     if isinstance(rec, dict):
@@ -617,6 +640,8 @@ def validate(state):
     errors = []
     if not isinstance(state, dict):
         return ["state is not an object"]
+    for k, v in TOP_LEVEL_ADDED_IN_VERSION.items():
+        state.setdefault(k, list(v))
     for k in state:
         if k not in TOP_LEVEL:
             errors.append(f"{k}: unknown top-level key; use `note` for narrative, `record add` "
@@ -658,6 +683,8 @@ def validate(state):
         if isinstance(a, dict):
             _enum(a.get("kind"), ASK_KINDS, f"{where}.kind", errors)
             _enum(a.get("status"), ASK_STATUSES, f"{where}.status", errors)
+    for i, a in enumerate(state["agents"]):
+        _validate_agent(a, f"agents[{i}]", errors)
     for i, j in enumerate(state["journal"]):
         where = f"journal[{i}]"
         _validate_record(j, JOURNAL_FIELDS, where, errors, "at")
@@ -687,6 +714,23 @@ def validate(state):
 
 JOURNAL_FIELDS = {"at": str, "kind": str, "by": (str, type(None)), "ref": (str, type(None)),
                   "text": str, "path": (str, type(None))}
+
+
+def _validate_agent(a, where, errors):
+    _validate_record(a, AGENT_FIELDS, where, errors, "agent_id")
+    if not isinstance(a, dict):
+        return
+    _enum(a.get("role"), AGENT_ROLES, f"{where}.role", errors)
+    _enum(a.get("model"), AGENT_MODELS, f"{where}.model", errors)
+    _enum(a.get("effort"), AGENT_EFFORTS, f"{where}.effort", errors)
+    _enum(a.get("source"), AGENT_SOURCES, f"{where}.source", errors)
+    if isinstance(a.get("reason"), str) and not a["reason"].strip():
+        errors.append(f"{where}.reason: empty; a role default's reason is `role default`")
+    if a.get("source") == "task-override" and not a.get("task"):
+        errors.append(f"{where}: a task override names its task")
+    if a.get("model") == "haiku":
+        errors.append(f"{where}: haiku runs read-only helpers only, never a role that writes or "
+                      "judges code (SKILL.md § Agent settings)")
 
 
 # ---------------------------------------------------------------- helpers
@@ -1208,16 +1252,23 @@ def derive_counts(tasks, journal=(), earlier=frozenset()):
 
 
 def _archived_states(store):
-    """(cycle_id, state) of each archived cycle of the change, oldest first."""
+    """(cycle_id, state) of each archived cycle of the change, oldest first: by the cycle's start,
+    then the number its id ends in, since a glob's order puts cycle-10 before cycle-2."""
     out = []
-    for p in sorted(glob.glob(os.path.join(store.dir, "cycles", "*", "state.json"))):
+    for p in glob.glob(os.path.join(store.dir, "cycles", "*", "state.json")):
         try:
             s = json.load(open(p))
         except (json.JSONDecodeError, OSError):
             continue
         if isinstance(s, dict):
             out.append((s.get("cycle_id") or os.path.basename(os.path.dirname(p)), s))
-    return out
+
+    def order(item):
+        cid, s = item
+        log = s.get("cycle_log") if isinstance(s.get("cycle_log"), dict) else {}
+        m = re.search(r"(\d+)$", cid)
+        return (str(log.get("started_at") or ""), int(m.group(1)) if m else 0, cid)
+    return sorted(out, key=order)
 
 
 def _task_names(s):
@@ -1320,6 +1371,109 @@ def read_thresholds(repo_root):
     return out
 
 
+def _all_agents(store, state, archived):
+    """Every agent entry of the change, once each: the archived cycles', this state's, and those
+    still waiting in agents-pending.json (after the change's last `close`, the final integrate
+    phase agent waits there for an `init` that never comes)."""
+    out, seen = [], set()
+    lists = [s.get("agents") or [] for _cid, s in archived]
+    lists += [state["agents"], _read_pending_agents(store)]
+    for recs in lists:
+        for a in recs:
+            if isinstance(a, dict) and a.get("agent_id") not in seen:
+                seen.add(a.get("agent_id"))
+                out.append(a)
+    return out
+
+
+def quality_signals(state, agents, archived):
+    """Reviewer rejections, rework tasks and defects found after done, in total and by the agent
+    setting of each task's Implementor, so a cut in spend is read beside them (research
+    agent-model-effort, R2). A defect found after done is a conformance finding of kind `issue`; a
+    task the whole-change review raised (`discovered_from: whole-change-<cycle-id>`); or a follow-up
+    of a task already done, not raised by an Implementor and not one of a review's own follow-ups
+    (`followups_created` in any cycle: one batched a cycle after its review is still the review's)."""
+    done_before, own_review = set(), set()
+    before = True
+    for cid, s in archived:
+        before = before and cid != state["cycle_id"]
+        for t in s.get("tasks") or []:
+            if not isinstance(t, dict):
+                continue
+            own_review |= set(t.get("followups_created") or [])
+            if before and t.get("status") == "done":
+                done_before.add(t.get("task_name"))
+    tasks = {t["task_name"]: t for t in state["tasks"]}
+    own_review |= {f for t in state["tasks"] for f in t.get("followups_created") or []}
+    setting = {}
+    for a in agents:
+        if a["role"] == "implementor" and a.get("task"):
+            setting.setdefault(a["task"], f"{a['model']}/{a['effort']}")
+    reworked = {a["task"] for a in state.get("agents") or []
+                if a.get("role") == "implementor-rework" and a.get("task")}
+    rework = sorted(n for n, t in tasks.items() if t.get("rejections") or n in reworked)
+    defects = []
+    for f in state["architect_findings"]:
+        if f.get("trigger") == "conformance" and f.get("kind") == "issue":
+            src = f.get("discovered_from")
+            defects.append({"source": f["finding_id"],
+                            "against": src if src in tasks or src in done_before else None})
+    for t in state["tasks"]:
+        src = t.get("discovered_from") or ""
+        if src.startswith("whole-change"):
+            defects.append({"source": t["task_name"], "against": None})
+        elif (t.get("discovered_by") != "implementor" and t["task_name"] not in own_review
+              and (src in done_before or (src in tasks and tasks[src]["status"] == "done"))):
+            defects.append({"source": t["task_name"], "against": src})
+    by_setting = {}
+
+    def bucket(key):
+        return by_setting.setdefault(key, {"tasks": 0, "rejections": 0, "rework_tasks": 0,
+                                           "defects_after_done": 0})
+    for n, t in tasks.items():
+        b = bucket(setting.get(n, "unrecorded"))
+        b["tasks"] += 1
+        b["rejections"] += t.get("rejections", 0)
+        b["rework_tasks"] += n in rework
+    for d in defects:
+        bucket(setting.get(d["against"], "unrecorded") if d["against"] else "whole change")[
+            "defects_after_done"] += 1
+    return {"rejections": sum(t.get("rejections", 0) for t in tasks.values()),
+            "rework_tasks": rework, "defects_after_done": defects, "by_implementor_setting": by_setting}
+
+
+def agent_signals(store, state):
+    """Spend by role for this cycle's agents, with the quality signals, and the same per cycle of
+    the history window: the readout R2 is judged on against E3's numbers (templates/pm-digest.md
+    § Agents). An agent counts in the cycle it worked in (`cycle`); one recorded before the first
+    cycle counts under `before-first-cycle`. The archives are read once and each transcript once."""
+    archived = _archived_states(store)
+    agents = _all_agents(store, state, archived)
+    window = [h["cycle_id"] for h in state["cycle_log"].get("history", [])]
+    wanted = {state["cycle_id"], None, *window}
+    spend = {a["agent_id"]: agent_spend(a["agent_id"]) for a in agents if a.get("cycle") in wanted}
+    cur = spend_by_role([a for a in agents if a.get("cycle") == state["cycle_id"]], spend)
+    cur["quality"] = quality_signals(state, agents, archived)
+    by_cycle = dict(archived)
+    history = []
+    for cid in [None] + window:
+        group = [a for a in agents if a.get("cycle") == cid]
+        if not group:
+            continue
+        s = spend_by_role(group, spend)
+        row = {"cycle_id": cid or "before-first-cycle",
+               "by_role": {r: {k: v[k] for k in ("agents", "cost_weight", "priced_weight", "usd",
+                                                  "cost_weight_per_agent")}
+                           for r, v in s["by_role"].items()}}
+        if str((by_cycle.get(cid) or {}).get("schema_version")) == SCHEMA_VERSION:
+            q = quality_signals(by_cycle[cid], agents, archived)
+            row["quality"] = {"rejections": q["rejections"], "rework_tasks": len(q["rework_tasks"]),
+                              "defects_after_done": len(q["defects_after_done"])}
+        history.append(row)
+    cur["history"] = history
+    return cur
+
+
 def pm_signals(state, store):
     counts = cycle_counts(store, state)
     r = ratios(counts)
@@ -1384,6 +1538,7 @@ def pm_signals(state, store):
                            "blocker_note": t["blocker_note"]}
                           for t in state["tasks"] if t["status"] == "blocked"],
         "fired_signals": fired,
+        "agents": agent_signals(store, state),
         "thresholds": th,
     }
 
@@ -1611,19 +1766,32 @@ def verb_init(store, args):
         "tasks": [],
         "architect_findings": [],
         "asks_for_user": carried,
+        "agents": [],
         "journal": [],
         "cycle_log": {"started_at": now_iso(), "phase_started_at": {"plan": now_iso(), "execute": None,
                                                                     "integrate": None},
                       "history": collect_history(store, args.history_window)},
         "phase_gates": gates_fresh(),
     }
-    errors = validate(state)
-    if errors:
-        raise Refusal("invalid_state", "init produced an invalid state (bug)", errors=errors)
-    store.write(state)
+    # The pending agents are taken in under the lock `record add agents` writes them under, so an
+    # entry recorded while init runs is in the new state or still pending, never dropped.
+    with open(store.lock_path, "w") as lock:
+        fcntl.flock(lock, fcntl.LOCK_EX)
+        try:
+            pending_agents = _read_pending_agents(store)
+            state["agents"] = pending_agents
+            errors = validate(state)
+            if errors:
+                raise Refusal("invalid_state", "init produced an invalid state (bug)", errors=errors)
+            store.write(state)
+            if pending_agents:
+                os.remove(_pending_agents_path(store))
+        finally:
+            fcntl.flock(lock, fcntl.LOCK_UN)
     return {"ok": True, "cycle_id": cycle_id, "path": store.path,
             "history_cycles": [h["cycle_id"] for h in state["cycle_log"]["history"]],
-            "inbox_carried": [a["id"] for a in carried], "gitignore_written": wrote_gitignore,
+            "inbox_carried": [a["id"] for a in carried],
+            "agents_carried": [a["agent_id"] for a in pending_agents], "gitignore_written": wrote_gitignore,
             "home": store.home, "change": store.change, "code_root": store.code_root,
             "warnings": home_warnings(store) + red_baseline_warnings(store, prior_baseline,
                                                                        "the last cycle's baseline_status")}
@@ -2467,7 +2635,79 @@ def verb_task_remove(store, args):
 RECORD_LISTS = {
     "findings": ("architect_findings", FINDING_FIELDS, FINDING_DEFAULTS, "finding_id"),
     "asks": ("asks_for_user", ASK_FIELDS, ASK_DEFAULTS, "id"),
+    "agents": ("agents", AGENT_FIELDS, AGENT_DEFAULTS, "agent_id"),
 }
+
+
+def _pending_agents_path(store):
+    return os.path.join(store.dir, "agents-pending.json")
+
+
+def _read_pending_agents(store):
+    p = _pending_agents_path(store)
+    if not os.path.exists(p):
+        return []
+    try:
+        with open(p) as f:
+            recs = json.load(f)
+    except (json.JSONDecodeError, OSError) as e:
+        raise Refusal("bad_pending_agents", f"{os.path.relpath(p, store.home)}: {e}")
+    if not isinstance(recs, list):
+        raise Refusal("bad_pending_agents", f"{os.path.relpath(p, store.home)} is not a JSON array")
+    return recs
+
+
+def verb_agent_add(store, args):
+    """An agent's setting, recorded by its spawner once the Agent call has returned the id. With no
+    open cycle (the opening and design-round agents, an integrate phase agent recorded after
+    `close`) the entry waits in agents-pending.json and the next `init` takes it in."""
+    _require_change(store)
+    rec_in = load_json_arg(args.json, store.home)
+    if not isinstance(rec_in, dict):
+        raise Refusal("bad_record", "record must be a JSON object")
+    if "recorded_at" in rec_in:
+        raise Refusal("bad_record", "recorded_at is the tool's")
+
+    def build(cycle, existing):
+        rec = dict(AGENT_DEFAULTS)
+        rec["cycle"] = cycle
+        rec.update(rec_in)
+        rec["recorded_at"] = now_iso()
+        if any(r.get("agent_id") == rec.get("agent_id") for r in existing):
+            raise Refusal("duplicate_id", f"agent {rec.get('agent_id')!r} is already recorded; a "
+                          "resumed agent keeps its first entry")
+        errors = []
+        _validate_agent(rec, "agents[new]", errors)
+        if errors:
+            raise Refusal("invalid_record", "record does not fit the schema", errors=errors)
+        return rec
+
+    # One lock for the whole choice, the one `init` takes the pending file in under: whether a
+    # cycle is open is read and acted on without an `init` in between.
+    os.makedirs(store.dir, exist_ok=True)
+    with open(store.lock_path, "w") as lock:
+        fcntl.flock(lock, fcntl.LOCK_EX)
+        try:
+            pending = _read_pending_agents(store)
+            state = store.load() if store.exists() else None
+            if state is not None and not state.get("closed_at"):
+                require_current_schema(state)
+                errors = validate(state)
+                if errors:
+                    raise Refusal("invalid_state", "state file fails validation; fix it before writing",
+                                  errors=errors[:20])
+                rec = build(state["cycle_id"], state["agents"] + pending)
+                state["agents"].append(rec)
+                store.write(state)
+                return {"ok": True, "list": "agents", "id": rec["agent_id"], "record": rec}
+            rec = build(state.get("cycle_id") if state else None,
+                        pending + ((state.get("agents") or []) if state else []))
+            pending.append(rec)
+            _atomic_write(_pending_agents_path(store), json.dumps(pending, indent=2) + "\n")
+        finally:
+            fcntl.flock(lock, fcntl.LOCK_UN)
+    return {"ok": True, "list": "agents", "id": rec["agent_id"], "record": rec,
+            "pending": os.path.relpath(_pending_agents_path(store), store.home)}
 
 
 def _ask_input(raw, home=None):
@@ -2667,6 +2907,8 @@ def verb_ask_set(store, args):
 def verb_record_add(store, args):
     if args.list == "asks":
         return verb_ask_add(store, args)
+    if args.list == "agents":
+        return verb_agent_add(store, args)
     key, fields, defaults, id_field = RECORD_LISTS[args.list]
     rec_in = load_json_arg(args.json, store.home)
     if not isinstance(rec_in, dict):
@@ -2828,6 +3070,122 @@ def _agent_transcripts(agent_id):
     found = glob.glob(os.path.join(base, "projects", "*", "*", "subagents", f"agent-{aid}*.jsonl"))
     exact = [p for p in found if os.path.basename(p) == f"agent-{aid}.jsonl"]
     return exact or found
+
+
+def _model_family(model_id):
+    for fam in AGENT_MODELS:
+        if fam in (model_id or ""):
+            return fam
+    return None
+
+
+def _parse_ts(ts):
+    try:
+        return datetime.fromisoformat(ts.replace("Z", "+00:00"))
+    except (AttributeError, ValueError):
+        return None
+
+
+def agent_spend(agent_id):
+    """One agent's spend from its transcript: each API request once (by requestId, else message
+    id), its usage, the model and effort it ran at, and its wall-clock. None when the transcript is
+    gone or the id is ambiguous. `cost_weight` is E3's proxy (input + 0.1 cache read + 1.25 cache
+    write + 5 output), blind to the model, so it compares with E3's numbers; `priced_weight` scales
+    each request's weight by its model's input price against Opus's; `usd` is list price.
+    A request logged on several lines (one per content block) counts each usage field at its
+    largest: the record has 153 of 11,650 requests whose output_tokens grew from line to line. A
+    `<synthetic>` line (written on an API error, with zero usage and no effort) is no request."""
+    paths = _agent_transcripts(agent_id)
+    if len(paths) != 1:
+        return None
+    out = {"requests": 0, "input": 0, "cache_read": 0, "cache_create": 0, "output": 0,
+           "cost_weight": 0.0, "priced_weight": 0.0, "usd": 0.0, "ran": {}, "minutes": None}
+    fields = ("input_tokens", "cache_read_input_tokens", "cache_creation_input_tokens", "output_tokens")
+    reqs, first, last = {}, None, None
+    with open(paths[0], encoding="utf-8") as f:
+        for n, line in enumerate(f):
+            try:
+                r = json.loads(line)
+            except json.JSONDecodeError:
+                continue
+            at = _parse_ts(r.get("timestamp"))
+            if at:
+                first, last = first or at, at
+            msg = r.get("message") or {}
+            u = msg.get("usage") if r.get("type") == "assistant" else None
+            if not u or msg.get("model") == "<synthetic>":
+                continue
+            req = reqs.setdefault(r.get("requestId") or msg.get("id") or n,
+                                  {"model": msg.get("model"), "effort": r.get("effort"),
+                                   **{k: 0 for k in fields}})
+            for k in fields:
+                req[k] = max(req[k], u.get(k) or 0)
+    for req in reqs.values():
+        i, cr, cc, o = (req[k] for k in fields)
+        fam = _model_family(req["model"])
+        ran = f"{fam or req['model'] or '?'}/{req['effort'] or '?'}"
+        out["ran"][ran] = out["ran"].get(ran, 0) + 1
+        out["requests"] += 1
+        out["input"] += i
+        out["cache_read"] += cr
+        out["cache_create"] += cc
+        out["output"] += o
+        w = i + 0.1 * cr + 1.25 * cc + 5 * o
+        out["cost_weight"] += w
+        if fam:
+            p = (HAIKU_LONG_PROMPT_PRICES if fam == "haiku" and i + cr + cc > 100000
+                 else MODEL_PRICES[fam])
+            out["priced_weight"] += w * p[0] / MODEL_PRICES["opus"][0]
+            out["usd"] += (i * p[0] + o * p[1] + cr * p[2] + cc * p[3]) / 1e6
+    if first and last:
+        out["minutes"] = round((last - first).total_seconds() / 60, 1)
+    for k in ("cost_weight", "priced_weight"):
+        out[k] = round(out[k])
+    out["usd"] = round(out["usd"], 2)
+    return out
+
+
+SPEND_KEYS = ("requests", "input", "cache_read", "cache_create", "output", "cost_weight",
+              "priced_weight", "usd")
+
+
+def spend_by_role(agents, spend):
+    """Per agent and per role, from each agent's `agent_spend` in `spend`. A role's `settings`
+    counts the agent settings its agents were spawned at; `mismatches` lists agents that ran at
+    another one (an environment variable such as CLAUDE_CODE_EFFORT_LEVEL outranks the call, E1)."""
+    rows, roles, missing, mismatches = [], {}, [], []
+    for a in agents:
+        s = spend.get(a["agent_id"])
+        asked = f"{a['model']}/{a['effort']}"
+        row = {k: a[k] for k in ("agent_id", "role", "task", "cycle", "source", "reason")}
+        row["setting"] = asked
+        row["spend"] = s
+        rows.append(row)
+        r = roles.setdefault(a["role"], {"agents": 0, "counted": 0, "settings": {}, "overrides": 0,
+                                         "minutes": [], **{k: 0 for k in SPEND_KEYS}})
+        r["agents"] += 1
+        r["settings"][asked] = r["settings"].get(asked, 0) + 1
+        r["overrides"] += a["source"] == "task-override"
+        if s is None:
+            missing.append(a["agent_id"])
+            continue
+        r["counted"] += 1
+        for k in SPEND_KEYS:
+            r[k] += s[k]
+        if s["minutes"] is not None:
+            r["minutes"].append(s["minutes"])
+        if any(m != a["model"] or e not in ("?", a["effort"])
+               for m, e in (k.split("/", 1) for k in s["ran"])):
+            mismatches.append({"agent_id": a["agent_id"], "setting": asked, "ran": s["ran"]})
+    total = sum(r["cost_weight"] for r in roles.values())
+    for r in roles.values():
+        m = sorted(r.pop("minutes"))
+        r["median_minutes"] = m[len(m) // 2] if m else None
+        r["usd"] = round(r["usd"], 2)
+        r["cost_weight_share"] = round(r["cost_weight"] / total, 3) if total else None
+        r["cost_weight_per_agent"] = round(r["cost_weight"] / r["counted"]) if r["counted"] else None
+    return {"by_role": roles, "by_agent": rows, "missing_transcripts": missing,
+            "setting_mismatches": mismatches}
 
 
 def verb_context(store, args):
