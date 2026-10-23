@@ -1880,3 +1880,155 @@ def test_context_reads_the_last_call_of_an_agent_transcript(run, repo, tmp_path,
     (sub / "agent-a1b2ff.jsonl").write_text(call(1, "t") + "\n")
     code, _, err = run("context", "a1b2")
     assert code == 1 and err["error"] == "ambiguous_agent"
+
+
+AGENT = {"agent_id": "a1", "role": "implementor", "task": "t1", "model": "opus", "effort": "medium"}
+
+
+# 56
+def test_record_add_agents_in_an_open_cycle(run, repo):
+    init(run, "cycle-1", "--first-cycle")
+    code, out, err = run("record", "add", "agents", json.dumps(AGENT))
+    assert code == 0, err
+    rec = read_state(repo)["agents"][0]
+    assert (rec["cycle"], rec["source"], rec["reason"]) == ("cycle-1", "role-default", "role default")
+    assert rec["recorded_at"].endswith("Z")
+    code, _, err = run("record", "add", "agents", json.dumps(AGENT))
+    assert code == 1 and err["error"] == "duplicate_id"  # a resumed agent keeps its first entry
+    over = {**AGENT, "agent_id": "a2", "model": "fable", "effort": "high", "source": "task-override",
+            "reason": "the migration touches three seams"}
+    assert run("record", "add", "agents", json.dumps(over))[0] == 0
+    for bad in ({**AGENT, "agent_id": "a3", "model": "haiku"},           # never writes or judges code
+                {**AGENT, "agent_id": "a4", "effort": "huge"},
+                {**AGENT, "agent_id": "a5", "role": "tester"},
+                {**AGENT, "agent_id": "a6", "task": None, "source": "task-override", "reason": "x"},
+                {**AGENT, "agent_id": "a7", "reason": " "}):
+        code, _, err = run("record", "add", "agents", json.dumps(bad))
+        assert code == 1 and err["error"] == "invalid_record", bad
+    code, _, err = run("record", "add", "agents", json.dumps({**AGENT, "agent_id": "a8",
+                                                               "recorded_at": "x"}))
+    assert code == 1 and err["error"] == "bad_record"
+    assert len(read_state(repo)["agents"]) == 2
+
+
+# 57
+def test_agents_recorded_without_an_open_cycle_wait_for_init(run, repo):
+    pending = repo / CH / "agents-pending.json"
+    code, out, err = run("record", "add", "agents", json.dumps(
+        {"agent_id": "p1", "role": "phase-design", "model": "sonnet", "effort": "medium"}))
+    assert code == 0, err
+    assert out["pending"] == f"{CH}/agents-pending.json" and pending.exists()
+    code, out, _ = init(run, "cycle-1", "--first-cycle")
+    assert code == 0 and out["agents_carried"] == ["p1"] and not pending.exists()
+    assert read_state(repo)["agents"][0]["cycle"] is None  # worked before the first cycle
+    run("close", "--abandon", "--why", "test")
+    # The integrate phase agent is recorded at its hand-back, after `close`: it waits too, and
+    # keeps the cycle it worked in.
+    assert run("record", "add", "agents", json.dumps(
+        {"agent_id": "p2", "role": "phase-integrate", "model": "sonnet", "effort": "high"}))[0] == 0
+    code, _, err = run("record", "add", "agents", json.dumps(
+        {"agent_id": "p1", "role": "phase-integrate", "model": "sonnet", "effort": "high"}))
+    assert code == 1 and err["error"] == "duplicate_id"
+    code, out, _ = init(run, "cycle-2", "--prior-handshake", "nope.json")
+    assert code == 1  # a refused init leaves the pending entries where they are
+    assert pending.exists()
+
+
+# 58
+def test_state_without_agents_key_is_read_and_written(run, repo):
+    init(run, "cycle-1", "--first-cycle")
+    st = read_state(repo)
+    del st["agents"]  # a 1.5 file written before agents existed
+    (repo / CH / "state.json").write_text(json.dumps(st))
+    assert run("validate")[0] == 0
+    assert run("counts")[0] == 0
+    assert run("note", "note", "still fine")[0] == 0
+    assert read_state(repo)["agents"] == []
+
+
+def _transcript(cfg, agent_id, requests):
+    """A subagent transcript: each request is (request id, model, effort, usage, timestamp); a
+    request id repeated is the same API call logged on two lines."""
+    sub = cfg / "projects" / "-home" / "sess-1" / "subagents"
+    sub.mkdir(parents=True, exist_ok=True)
+    lines = [json.dumps({"type": "user", "timestamp": "2026-10-23T10:00:00Z", "message": {"content": "b"}})]
+    for rid, model, effort, (i, cr, cc, o), ts in requests:
+        lines.append(json.dumps({"type": "assistant", "requestId": rid, "timestamp": ts, "effort": effort,
+                                 "message": {"model": model, "usage": {
+                                     "input_tokens": i, "cache_read_input_tokens": cr,
+                                     "cache_creation_input_tokens": cc, "output_tokens": o}}}))
+    (sub / f"agent-{agent_id}.jsonl").write_text("\n".join(lines) + "\n")
+
+
+# 59
+def test_counts_report_spend_by_role_from_transcripts(run, repo, tmp_path, monkeypatch):
+    cfg = tmp_path / "claude-config"
+    monkeypatch.setenv("CLAUDE_CONFIG_DIR", str(cfg))
+    run("record", "add", "agents", json.dumps(
+        {"agent_id": "d1", "role": "phase-design", "model": "sonnet", "effort": "medium"}))
+    init(run, "cycle-1", "--first-cycle")
+    usage = (1000, 100000, 10000, 2000)  # weight 1000 + 10000 + 12500 + 10000 = 33500
+    _transcript(cfg, "e1", [("r1", "claude-sonnet-5-5", "high", usage, "2026-10-23T10:00:00Z"),
+                            ("r1", "claude-sonnet-5-5", "high", usage, "2026-10-23T10:00:00Z"),
+                            ("r2", "claude-sonnet-5-5", "high", usage, "2026-10-23T10:20:00Z")])
+    _transcript(cfg, "i1", [("r3", "claude-opus-5-5", "medium", usage, "2026-10-23T10:05:00Z")])
+    _transcript(cfg, "i2", [("r4", "claude-opus-5-5", "medium", usage, "2026-10-23T10:05:00Z")])
+    _transcript(cfg, "d1", [("r5", "claude-sonnet-5-5", "medium", usage, "2026-10-23T09:00:00Z")])
+    run("record", "add", "agents", json.dumps(
+        {"agent_id": "e1", "role": "phase-execute", "model": "sonnet", "effort": "high"}))
+    run("record", "add", "agents", json.dumps({**AGENT, "agent_id": "i1"}))
+    # Spawned at Sonnet, ran at Opus: a mismatch the digest shows.
+    run("record", "add", "agents", json.dumps({**AGENT, "agent_id": "i2", "task": "t2", "model": "sonnet",
+                                               "source": "task-override", "reason": "rename only"}))
+    run("record", "add", "agents", json.dumps({**AGENT, "agent_id": "gone", "task": "t3"}))
+    code, out, err = run("counts")
+    assert code == 0, err
+    ag = out["agents"]
+    ex = ag["by_role"]["phase-execute"]
+    assert (ex["agents"], ex["requests"], ex["cost_weight"]) == (1, 2, 67000)  # r1 once
+    assert ex["priced_weight"] == 33500  # Sonnet at half Opus's input price
+    assert ex["usd"] == round(2 * (1000 * 2 + 2000 * 10 + 100000 * 0.10 + 10000 * 2.5) / 1e6, 2)
+    assert ex["median_minutes"] == 20.0 and ex["settings"] == {"sonnet/high": 1}
+    im = ag["by_role"]["implementor"]
+    assert (im["agents"], im["counted"], im["overrides"], im["cost_weight_per_agent"]) == (3, 2, 1, 33500)
+    assert ag["missing_transcripts"] == ["gone"]
+    assert [m["agent_id"] for m in ag["setting_mismatches"]] == ["i2"]
+    assert "phase-design" not in ag["by_role"]  # worked before the first cycle
+    assert ag["history"][0]["cycle_id"] == "before-first-cycle"
+    assert ag["history"][0]["by_role"]["phase-design"]["cost_weight"] == 33500
+
+
+# 60
+def test_counts_report_quality_by_implementor_setting(run, repo):
+    init(run, "cycle-1", "--first-cycle")
+    for name in ("t1", "t2"):
+        add_task(run, name)
+        run("record", "add", "agents", json.dumps({**AGENT, "agent_id": f"i-{name}", "task": name}))
+    run("record", "add", "agents", json.dumps({**AGENT, "agent_id": "i-t3", "task": "t3",
+                                               "model": "sonnet", "source": "task-override",
+                                               "reason": "one config value"}))
+    add_task(run, "t3")
+    run("task", "set", "t1", "in_progress")
+    run("task", "set", "t1", "needs_review", "merge_commit=a")
+    run("task", "set", "t1", "in_progress")  # sent back by its Reviewer
+    run("record", "add", "agents", json.dumps({**AGENT, "agent_id": "rw-t2", "role": "implementor-rework",
+                                               "task": "t2"}))
+    run("task", "set", "t3", "done", "followups_created=[\"t3-own-review\"]")
+    add_task(run, "t3-own-review", "discovered_from=t3", "discovered_by=reviewer", "discovered_class=mutation")
+    add_task(run, "t3-later", "discovered_from=t3", "discovered_by=architect", "discovered_class=mutation")
+    add_task(run, "t3-impl", "discovered_from=t3", "discovered_by=implementor", "discovered_class=mutation")
+    add_task(run, "wc-1", "discovered_from=whole-change-cycle-1", "discovered_by=reviewer",
+             "discovered_class=mutation")
+    run("record", "add", "findings", json.dumps({"trigger": "conformance", "kind": "issue", "title": "x",
+                                                 "evidence": "x.py:1", "discovered_from": "t1"}))
+    run("record", "add", "findings", json.dumps({"trigger": "premise-check", "kind": "issue", "title": "y",
+                                                 "evidence": "y.py:1"}))
+    code, out, err = run("counts")
+    assert code == 0, err
+    q = out["agents"]["quality"]
+    assert q["rejections"] == 1 and q["rework_tasks"] == ["t1", "t2"]
+    assert sorted(d["source"] for d in q["defects_after_done"]) == ["arch-cycle-1-1", "t3-later", "wc-1"]
+    bs = q["by_implementor_setting"]
+    assert bs["opus/medium"] == {"tasks": 2, "rejections": 1, "rework_tasks": 2, "defects_after_done": 1}
+    assert bs["sonnet/medium"]["defects_after_done"] == 1  # t3-later, against t3
+    assert bs["whole change"]["defects_after_done"] == 1
