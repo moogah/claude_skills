@@ -52,7 +52,7 @@ Who checks a task's claims against HEAD depends on who wrote its text. Kept afte
 
 The record behind the split: of 48 Wrong rows over two projects, 17 of the 27 design-wrong rows and all 12 task defects were in task text the orchestrator wrote, 14 of them in one bug task; the Implementor reads HEAD anyway, and the check's own agent cost about 6.6M tokens a run.
 
-The Architect runs against the candidate task files (`roles/architect.md` § Premise check): for each task, a `| claim | at HEAD |` table with **Holds** or **Wrong** per claim the task body makes about the code at the code root's HEAD (a function exists and has this signature; a path is reachable from this entry point; a return value has these cases; a defect of the task file's own form, such as a truncated seam quote, is a row too, flagged as such), and a one-line verdict. Output: `<change-dir>/cycles/<cycle-id>/premise-check.md` (the orchestrator creates the directory), and one hand-back line with the counts (`SKILL.md` § Hand-back lines). The check may run the suite and probes read-only in the scratch directory its brief names (`roles/architect.md` § What the Architect may and may not do).
+The Architect, spawned at its role default (`model: opus`, `effort: medium`) and recorded with `role: architect-premise`, runs against the candidate task files (`roles/architect.md` § Premise check): for each task, a `| claim | at HEAD |` table with **Holds** or **Wrong** per claim the task body makes about the code at the code root's HEAD (a function exists and has this signature; a path is reachable from this entry point; a return value has these cases; a defect of the task file's own form, such as a truncated seam quote, is a row too, flagged as such), and a one-line verdict. Output: `<change-dir>/cycles/<cycle-id>/premise-check.md` (the orchestrator creates the directory), and one hand-back line with the counts (`SKILL.md` § Hand-back lines). The check may run the suite and probes read-only in the scratch directory its brief names (`roles/architect.md` § What the Architect may and may not do).
 
 Then:
 
@@ -82,6 +82,14 @@ For each task in the batch, the orchestrator assembles the brief at agent-spawn 
 - Project standards (overlay's `roles/implementor.md`) and the project priors (`priors.md`).
 
 The brief framing is fixed — the seam rows are *reference material to pressure-test, not authority to defer to*. A row that turns out wrong is a push-back in `## Discoveries`; conformance amends the row at integrate.
+
+**The task's agent setting.** Each task in the batch runs at the role defaults, an Implementor at `opus`, `medium` and its Reviewer at `opus`, `high`, unless the plan writes a **task override** for it: an `agent:` block in the task file's frontmatter with the new setting and a one-line reason (`templates/task-body.md`), which execute reads at the spawn (`flows/execute.md` § 1, § 7). Quality comes first, so a task is moved only on a reason its own text gives:
+
+- **Lower** the Implementor to `sonnet` (any effort) only when the work is clearly routine: a config value, a rename across a few call sites, a doc or comment, promoting a pending test whose seam row is settled and whose steps are spelled out. A task that touches a seam's owning symbols in a way its row does not already fix, or whose steps leave a design choice open, is not routine.
+- **Raise** the Implementor to `fable` (or Opus at `high` or above) only when the plan judges the task hard: several seams moving at once, concurrency or a migration of stored data, a contract the task changes for other callers. The task's Reviewer may be raised with it; a Reviewer is never lowered below its role default.
+- **Not** `haiku`, for any agent of a task. **Not** on an outcome: a task carried over after it failed, was rejected or was reworked keeps the setting it had, and a reason that cites the failure is not a reason (`SKILL.md` § Agent settings: a retry runs at the same setting).
+
+The reason is one line a reader can check against the task body, written as the reason for a task override: "agent: fable, high, because the migration touches three seams". A task with no `agent:` block needs no reason; it runs at the role defaults. Plan writes the block while drafting or at this step, before `batch_composed`; nothing changes it after.
 
 ### 6. The critical path is the main path
 

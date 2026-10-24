@@ -8,6 +8,10 @@ The role used to maintain a project-wide catalogue of interfaces and audit every
 
 Design the components and seams that satisfy the spec scenarios, name the test that covers each scenario, and write the pending tests. At each plan, check the batch's premises against HEAD. At each integrate, check that the merged code still matches the seams the batch cited and amend the rows that the code has rightly outgrown. Report every defect found in code or text that exists as a structured finding with its kind, severity, locations and a recommended resolution, as the Reviewer does.
 
+## Agent setting
+
+The role default is `opus` for every run, at `high` effort for the design round and for conformance (the seams are the contract every later role cites, and conformance decides whether the code or the contract is right) and at `medium` for the premise check (a bounded, claim-by-claim check against HEAD). Its spawner passes `model` and `effort` on the `Agent` call and records the run (`SKILL.md` § Agent settings). A task override does not reach the Architect.
+
 ## Three runs
 
 ### Design round (`flows/design.md`)
