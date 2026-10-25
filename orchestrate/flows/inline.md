@@ -54,8 +54,9 @@ Specifically: if any of these happen during the inline edit, bail out:
 Bail-out procedure:
 1. `git -C "$CODE_ROOT" checkout .` to revert the code root's working tree (no commit was made yet — inline path commits last).
 2. Mark the task `status: ready` (it remains in the open queue).
-3. Add a note in the task body: "inline path bailed out: <reason>; rescheduled as worktree."
-4. The next standard cycle picks it up.
+3. Add a note in the task body: "inline path bailed out: <reason>; rescheduled as worktree." The reason states what was found and where the evidence is; it is a record for the next plan, not steps.
+4. Hand back `inline <task>: bailed out, <why>; <task file>`.
+5. The next standard cycle picks it up.
 
 If a commit was already made and bail-out is needed, revert via `git revert <commit>` in the code root rather than `git reset` — preserves the audit trail.
 
@@ -65,7 +66,11 @@ The brainstorm names this explicitly. Even trivial edits can surface contract is
 
 - Did this edit touch a seam's owning symbols? → check `cites_seams` of the implicit "task" against the `## Seams` rows in `design.org`.
 - Did the verification command's output reveal anything new? → grep the after-file.
-- Did the edit expose a defect in adjacent code or text? → route it like a finding (`templates/architect-finding.md` § Routing): a task when it breaks the change's main path or is an untrue sentence, otherwise a hardening-list entry; a speculative need is one `thought:` line in the task body's `## Observations`.
+- Did the edit expose a defect in adjacent code or text? → the inline path creates no work. Routed by `templates/architect-finding.md` § Routing:
+  - an untrue sentence is a text correction, prose only: in the file being edited, in the same edit; in another file, in its own commit, which the one-file triage does not count;
+  - a defect off the change's main path is a hardening-list entry (`templates/hardening.md`, `:REF:` the task);
+  - a defect on the main path is the bailout's "adjacent issue": bail out, name the defect and its evidence in the bailout note, and hand back `inline <task>: bailed out, <why>; <task file>`. The next plan carries the task, rewrites it with the defect in view (`flows/plan.md` § 2) and the Architect checks it (§ 3).
+  - a speculative need is one `thought:` line in the task body's `## Observations`.
 
 Most answers are "no; close." That's fine. The discipline is in asking, not in finding.
 
