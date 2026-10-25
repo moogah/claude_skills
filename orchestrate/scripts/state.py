@@ -170,7 +170,13 @@ ASSERTED_CHECKS = {"batch_composed", "open_tasks_refined_against_handshake"}
 
 HANDSHAKE_REQUIRED = ["design_diff", "pm_digest_path", "meta_discoveries",
                       "user_resolved_goal_drift", "asks_for_user_open", "asks_for_user_resolved",
-                      "task_refinements"]
+                      "task_refinements", "candidate_tasks"]
+# candidate_tasks element: a task the next plan drafts (execute § 5, § 8 and integrate § 7 route,
+# plan § 2 writes). `critical` is the route: blocking on the main path.
+CANDIDATE_FIELDS = {"name": str, "source": str, "discovered_by": str, "discovered_class": str,
+                    "critical": bool, "quote": str, "evidence": str, "placement": str}
+CANDIDATE_REQUIRED = ["name", "source", "discovered_by", "critical", "quote"]
+CANDIDATE_PLACEMENTS = ["in-change", ".tasks"]
 # design_diff element: {"seam": "<seam id>", "change": added|amended|retired, "ref": "<finding id>"}
 DESIGN_DIFF_CHANGES = ["added", "amended", "retired"]
 
@@ -1559,7 +1565,35 @@ def _handshake_errors(path, prior=False):
     # `register_diff` where `design_diff` now stands; plan accepts it in that place.
     if prior and "design_diff" not in h and "register_diff" in h:
         h = {**h, "design_diff": h["register_diff"]}
+    # One written before candidate_tasks existed (2026-10-25): its integrate wrote the task files.
+    if prior and "candidate_tasks" not in h:
+        h = {**h, "candidate_tasks": []}
     return [f"{path}: missing field {k}" for k in HANDSHAKE_REQUIRED if k not in h]
+
+
+def _candidate_errors(cands, where):
+    if not isinstance(cands, list):
+        return [f"{where}: expected a JSON array"]
+    errors, names = [], set()
+    for i, e in enumerate(cands):
+        w = f"{where}[{i}]"
+        if not isinstance(e, dict):
+            errors.append(f"{w}: not an object")
+            continue
+        for k in CANDIDATE_REQUIRED:
+            if k not in e:
+                errors.append(f"{w}.{k}: missing")
+        for k, v in e.items():
+            if k not in CANDIDATE_FIELDS:
+                errors.append(f"{w}.{k}: unknown field (allowed: {', '.join(CANDIDATE_FIELDS)})")
+            elif not isinstance(v, CANDIDATE_FIELDS[k]) or (CANDIDATE_FIELDS[k] is str and not v.strip()):
+                errors.append(f"{w}.{k}: expected non-empty {CANDIDATE_FIELDS[k].__name__}")
+        if e.get("placement", "in-change") not in CANDIDATE_PLACEMENTS:
+            errors.append(f"{w}.placement: {e['placement']!r} not one of {CANDIDATE_PLACEMENTS}")
+        if e.get("name") in names:
+            errors.append(f"{w}.name: {e['name']!r} named twice")
+        names.add(e.get("name"))
+    return errors
 
 
 def _design_diff_errors(diff, where):
@@ -3244,6 +3278,24 @@ def verb_handshake(store, args):
         if derrs:
             raise Refusal("bad_design_diff", f"design diff from {source} does not fit the shape "
                           "[{seam, change: added|amended|retired, ref}]", errors=derrs[:20])
+        cand_file = os.path.join(store.cycle_dir(state), "candidate-tasks.json")
+        cands = []
+        if os.path.exists(cand_file):
+            try:
+                with open(cand_file) as f:
+                    cands = json.load(f)
+            except (json.JSONDecodeError, OSError) as e:
+                raise Refusal("bad_candidate_tasks", f"{os.path.relpath(cand_file, store.home)}: {e}")
+        cerrs = _candidate_errors(cands, "candidate_tasks")
+        named = {c.get("name") for c in cands if isinstance(c, dict)}
+        cerrs += [f"finding {f['finding_id']}: resolution {f['resolution']} names no candidate"
+                  for f in state["architect_findings"]
+                  if f["resolution"].startswith("candidate-task-")
+                  and f["resolution"][len("candidate-task-"):] not in named]
+        if cerrs:
+            raise Refusal("bad_candidate_tasks", "cycles/<id>/candidate-tasks.json does not fit "
+                          "[{name, source, discovered_by, critical, quote, ...}] or misses a finding's "
+                          "candidate", errors=cerrs[:20])
         goal = []
         for a, rec, ans in _goal_drift_asks(store, state):
             if a["status"] in ("answered", "applied"):
@@ -3271,6 +3323,7 @@ def verb_handshake(store, args):
             "asks_for_user_open": [a for a in state["asks_for_user"] if a["status"] == "open"],
             "asks_for_user_resolved": resolved,
             "task_refinements": refinements,
+            "candidate_tasks": cands,
             "journal": state["journal"],
         }
         p = store.handshake_path(state["cycle_id"])
@@ -3280,7 +3333,8 @@ def verb_handshake(store, args):
         return {"ok": True, "path": os.path.relpath(p, store.home),
                 "design_diff": len(diff), "design_diff_source": source,
                 "asks_open": len(h["asks_for_user_open"]),
-                "asks_resolved": len(h["asks_for_user_resolved"]), "task_refinements": len(refinements)}
+                "asks_resolved": len(h["asks_for_user_resolved"]), "task_refinements": len(refinements),
+                "candidate_tasks": len(cands)}
     return store.mutate(fn)
 
 

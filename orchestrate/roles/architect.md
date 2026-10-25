@@ -82,7 +82,7 @@ Each run ends with a hand-back of **one line** and nothing else (`SKILL.md` § H
 
 ## Escalation contract
 
-- **Findings the routing decorates `blocking`** produce a follow-up task in the change (integrate § 7) and hold the integrate gate until `resolution` is no longer `pending`; those decorated `hardening` go on the change's hardening list (`templates/hardening.md`).
+- **Findings the routing decorates `blocking`** produce a candidate task in the change (integrate § 7), which the next plan writes and hold the integrate gate until `resolution` is no longer `pending`; those decorated `hardening` go on the change's hardening list (`templates/hardening.md`).
 - **Code right, design stale**: amend the seam row (and the Decision or scenario steps naming the same thing) in place at the contract level, `resolution: design-amended`; the orchestrator journals one record correction and commits it (`templates/design.md` § Seams). Not Implementor work, not an ask.
 - **Design in question**: the finding says what the seam or scenario is for, its kind and evidence, and what it blocks; the orchestrator writes a `decision` ask file from it. The finding is not the ask.
 - **Cleanup**: a replaced implementation still on a live path is a defect, a finding like any other. Cleanup that changes no behaviour today (an uncalled function, two bodies that agree today) is a `thought`, and becomes work only when a project prior asks for cleanup (`templates/architect-finding.md` § The YAGNI check), as a task the orchestrator drafts. An uncalled producer is a `dead-branch` thought, not a second producer.

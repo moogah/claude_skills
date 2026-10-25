@@ -1,12 +1,12 @@
 # Task update stanza template
 
-When integrate's open-task refinement step (`flows/integrate.md` § 7) determines an open task body should absorb cycle learning but the existing prose remains valid, a structured stanza is appended. Tasks may accumulate stanzas across cycles, newest-last.
+When an open task's impact set (recorded by `flows/integrate.md` § 7) says its body should absorb cycle learning but the existing prose remains valid, the next plan (`flows/plan.md` § 2) appends a structured stanza. Tasks may accumulate stanzas across cycles, newest-last.
 
-When the existing prose is *demonstrably false or dead*, integrate edits in place instead — see "Edit-in-place rule" at the bottom of this file.
+When the existing prose is *demonstrably false or dead*, plan edits in place instead — see "Edit-in-place rule" at the bottom of this file.
 
 ## Where the stanza goes
 
-Append at the bottom of the task body, after `## Out-of-scope` and before `## Observations` / `## Discoveries` (those are execute-phase artifacts and integrate must not write to them). If the task body has no `## Out-of-scope` section, append after the last existing section that is not `## Observations` / `## Discoveries`.
+Append at the bottom of the task body, after `## Out-of-scope` and before `## Observations` / `## Discoveries` (those are execute-phase artifacts and plan must not write to them). If the task body has no `## Out-of-scope` section, append after the last existing section that is not `## Observations` / `## Discoveries`.
 
 ## Stanza form
 
@@ -29,7 +29,7 @@ Append at the bottom of the task body, after `## Out-of-scope` and before `## Ob
 > Cycle <N> claims this task may now be wholly obsolete because <one-sentence reason>. The ask file `ask-<cycle-id>-<seq>` (kind `decision`; options close, refine, rescope, do nothing; `:BLOCKS:` this task; default: leave open) carries the disposition. Do not start work until it is answered.
 ```
 
-Each H3 subsection is optional; omit empty subsections. The "Obsolescence flag" subsection appears only when integrate's refinement set `obsolescence_flagged: true` on the task's `task_refinements` entry.
+Each H3 subsection is optional; omit empty subsections. The "Obsolescence flag" subsection appears only when integrate set `obsolescence_flagged: true` on the task's `task_refinements` entry.
 
 ## Multiple stanzas across cycles
 
@@ -62,4 +62,4 @@ Append-only is safer (preserves user-tuned prose, easy to audit) but accumulates
 
 - It does not replace the authoritative log of a cited seam's changes — that is the git history of `design.org` plus the journal.
 - It does not capture findings the implementor discovered mid-task — those go in `## Observations` / `## Discoveries` per `templates/task-body.md`.
-- It does not record cycle-N learnings into a closed task. Tasks in `<change>/tasks/closed/` are frozen at merge time and integrate does not touch them.
+- It does not record cycle-N learnings into a closed task. Tasks in `<change>/tasks/closed/` are frozen at merge time and nothing touches them.

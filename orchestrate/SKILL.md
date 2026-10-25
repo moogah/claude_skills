@@ -88,9 +88,9 @@ The **role default** is the agent setting every agent of a role gets unless the 
 |---|---|---|---|---|---|
 | Phase agent: opening | dispatcher | `phase-open` | `opus` | `medium` | Writes the intent and the spec edits every later role cites; 0.7% of spend |
 | Phase agent: design round | dispatcher | `phase-design` | `sonnet` | `medium` | Spawns the Architect, runs `coverage.py`, commits; designs nothing |
-| Phase agent: plan | dispatcher | `phase-plan` | `opus` | `medium` | Writes the task text, where most wrong premises in the record began (`flows/plan.md` § 3) |
-| Phase agent: execute | dispatcher | `phase-execute` | `sonnet` | `high` | Coordinates by written rules: merges, tests, state, routing; the largest single spend (18%), at high effort for the merge and regression checks |
-| Phase agent: integrate | dispatcher | `phase-integrate` | `sonnet` | `high` | Routes the Architect's and the Reviewer's findings by `templates/architect-finding.md`; the judgment is theirs |
+| Phase agent: plan | dispatcher | `phase-plan` | `opus` | `medium` | Writes every task file: the batch from the design, the handshake's candidates, and each open task's refinement; task text is where most wrong premises in the record began (`flows/plan.md` § 3) |
+| Phase agent: execute | dispatcher | `phase-execute` | `sonnet` | `high` | Coordinates by written rules: merges, tests, state, routing (a follow-up is a candidate, never a task file); the largest single spend (18%), at high effort for the merge and regression checks |
+| Phase agent: integrate | dispatcher | `phase-integrate` | `sonnet` | `high` | Routes the Architect's and the Reviewer's findings by `templates/architect-finding.md`, and the user's answers, to candidates and impact sets for plan; the judgment is theirs, and it writes no task text (`flows/integrate.md` § 7) |
 | Phase agent: inline path | dispatcher | `phase-inline` | `sonnet` | `medium` | One-file edits under a strict triage, bailing out when they grow |
 | A fresh phase agent after a handover | dispatcher | the phase's | the phase's | the phase's | The same work |
 | Architect: design round | design-round agent | `architect-design` | `opus` | `high` | Seams are the contract every later role cites |
@@ -102,7 +102,7 @@ The **role default** is the agent setting every agent of a role gets unless the 
 | Reviewer: whole change | integrate agent | `reviewer-whole-change` | `opus` | `xhigh` | The last gate before done, looking for what every per-task review missed |
 | PM agent pass | integrate agent | `pm` | `sonnet` | `medium` | Prose from a deterministic `pm-signals.json`; judges no code |
 
-- **Quality first.** The roles where a mistake is expensive (the Architect, the Reviewer, and the opening and plan agents, which write the text everything after cites) keep strong settings; cost and time are cut only where the work is routine. The phase agents mostly coordinate, and with the dispatcher they took 46% of spend in the record.
+- **Quality first.** The roles where a mistake is expensive (the Architect, the Reviewer, and the opening and plan agents, which write the text everything after cites; the plan agent writes every task file, so no agent at a routing setting writes one) keep strong settings; cost and time are cut only where the work is routine. The phase agents mostly coordinate, and with the dispatcher they took 46% of spend in the record.
 - **The range.** Opus and Sonnet at any effort; Fable only for a task the plan judges hard; Haiku only for a read-only helper (`web-fetch`, spawned with neither parameter, runs on its agent type's own Haiku), never for an agent that writes or judges code, and `state.py` refuses to record one.
 - **A task override** is the plan's change to one task's agent setting: it may raise or lower the task's Implementor, and raise its Reviewer, never lower it, writing the setting and a one-line reason in the task file (`flows/plan.md` § 5, `templates/task-body.md`). Nothing else changes a setting: no rule or model picks one, and a task that fails review or is reworked runs again at the setting it had.
 - **The dispatcher's own setting is the user's** (`/model`, `/effort`); nothing here changes it. An alias names the dispatcher's own model when it is of that family: `opus` under Opus 5.5 is Opus 5.5.
@@ -157,7 +157,7 @@ In-change vs `.tasks/` rule: **[externalisation.md](externalisation.md)**. Rule 
 
 ## Loop closure: integrate → plan handshake
 
-The keystone transition is **integrate → plan**, not execute → review. Each plan reads `<change-dir>/handshake-<prior-cycle-id>.json` as a hard input contract. Required fields: `design_diff`, `pm_digest_path`, `meta_discoveries`, `user_resolved_goal_drift`, `asks_for_user_open`, `asks_for_user_resolved` and `task_refinements`. Empty list is allowed; missing field is not. `state.py init` refuses to start a cycle if the file is missing or any field is unset; `state.py handshake` writes it with the mechanical fields filled from state.
+The keystone transition is **integrate → plan**, not execute → review. Each plan reads `<change-dir>/handshake-<prior-cycle-id>.json` as a hard input contract. Required fields: `design_diff`, `pm_digest_path`, `meta_discoveries`, `user_resolved_goal_drift`, `asks_for_user_open`, `asks_for_user_resolved`, `task_refinements` and `candidate_tasks`. Empty list is allowed; missing field is not. `state.py init` refuses to start a cycle if the file is missing or any field is unset; `state.py handshake` writes it with the mechanical fields filled from state.
 
 This is the structural fix for "learns and forgets" — without it, the orchestrator becomes a queue runner.
 

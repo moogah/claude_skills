@@ -78,7 +78,7 @@ This is the brainstorm's "where do worker observations belong" answer: in the me
 
 ## Who writes a task file
 
-Only the orchestrator writes task files, by one procedure: `templates/task-body.md`, `state.py task add` with the provenance fields, and the placement rule above, at the points the flows name (plan § 2 drafts the batch; integrate § 7 creates and refines from the cycle's outputs; execute § 5 and § 8 file the follow-ups a blocking defect needs; plan § 2 drafts from the hardening list after the user chooses to harden). Integrate § 7 is the one point where open tasks are *refined*. The Implementor, Reviewer, Architect and PM report a candidate task in their findings or discoveries; none of them files one.
+Only the plan phase agent writes task files, at plan § 2, by one procedure: `templates/task-body.md`, `state.py task add` with the provenance fields, and the placement rule above. It drafts the batch from the design, writes each of the handshake's `candidate_tasks`, applies each open task's impact set (`task_refinements`) to its body, and drafts from the hardening list after the user chooses to harden; it is the one point where open tasks are *refined*. Execute (§ 5, § 8) and integrate (§ 7) route: a follow-up or an answered ask that needs a new task is a candidate in `cycles/<cycle-id>/candidate-tasks.json`, with its source quoted and its placement decided, and an open task's update is its impact set. They run at a routing setting, and task text is where most wrong premises in the record began (`SKILL.md` § Agent settings). The Implementor, Reviewer, Architect and PM report a candidate task in their findings or discoveries; none of them files one.
 
 ## Provenance is mandatory on externalised tasks
 
