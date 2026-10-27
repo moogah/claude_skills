@@ -1,0 +1,211 @@
+#+TITLE: state-layer
+#+OPTIONS: ^:{} -:nil
+
+* Purpose
+
+The state layer answers two questions from the files and git history of a change, and refuses what would make the answers false:
+
+1. *Where does this change stand, and what comes next?* At every stage: open, design round, MVP decision, plan, execute, integrate, done. Any fresh session, the dispatcher included, gets the same answer.
+2. *Is this really done?* A task, gate or phase passes only on computed checks: a merge commit exists, the tests pass, the conventions hold, and three rules hold (a follow-up names its source, tasks start in =blocked_by= order, the MVP decision follows the main path's end). An asserted check is recorded as asserted, never as computed.
+
+It writes only the event log, for the few facts files and git do not hold.
+
+It does not own: the files agents write (task files, ask files, the handshake's content, =design.org=); git and worktree operations; the home's config and bootstrap; the agents' spend and quality report; judgment the flows leave to agents.
+
+Research: =~/emacs-workspaces/claude-skills/research/state-tool/brief.org= (goals G1-G5, decided 2026-10-23 to 2026-10-26).
+
+* Key Concepts
+
+** The record
+
+Files and git are the record of a change's state. There is no =state.json=. Each fact has one source; a copy of it elsewhere is not read.
+
+| Fact | Source |
+|------+--------|
+| The change is open: repository, branch, base, worktree | =<change-dir>/change.json=; the worktree |
+| Intent approved; the change's outcome stage (=speculated=, =divergent=, =mvp=, =done=, …) | =intent.org= =#+APPROVED:= and =#+STATUS:= |
+| Design round done | =design.org= has a Seams section with at least one row |
+| A cycle started, and its id | the event log (=cycle-started=) |
+| A phase of a cycle closed | home commit =Orchestrator: <cycle-id> <phase> closed= |
+| The cycle closed | the =integrate closed= commit and =<change-dir>/handshake-<cycle-id>.json= |
+| A task exists; its class, critical-path flag, =blocked_by=, =cites_seams=, =discovered_*= | task-file frontmatter |
+| A task's status | task-file frontmatter =status:= |
+| A task merged, and its merge commit | =Merge task <name>= commits on the change branch's first parent |
+| A task was reviewed | =cycles/<cycle-id>/reviews/<task>.md= naming the task's merge commit |
+| A review sent a task back | =<task>-rework= review and brief files |
+| The batch | the task names under =cycles/<cycle-id>/briefs/=, less review, rework, premise-check and conformance briefs |
+| An ask: kind, status, what it blocks, its answer | the ask file (=inbox/= or =cycles/<cycle-id>/asks/=) |
+| A finding: kind, severity | the finding file's frontmatter |
+| A finding's decoration (=blocking= or =hardening=) and resolution | the event log (=finding-routed=) |
+| The hardening list | =hardening.org= |
+| The prior handshake | the newest =handshake-<cycle-id>.json= before the cycle |
+
+** Stages and the next step
+
+| Stage | Read from | Next step |
+|-------+-----------+-----------|
+| Not open | no =change.json= | open the change (=flows/open.md=) |
+| Open, no intent | no =intent.org= | write the intent (=flows/open.md=) |
+| Intent, no design | no Seams section in =design.org= | the design round (=flows/design.md=) |
+| Designed, no cycle open | the last cycle closed, or none started | start a plan |
+| Cycle open | the last =<phase> closed= commit of the open cycle; none means plan | resume that phase, or advance to the next when its gate passed |
+| MVP decision | =intent.org= =#+STATUS: mvp …=, its ask unanswered | wait for the user's answer |
+| Main path ended | no open critical-path task, and no =mvp= or =done= status | integrate's MVP decision (=flows/integrate.md= § 9), not another plan |
+| Done | =intent.org= =#+STATUS: done …= | nothing |
+
+** Computed and asserted checks
+
+A *computed check* is a gate check a script decides from facts on disk or in git. An *asserted check* is one an agent declares true and no script confirms; the state layer records who asserted it and when, in the event log, and shows it as asserted wherever it reports the gate.
+
+** The event log
+
+An append-only file in the change's directory, one entry per line, each with a time, the cycle, the kind, and the fields its kind names. An entry is never edited or removed; a correction is a new entry that names the one it corrects. It holds only facts files and git do not: a cycle's start, an asserted check, a finding's routing, a task's blocker note, a journal note, the link from an inline fix to its review when the commit does not name it.
+
+** Conventions
+
+The record is readable only while agents keep these forms; the state layer checks them and refuses or reports a break:
+
+- Merge commits on the change branch: =Merge task <name>=, and =Merge task <name> (rework)= for a rework.
+- Phase-close commits in the home: =Orchestrator: <cycle-id> <phase> closed=.
+- Review and brief files: =<task>.md=, =<task>-rework.md=.
+- Task-file frontmatter: the keys =templates/task-body.md= names, with =status= from the task status set.
+- Inline-fix commits: =Inline fix (review <task> #<n>)=.
+
+* Requirements
+
+** Requirement: Files and git are the record
+
+The state layer SHALL read every fact from its source in § The record and SHALL NOT write a state file. It SHALL write only the event log.
+
+*** Scenario: No state file is written
+- *WHEN* a cycle runs from plan to close
+- *THEN* no =state.json= exists in the change's directory
+- *AND* the only file the state layer wrote is the event log
+
+*** Scenario: A copy of a fact is not read
+- *WHEN* a task file's frontmatter carries a =merge_commit= that differs from the task's newest =Merge task <name>= commit
+- *THEN* the state layer reports the merge commit from git
+- *AND* reports the frontmatter copy as a convention break
+
+** Requirement: One answer to where a change stands
+
+The state layer SHALL answer, in one call that needs no open cycle, the change's stage and its next step, per § Stages and the next step, with the open asks that block it.
+
+*** Scenario: A change with no design gets the design round
+- *WHEN* a change has =change.json= and an approved =intent.org=, and =design.org= has no Seams section
+- *THEN* the answer's stage is "intent, no design"
+- *AND* its next step is the design round
+
+*** Scenario: An open cycle resumes at its phase
+- *WHEN* the open cycle's last home commit is =Orchestrator: <cycle-id> plan closed=
+- *THEN* the answer's stage is the cycle open in execute
+- *AND* its next step is to resume execute
+
+*** Scenario: The main path's end calls for the MVP decision
+- *WHEN* no open task has =on_critical_path: true=, and =intent.org= has no =mvp= or =done= status
+- *THEN* the next step is integrate's MVP decision
+- *AND* it is not a new plan
+
+*** Scenario: A waiting MVP decision is a wait
+- *WHEN* =intent.org= reads =#+STATUS: mvp <date> <commit> <ask-id>= and that ask has no answer
+- *THEN* the next step is to wait for the user's answer to =<ask-id>=
+
+*** Scenario: Two sessions get the same answer
+- *WHEN* two fresh sessions ask for the same change at the same commit
+- *THEN* both receive the same stage and next step
+
+** Requirement: A task is done only on computed checks
+
+The state layer SHALL refuse a task's move to =done= unless its merge commit exists on the change branch and its review file names that commit.
+
+*** Scenario: Done without a merge is refused
+- *WHEN* an agent asks to mark a task =done= and the change branch has no =Merge task <name>= commit
+- *THEN* the state layer refuses, naming the missing merge
+
+*** Scenario: Done without a review is refused
+- *WHEN* the task has a merge commit and no review file names it
+- *THEN* the state layer refuses, naming the missing review
+
+** Requirement: A phase passes only on its checks
+
+The state layer SHALL pass a phase's gate only when every computed check holds and every asserted check has been asserted. It SHALL re-evaluate the computed checks each time it reports the gate, so a passed gate whose facts later change reads as failing.
+
+*** Scenario: A gate with a failing computed check does not pass
+- *WHEN* integrate's gate is asked to pass while a finding routed =blocking= has resolution =pending=
+- *THEN* the gate does not pass
+- *AND* the answer names the finding
+
+*** Scenario: A passed gate is re-checked
+- *WHEN* execute's gate passed and a task's merge commit is afterwards removed from the change branch
+- *THEN* the next report of the gate shows it failing, naming the task
+
+*** Scenario: An asserted check shows as asserted
+- *WHEN* plan's =batch_composed= has been asserted
+- *THEN* every report of plan's gate shows it as asserted, with who asserted it and when
+- *AND* it is never shown as computed
+
+** Requirement: A follow-up task names its source
+
+The state layer SHALL refuse a follow-up task whose frontmatter does not name the task or finding it came from (=discovered_from=, =discovered_by=).
+
+*** Scenario: A follow-up without provenance is refused
+- *WHEN* plan registers a task from a handshake candidate and its frontmatter has no =discovered_from=
+- *THEN* the state layer refuses it, naming the missing field
+
+** Requirement: Tasks start in blocked_by order
+
+The state layer SHALL refuse to start a task while any task in its =blocked_by= has no merge commit on the change branch.
+
+*** Scenario: A task with an unmerged blocker does not start
+- *WHEN* an agent asks to start task B whose =blocked_by= names task A, and A has no =Merge task A= commit
+- *THEN* the state layer refuses, naming A
+
+*** Scenario: A task starts once its blockers merge
+- *WHEN* every task in B's =blocked_by= has a merge commit on the change branch
+- *THEN* B may start
+
+** Requirement: Conventions are checked
+
+The state layer SHALL check the forms in § Conventions for the change, and SHALL report each break with the file or commit and the form expected. A break in a form a computed check reads SHALL fail that check rather than be guessed around.
+
+*** Scenario: A merge commit in another form is reported
+- *WHEN* the change branch has a merge of =task-<name>-<epoch>= whose subject is not =Merge task <name>=
+- *THEN* the convention check reports the commit and the expected subject
+- *AND* the task's done check fails until it is fixed
+
+*** Scenario: An unknown status is reported
+- *WHEN* a task file's =status:= is not in the task status set
+- *THEN* the convention check reports the file and the value
+
+** Requirement: The event log is append-only
+
+The state layer SHALL add entries to the event log and SHALL NOT change or remove one. A correction SHALL be a new entry naming the entry it corrects, and every reader SHALL apply the correction.
+
+*** Scenario: A typo is corrected by a new entry
+- *WHEN* an orchestrator records a review rejection by mistake and then records a correction naming it
+- *THEN* the log holds both entries
+- *AND* every answer that reads rejections counts none for that task
+
+*** Scenario: A cycle's start is in the log before any artifact
+- *WHEN* a cycle has started and nothing of it is yet on disk or in git
+- *THEN* the answer to "where does this change stand" names the open cycle, read from the log
+
+** Requirement: The handshake carries the plan's context
+
+The handshake SHALL carry what the next plan acts on: the design diff, the meta-discoveries, the open and resolved asks, the user's goal-drift decision and integrate's goal-drift recommendation, the refinements to open tasks, the candidate tasks, and the cycle's journal notes. It SHALL carry no counts, ratios or signals. There is no PM digest file, and no gate requires one.
+
+*** Scenario: Integrate closes without a digest
+- *WHEN* integrate has written the handshake with every required field and no =pm-digest.md= exists
+- *THEN* integrate's gate can pass
+
+*** Scenario: Plan refuses a handshake missing a field
+- *WHEN* plan starts and the prior handshake lacks =meta_discoveries=
+- *THEN* the state layer refuses to start the cycle, naming the field
+
+* Integration Points
+
+- *The spend and quality report* is outside the state layer: run on demand by the user or =/process-improvement=, it reads the agents' transcripts and the record (rejections, rework, findings after done) and shows spend and quality by role. Nothing runs it each cycle.
+- *Asks*: the ask files are the record (=templates/ask.md=). The state layer reads their kind, status, blocks and answer; moving and editing them is the agents' or a separate tool's.
+- *Git and worktrees*, *the home's config and bootstrap*: outside the state layer; separate tools or prose, decided in the hand edit.
+- *Author-blind review* is prose in =flows/execute.md=, followed by the phase agent; no code checks it and the docs do not call it enforced.
+- *The PM role* writes integrate's goal-drift recommendation and meta-discoveries into the handshake; it computes no counts.

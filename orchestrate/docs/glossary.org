@@ -1,0 +1,34 @@
+#+TITLE: Glossary
+#+OPTIONS: ^:{} -:nil
+
+The orchestrate skill's agreed terms. Agreed during the research effort =~/emacs-workspaces/claude-skills/research/state-tool/= (2026-10-23 and 2026-10-26).
+
+* state layer
+Whatever code records and checks where a change stands. Before this change it was =state.py= and =state.json=; after it, the code that answers the two questions in its spec's Purpose.
+- Example :: "the state layer must keep 'done' honest."
+- Avoid :: state machine, state tool
+- Specs :: state-layer
+
+* computed check
+A gate check a script decides from facts on disk or in git.
+- Example :: "every done task has a merge commit."
+- Avoid :: verified, validated
+- Specs :: state-layer
+
+* asserted check
+A gate check an agent declares true and no script confirms; it is recorded as asserted, never as computed.
+- Example :: plan's =batch_composed=.
+- Avoid :: manual check, attested
+- Specs :: state-layer
+
+* handshake
+The file integrate writes for the next plan, =handshake-<cycle-id>.json=, which plan must read before it starts: the design diff, meta-discoveries, the asks, the goal-drift decision and recommendation, refinements to open tasks, candidate tasks and the cycle's journal notes.
+- Example :: "plan reads the prior handshake as its input contract."
+- Avoid :: hand-off (research's word), digest
+- Specs :: state-layer
+
+* PM digest
+The integrate phase's report on a cycle, =pm-digest.md=, with counts, ratios and signals. Retired by this change: what the next plan needs is folded into the handshake, and spend and quality by role come from an on-demand report.
+- Example :: "the digest showed drainage trending down."
+- Avoid :: report, summary
+- Specs :: state-layer
