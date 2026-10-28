@@ -268,7 +268,7 @@ def test_the_main_path_end_calls_for_the_mvp_decision(home):
 
 
 def test_a_waiting_mvp_decision_is_a_wait(home):
-    home.intent(status=f"mvp 2026-10-28 abc123 ask-cycle-1-4")
+    home.intent(status="mvp 2026-10-28 abc123 ask-cycle-1-4")
     home.design()
     home.ask("ask-cycle-1-4", blocks=["plan"], options=("harden", "rethink", "stop"))
     out = home.ok("status")
@@ -300,7 +300,7 @@ def test_done_is_nothing(home):
 # ---------------------------------------------------------------- A task is done only on computed checks
 
 def test_done_without_a_merge_is_refused(home):
-    cycle = started(home)
+    started(home)
     home.task("a", status="needs_review")
     code, _, err = home.run("check", "done", "a")
     assert code == 1 and err["error"] == "not_done"
@@ -457,7 +457,7 @@ def test_a_cycle_does_not_start_twice(home):
 
 
 def test_the_log_is_only_appended(home):
-    cycle = started(home)
+    started(home)
     first = (home.dir / "events.jsonl").read_text()
     home.task("a")
     home.ok("note", "discovery", "x", "--ref", "seam/a")

@@ -415,7 +415,7 @@ def test_pytest_statuses(pytree):
 # ---------------------------------------------------------------- run from the home
 
 def test_run_from_a_home_finds_the_code_root(tmp_path, monkeypatch, capsys):
-    import state
+    import home as home_py
     home, code = tmp_path / "home", tmp_path / "home" / "code"
     (home / ".claude" / "orchestrator").mkdir(parents=True)
     (home / ".claude" / "orchestrator" / "config.yaml").write_text("overlay-version: 1\nproject: scratch\ncode-root: code\n")
@@ -423,7 +423,7 @@ def test_run_from_a_home_finds_the_code_root(tmp_path, monkeypatch, capsys):
     (code / "docs" / "specs").mkdir(parents=True)
     (code / "docs" / "specs" / "ws.org").write_text(SPEC)
     _git(code, "init", "-q")
-    assert state.main(["--home", str(home), "change", "open", "chg", "--worktree", str(code)]) == 0
+    assert home_py.main(["--home", str(home), "open", "chg", "--worktree", str(code)]) == 0
     capsys.readouterr()
     monkeypatch.delenv("ORCH_CHANGE", raising=False)
     monkeypatch.chdir(home)
