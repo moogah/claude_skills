@@ -32,3 +32,9 @@ The integrate phase's report on a cycle, =pm-digest.md=, with counts, ratios and
 - Example :: "the digest showed drainage trending down."
 - Avoid :: report, summary
 - Specs :: state-layer
+
+* event log
+The one file the state layer writes: kept in the change's directory and only ever added to, one entry per event, for the few facts files and git do not hold (a cycle's start, an asserted check, a finding's routing, a blocker note, a journal note). A correction is a new entry naming the one it corrects.
+- Example :: "the typo is corrected by a new entry in the event log."
+- Avoid :: journal (the =state.json= field it replaces), state file, history
+- Specs :: state-layer
