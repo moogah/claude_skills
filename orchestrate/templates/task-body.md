@@ -11,18 +11,18 @@ Tasks live at the home, `.orchestrator/changes/<change>/tasks/open/<task-name>.m
 task_name: <task-slug>
 description: <one-line>
 change: <change-name>
-status: ready | blocked | needs_review | done | failed | externalised   # the state statuses the file mirrors (state.md § Status semantics); the others are not written here
+status: ready | in_progress | needs_review | done | failed | blocked | externalised   # the only copy of the task's status (state.md § Task status)
 task_class: feature | test | doc | refactor | bug | contract | infrastructure
 on_critical_path: true | false
 
-cites_seams:                       # rows of design.org § Seams; also held in state
+cites_seams:                       # rows of design.org § Seams
   - seam/violation-info
   - seam/canonical-constructor
 cites_scenarios:                   # '<capability> § <title>' in docs/specs/; task file only
   - scope § A violation names its resource
 
 relations:
-  blocked_by:                      # spawned once each named task has merged (flows/execute.md § 1), not after its review
+  blocked_by:                      # spawned once each named task has merged (flows/execute.md § 1), not after its review; `state.py check start` refuses before
     - <task-name>: { status: merged }
     - <task-name>: { status: merged }
 
@@ -35,24 +35,17 @@ agent:
   reason: <one line the task body bears out, e.g. "one config value, steps spelled out">
 
 # Provenance — REQUIRED on follow-up tasks (i.e. when this task was
-# discovered, not user-authored). For top-level tasks, leave unset.
+# discovered, not user-authored; `state.py check new` refuses one without
+# discovered_from and discovered_by). For top-level tasks, leave unset.
 discovered_from: <source task name | architect-finding-id | reviewer-finding-id>
 discovered_by: implementor | reviewer | architect | pm | user
 discovered_class: shape-fragmentation | vocabulary-mismatch | responsibility-leakage
                   | dead-branch | interface-drift | mutation | invariant-gap
                   | spec-signal | deviation | scope-question | duplication
-
-# Filled by execute phase
-merge_commit: <SHA>
-findings_path: <path to reviewer findings file>
-
-# Audit
-created_at: <iso-ts>                # written by `state.py task add`, never by hand
-started_at: <iso-ts>
-completed_at: <iso-ts>
-reviewed_at: <iso-ts>
 ---
 ```
+
+Nothing else goes in the frontmatter; `state.py conventions` reports any other key. In particular the task's merge commit is its `Merge task <name>` commit on the change branch, its review is `cycles/<cycle-id>/reviews/<name>.md`, and its times are those commits' times: each fact has one source, and a copy here would be a second one (`docs/specs/state-layer.org` § The record).
 
 ## Body sections
 
@@ -112,6 +105,6 @@ The implementor sees all of this **before starting work**. The brief framing is 
 
 ## Externalisation
 
-When a finding turns out to be cross-cutting (not in-scope for the active change), it gets externalised: the task moves to `.tasks/<task-name>.md` instead of `<change>/tasks/open/`. The frontmatter stays the same; only `status: externalised` and the file path change. PM digest tracks externalisation pressure.
+When a finding turns out to be cross-cutting (not in-scope for the active change), it gets externalised: the task moves to `.tasks/<task-name>.md` instead of `<change>/tasks/open/`. The frontmatter stays the same; only `status: externalised` and the file path change.
 
 The full rule for in-change vs `.tasks/` lives in `externalisation.md`.

@@ -238,6 +238,7 @@ class Ask:
                         for l in sections.get("options", []) if re.match(r"\s*[-+]\s+\S", l)]
         self.answer = "\n".join(sections.get("answer", [])).strip() or None
         self.readback = "\n".join(sections.get("readback", [])).strip() or None
+        self.applied_via = self.props.get("APPLIED_VIA") or None
 
     def answer_label(self):
         """The option the answer names exactly, or None."""
@@ -249,6 +250,12 @@ class Ask:
         return {"id": self.id, "kind": self.kind, "status": self.status, "blocks": self.blocks,
                 "question": self.title, "answered": bool(self.answer), "readback": bool(self.readback),
                 "path": self.path}
+
+    def record(self, home):
+        """The fields a handshake's ask lists carry (templates/handshake.md)."""
+        return {"id": self.id, "kind": self.kind, "status": self.status, "blocks": self.blocks,
+                "path": os.path.relpath(self.path, home), "question": self.title, "decision": self.answer,
+                "decision_readback": self.readback, "applied_via": self.applied_via}
 
 
 def _canon_section(name):
@@ -703,6 +710,11 @@ def evaluate_gate(ch, cycle, phase):
             "no blocking finding is pending")
         hpath = os.path.join(ch.dir, f"handshake-{cycle}.json")
         hp = handshake_problems(hpath)
+        if not hp:
+            named = {c.get("name") for c in json.load(open(hpath))["candidate_tasks"]}
+            hp = [f"finding {f} is routed {r['resolution']} and candidate_tasks has no {r['resolution'][len('candidate-task-'):]}"
+                  for f, r in sorted(routing.items()) if (r["resolution"] or "").startswith("candidate-task-")
+                  and r["resolution"][len("candidate-task-"):] not in named]
         put("handshake_written", [f"{ch.rel(hpath)}: {p}" for p in hp], f"{ch.rel(hpath)} has every required field")
         if hp:
             put("asks_routed", ["the handshake is not written yet"], "")
@@ -783,8 +795,10 @@ def where(ch):
         return {**out, "stage": "not open", "next": "open the change (flows/open.md)"}
     intent = ch.intent()
     out["intent"] = {"approved": intent["approved"], "status": " ".join(intent["status"]) or None}
-    blocking = [a.summary() for a in ch.asks() if a.status in ("open", "answered") and a.blocks]
-    out["asks"] = blocking
+    inbox = ch.asks()
+    out["inbox"] = {"open": sum(a.status == "open" for a in inbox),
+                    "answered": [a.id for a in inbox if a.status == "open" and a.answer]}
+    out["asks"] = [a.summary() for a in inbox if a.status in ("open", "answered") and a.blocks]
     status = intent["status"]
     cycle, phase = ch.open_cycle()
     if not intent["exists"]:
@@ -992,7 +1006,7 @@ def verb_log(ch, args):
 
 
 def verb_asks(ch, args):
-    return {"asks": [a.summary() for a in ch.asks("all" if args.all else "inbox")]}
+    return {"asks": [a.record(ch.home) for a in ch.asks("all" if args.all else "inbox")]}
 
 
 # ---------------------------------------------------------------- CLI

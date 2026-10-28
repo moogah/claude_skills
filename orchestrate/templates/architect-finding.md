@@ -6,7 +6,7 @@ Reporting and routing are separate steps, done by different agents. The agent th
 
 ## Form
 
-Architect findings go in `<change-dir>/cycles/<cycle-id>/findings/<finding-id>.md`; the state file's `architect_findings` array carries the index fields in JSON form (`state.md`).
+Architect findings go in `<change-dir>/cycles/<cycle-id>/findings/<finding-id>.md`, written by the Architect; the file is the finding's record. Its routing is not in the file: the orchestrator records it in the change's event log with `state.py route` (§ Routing).
 
 ```yaml
 ---
@@ -22,7 +22,6 @@ discovered_by: architect
 discovered_at: <iso-ts>
 seam: <seam/<name> this finding is about, if any>
 evidence: <the line, the run, the output or the shipped sentence; for a question, the reasoning and the reproduction to try>
-decoration: blocking | hardening            # written by the orchestrator's routing (§ Routing), not by the Architect
 ---
 
 ## Locations
@@ -115,16 +114,16 @@ When the goals do not settle whether a defect is on the main path, it goes on th
 
 The reason for the line: an MVP has to work, so a defect on its main path cannot wait; every other defect waits until the user has seen the MVP, which may show that the wrong thing is being built and the hardening would be wasted.
 
-Where the routing is recorded: an Architect finding with `state.py record set findings <id> decoration=<blocking|hardening> resolution=<…>`; a Reviewer finding or an Implementor discovery, which have no state entry, by the inline-fix journal line, the follow-up task's `discovered_from`, or the hardening-list entry's `:REF:`. A finding that reaches no fix, task, ask or hardening-list entry has been dropped, which is a process bug.
+Where the routing is recorded: an Architect finding with `state.py route <id> --decoration <blocking|hardening> --resolution <…>`, an entry in the event log (the later `state.py route <id> --resolution <…>` records how it ended); a Reviewer finding or an Implementor discovery, which have no finding file, by the inline-fix journal line, the follow-up task's `discovered_from`, or the hardening-list entry's `:REF:`. A finding that reaches no fix, task, ask or hardening-list entry has been dropped, which is a process bug.
 
 ## Resolution states
 
-The state-file `architect_findings[].resolution` field tracks how each finding was handled:
+The `--resolution` of an Architect finding's latest `state.py route` says how it was handled; `state.py log --kind finding-routed` lists them:
 
-- `pending` — not yet routed (blocks the integrate gate when its decoration is `blocking`)
+- `pending` — routed, not yet resolved (a `blocking` one fails integrate's `blocking_findings_resolved`)
 - `inline-fixed` — the orchestrator applied an inline fix (to code, or to a document other than `design.org`: a README, a usage page, a spec scenario the amended row cites)
 - `design-amended` — the code was right and the Architect amended the seam row (and the Decision or scenario steps that named the same thing); the orchestrator's `record-correction:` journal line and the commit carry the path
-- `candidate-task-<name>` — routed at integrate § 7 to a candidate the next plan writes as a task; `state.py handshake` refuses when `candidate-tasks.json` has no entry of that name
+- `candidate-task-<name>` — routed at integrate § 7 to a candidate the next plan writes as a task; integrate's `handshake_written` fails when the handshake's `candidate_tasks` has no entry of that name
 - `followup-task-<task-name>` — became a task; the field carries the task name
 - `reverted` — the implicated merge was reverted
 - `accepted-with-note` — the user accepted the defect as it is; carries the ask id whose `decision_readback` is the rationale, or the `priors.md` line that already answered it

@@ -21,7 +21,8 @@ _spec.loader.exec_module(state)
 
 FULL_HANDSHAKE = {
     "cycle_id": None, "design_diff": [], "meta_discoveries": [], "asks_for_user_open": [],
-    "asks_for_user_resolved": [], "user_resolved_goal_drift": [], "goal_drift_recommendation": "continue",
+    "asks_for_user_resolved": [], "user_resolved_goal_drift": [],
+    "goal_drift_recommendation": {"recommendation": "none", "reason": "nothing drifted"},
     "task_refinements": [], "candidate_tasks": [], "journal": [],
 }
 GOAL_DRIFT = ["revise", "split", "abandon", "continue"]
@@ -496,3 +497,26 @@ def test_an_open_ask_not_in_the_handshake_is_not_routed(home):
     home.ask("ask-cycle-1-1")
     c = check(home.gate("integrate"), "asks_routed")
     assert c["ok"] is False and "ask-cycle-1-1" in c["reason"]
+
+
+def test_a_candidate_routing_needs_its_candidate(home):
+    cycle = started(home)
+    home.close(cycle, "plan")
+    home.close(cycle, "execute")
+    home.finding(cycle, "arch-cycle-1-1")
+    home.ok("route", "arch-cycle-1-1", "--decoration", "blocking", "--resolution", "candidate-task-fix-it")
+    home.handshake(cycle)
+    c = check(home.gate("integrate"), "handshake_written")
+    assert c["ok"] is False and "fix-it" in c["reason"]
+    home.handshake(cycle, candidate_tasks=[
+        {"name": "fix-it", "source": "arch-cycle-1-1", "discovered_by": "architect", "critical": True, "quote": "q"}])
+    assert check(home.gate("integrate"), "handshake_written")["ok"] is True
+
+
+def test_asks_prints_what_the_handshake_carries(home):
+    started(home)
+    home.ask("ask-cycle-1-1", blocks=["a"], answer="yes")
+    out = home.ok("asks")["asks"][0]
+    assert (out["id"], out["blocks"], out["decision"], out["path"]) == \
+        ("ask-cycle-1-1", ["a"], "yes", ".orchestrator/changes/chg/inbox/ask-cycle-1-1.org")
+    assert home.ok("status")["inbox"] == {"open": 1, "answered": ["ask-cycle-1-1"]}
