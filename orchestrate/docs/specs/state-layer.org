@@ -18,7 +18,7 @@ Research: =~/emacs-workspaces/claude-skills/research/state-tool/brief.org= (goal
 
 ** The record
 
-Files and git are the record of a change's state. There is no =state.json=. Each fact has one source; a copy of it elsewhere is not read.
+Files and git are the record of a change's state. There is no =state.json=. Each fact has one source and no second copy: the task-file template carries no =merge_commit=, and the finding-file template no =decoration= or =resolution=.
 
 | Fact | Source |
 |------+--------|
@@ -82,10 +82,10 @@ The state layer SHALL read every fact from its source in § The record and SHALL
 - *THEN* no =state.json= exists in the change's directory
 - *AND* the only file the state layer wrote is the event log
 
-*** Scenario: A copy of a fact is not read
-- *WHEN* a task file's frontmatter carries a =merge_commit= that differs from the task's newest =Merge task <name>= commit
-- *THEN* the state layer reports the merge commit from git
-- *AND* reports the frontmatter copy as a convention break
+*** Scenario: A fact has no second copy
+- *WHEN* a task has merged and a finding has been routed
+- *THEN* the task's merge commit is read only from its =Merge task <name>= commit, and its task file has no =merge_commit= field
+- *AND* the finding's decoration and resolution are read only from the event log, and its finding file has no =decoration= or =resolution= field
 
 ** Requirement: One answer to where a change stands
 
