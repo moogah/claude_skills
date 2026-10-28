@@ -774,9 +774,8 @@ def verb_home_init(store, args):
 
 ORCHESTRATOR_GITIGNORE = """# Written by home.py open. Test outputs and scratch stay out of git; every other
 # orchestration artifact (the event log, inbox, cycles, handshakes) is tracked.
-baseline-*.txt
-baseline-*.status
-after-*.txt
+baseline-*
+after-*
 *.tmp
 """
 

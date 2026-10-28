@@ -117,7 +117,8 @@ class Home:
         d.mkdir(parents=True, exist_ok=True)
         (d / f"{name}.md").write_text("brief\n")
 
-    def merge(self, name, subject=None):
+    def merge(self, name, subject=None, tests=0):
+        """A task branch merged into chg; with `tests` set, the after-file execute § 4 writes for it."""
         self.n = getattr(self, "n", 0) + 1
         branch = f"task-{name}-{1793000000 + self.n}"
         git(self.wt, "checkout", "-q", "-b", branch, "chg")
@@ -126,7 +127,17 @@ class Home:
         git(self.wt, "commit", "-q", "-m", f"{name}: work")
         git(self.wt, "checkout", "-q", "chg")
         git(self.wt, "merge", "-q", "--no-ff", "-m", subject or f"Merge task {name}", branch)
-        return git(self.wt, "rev-parse", "HEAD")
+        sha = git(self.wt, "rev-parse", "HEAD")
+        if tests is not None:
+            self.test_run(name, sha, tests)
+        return sha
+
+    def test_run(self, name, sha, status, compare=None):
+        stem = self.dir / f"after-{name}-{sha[:12]}"
+        stem.with_suffix(".txt").write_text("ran\n")
+        stem.with_suffix(".status").write_text(f"{status}\n")
+        if compare is not None:
+            stem.with_suffix(".compare").write_text(f"{compare}\n")
 
     def review(self, cycle, name, sha):
         d = self.dir / "cycles" / cycle / "reviews"
@@ -520,3 +531,57 @@ def test_asks_prints_what_the_handshake_carries(home):
     assert (out["id"], out["blocks"], out["decision"], out["path"]) == \
         ("ask-cycle-1-1", ["a"], "yes", ".orchestrator/changes/chg/inbox/ask-cycle-1-1.org")
     assert home.ok("status")["inbox"] == {"open": 1, "answered": ["ask-cycle-1-1"]}
+
+
+# ---------------------------------------------------------------- A task's tests pass at its merge
+
+def test_done_without_a_test_run_is_refused(home):
+    cycle = started(home)
+    home.task("a", status="needs_review")
+    sha = home.merge("a", tests=None)
+    home.review(cycle, "a", sha)
+    code, _, err = home.run("check", "done", "a")
+    assert code == 1 and f"after-a-{sha[:12]}.txt is missing" in err["message"]
+
+
+def test_done_with_failing_tests_on_a_green_baseline_is_refused(home):
+    cycle = started(home)
+    home.task("a", status="needs_review")
+    sha = home.merge("a", tests=1)
+    home.review(cycle, "a", sha)
+    (home.dir / f"baseline-{cycle}.status").write_text("0\n")
+    code, _, err = home.run("check", "done", "a")
+    assert code == 1 and "tests fail" in err["message"]
+
+
+def test_a_red_baseline_is_read_through_the_comparison(home):
+    cycle = started(home)
+    home.task("a", status="needs_review")
+    home.brief(cycle, "a")
+    sha = home.merge("a", tests=1)
+    home.review(cycle, "a", sha)
+    (home.dir / f"baseline-{cycle}.status").write_text("1\n")
+    code, _, err = home.run("check", "done", "a")
+    assert code == 1 and ".compare holds no test.compare exit code" in err["message"]
+    home.test_run("a", sha, 1, compare=1)
+    code, _, err = home.run("check", "done", "a")
+    assert code == 1 and "regression" in err["message"]
+    home.test_run("a", sha, 1, compare=0)
+    home.ok("check", "done", "a")
+
+
+# ---------------------------------------------------------------- the handshake's asks
+
+def test_asks_for_a_cycle_are_those_its_git_touched(home):
+    home.designed()
+    home.ask("ask-cycle-0-1", status="applied", answer="yes")  # resolved before the cycle
+    git(home.root, "add", "-A")
+    git(home.root, "commit", "-q", "-m", "earlier")
+    import time
+    time.sleep(1.1)  # git dates to the second
+    cycle = started(home)
+    home.ask("ask-cycle-1-1", status="applied", answer="no")  # resolved in it, not yet committed
+    home.ask("ask-cycle-1-2")                                 # open
+    out = home.ok("asks", "--cycle", cycle)
+    assert [a["id"] for a in out["resolved"]] == ["ask-cycle-1-1"]
+    assert [a["id"] for a in out["open"]] == ["ask-cycle-1-2"]

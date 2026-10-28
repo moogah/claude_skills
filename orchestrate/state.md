@@ -30,7 +30,7 @@ Git and worktree operations (branching, merging, removing a worktree) are the ag
 | `status` | Read-only. The change's `stage` and `next` step (§ Stages), the open `cycle` and `phase` with that phase's `gate` report, the `intent`'s approval and status line, the `inbox` (`{open, answered}`), the `asks` that block work (open or answered, with `:BLOCKS:`), and `convention_breaks` when there are any. One call; needs no open cycle. |
 | `gate [<phase>]` | Read-only. The open cycle's gate for its phase (or the named one), every computed check evaluated afresh, every asserted check with who asserted it and when (§ Gates). Exit 1 when it does not pass. |
 | `conventions` | Read-only. Every break of the record's forms (§ Conventions), with where it is and the form expected. |
-| `check done <task>` | Refuses (`not_done`) unless the task's `Merge task <task>` commit is on the change branch and a review file names that commit; prints the merge commit. Run before writing `status: done`. |
+| `check done <task>` | Refuses (`not_done`) unless the task's `Merge task <task>` commit is on the change branch, a review file names that commit, and the tests pass at it: `after-<task>-<sha12>.status` holds 0, or, against a red baseline (`baseline-<cycle-id>.status` non-zero), `after-<task>-<sha12>.compare` holds 0 (`flows/execute.md` § 4). It reads the files and runs nothing. Prints the merge commit. Run before writing `status: done`. |
 | `check start <task>` | Refuses (`blocked`) while a task in its `blocked_by` has no merge commit on the change branch. Run before spawning its Implementor. |
 | `check new <task>` | Refuses (`bad_task`) a follow-up (a task a handshake's `candidate_tasks` names, or one carrying any `discovered_*` field) without `discovered_from` and `discovered_by`, and a status outside the set. Run when plan writes a task file. |
 | `cycle start [--cycle <id>]` | Starts a cycle in plan: appends `cycle-started` to the log. Refuses `cycle_open` while one is open; `not_ready` before the design round's Seams exist (or at done, or while the MVP decision waits); `mvp_decision_due` when the main path has ended; `bad_prior_handshake` naming each missing field of the newest `handshake-<cycle-id>.json`; `no_prior_handshake` when the change has run a cycle and none is there. The id defaults to `cycle-<epoch>`. |
@@ -42,7 +42,7 @@ Git and worktree operations (branching, merging, removing a worktree) are the ag
 | `fix-link <commit> --task <t> --review <n>` | Links an inline-fix commit to the review finding it answers, when its subject does not say so (`inline-fix-link`). |
 | `correct <seq> --why "<reason>"` | A correction naming an entry of the log (`correction`); every reader leaves the corrected entry out. |
 | `log [--cycle <id>] [--kind <kind>]` | Read-only. The log with corrections applied. |
-| `asks [--all]` | Read-only. The inbox's ask files (with `--all`, every cycle's `asks/` too) with the fields the handshake's ask lists carry (`templates/handshake.md`). |
+| `asks [--all \| --cycle <id>]` | Read-only. The inbox's ask files (with `--all`, every cycle's `asks/` too) with the fields the handshake's ask lists carry (`templates/handshake.md`). With `--cycle`, `open` (every open file) and `resolved` (every other ask file the home's git touched since that cycle's `cycle-started`, or that is changed and not yet committed): the handshake's two lists. |
 
 ## Stages
 
@@ -107,7 +107,7 @@ Each phase's gate is a list of checks. `state.py gate` evaluates every computed 
 | plan | `goal_drift_signed_off` | computed | no goal-drift ask in the inbox (a `decision` whose options are revise / split / abandon / continue) is unanswered or answered with anything but one of those labels |
 | plan | `mvp_decision_not_due` | computed | the main path has not ended (§ Stages) |
 | execute | `batch_stopped` | computed | the batch is not empty and every task in it is stopped, with a status in the set |
-| execute | `done_tasks_merged_and_reviewed` | computed | every `done` task in the batch passes `check done` |
+| execute | `done_tasks_merged_and_reviewed` | computed | every `done` task in the batch passes `check done`: merged, reviewed at its merge, tests passing at its merge |
 | execute | `blocked_by_order` | computed | every merged task in the batch merged after each task in its `blocked_by` |
 | integrate | `blocking_findings_resolved` | computed | no finding routed `blocking` has resolution `pending` |
 | integrate | `handshake_written` | computed | `handshake-<cycle-id>.json` has every required field, its candidates and design-diff elements fit, and every finding routed `candidate-task-<name>` has that candidate |
@@ -123,6 +123,7 @@ The record is readable only while agents keep these forms. `state.py conventions
 - **Merge commits on the change branch**: `Merge task <name>`, and `Merge task <name> (rework)` for a rework; a `: <one line>` may follow.
 - **Phase-close commits in the home**: `Orchestrator: <cycle-id> <phase> closed`, exactly.
 - **Inline-fix commits**: `Inline fix (review <task> #<n>)`; a `: <one line>` may follow. When a commit cannot carry it, `state.py fix-link`.
+- **Test runs**: `<change-dir>/after-<task>-<sha12>.txt`, `.status` and, against a red baseline, `.compare`, named for the merge commit; `baseline-<cycle-id>.txt` and `.status`.
 - **Review and brief files**: `cycles/<cycle-id>/reviews/<task>.md`, `<task>-rework.md`, `whole-change.md`; `cycles/<cycle-id>/briefs/<task>.md`, `<task>-rework.md`, `review-<task>.md`, `premise-check.md`, `conformance.md`. A review file's frontmatter names the merge commit it reviewed: `merge_commit: <sha>`.
 - **Task-file frontmatter**: the keys `templates/task-body.md` names, `status` from § Task status, `task_name` the file's name. A key holding a fact whose source is elsewhere (`merge_commit`, the times) is a break that names that source; so is `decoration` or `resolution` in a finding file.
 
@@ -145,9 +146,8 @@ handshake-<cycle-id>.json # integrate § 8: the next plan's input (templates/han
 hardening.org             # templates/hardening.md
 inbox/<ask-id>.org        # open, answered and deferred asks (templates/ask.md)
 tasks/open/<name>.md      # task files (templates/task-body.md); tasks/closed/ after merge
-baseline-<cycle-id>.txt   # test outputs and the baseline's exit code (untracked)
-baseline-<cycle-id>.status
-after-<task>-<ts>.txt
+baseline-<cycle-id>.txt   # execute § 1, with .status: test outputs and exit codes (untracked)
+after-<task>-<sha12>.txt  # execute § 4, with .status and .compare: the record that the tests pass at the merge
 cycles/<cycle-id>/
   briefs/<task>.md        # plan § 5: the batch, and what the Implementor sees; review-<task>.md, <task>-rework.md
   premise-check.md        # plan § 3

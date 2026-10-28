@@ -48,8 +48,8 @@ Integrate writes it; the state layer only checks it. `state.py gate integrate` f
 |---|---|---|
 | `design_diff` | `cycles/<cycle-id>/design-diff.json` (integrate § 1); `[]` when absent | which seam rows moved |
 | `meta_discoveries` | `cycles/<cycle-id>/meta-discoveries.json` (integrate § 4), the PM's | what to weigh when drafting the batch |
-| `asks_for_user_open` | `state.py asks`: every inbox file with `status: open` | the questions still waiting, and what they block |
-| `asks_for_user_resolved` | `state.py asks --all`: the files answered, applied or deferred this cycle, with their `* Answer`, `* Readback` and `:APPLIED_VIA:` | what the user decided |
+| `asks_for_user_open` | `state.py asks --cycle <cycle-id>`, its `open` | the questions still waiting, and what they block |
+| `asks_for_user_resolved` | `state.py asks --cycle <cycle-id>`, its `resolved`: the files answered, applied, deferred, declined or superseded since the cycle started, with their `* Answer`, `* Readback` and `:APPLIED_VIA:` | what the user decided |
 | `user_resolved_goal_drift` | the goal-drift ask files (a `decision` whose options are revise / split / abandon / continue) answered with one of those labels exactly | whether the intent was revised |
 | `goal_drift_recommendation` | the PM's reading of the cycle against the intent's Goals (`roles/project-manager.md`); `none` when nothing drifted | whether a goal-drift ask is warranted, and the user's context for it |
 | `task_refinements` | `cycles/<cycle-id>/task-refinements.json` (integrate § 7) | what each open task must absorb; which are candidate-obsolete |

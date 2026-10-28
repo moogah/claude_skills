@@ -31,10 +31,12 @@ Files and git are the record of a change's state. There is no =state.json=. Each
 | A task exists; its class, critical-path flag, =blocked_by=, =cites_seams=, =discovered_*= | task-file frontmatter |
 | A task's status | task-file frontmatter =status:= |
 | A task merged, and its merge commit | =Merge task <name>= commits on the change branch's first parent |
+| A task's tests passed at its merge | =<change-dir>/after-<task>-<sha12>.txt= with its =.status= (the exit code) and, against a red baseline (=baseline-<cycle-id>.status= non-zero), its =.compare= (=test.compare='s exit code) |
 | A task was reviewed | =cycles/<cycle-id>/reviews/<task>.md= naming the task's merge commit |
 | A review sent a task back | =<task>-rework= review and brief files |
 | The batch | the task names under =cycles/<cycle-id>/briefs/=, less review, rework, premise-check and conformance briefs |
 | An ask: kind, status, what it blocks, its answer | the ask file (=inbox/= or =cycles/<cycle-id>/asks/=) |
+| An ask resolved in a cycle | a home commit touching its file since the cycle's =cycle-started= entry, or an uncommitted change to it |
 | A finding: kind, severity | the finding file's frontmatter |
 | A finding's decoration (=blocking= or =hardening=) and resolution | the event log (=finding-routed=) |
 | The hardening list | =hardening.org= |
@@ -70,6 +72,7 @@ The record is readable only while agents keep these forms; the state layer check
 - Review and brief files: =<task>.md=, =<task>-rework.md=.
 - Task-file frontmatter: the keys =templates/task-body.md= names, with =status= from the task status set.
 - Inline-fix commits: =Inline fix (review <task> #<n>)=.
+- Test runs: =after-<task>-<sha12>.txt=, =.status= and =.compare= in the change's directory, named for the merge commit.
 
 * Requirements
 
@@ -125,6 +128,23 @@ The state layer SHALL refuse a task's move to =done= unless its merge commit exi
 *** Scenario: Done without a review is refused
 - *WHEN* the task has a merge commit and no review file names it
 - *THEN* the state layer refuses, naming the missing review
+
+** Requirement: A task's tests pass at its merge
+
+The state layer SHALL refuse a task's move to =done= unless the test run recorded for its merge commit passes: its exit code is 0, or, against a red baseline, the overlay's =test.compare= recorded no regression. It SHALL read the recorded run and SHALL NOT run the tests itself.
+
+*** Scenario: Done without a test run is refused
+- *WHEN* a task has its merge commit and a review naming it, and no =after-<task>-<sha12>.txt= exists for that commit
+- *THEN* the state layer refuses, naming the missing file
+
+*** Scenario: Failing tests on a green baseline are refused
+- *WHEN* the cycle's baseline exited 0 and the task's run exited non-zero
+- *THEN* the state layer refuses, naming the run
+
+*** Scenario: A red baseline is read through the comparison
+- *WHEN* the cycle's baseline exited non-zero and the task's run exited non-zero
+- *THEN* the task may be done only when its =.compare= holds 0
+- *AND* a missing or non-zero =.compare= is refused, naming it
 
 ** Requirement: A phase passes only on its checks
 
@@ -182,9 +202,9 @@ The state layer SHALL check the forms in § Conventions for the change, and SHAL
 The state layer SHALL add entries to the event log and SHALL NOT change or remove one. A correction SHALL be a new entry naming the entry it corrects, and every reader SHALL apply the correction.
 
 *** Scenario: A typo is corrected by a new entry
-- *WHEN* an orchestrator records a review rejection by mistake and then records a correction naming it
+- *WHEN* an orchestrator routes a finding =blocking= with resolution =pending= by mistake and then records a correction naming that entry
 - *THEN* the log holds both entries
-- *AND* every answer that reads rejections counts none for that task
+- *AND* every answer that reads the routing, integrate's gate among them, counts no pending blocking finding for it
 
 *** Scenario: A cycle's start is in the log before any artifact
 - *WHEN* a cycle has started and nothing of it is yet on disk or in git
@@ -197,6 +217,10 @@ The handshake SHALL carry what the next plan acts on: the design diff, the meta-
 *** Scenario: Integrate closes without a digest
 - *WHEN* integrate has written the handshake with every required field and no =pm-digest.md= exists
 - *THEN* integrate's gate can pass
+
+*** Scenario: The resolved asks are the cycle's
+- *WHEN* integrate gathers the handshake's resolved asks, one ask was applied in an earlier cycle and one in this cycle
+- *THEN* only the one whose file the home's git touched since this cycle started is listed, wherever its file now sits
 
 *** Scenario: Plan refuses a handshake missing a field
 - *WHEN* plan starts and the prior handshake lacks =meta_discoveries=

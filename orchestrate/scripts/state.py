@@ -545,7 +545,40 @@ def done_problems(ch, name):
     if not named:
         problems.append(f"no review file (cycles/*/reviews/{name}.md or {name}-rework.md) names its merge "
                         f"commit {sha[:12]}")
+    problems += test_problems(ch, name, sha)
     return problems, sha
+
+
+def _read_int(path):
+    try:
+        return int(open(path).read().strip())
+    except (OSError, ValueError):
+        return None
+
+
+def test_problems(ch, name, sha):
+    """The test run recorded for the merge commit passes: `after-<task>-<sha12>.status` holds 0, or,
+    against a red baseline of the cycle whose batch holds the task, `after-<task>-<sha12>.compare`
+    (test.compare's exit code) holds 0. The state layer reads the files; it runs nothing."""
+    stem = os.path.join(ch.dir, f"after-{name}-{sha[:12]}")
+    rel = ch.rel(stem)
+    if not os.path.exists(stem + ".txt"):
+        return [f"no test run for merge commit {sha[:12]}: {rel}.txt is missing (flows/execute.md § 4)"]
+    status = _read_int(stem + ".status")
+    if status is None:
+        return [f"{rel}.status does not hold the test command's exit code"]
+    if status == 0:
+        return []
+    cycle = next((c for c in reversed(ch.cycles()) if name in ch.batch(c)), None)
+    baseline = _read_int(os.path.join(ch.dir, f"baseline-{cycle}.status")) if cycle else None
+    if not baseline:
+        return [f"the tests fail after merge commit {sha[:12]} (exit {status}) on a green baseline: {rel}.txt"]
+    compare = _read_int(stem + ".compare")
+    if compare is None:
+        return [f"the baseline is red and {rel}.compare holds no test.compare exit code"]
+    if compare != 0:
+        return [f"test.compare finds a regression after merge commit {sha[:12]} (exit {compare}): {rel}.txt"]
+    return []
 
 
 def _same_sha(a, b):
@@ -1005,7 +1038,27 @@ def verb_log(ch, args):
     return {"entries": evs}
 
 
+def touched_asks(ch, cycle):
+    """Ask ids whose file the home's git touched since the cycle's start, or that are changed and
+    not yet committed: when an ask is answered or applied it is committed then (templates/ask.md
+    § Commit rule), so git dates the resolution, wherever the file now sits."""
+    started = next((e for e in ch.events("cycle-started") if e["cycle"] == cycle), None)
+    if started is None:
+        raise Refusal("no_cycle", f"{cycle} was never started (no cycle-started entry)")
+    rel = ch.rel(ch.dir)
+    paths = (git(ch.home, "log", f"--since={started['at']}", "--format=", "--name-only", "--", rel) or "").split()
+    paths += [l[3:].split(" -> ")[-1] for l in (git(ch.home, "status", "--porcelain", "-uall", "--", rel) or "").splitlines()]
+    return {os.path.basename(p)[:-4] for p in paths
+            if p.endswith(".org") and ("/inbox/" in p or "/asks/" in p)}
+
+
 def verb_asks(ch, args):
+    if args.cycle:
+        touched = touched_asks(ch, args.cycle)
+        asks = ch.asks("all")
+        return {"cycle": args.cycle,
+                "open": [a.record(ch.home) for a in asks if a.status == "open"],
+                "resolved": [a.record(ch.home) for a in asks if a.status != "open" and a.id in touched]}
     return {"asks": [a.record(ch.home) for a in ch.asks("all" if args.all else "inbox")]}
 
 
@@ -1058,8 +1111,10 @@ def build_parser():
     s = sub.add_parser("log", help="the event log with corrections applied")
     s.add_argument("--cycle")
     s.add_argument("--kind", choices=sorted(EVENT_FIELDS))
-    s = sub.add_parser("asks", help="the inbox's ask files (--all: and every cycle's asks/)")
+    s = sub.add_parser("asks", help="the inbox's ask files (--all: and every cycle's asks/; --cycle: the "
+                                    "open ones and those resolved since that cycle started)")
     s.add_argument("--all", action="store_true")
+    s.add_argument("--cycle", help="a cycle id: its handshake's open and resolved asks")
     return p
 
 
