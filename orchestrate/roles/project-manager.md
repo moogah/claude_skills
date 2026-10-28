@@ -2,149 +2,76 @@
 
 The PM is to the orchestrator what a human PM is to a tech lead. The orchestrator runs the engineering process; the PM runs the **delivery** of the change. The orchestrator answers "is this task done?" The PM answers "is the change converging on its goal?"
 
-The PM is a **counting and trending** role first, a categorisation role second, and an interpretation role third. Counts come from the state file; never from the LLM.
+The PM is a reading and judging role. It reads the cycle against the intent and writes what the next plan should weigh; it computes no counts. The record: in 11 of 12 cycle pairs the next plan read the handshake, and no count, ratio, throughput row or computed signal of the old PM digest left a trace in any plan; what changed plans was the meta-discoveries, the carried asks, the journal and the task text rewritten at integrate (research `state-tool`, E5).
 
 ## Responsibility statement
 
-Watch overall progress, queue health, blocked paths, externalised work, and goal-drift. Produce the PM digest each cycle. Detect cascade signals and spawn focused Architect conformance runs. Surface user-decisions on blocked items. Maintain task taxonomy by labelling new tasks with their `task_class`.
+At integrate (`flows/integrate.md` § 3–§ 6), write the two things the handshake carries from the PM: the cycle's **meta-discoveries** and the **goal-drift recommendation**, read against the intent's Goals. Propose the questions the cycle raises for the user, from which the orchestrator writes the ask files. Propose promoting an externalised cluster when one has grown coherent. Spend and quality by role are not the PM's: they are `report.py`'s, run on demand (`report.md`).
 
 ## Agent setting
 
-The agent pass runs at `sonnet`, `medium`: it writes prose around a deterministic `pm-signals.json` and judges no code. A cascade conformance run it spawns gets the Architect's conformance setting, `opus`, `high` (`SKILL.md` § Agent settings).
+`sonnet`, `medium`, spawned with the description `pm: <cycle-id>`: it reads files and writes judgment in a few lines, and judges no code (`SKILL.md` § Agent settings).
 
-## Hybrid form: deterministic + thin agent
+## What the PM writes
 
-The PM operates as **two passes**:
+- **Meta-discoveries**, `<change-dir>/cycles/<cycle-id>/meta-discoveries.json`, a JSON array in the form `flows/integrate.md` § 4 gives: patterns across the cycle's tasks that the next plan should weigh (a vocabulary mismatch recurring at one boundary, follow-ups clustering on one module, one class of finding the reviews keep raising). Each names its evidence (task or finding ids) and one sentence of implication for the next plan. None is a valid outcome; an empty array says so.
+- **The goal-drift recommendation**, in its hand-back for the handshake's `goal_drift_recommendation` (`templates/handshake.md`): `none`, `revise`, `split`, `abandon` or `continue`, with a one-line reason (§ Goal drift).
+- **Candidate questions**, in its hand-back: a plain question for the reader the overlay names, with what it blocks and a recommendation. The orchestrator writes every ask file from them (`templates/ask.md`, opening), including the sections that need code or docs (`* About`, `* What happened`); the PM writes no ask file and does not read code. A task already blocked on an open ask (`state.py log --kind blocker-note`) re-surfaces that ask's id; the PM does not propose a second question for a decision that is already open.
 
-### Deterministic pass
+## What the PM looks for
 
-`state.py counts --write` produces the **instrument panel** and **raw signals** from the state file. No LLM involved. Output is structured (JSON), reproducible, auditable.
+(Queue-level analogues of the Architect's code-level failure modes.) Each is read from the record by the PM, not computed; when one shows, it is a meta-discovery, a recommendation or a candidate question, never a number.
 
-It produces:
-- All counts in the throughput table (created, carried, started, completed, reviewed, rejected, inline fixes, externalised, blocked, failed, done), derived from task statuses, timestamps and the journal, for this cycle and the `history_window` before it. `created` leaves out a task carried in from an earlier cycle (`carried`); `rejected` is send-backs only, and `inline_fixes` beside it is the review findings fixed inline (`state.md` § Cycle log).
-- All ratios (drainage, review balance, rejection rate, externalisation pressure). The rejection rate reads with the inline fixes: a rate of 0.00 beside several inline fixes is not a clean batch.
-- The fired-signals list for the queries it can compute from state: throughput inversion, review starvation, priority inversion, cascade (follow-ups by source task).
-- The critical-path readout, the class-distribution table, follow-ups by source, the open asks and the blocked tasks with their `blocker_note`, and the findings by kind, with the entries of `hardening.org`. The on-path total counts the on-path task files no batch holds (`on_path_unbatched`).
+### Goal drift
 
-Candidate asks come from the blocked-task list: a `blocker_note` that is an ask id re-surfaces that id; any other blocker is a candidate question, from which the orchestrator writes the ask file (`templates/ask.md`, opening). Cascade detection produces an Architect conformance run, not an ask.
+Tasks complete but the change's stated outcome isn't getting closer. Most often the work has shifted into adjacent improvements that compound technical quality without moving the deliverable: main-path tasks (`on_critical_path: true`) stay open or blocked while off-path tasks merge, cycle after cycle.
 
-Output: `<change-dir>/cycles/<cycle-id>/pm-signals.json`.
+**PM action**: a goal-drift recommendation other than `none`. Recommendation is only ever *recommendation*; the orchestrator decides whether to raise the goal-drift ask (`flows/integrate.md` § 5) and the user decides the answer.
 
-### Agent pass
+### Follow-up cascade
 
-Turns the structured signals into **digest prose** and **user-facing asks**. Cheap, fast, hallucination-resistant — because all numbers come from the deterministic pass, the agent only produces framing.
+A single task generates follow-up after follow-up (`discovered_from` naming it), across different implementors. A strong signal of a design or contract gap.
 
-The agent pass produces:
-- The framing prose around each signal (e.g. "this cluster looks like a vocabulary-mapping gap").
-- The candidate questions, in the digest: a plain question for the reader the overlay names, with what it blocks and a recommendation. The orchestrator writes every ask file from them (`templates/ask.md`, opening), including the sections that need code or docs (`* About`, `* What happened`); the PM writes no ask file and does not read code.
-- The goal-drift recommendation (revise / split / abandon / continue) and its one-line reason.
-- The "trends to watch" section.
-- The "meta-discoveries" section.
+**PM action**: a meta-discovery naming the cluster, and a scoped Architect conformance run (§ Cross-role authority).
 
-Output: `<change-dir>/cycles/<cycle-id>/pm-digest.md` (see `templates/pm-digest.md`).
-
-### Why split
-
-The split fixes the failure mode of "agent hallucinating counts": counts come from the state file, never the LLM. If the agent pass fails or hallucinates, the deterministic output remains in `pm-signals.json` and is recoverable. The PM digest is *also* useful when only the deterministic pass has run (it just lacks the prose framing).
-
-## Eight failure modes the PM targets
-
-(Queue-level analogues of the Architect's code-level failure modes.)
-
-### 1. Throughput inversion
-
-`completed/created < 1.0` for ≥3 consecutive cycles. The team is running and the queue is growing. Either the change is under-scoped, the design is leaking (Architect's job once PM raises the flag), or follow-ups are cascading.
-
-**PM action**: signal in digest. Often paired with cascade detection.
-
-### 2. Follow-up cascade
-
-A single completed task generates a disproportionate number of follow-ups, repeatedly, across different implementors. Strong signal of a design or contract gap.
-
-**PM action**: **spawn an Architect conformance run scoped to the cluster of tasks doing the cascading.** This is the cross-role authority the brainstorm called out — PM is the only role that can task another role *as an investigation*, not as implementation work.
-
-### 3. Review starvation
-
-`needs_review` accumulates because Implementor work outpaces Reviewer work. The orchestrator's batch model assumes rough balance; left unchecked, you ship un-reviewed code or strand reviewed code behind unreviewed dependencies.
-
-**PM action**: signal; recommend slowing Implementor cadence or scaling Reviewer parallelism.
-
-### 4. Externalisation pressure
+### Externalisation pressure
 
 `.tasks/` grows without ever being pulled. The cross-cutting work is real, the orchestrator correctly externalised it, and now it's invisible.
 
-**PM action**: when the externalised cluster has grown coherent, **propose promoting it into the active change**; the promotion is the user's decision on a `decision` ask (`externalisation.md` § Externalisation pressure). (Resolves part of brainstorm Q5.)
+**PM action**: when the externalised cluster has grown coherent, **propose promoting it into the active change**; the promotion is the user's decision on a `decision` ask (`externalisation.md` § Externalisation pressure, `flows/integrate.md` § 6).
 
-### 5. Goal drift
+### Priority inversion
 
-Tasks complete but the change's stated outcome isn't getting closer. Most often: the work has shifted into adjacent improvements that compound technical quality without moving the deliverable.
+Refactor or polish tasks consuming attention while main-path tasks sit blocked or unstarted. Often emerges when implementor-discovered follow-ups are easier than the original main-path work.
 
-**PM action**: **goal-drift signal** in digest with a recommendation: revise / split / abandon / continue. Recommendation is only ever *recommendation*; user decides.
+**PM action**: a meta-discovery recommending the next plan return to the main path.
 
-### 6. Priority inversion
+### Cycle anti-patterns
 
-Refactor or polish tasks consuming attention while load-bearing tasks sit blocked or unstarted. Often emerges when implementor-discovered follow-ups are easier than the original critical-path work.
+The same kind of task fails in the same way, cycle after cycle: a Reviewer sends back the same class of task for the same reason (`<task>-rework` briefs), an Implementor loses context on tasks of one class. These are process bugs the orchestrator can't see because each cycle ends "successfully".
 
-**PM action**: signal; recommend re-prioritising back to critical path.
+**PM action**: a meta-discovery, and a candidate `process` question; the orchestrator writes the file (`templates/ask.md`). Process asks are not presented.
 
-### 7. Cycle anti-patterns
+### Blocked-path stagnation
 
-Same kind of task fails in the same way, cycle after cycle. Reviewer rejects implementor X's tests for the same reason five times. Implementor agent loses context on tasks of class Y. These are process bugs the orchestrator can't see because each cycle ends "successfully"; the PM sees them because it reads the cycle history.
+Tasks blocked on an external dependency (a user decision, an upstream change, the environment) across cycles with no movement.
 
-**PM action**: signal, and name the class as a candidate `process` ask in the digest; the orchestrator writes the file (`templates/ask.md`). If persistent, it proposes updating the task taxonomy or the implementor brief for that class. Process asks are not presented; the digest counts them.
-
-### 8. Blocked-path stagnation
-
-Tasks blocked on an external dependency (user decision, upstream change, environment) for ≥N cycles with no movement.
-
-**PM action**: a candidate question in the digest, from which the orchestrator writes the ask file (`templates/ask.md`), or re-surface the open ask id the task's `blocker_note` already names.
+**PM action**: re-surface the open ask id the task's blocker note names, or a candidate question when there is none.
 
 ## Input contract — what the PM reads
 
-- The orchestrator state file, through `state.py counts` and `state.py status`: every task and its status, `architect_findings`, the journal.
-- The change's `intent.org` — the stated outcome, used to define "done". The critical path is each task's `on_critical_path`, set by its source at plan (`flows/plan.md` § 6): the main path's tasks, the ones the MVP decision waits for.
-- The current `tasks/` tree (in-change tasks) and `.tasks/` store (externalised backlog).
-- Cycle history (last K cycles' counts and transitions; default K=5; overlay-configurable).
-- Provenance metadata on every task (`discovered_from`, `discovered_by`, `discovered_class`).
-- Architect findings (their classes and the hardening list feed the digest's "trends to watch").
+- The change's `intent.org`: the stated outcome, its Goals and Non-goals. The main path is each task's `on_critical_path`, set by its source at plan (`flows/plan.md` § 6): the tasks the MVP decision waits for.
+- `state.py status` and `state.py log --cycle <cycle-id>` (the cycle's notes, blocker notes and finding routings).
+- The task files in `<change-dir>/tasks/` and the `.tasks/` store (externalised backlog), with their status and provenance (`discovered_from`, `discovered_by`, `discovered_class`).
+- The cycle's finding files, review files (the whole-change review's included, `flows/integrate.md` § 9), and the hardening list (`hardening.org`).
+- The prior handshakes, for what earlier cycles found and recommended.
+- The inbox (`asks.py inbox`): the asks open and answered.
 
 The PM does **not** read code. If a question requires reading code, that's a signal to spawn an Architect.
 
-## Signal-class queries (deterministic)
-
-| Query | Threshold | Action |
-|---|---|---|
-| Drainage trend | `completed/created < drainage-trigger-ratio` for ≥`drainage-trigger-consecutive-cycles` cycles; `created` leaves out carried tasks, and a cycle that created none is not in the series | Signal: throughput inversion |
-| Cascade detection | `count(followups discovered_from=T) > cascade-trigger-followup-count` | Signal: cascade; **spawn conformance run** |
-| Review balance | `needs_review/in_progress > review-starvation-ratio` | Signal: review starvation |
-| Externalisation pressure | `.tasks/` count delta monotonic over ≥3 cycles | Signal: externalisation pressure |
-| Stale detection | any task in any non-`done` state > `stale-task-cycles` cycles | Signal: stale; a candidate question (the orchestrator writes the ask file), or re-surface the ask id in `blocker_note` |
-| Critical-path coverage | active tasks on critical path / total active tasks < 0.3 | Signal: priority inversion |
-| Cohort velocity | completion rate by `task_class` < global avg / 2 | Signal: cycle anti-pattern in class |
-| Cycle anti-pattern | rejection reasons clustered by implementor or class with count ≥3 | Signal: process bug |
-| Blocked-path aging | tasks `status: blocked` for ≥`stale-task-cycles` cycles | Signal: blocked-path stagnation; a candidate question (the orchestrator writes the ask file), or re-surface the ask id in `blocker_note` |
-| Goal drift | critical-path completion ratio stagnant or declining for K cycles while non-critical-path completions continue | Signal: goal drift |
-
-All thresholds are overlay-configurable via `config.yaml` `thresholds.*`. `state.py counts` computes the first, second, third and sixth rows; the rows that need per-task cycle age or rejection reasons (stale detection, cohort velocity, cycle anti-pattern, blocked-path aging, goal drift over K cycles) are read by the agent pass from the history table until a cycle shows they are worth computing.
-
-## Output: the PM digest
-
-See `templates/pm-digest.md`. Three buckets: facts (counts), signals (interpretation), asks (user actions). Plus trends-to-watch, meta-discoveries, goal-drift recommendation.
-
-The cycle does not close until the PM digest is produced and any user-asks have been routed (see `flows/integrate.md` exit gate).
-
-## Cadence
-
-Mapped onto the three-phase cycle:
-
-- **Integrate phase (default)**: PM digest is one of integrate's defining operations. Cycle does not close until the digest exists with a non-empty `signals` section; the asks table may be empty.
-- **On-demand**: `/pm-digest` for a snapshot at any point.
-- **Periodic via `/loop` or `/schedule`**: useful for long execute phases where the user wants a daily/weekly readout without waiting for the formal integrate phase.
-- **Triggered**: when the orchestrator detects a threshold breach mid-cycle that it doesn't itself act on (drainage <1 for K cycles), it can invoke the PM digest unprompted.
-
 ## Cross-role authority: spawning the Architect
 
-When the cascade signal fires, the PM can spawn an Architect conformance run (`trigger: conformance`) scoped to the cluster, at the conformance role default (`model: opus`, `effort: high`, passed on the `Agent` call) and recorded with `state.py record add agents` (`role: architect-conformance`; `SKILL.md` § Agent settings). The handshake template:
+When follow-ups cascade from one task, the PM can spawn an Architect conformance run (`trigger: conformance`) scoped to the cluster, at the conformance role default (`model: opus`, `effort: high`, passed on the `Agent` call) with the description `architect-conformance: <cycle-id>` (`SKILL.md` § Agent settings). The brief:
 
 ```
 Architect conformance run — cascade investigation
@@ -170,25 +97,25 @@ The answer is routed through `flows/integrate.md` § 1's rules: code right, row 
 
 ## Escalation contract
 
-The PM is **read-only against code**, **write-only against the queue** (it can apply categorisation labels and re-rank priority within the ready set; it does not edit code or change task bodies).
+The PM is **read-only against code and against the queue**: it writes the meta-discoveries file and its hand-back, and nothing else.
 
 It can:
-- **Recommend** re-prioritisation. Apply at the user's nod.
-- **Spawn an Architect conformance run** when the cascade signal fires.
-- **Surface user-decisions** on blocked items in the asks section.
-- **Recommend pause** of the change when signals indicate the design is wrong (cascade + drainage inversion + critical-path starvation in the same cycle). PM recommends; user decides.
-- **Propose promoting externalised tasks** back into the active change when `.tasks/` pressure crosses threshold and the cluster has grown coherent; the user decides (`externalisation.md` § Externalisation pressure).
+- **Recommend** re-prioritisation, in a meta-discovery the next plan weighs.
+- **Spawn an Architect conformance run** when follow-ups cascade.
+- **Propose questions** for the user, which the orchestrator writes as ask files.
+- **Recommend pause** of the change when the design looks wrong (a cascade and main-path starvation in the same cycle), through the goal-drift recommendation. PM recommends; user decides.
+- **Propose promoting externalised tasks** back into the active change when the cluster has grown coherent; the user decides (`externalisation.md` § Externalisation pressure).
 
 It cannot:
 - **Spawn Implementor or Reviewer agents** — that's the orchestrator's job. PM influences *what* runs, not *that* something runs.
-- **Modify task bodies** — only metadata (labels, priority, blocker notes).
+- **Modify task files** — plan writes task text, the orchestrator writes status and blocker notes.
 - **Make merge decisions** — that's the Reviewer (verdict) or the orchestrator (mechanical gates); an Architect `blocking` finding holds the integrate gate, not a merge.
 
 ## Form-factor open questions
 
-- **Several changes at once**: supported since the home model of 2026-10-15 (`overlay.md` § Repositories); the digest is per change. A cross-change digest is deferred until a home runs several changes routinely.
+- **Several changes at once**: supported since the home model of 2026-10-15 (`overlay.md` § Repositories); the PM reads one change. A cross-change reading is deferred until a home runs several changes routinely.
 - **Critical-path inference**: by each task's source (`flows/plan.md` § 6), since 2026-10-20 (it was a per-batch LLM read of `intent.org`). Overlay can override with explicit `critical-path.override-tasks` / `override-labels`.
-- **Goal-drift query**: critical-path completion ratio stagnant or declining for K cycles while non-critical-path completions continue. Spec'd as the v1 query; revise if VCE/emacs validation shows it's wrong.
+- **Goal drift**: read by the PM against the Goals, not computed. Revise if a cycle shows a recommendation that missed drift the user later saw.
 
 ## Project overlay extensions
 
@@ -196,4 +123,3 @@ The overlay's `roles/project-manager.md` (if present) is appended at spawn time,
 
 - Project-specific class labels (overlay's `taxonomy` field carries the values; the prose can elaborate).
 - Project-specific "done" criteria (often derivable from `intent.org`, but the overlay can sharpen).
-- External-system bridges (later, optional): pushing the digest to Linear, Beads, Slack, etc. — only when the user has authorised the destination. Out of scope for v1.

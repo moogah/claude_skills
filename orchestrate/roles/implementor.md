@@ -128,7 +128,7 @@ push_backs:
 deviation_summary: <optional one-line — e.g. "deviated from prescribed approach because X; details in ## Observations">
 ```
 
-This report is **for the orchestrator only**. It is read at integrate alongside the conformance check, and in execute only when the hand-back line flags a deviation or a candidate task. **It is never passed to the reviewer.** See `flows/execute.md` for the author-blind constraint and the substrate-level enforcement.
+This report is **for the orchestrator only**. It is read at integrate alongside the conformance check, and in execute only when the hand-back line flags a deviation or a candidate task. **It is never passed to the reviewer.** See `flows/execute.md` § 7 for the author-blind constraint and how the orchestrator keeps it.
 
 ## Hand-back
 

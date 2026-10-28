@@ -35,8 +35,8 @@ The integrate question is **not skipped** — that's what catches the case where
 
 1. **Make the edit** in the code root, the change's worktree (no task worktree).
 2. **Run the verification command** in the code root (overlay's `test.command`, or a narrower command if obviously sufficient).
-3. **Check the seam rows**: does this edit change a seam row in the change's `design.org` (its statement or owning symbols)? If yes, amend the row in place at the contract level (`templates/design.md` § Seams: cut detail, never add it) and, when a cycle is open, write one `state.py note note "record-correction: <what>" --ref <seam-id>` (at most 280 characters, or the tool refuses `text_too_long`; `--path` names a file for more); commit the row with the edit in the code root, the subject naming the row. A design in question is a `decision` file in the inbox, presented only under the inline rule (`templates/ask.md` § The inline rule: the phase agent hands back `stopped`, the dispatcher asks).
-4. **Update the task file** at the home: its `status` to `done` directly (skipping `needs_review` / `reviewed`). Inline path skips formal review because the orchestrator IS the reviewer. If a cycle is open, the task is in state too: `state.py task add <name> …` if it was not, then `state.py task set <name> done`; between cycles the task file is the record.
+3. **Check the seam rows**: does this edit change a seam row in the change's `design.org` (its statement or owning symbols)? If yes, amend the row in place at the contract level (`templates/design.md` § Seams: cut detail, never add it) and write one `state.py note note "record-correction: <what>" --ref <seam-id>` (at most 280 characters, or the tool refuses `too_long`; `--path` names a file for more); commit the row with the edit in the code root, the subject naming the row. A design in question is a `decision` file in the inbox, presented only under the inline rule (`templates/ask.md` § The inline rule: the phase agent hands back `stopped`, the dispatcher asks).
+4. **Update the task file** at the home: its `status` to `done` directly (skipping `needs_review` / `reviewed`). Inline path skips formal review because the orchestrator IS the reviewer. An inline task has no `Merge task` commit and no review file, so `state.py check done` is not run for it; the task file and the commit naming it are its record, and no gate reads it, since it is in no batch. A follow-up written here gets `state.py check new <name>` like any task file.
 5. **Commit** with the standard task-name commit message: the code in the code root, the task file and any ask file in the home (one commit when they are the same repo).
 
 ## Bailout rule
@@ -78,7 +78,7 @@ Most answers are "no; close." That's fine. The discipline is in asking, not in f
 
 - The integrate question (above).
 - Provenance fields if the inline task is a follow-up: `discovered_from`, `discovered_by`, `discovered_class`.
-- Recording the task in state when a cycle is open (so `state.py counts` sees it; counts are derived, nothing is bumped by hand).
+- The task file's `status: done` and the commit naming the task: the record, read by `state.py status` for the main path.
 
 ## What inline path DOES skip
 
@@ -86,7 +86,7 @@ Most answers are "no; close." That's fine. The discipline is in asking, not in f
 - Implementor agent spawn.
 - Reviewer agent spawn (orchestrator is the reviewer).
 - The `needs_review` / `reviewed` intermediate states (status goes `ready → done` directly).
-- Author-blind enforcement (irrelevant — single actor).
+- Author-blind review (irrelevant — single actor).
 - The full integrate phase (replaced by the integrate question).
 
 ## When NOT to use inline even if technically eligible

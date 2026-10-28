@@ -6,8 +6,8 @@ Outside the state layer (docs/specs/state-layer.org § Integration Points): run 
 
 `spend` reads every subagent transcript under the home's project directories
 ($CLAUDE_CONFIG_DIR or ~/.claude, projects/<home or a path under it>/*/subagents/). An agent
-counts when its spawn description (agent-<id>.meta.json) reads `<role>: <task-name | cycle-id>`
-naming a task or cycle of the change; the role is that word, the setting is what the transcript
+counts when its spawn description (agent-<id>.meta.json) reads `<role>: <task-name | cycle-id |
+change>` naming a task, a cycle or the change itself (the design round, outside any cycle); the role is that word, the setting is what the transcript
 ran at. Quality comes from the record: rework briefs, conformance findings and follow-ups.
 
 Usage: python3 report.py [--home PATH] [--change NAME] spend [--cycle ID] | context <agent-id>
@@ -174,6 +174,8 @@ def change_agents(ch):
                 task, cycle = ref, cycle_of.get(ref)
             elif ref in cycles:
                 task, cycle = None, ref
+            elif ref == ch.name:  # the design round and other work outside a cycle
+                task, cycle = None, None
             else:
                 continue
             aid = os.path.basename(meta)[len("agent-"):-len(".meta.json")]

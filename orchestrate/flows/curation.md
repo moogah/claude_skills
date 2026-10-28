@@ -19,7 +19,7 @@ V1 ships, projects accumulate corpora through some cycles, and **then** v2 speci
 Where v1 needs a curation hook, it does the cheapest thing:
 
 - **Distill**: not done. Discoveries surfaced by integrate's conformance check remain in their findings and journal lines; a change's `design.org` is not edited beyond what conformance amends.
-- **Cluster**: PM does the simplest cluster detection (cascade signal: `discovered_from` clustering). No cross-cycle clustering.
+- **Cluster**: PM does the simplest cluster detection (`discovered_from` clustering, written as a meta-discovery in the handshake). No cross-cycle clustering.
 - **Compress**: not done. Cycle archives remain verbatim.
 - **Index**: not done. The per-change `design.org` seam tables are the only index v1 has.
 - **Prune**: not done. Default to keep.
@@ -28,15 +28,15 @@ The cost: plan phase reads the change's full `design.org`. As a change's seams g
 
 ## Triggers (specified now to avoid v2 painting itself into a corner)
 
-The triggers v2 will use are spec'd in v1 so the state file has the right fields:
+The triggers v2 will use are spec'd in v1 so the record holds what they read:
 
 - **Corpus-size delta** over N cycles exceeds threshold (more prose added than the read model is absorbing).
 - **Closed-but-unindexed task count** crosses threshold.
-- **Externalisation pressure** signal from PM crosses threshold (`.tasks/` growth without absorption).
+- **Externalisation pressure** crosses threshold (`.tasks/` growth without absorption).
 - **Time-based** fallback for long-running projects (weekly, monthly — overlay-configurable).
 - **Manual**: `/curate` for an explicit pass.
 
-`state.py counts` over the archived states already yields everything these triggers need: closed-task count, externalisation count, time-since-last-curation. V2 reads them; v1 records the states they derive from.
+The record already yields everything these triggers need: closed tasks are the task files under `tasks/closed/` with their merge commits, externalised ones the files under `.tasks/`, and time since the last curation is in git. V2 reads them; v1 keeps the files they derive from.
 
 ## Deep archive location (decided in v1 to avoid v2 rework)
 
@@ -65,7 +65,7 @@ These are spec'd here so v2 implementation has them at hand.
 
 ## Boundary with regular cycle (v2)
 
-- **Scope**: regular cycle's integrate operates on this cycle's outputs. Curation operates on the **historical corpus** (closed tasks, accumulated review notes, aged externalised entries, cumulative PM-digest stream).
+- **Scope**: regular cycle's integrate operates on this cycle's outputs. Curation operates on the **historical corpus** (closed tasks, accumulated review notes, aged externalised entries, the handshakes' meta-discoveries).
 - **Tempo**: regular cycle runs once per batch. Curation runs threshold-triggered, possibly weeks apart.
 
 The two cycles communicate through shared artifacts (the design documents, the index, the externalised backlog), never by synchronous handoff. **Curation never blocks a regular cycle from proceeding; a regular cycle never blocks curation from running.**
@@ -75,7 +75,7 @@ The two cycles communicate through shared artifacts (the design documents, the i
 Revisit when:
 1. A change whose seams outgrow one `design.org`, or two changes sharing a seam.
 2. The cycle archive at any project exceeds 20 cycles.
-3. PM's cascade detection consistently fires on the same cluster across ≥5 cycles (suggests durable speculation prior is needed; that's a curation operation).
+3. The same cluster recurs in the handshakes' meta-discoveries across ≥5 cycles (suggests durable speculation prior is needed; that's a curation operation).
 4. The user asks for it.
 
 Until then, this stub stands.

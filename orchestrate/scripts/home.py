@@ -560,9 +560,7 @@ OVERLAY_KEYS = {
     "worktree": {"init", "needs-submodules"},
     "artifacts": {"tasks-root", "externalised-root", "specs-root", "intent-pattern", "design-pattern"},
     "taxonomy": None,
-    "thresholds": {"history-window", "drainage-trigger-ratio", "drainage-trigger-consecutive-cycles",
-                   "cascade-trigger-followup-count", "stale-task-cycles", "review-starvation-ratio",
-                   "externalisation-pressure-growth"},
+    "thresholds": {"phase-agent-context"},
     "critical-path": {"inference", "override-tasks", "override-labels"},
     "architect": {"drift-hotspots"},
     "reviewer": {"checks"},
@@ -578,6 +576,13 @@ REMOVED_KEYS = {
     "architect.severity-overrides": "severity is the reporter's and routing is by the change's main path (templates/architect-finding.md, 2026-10-14)",
     "roles-overlay": "role overlays are found by name under roles/ (overlay.md § Layout); the key named nothing",
     "worktree.parent": "moved to worktrees.parent, relative to the home, with worktrees.pattern (2026-10-15)",
+    "thresholds.history-window": "the PM digest's signals were retired with it (2026-10-28); delete it",
+    "thresholds.drainage-trigger-ratio": "the PM digest's signals were retired with it (2026-10-28); delete it",
+    "thresholds.drainage-trigger-consecutive-cycles": "the PM digest's signals were retired with it (2026-10-28); delete it",
+    "thresholds.cascade-trigger-followup-count": "the PM digest's signals were retired with it (2026-10-28); delete it",
+    "thresholds.stale-task-cycles": "the PM digest's signals were retired with it (2026-10-28); delete it",
+    "thresholds.review-starvation-ratio": "the PM digest's signals were retired with it (2026-10-28); delete it",
+    "thresholds.externalisation-pressure-growth": "the PM digest's signals were retired with it (2026-10-28); delete it",
 }
 
 
@@ -770,6 +775,7 @@ def verb_home_init(store, args):
 ORCHESTRATOR_GITIGNORE = """# Written by home.py open. Test outputs and scratch stay out of git; every other
 # orchestration artifact (the event log, inbox, cycles, handshakes) is tracked.
 baseline-*.txt
+baseline-*.status
 after-*.txt
 *.tmp
 """

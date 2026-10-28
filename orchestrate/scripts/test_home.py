@@ -309,6 +309,8 @@ worktree:
   parent: .worktrees
 mystery: 1
 thresholds:
+  history-window: 5
+  phase-agent-context: 300000
   nope: 2
 """)
     roles = repo / ".claude" / "orchestrator" / "roles"
@@ -317,9 +319,11 @@ thresholds:
     home_py.main(["--home", str(repo), "where"])
     w = "\n".join(_parse(capsys.readouterr().out)["warnings"])
     for needle in ("no overlay-version", "scaffolding:", "artifacts.register:", "architect.interfaces-document:",
-                   "roles-overlay:", "worktree.parent:", "mystery:", "thresholds.nope:", "test.compare climbs",
+                   "roles-overlay:", "worktree.parent:", "mystery:", "thresholds.nope:",
+                   "thresholds.history-window: the PM digest", "test.compare climbs",
                    "roles/architect.md names retired concepts (interfaces register, interfaces.org, load-bearing)"):
         assert needle in w, needle
+    assert "phase-agent-context" not in w
     cfg.write_text("overlay-version: 1\nproject: p\ntest:\n  command: ./t\n")
     (roles / "architect.md").write_text("fine\n")
     home_py.main(["--home", str(repo), "where"])

@@ -15,7 +15,7 @@ Not when the user wrote the intent and spec edits themselves: the round reads th
 
 The dispatcher's brief is the fixed one (`SKILL.md` § The dispatcher's loop) with the source in place of the cycle:
 
-> You are the phase agent for opening a change. Home: `<path>`. Source: `<the user's words, verbatim>` | `<.tasks/ paths>` | `<split ask id and its change>`. Run `state.py where`, then read and follow `~/.claude/skills/orchestrate/flows/open.md` to its commit. …
+> You are the phase agent for opening a change. Home: `<path>`. Source: `<the user's words, verbatim>` | `<.tasks/ paths>` | `<split ask id and its change>`. Run `home.py where`, then read and follow `~/.claude/skills/orchestrate/flows/open.md` to its commit. …
 
 The dispatcher copies the user's words; it reads nothing to write the brief.
 
@@ -29,7 +29,7 @@ The source; the `* Purpose` of every file under `docs/specs/`, to find the capab
 
 - `<change>`: the user's name for it, or a kebab-case phrase naming the outcome (`workspace-state-writes-honour-guards`). `docs/changes/<change>/` must not exist in the repository, except when revising a change in place (§ When it runs), which keeps its name, worktree and base.
 - The repository: the home's only one, or the one the source names (`--repo`); a change belongs to one repository (`overlay.md` § Repositories). A source that needs two repositories is two changes, the second opened after the first with its `* Why` naming it.
-- `state.py change open <change> [--repo <name>] [--from <ref>]` makes the change's worktree on the branch `<change>`, its change integration branch, from the repository checkout's HEAD or the ref given (the hand-off's workspace integration branch when the research skill made one; `research` § Hand-off), and writes `change.json`. From here `eval "$(state.py where --sh)"` gives `$CODE_ROOT`, that worktree; the intent and the spec edits are written and committed there. A change the user opened by hand (its intent already on its own branch) is adopted with `--worktree <path>` and the rest of this flow is skipped, as § When it runs says.
+- `home.py open <change> [--repo <name>] [--from <ref>]` makes the change's worktree on the branch `<change>`, its change integration branch, from the repository checkout's HEAD or the ref given (the hand-off's workspace integration branch when the research skill made one; `research` § Hand-off), and writes `change.json`. From here `eval "$(home.py where --sh)"` gives `$CODE_ROOT`, that worktree; the intent and the spec edits are written and committed there. A change the user opened by hand (its intent already on its own branch) is adopted with `--worktree <path>` and the rest of this flow is skipped, as § When it runs says.
 - `#+BASE:`: the `base` in `change.json` (`git -C "$CODE_ROOT" rev-parse HEAD` at open), written before the commit of § 5.
 
 ### 3. Spec edits

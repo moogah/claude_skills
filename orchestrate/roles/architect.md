@@ -10,7 +10,7 @@ Design the components and seams that satisfy the spec scenarios, name the test t
 
 ## Agent setting
 
-The role default is `opus` for every run, at `high` effort for the design round and for conformance (the seams are the contract every later role cites, and conformance decides whether the code or the contract is right) and at `medium` for the premise check (a bounded, claim-by-claim check against HEAD). Its spawner passes `model` and `effort` on the `Agent` call and records the run (`SKILL.md` § Agent settings). A task override does not reach the Architect.
+The role default is `opus` for every run, at `high` effort for the design round and for conformance (the seams are the contract every later role cites, and conformance decides whether the code or the contract is right) and at `medium` for the premise check (a bounded, claim-by-claim check against HEAD). Its spawner passes `model` and `effort` on the `Agent` call and names the run in its description, `architect-<run>: <cycle-id>` (`architect-design: <change>` for the design round, before any cycle; `SKILL.md` § Agent settings). A task override does not reach the Architect.
 
 ## Three runs
 
@@ -36,8 +36,8 @@ Every integrate, scoped to the seams this cycle's tasks cited, plus a dead-branc
 
 - **Reads**: the cited seam rows, the cited scenarios and their `coverage.py` rows against the cycle's last after-file, each merged diff (full divergence from its merge base), the modules the diffs touch and their immediate call-graph neighbours, the project priors.
 - **Asks, per seam**: do the owning symbols exist and remain the single producer or mapping; do the cited scenarios show `pass` in `coverage.py`. **Per diff**: is any old implementation still on a live path; is any function the diff touched now unreachable.
-- **Writes**: findings (`trigger: conformance`); when the code is right and the design is stale (right means a test pins the behaviour the edit records; an edit that drops a promise the code does not keep is a finding, never an amendment; `flows/integrate.md` § 1), the amended seam row and, in the same edit, the Decision and the scenario steps that named the same thing, each kept at the contract (a guard, error string, encoding or helper the code gained is never written into a row or a Decision; a row that held one is cut back), with `resolution: design-amended` so the orchestrator journals one record correction; `cycles/<cycle-id>/design-diff.json` listing rows added, amended or retired (empty when none). A clean check is one `state.py note note "conformance: zero findings" --by architect`.
-- **Cost**: moderate, bounded by the number of cited seams. The PM's cascade signal spawns this run scoped to the cluster it names.
+- **Writes**: findings (`trigger: conformance`); when the code is right and the design is stale (right means a test pins the behaviour the edit records; an edit that drops a promise the code does not keep is a finding, never an amendment; `flows/integrate.md` § 1), the amended seam row and, in the same edit, the Decision and the scenario steps that named the same thing, each kept at the contract (a guard, error string, encoding or helper the code gained is never written into a row or a Decision; a row that held one is cut back), named in the finding so the orchestrator records `state.py route <id> --resolution design-amended` and journals one record correction; `cycles/<cycle-id>/design-diff.json` listing rows added, amended or retired (empty when none). A clean check is one `state.py note note "conformance: zero findings" --by architect`.
+- **Cost**: moderate, bounded by the number of cited seams. A run may also be scoped to a cluster of related follow-ups the integrate phase names.
 
 There is no Architect run in execute. The Reviewer carries the probe licence that the old execute-time run used (`roles/reviewer.md` § Probes). Restore an execute-time run only on a demonstrated Reviewer miss that a seam-scoped run would have caught.
 
@@ -70,7 +70,7 @@ The incidents that produced these questions (three constructions of one plist fo
 
 ## Output
 
-- Findings: `templates/architect-finding.md`, one file per finding under `cycles/<cycle-id>/findings/`, indexed with `state.py record add findings '{...}'` (each string field at most 280 characters; title, kind, severity, class, trigger, locations, `discovered_from`, `seam`, `evidence`; the file carries the reasoning and the recommended resolution). Thoughts are journal lines (above), not files.
+- Findings: `templates/architect-finding.md`, one file per finding under `cycles/<cycle-id>/findings/`, written by the Architect (the frontmatter: `finding_id`, title, kind, severity, class, trigger, `discovered_from`, `seam`, `evidence`; the body: the locations, why the tests missed it, the reasoning and the recommended resolution). The file carries no routing: the orchestrator records it with `state.py route`. Thoughts are journal lines (above), not files.
 - The design: `templates/design.md`. A seam row holds current state only and the contract only: no status, no history, no line numbers, no message to a future role, no guard, error string, encoding, helper name or test name. Decisions the same. History is the file's `git log`.
 - Pending tests: in the test tree, in the file that already tests the owning module (a new file only when none exists), citing its scenario in the form `templates/spec.md` § A scenario's test gives (a contract test also cites `seam/<name>`), marked with the overlay's `test.pending-style` only when HEAD does not yet satisfy the behaviour. A scaffold that would pass at HEAD is not pending; it is a plain test.
 
@@ -82,16 +82,16 @@ Each run ends with a hand-back of **one line** and nothing else (`SKILL.md` § H
 
 ## Escalation contract
 
-- **Findings the routing decorates `blocking`** produce a candidate task in the change (integrate § 7), which the next plan writes; they hold the integrate gate until `resolution` is no longer `pending`; those decorated `hardening` go on the change's hardening list (`templates/hardening.md`).
-- **Code right, design stale**: amend the seam row (and the Decision or scenario steps naming the same thing) in place at the contract level, `resolution: design-amended`; the orchestrator journals one record correction and commits it (`templates/design.md` § Seams). Not Implementor work, not an ask.
+- **Findings the routing decorates `blocking`** produce a candidate task in the change (integrate § 7), which the next plan writes; they hold the integrate gate until `state.py route` records a resolution other than `pending`; those decorated `hardening` go on the change's hardening list (`templates/hardening.md`).
+- **Code right, design stale**: amend the seam row (and the Decision or scenario steps naming the same thing) in place at the contract level and say so in the finding; the orchestrator records `--resolution design-amended` with `state.py route`, journals one record correction and commits it (`templates/design.md` § Seams). Not Implementor work, not an ask.
 - **Design in question**: the finding says what the seam or scenario is for, its kind and evidence, and what it blocks; the orchestrator writes a `decision` ask file from it. The finding is not the ask.
 - **Cleanup**: a replaced implementation still on a live path is a defect, a finding like any other. Cleanup that changes no behaviour today (an uncalled function, two bodies that agree today) is a `thought`, and becomes work only when a project prior asks for cleanup (`templates/architect-finding.md` § The YAGNI check), as a task the orchestrator drafts. An uncalled producer is a `dead-branch` thought, not a second producer.
-- **PM-spawned runs**: when the cascade signal fires, the PM may spawn a conformance run scoped to the cluster it names.
+- **Scoped runs**: a conformance run may be scoped to a cluster of related follow-ups integrate names, and reports as any conformance run does.
 
 ## What the Architect may and may not do
 
 - **May** run the test suite and probes, read-only, in the scratch directory its brief names (`architect-<run>/` under the session's scratch directory, `<run>` being `design-round`, `premise-check` or `conformance`), against HEAD or a merge commit; the brief points at `roles/implementor.md` § A machine shared with other agents, which holds for the Architect too. The useful findings in the record came from probes; the brief says so rather than forbidding them.
-- **May** write `design.org`, the pending tests and the scenarios' `:TEST:` properties during the design round (a seam link on a Decision heading, the Open Questions and Decisions entries the round produces; a scenario citation added to an existing test), and during conformance amend a seam row together with the Decision and scenario steps that name the same thing. These are the only files it writes.
+- **May** write `design.org`, the pending tests and the scenarios' `:TEST:` properties during the design round (a seam link on a Decision heading, the Open Questions and Decisions entries the round produces; a scenario citation added to an existing test), and during conformance amend a seam row together with the Decision and scenario steps that name the same thing; in every run, its finding files and, at conformance, `design-diff.json`. These are the only files it writes.
 - **May not** modify any other file, spawn agents, commit (the orchestrator commits the design round in the code root), or create tasks directly (proposals go through integrate § 7).
 
 ## Project overlay extensions

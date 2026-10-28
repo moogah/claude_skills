@@ -91,15 +91,16 @@ def test_spend_by_role_reads_the_role_from_the_spawn_description(home, capsys):
     _transcript(home, "i2", "implementor: b", req("claude-sonnet-5-5", "low"))
     _transcript(home, "p1", "phase-plan: cycle-1", req("claude-opus-5-5", "high"))
     _transcript(home, "x1", "Explore the code", req("claude-haiku-5-5", None))       # names no role
+    _transcript(home, "d1", "architect-design: chg", req("claude-opus-5-5", "high"))  # the design round
     _transcript(home, "o1", "implementor: other-change-task", req("claude-opus-5-5", "medium"))
     code, out, err = run(home, capsys, "spend")
     assert code == 0, err
-    assert sorted(out["by_role"]) == ["implementor", "phase-plan"]
+    assert sorted(out["by_role"]) == ["architect-design", "implementor", "phase-plan"]
     impl = out["by_role"]["implementor"]
     assert impl["agents"] == 2 and impl["settings"] == {"opus/medium": 1, "sonnet/low": 1} and impl["overrides"] == 1
     assert out["unattributed_spawns"] == 1
     assert {(a["agent_id"], a["task"], a["cycle"]) for a in out["by_agent"]} == \
-        {("i1", "a", "cycle-1"), ("i2", "b", "cycle-1"), ("p1", None, "cycle-1")}
+        {("i1", "a", "cycle-1"), ("i2", "b", "cycle-1"), ("p1", None, "cycle-1"), ("d1", None, None)}
     # a's file asks for sonnet/medium; its Implementor ran opus/medium
     assert out["override_mismatches"] == [{"agent_id": "i1", "override": "sonnet/medium", "ran": {"opus/medium": 1}}]
     assert [c["cycle"] for c in out["by_cycle"]] == ["cycle-1"]
