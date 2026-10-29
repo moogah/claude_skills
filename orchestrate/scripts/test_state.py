@@ -541,7 +541,9 @@ def test_done_without_a_test_run_is_refused(home):
     sha = home.merge("a", tests=None)
     home.review(cycle, "a", sha)
     code, _, err = home.run("check", "done", "a")
-    assert code == 1 and f"after-a-{sha[:12]}.txt is missing" in err["message"]
+    assert code == 1 and f"after-a-{sha[:12]}.status is missing" in err["message"]
+    (home.dir / f"after-a-{sha[:12]}.status").write_text("0\n")  # the exit code is the record; the output may be absent
+    home.ok("check", "done", "a")
 
 
 def test_done_with_failing_tests_on_a_green_baseline_is_refused(home):
@@ -585,3 +587,42 @@ def test_asks_for_a_cycle_are_those_its_git_touched(home):
     out = home.ok("asks", "--cycle", cycle)
     assert [a["id"] for a in out["resolved"]] == ["ask-cycle-1-1"]
     assert [a["id"] for a in out["open"]] == ["ask-cycle-1-2"]
+
+
+# ---------------------------------------------------------------- code review, 2026-10-28
+
+def test_a_change_whose_only_cycle_was_abandoned_starts_again(home):
+    started(home)
+    home.ok("cycle", "abandon", "--why", "wrong batch")
+    assert home.ok("status")["stage"] == "designed, no cycle open"
+    assert home.ok("cycle", "start", "--cycle", "cycle-2")["cycle"] == "cycle-2"
+
+
+def test_a_closed_cycle_without_its_handshake_still_refuses(home):
+    cycle = started(home)
+    for phase in ("plan", "execute", "integrate"):
+        home.close(cycle, phase)
+    code, _, err = home.run("cycle", "start")
+    assert code == 1 and err["error"] == "no_prior_handshake"
+
+
+def test_a_handshake_field_of_the_wrong_type_fails_the_gate(home):
+    cycle = started(home)
+    home.close(cycle, "plan")
+    home.close(cycle, "execute")
+    home.handshake(cycle, asks_for_user_open=None)
+    c = check(home.gate("integrate"), "handshake_written")
+    assert c["ok"] is False and "asks_for_user_open: expected a JSON array" in c["reason"]
+    assert home.ok("status")["gate"]["passes"] is False
+
+
+def test_a_deferred_ask_is_carried_though_untouched(home):
+    home.designed()
+    home.ask("ask-cycle-0-1", status="deferred", answer="later")
+    git(home.root, "add", "-A")
+    git(home.root, "commit", "-q", "-m", "deferred")
+    import time
+    time.sleep(1.1)
+    cycle = started(home)
+    out = home.ok("asks", "--cycle", cycle)
+    assert [a["id"] for a in out["resolved"]] == ["ask-cycle-0-1"] and out["open"] == []

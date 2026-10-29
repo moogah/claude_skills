@@ -93,7 +93,7 @@ In the same session, after the answer. Each applied row gets `:APPLIED_VIA:` (th
 
 | Scope | Lands in | How |
 |---|---|---|
-| Cycle | the open cycle's briefs (`<change-dir>/cycles/<id>/briefs/`), an ask, or the change's hardening list | the edit, committed in the home; an ask is raised with `state.py record add asks`, never written by hand |
+| Cycle | the open cycle's briefs (`<change-dir>/cycles/<id>/briefs/`), an ask, or the change's hardening list | the edit, committed in the home; an ask is raised with `asks.py add`, never written by hand |
 | Change | what the process wrote about the change: its hardening list, an open question in its `intent.org`, its base or branch in `change.json` (through `state.py`), a dangling reference in its record | committed in the repository the file lives in (the home, or the code root for `docs/`) |
 | Repository | the repository's entry under `repos:` in the home's `config.yaml`; the code root's `CLAUDE.md` or `docs/` | committed there |
 | Workspace | the home's overlay: `.claude/orchestrator/config.yaml`, `roles/<role>.md`, `priors.md` (one line in the user's words, `orchestrate` `overlay.md` § Priors) | committed in the home |
@@ -113,7 +113,7 @@ Count the run's cost in both currencies with `scripts/cost.py` (below), write it
 
 The home's proposals file is the channel. A run in a home marks its process rows `:FOR: skills`. A run in the skills workspace reads every listed home's `.orchestrator/proposals/*.org` in place and takes each row with `:FOR: skills` and `:DECISION: send` as an observation of its own, cited as `<home>/.orchestrator/proposals/<file>.org § P<n>`. Nothing is copied into the skills workspace, and nothing is written into the home from there but the marks below: a row is taken once a proposals file in the skills workspace cites it.
 
-The homes' `:KIND: process` ask files reach the skills the same way: a run in the home reads them and turns them into rows. Where a home has process asks and no proposals file yet, the skills run may read the ask files directly as working material, citing them in place. A skills run that read them that way marks each one when the user agrees, the one write into a home: through that home's `state.py record set asks` (the status; `applied_via` for an applied one; the marking in `* Answer` only when the user left it empty), one commit per home. The record: the PMs flagged an open process ask as stale every cycle for a change's whole life.
+The homes' `:KIND: process` ask files reach the skills the same way: a run in the home reads them and turns them into rows. Where a home has process asks and no proposals file yet, the skills run may read the ask files directly as working material, citing them in place. A skills run that read them that way marks each one when the user agrees, the one write into a home: through that home's `asks.py set` (the status; `applied_via` for an applied one; the marking in `* Answer` only when the user left it empty), one commit per home. The record: the PMs flagged an open process ask as stale every cycle for a change's whole life.
 
 ## Counting the two currencies
 
@@ -130,7 +130,7 @@ With no `--project` it uses the project directory of the cwd; with no `--session
 
 ## What this skill does not do
 
-- It is not a role in every cycle. It runs only when invoked; a cycle's own signals keep going to the PM digest.
+- It is not a role in every cycle. It runs only when invoked; what a cycle learns goes to the next plan in its handshake.
 - It does not review the product. Product defects go to the change's record (§ 3).
 - It does not install, push or tag.
 - It applies nothing before the user answers, at any scope; running the open measures is the one exception and changes nothing.

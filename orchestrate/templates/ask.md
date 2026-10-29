@@ -117,7 +117,7 @@ For every phase; this is the one statement of when a question blocks the session
 
 ## Commit rule
 
-`.orchestrator/` is tracked by the home repo. `home.py open` writes `.orchestrator/.gitignore` (the test outputs `baseline-*` and `after-*`, `*.tmp`) when absent; a home repo that ignores the directory loses the record (an `environment` ask: delete the line). The orchestrator commits, in the home:
+`.orchestrator/` is tracked by the home repo. `home.py open` writes `.orchestrator/.gitignore` (the test outputs `baseline-*.txt` and `after-*.txt`, `*.tmp`) when absent; a home repo that ignores the directory loses the record (an `environment` ask: delete the line). The orchestrator commits, in the home:
 
 - an ask file when it is created (`git add .orchestrator/changes/<change>/inbox/<id>.org`; the subject names the id, so `git log --grep=ask-` finds the trail);
 - a readback when it is written, together with the user's answer it restates (one commit, the subject naming the id), and with it any `priors.md` line and `confirmation` file the answer produced;

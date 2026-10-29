@@ -42,7 +42,7 @@ ASK_FIELDS = {"id": str, "kind": str, "status": str, "blocks": list, "path": str
 ASK_DEFAULTS = {"blocks": [], "status": "open"}
 
 
-# The rest of the record lives in the file; accepted on input to `record add` / `record set`.
+# The rest of the record lives in the file; accepted on input to `add` / `set`.
 ASK_FILE_FIELDS = {
     "raised_by": dict, "question": str, "about": (str, type(None)),
     "observed": (dict, type(None)), "options": list, "recommendation": (dict, type(None)),
@@ -89,11 +89,8 @@ ASK_ID_RE = re.compile(r"\bask-[A-Za-z0-9-]*\d\b")
 ORG_COMMENT_RE = re.compile(r"\s*#(\s|$)")
 
 
-class Refusal(Exception):
-    def __init__(self, slug, message, exit_code=1, **extra):
-        super().__init__(message)
-        self.slug, self.message, self.exit_code, self.extra = slug, message, exit_code, extra
 
+Refusal = state_layer.Refusal
 
 def _atomic_write(path, text):
     os.makedirs(os.path.dirname(path), exist_ok=True)
@@ -428,7 +425,7 @@ def _answer_candidate(doc, rec):
 
 
 def validate_ask_full(rec, where, errors):
-    """A full ask record (index + file fields) as `record add` / `record set` receive it."""
+    """A full ask record (drawer + file fields) as `add` / `set` receive it."""
     fields = {**ASK_FIELDS, **ASK_FILE_FIELDS}
     if not isinstance(rec, dict):
         errors.append(f"{where}: not an object")
@@ -687,7 +684,11 @@ def verb_set(ch, args):
         updates["readback"] = "confirmed"
     _atomic_write(os.path.join(ch.home, rel), doc.text())
     final = ask_from_org(doc, args.id)
-    new_rel = ask_rel(ch, args.id, final["status"], ch.open_cycle()[0])
+    fallback = ch.open_cycle()[0] or args.cycle
+    if final["status"] in ASK_TERMINAL and _cycle_of(args.id, None) is None and not fallback:
+        raise Refusal("no_cycle", f"{args.id} names no cycle and none is open: pass --cycle <cycle-id> for "
+                                  "the cycles/<cycle-id>/asks/ it moves to")
+    new_rel = ask_rel(ch, args.id, final["status"], fallback)
     moved = _move_ask_file(ch.home, rel, new_rel) if new_rel != rel else None
     out = {"ok": True, "id": args.id, "changed": sorted(updates), "status": final["status"], "path": new_rel}
     if moved:
@@ -746,6 +747,7 @@ def build_parser():
     s = sub.add_parser("set", help="set <id> field=value …: edit the file, move it when its status says so")
     s.add_argument("id")
     s.add_argument("fields", nargs="+")
+    s.add_argument("--cycle", help="the cycle whose asks/ a terminal ask moves to when its id names none and none is open")
     s.set_defaults(fn=verb_set)
     s = sub.add_parser("inbox", help="every inbox file with its answer (read-only)")
     s.set_defaults(fn=verb_inbox)
@@ -760,7 +762,7 @@ def main(argv=None):
         if ch.rec is None:
             raise Refusal("change_not_open", f"{ch.name} has no change.json; open it first (home.py open)")
         result = args.fn(ch, args)
-    except (Refusal, state_layer.Refusal) as r:
+    except Refusal as r:
         print(json.dumps({"ok": False, "error": r.slug, "message": r.message, **r.extra}, indent=2), file=sys.stderr)
         return 1
     print(json.dumps(result, indent=2, ensure_ascii=False))

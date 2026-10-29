@@ -54,12 +54,13 @@ def home(tmp_path, monkeypatch):
     return h
 
 
-def _transcript(home, agent_id, description, requests, session="sess-1"):
+def _transcript(home, agent_id, description, requests, session="sess-1", cwd=None, project=None):
     """A subagent transcript and its meta.json under the home's project directory: each request is
     (request id, model, effort, usage, timestamp); a request id repeated is one API call on two lines."""
-    sub = pathlib.Path(os.environ["CLAUDE_CONFIG_DIR"]) / "projects" / report._project_key(home) / session / "subagents"
+    sub = pathlib.Path(os.environ["CLAUDE_CONFIG_DIR"]) / "projects" / (project or report._project_key(home)) / session / "subagents"
     sub.mkdir(parents=True, exist_ok=True)
-    lines = [json.dumps({"type": "user", "timestamp": "2026-10-23T10:00:00Z", "message": {"content": "b"}})]
+    lines = [json.dumps({"type": "user", "timestamp": "2026-10-23T10:00:00Z", "cwd": str(cwd or home),
+                         "message": {"content": "b"}})]
     for rid, model, effort, (i, cr, cc, o), ts in requests:
         lines.append(json.dumps({"type": "assistant", "requestId": rid, "timestamp": ts, "effort": effort,
                                  "message": {"model": model, "usage": {
@@ -156,3 +157,23 @@ def test_context_reads_the_last_call_of_an_agent_transcript(home, capsys):
     (sub / "agent-a1b2ff.jsonl").write_text(call(1, "t") + "\n")
     code, _, err = run(home, capsys, "context", "a1b2")
     assert code == 1 and err["error"] == "ambiguous_agent"
+
+
+def test_an_override_naming_only_a_model_is_compared_by_model(home, capsys):
+    d = home / CH / "tasks" / "open" / "a.md"
+    d.write_text(d.read_text().replace("implementor: sonnet, medium", "implementor: sonnet"))
+    _transcript(home, "i1", "implementor: a", [("r1", "claude-sonnet-5-5", "high", (1, 0, 0, 1), "2026-10-23T10:01:00Z")])
+    code, out, err = run(home, capsys, "spend")
+    assert code == 0, err
+    assert out["override_mismatches"] == [] and out["by_agent"][0]["override"] == "sonnet/?"
+
+
+def test_a_sibling_directory_with_a_longer_name_is_not_the_home(home, capsys):
+    sibling = home.parent / (home.name + "2")
+    sibling.mkdir()
+    _transcript(home, "s1", "implementor: a", [("r1", "claude-opus-5-5", "medium", (1, 0, 0, 1), "2026-10-23T10:01:00Z")],
+                cwd=sibling, project=report._project_key(sibling))
+    _transcript(home, "w1", "implementor: b", [("r1", "claude-opus-5-5", "medium", (1, 0, 0, 1), "2026-10-23T10:01:00Z")],
+                cwd=home / ".worktrees" / "x", project=report._project_key(home / ".worktrees" / "x"))
+    out = run(home, capsys, "spend")[1]
+    assert [a["agent_id"] for a in out["by_agent"]] == ["w1"] and out["unattributed_spawns"] == 0

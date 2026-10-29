@@ -23,115 +23,27 @@ import re
 import shlex
 import subprocess
 import sys
-from datetime import datetime, timezone
 
-
-class Refusal(Exception):
-    def __init__(self, slug, message, exit_code=1, **extra):
-        super().__init__(message)
-        self.slug, self.message, self.exit_code, self.extra = slug, message, exit_code, extra
-
-
-def now_iso():
-    return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from state import Refusal, find_change, now_iso, parse_yaml_subset  # noqa: E402  one resolution for every tool
+import state as state_layer  # noqa: E402
 
 
 def find_home(explicit=None):
-    """(home, found). The nearest ancestor of cwd with .claude/orchestrator/config.yaml, else
-    with .orchestrator/ holding a change; (cwd, False) when neither exists."""
-    if explicit:
-        return os.path.abspath(explicit), True
-    d = os.getcwd()
-    while True:
-        if os.path.exists(os.path.join(d, ".claude", "orchestrator", "config.yaml")):
-            return d, True
-        if glob.glob(os.path.join(d, ".orchestrator", "changes", "*", "change.json")):
-            return d, True
-        parent = os.path.dirname(d)
-        if parent == d:
-            return os.getcwd(), False
-        d = parent
+    """(home, found): the home state.py finds (the nearest ancestor of cwd with
+    .claude/orchestrator/config.yaml, or --home); (cwd, False) when there is none, which only `init` accepts."""
+    try:
+        return state_layer.find_home(explicit), True
+    except Refusal:
+        return os.getcwd(), False
+
+
+def resolve_change(home, explicit=None):
+    return find_change(home, explicit)
 
 
 def config_path(home):
     return os.path.join(home, ".claude", "orchestrator", "config.yaml")
-
-
-def _yaml_scalar(raw):
-    raw = raw.strip()
-    if len(raw) >= 2 and raw[0] in "\"'" and raw[-1] == raw[0]:
-        return raw[1:-1]
-    raw = re.split(r"\s+#", raw)[0].strip()
-    return "" if raw.startswith("#") else raw
-
-
-def parse_yaml_subset(text):
-    """The overlay's YAML, without a YAML library: nested maps, scalars, lists of scalars and
-    lists of one-key maps (`- <module>: <note>`), flow lists `[a, b]`, comments. Anything
-    stranger is kept as the string it was. Enough for config.yaml."""
-    lines = []
-    for raw in text.split("\n"):
-        if not raw.strip() or raw.lstrip().startswith("#"):
-            continue
-        lines.append((len(raw) - len(raw.lstrip(" ")), raw.strip()))
-    pos = [0]
-
-    def key_of(content):
-        if content[:1] in "\"'":
-            return None
-        m = re.match(r"^([^:#]+?):(?:\s+(.*))?$", content)
-        return (m.group(1).strip().strip("\"'"), m.group(2) or "") if m else None
-
-    def mapping(indent):
-        out = {}
-        while pos[0] < len(lines):
-            ind, content = lines[pos[0]]
-            if ind < indent or (ind == indent and content.startswith("- ")):
-                break
-            if ind > indent:
-                pos[0] += 1
-                continue
-            kv = key_of(content)
-            pos[0] += 1
-            if not kv:
-                continue
-            key, rest = kv
-            val = _yaml_scalar(rest)
-            if val == "":
-                if pos[0] < len(lines) and lines[pos[0]][0] > indent:
-                    out[key] = block(lines[pos[0]][0])
-                elif pos[0] < len(lines) and lines[pos[0]][0] == indent and lines[pos[0]][1].startswith("- "):
-                    out[key] = seq(indent)
-                else:
-                    out[key] = None
-            elif val.startswith("[") and val.endswith("]"):
-                out[key] = [_yaml_scalar(x) for x in val[1:-1].split(",") if x.strip()]
-            else:
-                out[key] = val
-        return out
-
-    def seq(indent):
-        out = []
-        while pos[0] < len(lines):
-            ind, content = lines[pos[0]]
-            if ind != indent or not content.startswith("- "):
-                break
-            item = content[2:].strip()
-            pos[0] += 1
-            kv = key_of(item)
-            if kv:
-                d = {kv[0]: _yaml_scalar(kv[1])}
-                if pos[0] < len(lines) and lines[pos[0]][0] > indent:
-                    d.update(mapping(lines[pos[0]][0]))
-                out.append(d)
-            else:
-                out.append(_yaml_scalar(item))
-        return out
-
-    def block(indent):
-        return seq(indent) if lines[pos[0]][1].startswith("- ") else mapping(indent)
-
-    return mapping(lines[0][0]) if lines else {}
 
 
 def read_config(home):
@@ -259,32 +171,6 @@ def list_changes(home):
         if rec:
             out.append(rec)
     return out
-
-
-def _under(path, parent):
-    try:
-        rp, pp = os.path.realpath(path), os.path.realpath(parent)
-    except OSError:
-        return False
-    return rp == pp or rp.startswith(pp.rstrip(os.sep) + os.sep)
-
-
-def resolve_change(home, explicit=None):
-    """(name, how). The change named by --change or $ORCH_CHANGE; else the open change whose
-    worktree holds the cwd; else the only open change; else (None, None)."""
-    if explicit:
-        return explicit, "flag"
-    env = os.environ.get("ORCH_CHANGE")
-    if env:
-        return env, "env"
-    changes = list_changes(home)
-    cwd = os.getcwd()
-    for rec in changes:
-        if rec.get("worktree") and not _same_path(rec["worktree"], home) and _under(cwd, rec["worktree"]):
-            return rec["change"], "cwd"
-    if len(changes) == 1:
-        return changes[0]["change"], "only"
-    return None, None
 
 
 def _atomic_write(path, text):
@@ -772,10 +658,11 @@ def verb_home_init(store, args):
                     "then `home.py open <name>`"}
 
 
-ORCHESTRATOR_GITIGNORE = """# Written by home.py open. Test outputs and scratch stay out of git; every other
-# orchestration artifact (the event log, inbox, cycles, handshakes) is tracked.
-baseline-*
-after-*
+ORCHESTRATOR_GITIGNORE = """# Written by home.py open. Test output and scratch stay out of git; every other
+# orchestration artifact (the event log, inbox, cycles, handshakes, the test runs' exit codes
+# in *.status and *.compare, which `state.py check done` reads) is tracked.
+baseline-*.txt
+after-*.txt
 *.tmp
 """
 
@@ -891,7 +778,7 @@ def main(argv=None):
         result = args.fn(store, args)
     except Refusal as r:
         print(json.dumps({"ok": False, "error": r.slug, "message": r.message, **r.extra}, indent=2), file=sys.stderr)
-        return r.exit_code
+        return 1
     if args.verb == "where" and args.sh:
         print(where_sh(result, hc))
         return 0

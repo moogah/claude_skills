@@ -146,6 +146,22 @@ def _project_key(path):
     return re.sub(r"[^A-Za-z0-9]", "-", os.path.realpath(path))
 
 
+def _transcript_cwd(path):
+    """The cwd the transcript's first line that carries one records, or None."""
+    try:
+        with open(path, encoding="utf-8") as f:
+            for line in f:
+                try:
+                    cwd = json.loads(line).get("cwd")
+                except (json.JSONDecodeError, AttributeError):
+                    continue
+                if cwd:
+                    return cwd
+    except OSError:
+        pass
+    return None
+
+
 def change_agents(ch):
     """[{agent_id, role, ref, task, cycle, transcript}] for every spawn under the home whose
     description names a role and a task or cycle of the change; plus the count of the home's
@@ -158,9 +174,12 @@ def change_agents(ch):
     key = _project_key(ch.home)
     out, unattributed = [], 0
     for proj in glob.glob(os.path.join(_projects_root(), "*")):
-        if not os.path.basename(proj).startswith(key):
+        if not os.path.basename(proj).startswith(key):  # a cheap filter; the encoding is not one-to-one
             continue
         for meta in glob.glob(os.path.join(proj, "*", "subagents", "agent-*.meta.json")):
+            cwd = _transcript_cwd(meta[:-len(".meta.json")] + ".jsonl")
+            if cwd is None or not state_layer._under(cwd, ch.home):
+                continue
             try:
                 m = json.load(open(meta))
             except (OSError, json.JSONDecodeError):
@@ -191,7 +210,16 @@ def _override(ch, a):
     block = ch.tasks()[a["task"]]["fm"].get("agent")
     key = "reviewer" if a["role"] == "reviewer-task" else "implementor"
     val = block.get(key) if isinstance(block, dict) else None
-    return "/".join(x.strip() for x in str(val).split(",")) if val else None
+    if not val:
+        return None
+    parts = [x.strip() for x in str(val).split(",") if x.strip()]
+    return "/".join(parts + ["?"] * (2 - len(parts))) if parts else None  # a model alone: any effort
+
+
+def _differs(ran, override):
+    """A `model/effort` the transcript ran at against the override's; `?` on either side matches."""
+    (rm, re_), (om, oe) = (ran.split("/", 1) + ["?"])[:2], (override.split("/", 1) + ["?"])[:2]
+    return rm != om or "?" not in (re_, oe) and re_ != oe
 
 
 def spend_by_role(ch, agents, spend):
@@ -215,8 +243,7 @@ def spend_by_role(ch, agents, spend):
             r[k] += s[k]
         if s["minutes"] is not None:
             r["minutes"].append(s["minutes"])
-        if override and any(k.split("/")[0] != override.split("/")[0] or k.split("/")[1] not in ("?", override.split("/")[1])
-                            for k in s["ran"]):
+        if override and any(_differs(k, override) for k in s["ran"]):
             mismatches.append({"agent_id": a["agent_id"], "override": override, "ran": s["ran"]})
     total = sum(r["cost_weight"] for r in roles.values())
     for r in roles.values():

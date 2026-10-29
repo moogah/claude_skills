@@ -357,3 +357,19 @@ def test_open_base_is_merge_base_and_runs_init_hook(tmp_path, capsys):
     code, out, err = run("open", "feat-z", "--from", "integration", "--no-init")
     assert code == 0, err
     assert out["base"] == fork and out["created"] is True and out["init_hook"] is None
+
+
+def test_every_tool_finds_the_same_home(tmp_path, monkeypatch):
+    """A stray .orchestrator/ with a change is not a home: home.py, like state.py, needs the overlay."""
+    stray = tmp_path / "code"
+    (stray / ".orchestrator" / "changes" / "x").mkdir(parents=True)
+    (stray / ".orchestrator" / "changes" / "x" / "change.json").write_text('{"change": "x"}')
+    monkeypatch.chdir(stray)
+    assert home_py.find_home() == (str(stray), False)
+    assert home_py.parse_yaml_subset is home_py.state_layer.parse_yaml_subset
+    assert home_py.parse_yaml_subset("relations:\n  blocked_by:\n    []\n") == {"relations": {"blocked_by": []}}
+
+
+def test_open_writes_a_gitignore_that_keeps_the_exit_codes(repo):
+    text = (repo / ".orchestrator" / ".gitignore").read_text()
+    assert "after-*.txt" in text and "after-*\n" not in text and "baseline-*.txt" in text

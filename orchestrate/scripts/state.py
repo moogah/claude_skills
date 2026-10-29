@@ -284,26 +284,43 @@ def _under(path, parent):
     return rp == pp or rp.startswith(pp.rstrip(os.sep) + os.sep)
 
 
-def resolve_change(home, explicit=None):
-    """--change, then $ORCH_CHANGE, then the open change whose worktree holds the cwd, then the
-    only open change."""
-    name = explicit or os.environ.get("ORCH_CHANGE")
-    if name:
-        return name
+def open_changes(home):
+    """Every change.json under the home, as read."""
     recs = []
     for p in sorted(glob.glob(os.path.join(home, ".orchestrator", "changes", "*", "change.json"))):
         try:
-            recs.append(json.load(open(p)))
+            rec = json.load(open(p))
         except (OSError, json.JSONDecodeError):
             continue
+        if isinstance(rec, dict) and rec.get("change") == os.path.basename(os.path.dirname(p)):
+            recs.append(rec)
+    return recs
+
+
+def find_change(home, explicit=None):
+    """(name, how): --change ("flag"), then $ORCH_CHANGE ("env"), then the open change whose worktree
+    holds the cwd ("cwd"), then the only open change ("only"); (None, None) when none of them names one.
+    The one resolution every tool of the skill uses."""
+    if explicit:
+        return explicit, "flag"
+    if os.environ.get("ORCH_CHANGE"):
+        return os.environ["ORCH_CHANGE"], "env"
+    recs = open_changes(home)
     for r in recs:
         wt = r.get("worktree")
         if wt and os.path.realpath(wt) != os.path.realpath(home) and _under(os.getcwd(), wt):
-            return r["change"]
+            return r["change"], "cwd"
     if len(recs) == 1:
-        return recs[0]["change"]
-    raise Refusal("no_change", "name the change with --change or $ORCH_CHANGE",
-                  changes=[r.get("change") for r in recs])
+        return recs[0]["change"], "only"
+    return None, None
+
+
+def resolve_change(home, explicit=None):
+    name, _ = find_change(home, explicit)
+    if name is None:
+        raise Refusal("no_change", "name the change with --change or $ORCH_CHANGE",
+                      changes=[r.get("change") for r in open_changes(home)])
+    return name
 
 
 class Change:
@@ -559,11 +576,13 @@ def _read_int(path):
 def test_problems(ch, name, sha):
     """The test run recorded for the merge commit passes: `after-<task>-<sha12>.status` holds 0, or,
     against a red baseline of the cycle whose batch holds the task, `after-<task>-<sha12>.compare`
-    (test.compare's exit code) holds 0. The state layer reads the files; it runs nothing."""
+    (test.compare's exit code) holds 0. The state layer reads the files; it runs nothing. The
+    `.status` and `.compare` files are tracked, so every clone gives the same answer; the run's
+    output, `.txt`, is not."""
     stem = os.path.join(ch.dir, f"after-{name}-{sha[:12]}")
     rel = ch.rel(stem)
-    if not os.path.exists(stem + ".txt"):
-        return [f"no test run for merge commit {sha[:12]}: {rel}.txt is missing (flows/execute.md § 4)"]
+    if not os.path.exists(stem + ".status"):
+        return [f"no test run for merge commit {sha[:12]}: {rel}.status is missing (flows/execute.md § 4)"]
     status = _read_int(stem + ".status")
     if status is None:
         return [f"{rel}.status does not hold the test command's exit code"]
@@ -626,6 +645,13 @@ def handshake_problems(path, prior=False):
         required.remove("goal_drift_recommendation")
         h.setdefault("candidate_tasks", [])
     problems = [f"missing field {k}" for k in required if k not in h]
+    problems += [f"{k}: expected a JSON array" for k in required
+                 if k in h and k != "goal_drift_recommendation" and not isinstance(h[k], list)]
+    problems += [f"asks_for_user_open[{i}]: expected an ask id or {{\"id\": …}}"
+                 for i, a in enumerate(h.get("asks_for_user_open") if isinstance(h.get("asks_for_user_open"), list) else [])
+                 if not (isinstance(a, str) or (isinstance(a, dict) and isinstance(a.get("id"), str)))]
+    if problems:
+        return problems
     problems += _candidate_problems(h.get("candidate_tasks", []))
     problems += _design_diff_problems(h.get("design_diff", []))
     return problems
@@ -963,8 +989,9 @@ def verb_cycle_start(ch, args):
         problems = handshake_problems(prior, prior=True)
         if problems:
             raise Refusal("bad_prior_handshake", f"{ch.rel(prior)}: " + "; ".join(problems), problems=problems)
-    elif ch.cycles() or glob.glob(os.path.join(ch.dir, "cycles", "*")):
-        raise Refusal("no_prior_handshake", f"{ch.name} has run a cycle and no handshake-<cycle-id>.json is in "
+    elif any("integrate" in ch.closed_phases(c) for c in ch.cycles()):
+        # Only integrate writes a handshake; a change whose every cycle was abandoned starts as a first.
+        raise Refusal("no_prior_handshake", f"{ch.name} has closed a cycle and no handshake-<cycle-id>.json is in "
                                             f"{ch.rel(ch.dir)}")
     new = args.cycle or f"cycle-{int(time.time())}"
     if new in ch.cycles():
@@ -1056,9 +1083,12 @@ def verb_asks(ch, args):
     if args.cycle:
         touched = touched_asks(ch, args.cycle)
         asks = ch.asks("all")
+        # An answered or deferred file still in the inbox waits on someone, so it is carried every cycle.
+        inbox = {a.id for a in ch.asks() if a.status in ("answered", "deferred")}
         return {"cycle": args.cycle,
                 "open": [a.record(ch.home) for a in asks if a.status == "open"],
-                "resolved": [a.record(ch.home) for a in asks if a.status != "open" and a.id in touched]}
+                "resolved": [a.record(ch.home) for a in asks if a.status != "open"
+                             and (a.id in touched or a.id in inbox)]}
     return {"asks": [a.record(ch.home) for a in ch.asks("all" if args.all else "inbox")]}
 
 

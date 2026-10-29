@@ -217,3 +217,14 @@ def test_state_layer_reads_what_asks_writes(run, repo):
     run("set", "ask-cycle-1-1", "decision=Do it")
     a = asks.state_layer.Ask(str(repo / CH / "inbox" / "ask-cycle-1-1.org"))
     assert (a.id, a.kind, a.status, a.blocks, a.answer_label()) == ("ask-cycle-1-1", "decision", "open", ["t1"], "Do it")
+
+
+def test_set_refuses_a_terminal_move_with_no_cycle_to_name(run, repo):
+    (repo / CH / "events.jsonl").unlink()
+    code, out, err = run("add", json.dumps({**ASK, "id": "ask-goal-drift-1"}), "--cycle", "cycle-9")
+    assert code == 0, err
+    code, _, err = run("set", "ask-goal-drift-1", "decision=Do it", "status=applied", "applied_via=x")
+    assert code == 1 and err["error"] == "no_cycle"
+    assert (repo / CH / "inbox" / "ask-goal-drift-1.org").exists()
+    code, out, err = run("set", "ask-goal-drift-1", "decision=Do it", "status=applied", "applied_via=x", "--cycle", "cycle-9")
+    assert code == 0 and out["path"] == f"{CH}/cycles/cycle-9/asks/ask-goal-drift-1.org"

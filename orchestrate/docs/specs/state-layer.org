@@ -31,12 +31,12 @@ Files and git are the record of a change's state. There is no =state.json=. Each
 | A task exists; its class, critical-path flag, =blocked_by=, =cites_seams=, =discovered_*= | task-file frontmatter |
 | A task's status | task-file frontmatter =status:= |
 | A task merged, and its merge commit | =Merge task <name>= commits on the change branch's first parent |
-| A task's tests passed at its merge | =<change-dir>/after-<task>-<sha12>.txt= with its =.status= (the exit code) and, against a red baseline (=baseline-<cycle-id>.status= non-zero), its =.compare= (=test.compare='s exit code) |
+| A task's tests passed at its merge | =<change-dir>/after-<task>-<sha12>.status= (the exit code) and, against a red baseline (=baseline-<cycle-id>.status= non-zero), =.compare= (=test.compare='s exit code); tracked. The run's output, =.txt=, is not |
 | A task was reviewed | =cycles/<cycle-id>/reviews/<task>.md= naming the task's merge commit |
 | A review sent a task back | =<task>-rework= review and brief files |
 | The batch | the task names under =cycles/<cycle-id>/briefs/=, less review, rework, premise-check and conformance briefs |
 | An ask: kind, status, what it blocks, its answer | the ask file (=inbox/= or =cycles/<cycle-id>/asks/=) |
-| An ask resolved in a cycle | a home commit touching its file since the cycle's =cycle-started= entry, or an uncommitted change to it |
+| An ask resolved in a cycle | a home commit touching its file since the cycle's =cycle-started= entry, or an uncommitted change to it; an =answered= or =deferred= file still in the inbox is carried every cycle |
 | A finding: kind, severity | the finding file's frontmatter |
 | A finding's decoration (=blocking= or =hardening=) and resolution | the event log (=finding-routed=) |
 | The hardening list | =hardening.org= |
@@ -72,7 +72,7 @@ The record is readable only while agents keep these forms; the state layer check
 - Review and brief files: =<task>.md=, =<task>-rework.md=.
 - Task-file frontmatter: the keys =templates/task-body.md= names, with =status= from the task status set.
 - Inline-fix commits: =Inline fix (review <task> #<n>)=.
-- Test runs: =after-<task>-<sha12>.txt=, =.status= and =.compare= in the change's directory, named for the merge commit.
+- Test runs: =after-<task>-<sha12>.status= and =.compare= in the change's directory, named for the merge commit, beside the untracked output =.txt=.
 
 * Requirements
 
@@ -134,7 +134,7 @@ The state layer SHALL refuse a task's move to =done= unless its merge commit exi
 The state layer SHALL refuse a task's move to =done= unless the test run recorded for its merge commit passes: its exit code is 0, or, against a red baseline, the overlay's =test.compare= recorded no regression. It SHALL read the recorded run and SHALL NOT run the tests itself.
 
 *** Scenario: Done without a test run is refused
-- *WHEN* a task has its merge commit and a review naming it, and no =after-<task>-<sha12>.txt= exists for that commit
+- *WHEN* a task has its merge commit and a review naming it, and no =after-<task>-<sha12>.status= exists for that commit
 - *THEN* the state layer refuses, naming the missing file
 
 *** Scenario: Failing tests on a green baseline are refused

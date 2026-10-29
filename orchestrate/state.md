@@ -30,10 +30,10 @@ Git and worktree operations (branching, merging, removing a worktree) are the ag
 | `status` | Read-only. The change's `stage` and `next` step (§ Stages), the open `cycle` and `phase` with that phase's `gate` report, the `intent`'s approval and status line, the `inbox` (`{open, answered}`), the `asks` that block work (open or answered, with `:BLOCKS:`), and `convention_breaks` when there are any. One call; needs no open cycle. |
 | `gate [<phase>]` | Read-only. The open cycle's gate for its phase (or the named one), every computed check evaluated afresh, every asserted check with who asserted it and when (§ Gates). Exit 1 when it does not pass. |
 | `conventions` | Read-only. Every break of the record's forms (§ Conventions), with where it is and the form expected. |
-| `check done <task>` | Refuses (`not_done`) unless the task's `Merge task <task>` commit is on the change branch, a review file names that commit, and the tests pass at it: `after-<task>-<sha12>.status` holds 0, or, against a red baseline (`baseline-<cycle-id>.status` non-zero), `after-<task>-<sha12>.compare` holds 0 (`flows/execute.md` § 4). It reads the files and runs nothing. Prints the merge commit. Run before writing `status: done`. |
+| `check done <task>` | Refuses (`not_done`) unless the task's `Merge task <task>` commit is on the change branch, a review file names that commit, and the tests pass at it: `after-<task>-<sha12>.status` exists and holds 0, or, against a red baseline (`baseline-<cycle-id>.status` non-zero), `after-<task>-<sha12>.compare` holds 0 (`flows/execute.md` § 4). It reads the files and runs nothing. Prints the merge commit. Run before writing `status: done`. |
 | `check start <task>` | Refuses (`blocked`) while a task in its `blocked_by` has no merge commit on the change branch. Run before spawning its Implementor. |
 | `check new <task>` | Refuses (`bad_task`) a follow-up (a task a handshake's `candidate_tasks` names, or one carrying any `discovered_*` field) without `discovered_from` and `discovered_by`, and a status outside the set. Run when plan writes a task file. |
-| `cycle start [--cycle <id>]` | Starts a cycle in plan: appends `cycle-started` to the log. Refuses `cycle_open` while one is open; `not_ready` before the design round's Seams exist (or at done, or while the MVP decision waits); `mvp_decision_due` when the main path has ended; `bad_prior_handshake` naming each missing field of the newest `handshake-<cycle-id>.json`; `no_prior_handshake` when the change has run a cycle and none is there. The id defaults to `cycle-<epoch>`. |
+| `cycle start [--cycle <id>]` | Starts a cycle in plan: appends `cycle-started` to the log. Refuses `cycle_open` while one is open; `not_ready` before the design round's Seams exist (or at done, or while the MVP decision waits); `mvp_decision_due` when the main path has ended; `bad_prior_handshake` naming each missing field of the newest `handshake-<cycle-id>.json`; `no_prior_handshake` when a cycle of the change closed and no handshake is there. The id defaults to `cycle-<epoch>`. |
 | `cycle abandon --why "<reason>"` | Ends the open cycle without closing it (`cycle-abandoned`). The only way out of a cycle whose integrate cannot close. |
 | `assert <check> --by <role>` | Records an asserted check of the open phase (`asserted`). Refuses `computed_check` for a check a script decides, `wrong_phase` for another phase's. |
 | `route <finding-id> [--decoration blocking\|hardening] [--resolution <r>]` | Records a finding's routing and how it ended (`finding-routed`); the latest value of each field counts. Resolutions: `templates/architect-finding.md` § Resolution states. |
@@ -42,7 +42,7 @@ Git and worktree operations (branching, merging, removing a worktree) are the ag
 | `fix-link <commit> --task <t> --review <n>` | Links an inline-fix commit to the review finding it answers, when its subject does not say so (`inline-fix-link`). |
 | `correct <seq> --why "<reason>"` | A correction naming an entry of the log (`correction`); every reader leaves the corrected entry out. |
 | `log [--cycle <id>] [--kind <kind>]` | Read-only. The log with corrections applied. |
-| `asks [--all \| --cycle <id>]` | Read-only. The inbox's ask files (with `--all`, every cycle's `asks/` too) with the fields the handshake's ask lists carry (`templates/handshake.md`). With `--cycle`, `open` (every open file) and `resolved` (every other ask file the home's git touched since that cycle's `cycle-started`, or that is changed and not yet committed): the handshake's two lists. |
+| `asks [--all \| --cycle <id>]` | Read-only. The inbox's ask files (with `--all`, every cycle's `asks/` too) with the fields the handshake's ask lists carry (`templates/handshake.md`). With `--cycle`, `open` (every open file) and `resolved` (every other ask file the home's git touched since that cycle's `cycle-started` or that is changed and not yet committed, and every `answered` or `deferred` file still in the inbox, carried until it is applied): the handshake's two lists. |
 
 ## Stages
 
@@ -123,7 +123,7 @@ The record is readable only while agents keep these forms. `state.py conventions
 - **Merge commits on the change branch**: `Merge task <name>`, and `Merge task <name> (rework)` for a rework; a `: <one line>` may follow.
 - **Phase-close commits in the home**: `Orchestrator: <cycle-id> <phase> closed`, exactly.
 - **Inline-fix commits**: `Inline fix (review <task> #<n>)`; a `: <one line>` may follow. When a commit cannot carry it, `state.py fix-link`.
-- **Test runs**: `<change-dir>/after-<task>-<sha12>.txt`, `.status` and, against a red baseline, `.compare`, named for the merge commit; `baseline-<cycle-id>.txt` and `.status`.
+- **Test runs**: `<change-dir>/after-<task>-<sha12>.status` and, against a red baseline, `.compare`, named for the merge commit, beside the output `.txt`; `baseline-<cycle-id>.status` beside `baseline-<cycle-id>.txt`. The exit codes are tracked and are the record; the outputs are not.
 - **Review and brief files**: `cycles/<cycle-id>/reviews/<task>.md`, `<task>-rework.md`, `whole-change.md`; `cycles/<cycle-id>/briefs/<task>.md`, `<task>-rework.md`, `review-<task>.md`, `premise-check.md`, `conformance.md`. A review file's frontmatter names the merge commit it reviewed: `merge_commit: <sha>`.
 - **Task-file frontmatter**: the keys `templates/task-body.md` names, `status` from § Task status, `task_name` the file's name. A key holding a fact whose source is elsewhere (`merge_commit`, the times) is a break that names that source; so is `decoration` or `resolution` in a finding file.
 
@@ -132,12 +132,12 @@ The record is readable only while agents keep these forms. `state.py conventions
 - **A missing or unreadable event log mid-cycle**: restore it from git (it is committed at each phase close); what was appended since the last close is redone (`cycle start` again if the log lost it, the assertions, the routings). An unrestorable log is an `environment` ask (`templates/ask.md`).
 - **A convention break**: fix the file, or, for a commit, record the link the commit should have carried (`fix-link`) or merge again in the form; history is not rewritten on a shared branch without the user.
 - **A wrong entry in the log**: `state.py correct <seq> --why`, then record the right fact.
-- **A cycle that cannot close**: `state.py cycle abandon --why`; the next `cycle start` reads the newest handshake there is.
+- **A cycle that cannot close**: `state.py cycle abandon --why`; the next `cycle start` reads the newest handshake there is, and a change none of whose cycles closed starts as on a first cycle.
 - **A change live on the old state tool** (a `state.json` in its directory): it starts its next cycle on this layer with nothing converted, once its open cycle has closed on the old tool. Its `state.json` is left as it is and read by nothing; `state.py conventions` lists the fields its task and finding files still carry, to remove by hand; the old handshake is read as the prior (`templates/handshake.md` § A handshake written before this template).
 
 ## The change's directory
 
-`<home>/.orchestrator/changes/<change>/`, tracked by the home repo (only `.orchestrator/.gitignore`'s test outputs and `*.tmp` stay out; `home.py open` writes it):
+`<home>/.orchestrator/changes/<change>/`, tracked by the home repo (only `.orchestrator/.gitignore`'s test outputs, `*.txt`, and `*.tmp` stay out; `home.py open` writes it):
 
 ```
 change.json               # home.py open: repository, branch, worktree, base, from
@@ -146,8 +146,8 @@ handshake-<cycle-id>.json # integrate § 8: the next plan's input (templates/han
 hardening.org             # templates/hardening.md
 inbox/<ask-id>.org        # open, answered and deferred asks (templates/ask.md)
 tasks/open/<name>.md      # task files (templates/task-body.md); tasks/closed/ after merge
-baseline-<cycle-id>.txt   # execute § 1, with .status: test outputs and exit codes (untracked)
-after-<task>-<sha12>.txt  # execute § 4, with .status and .compare: the record that the tests pass at the merge
+baseline-<cycle-id>.status # execute § 1: the baseline's exit code (its output, .txt, untracked)
+after-<task>-<sha12>.status # execute § 4, with .compare: the record that the tests pass at the merge (output .txt untracked)
 cycles/<cycle-id>/
   briefs/<task>.md        # plan § 5: the batch, and what the Implementor sees; review-<task>.md, <task>-rework.md
   premise-check.md        # plan § 3
