@@ -857,7 +857,9 @@ def where(ch):
     inbox = ch.asks()
     out["inbox"] = {"open": sum(a.status == "open" for a in inbox),
                     "answered": [a.id for a in inbox if a.status == "open" and a.answer]}
-    out["asks"] = [a.summary() for a in inbox if a.status in ("open", "answered") and a.blocks]
+    # Every ask still waiting, those that block work first (SKILL.md § The dispatcher puts the rest in this order).
+    out["asks"] = [a.summary() for a in sorted((a for a in inbox if a.status in ("open", "answered")),
+                                               key=lambda a: not a.blocks)]
     status = intent["status"]
     cycle, phase = ch.open_cycle()
     if not intent["exists"]:
