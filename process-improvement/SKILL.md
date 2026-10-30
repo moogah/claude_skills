@@ -79,7 +79,7 @@ Anything else goes under `* Seen once` in the proposals file, one line with its 
 
 The skill designs none of them; the design is that next step's work. Applying such a row writes the next step's entry point (§ 5).
 
-**Not the product.** The skill judges the process and the skills, never the product's code, specs or design. A product defect seen on the way goes to the change's record by the existing path: an `issue` entry on the open change's hardening list (`~/.claude/skills/orchestrate/templates/hardening.md`), or a `.tasks/` item of the home with its provenance when no change is open. It is not a proposal. A run in the skills workspace writes nothing into a home but the marks on process asks (§ Intake): it lists each product defect under `* For the homes` in its proposals file, one line with the home and the citation, and the user routes it, or the next run in that home does.
+**Not the product.** The skill judges the process and the skills, never the product's code, specs or design. A product defect seen on the way goes to the change's record by the existing path: an `issue` entry on the open change's hardening list (`${CLAUDE_SKILL_DIR}/../orchestrate/templates/hardening.md`), or a `.tasks/` item of the home with its provenance when no change is open. It is not a proposal. A run in the skills workspace writes nothing into a home but the marks on process asks (§ Intake): it lists each product defect under `* For the homes` in its proposals file, one line with the home and the citation, and the user routes it, or the next run in that home does.
 
 ### 4. Present and decide
 
@@ -123,7 +123,7 @@ The homes' `:KIND: process` ask files reach the skills the same way: a run in th
 | The user's | the same transcripts and the home's files | typed prompts and question-tool calls (`cost.py`); ask files of kind `decision` raised (`inbox/` and `cycles/*/asks/`); reading handed over, as the lines and words of the files the user is asked to read (`cost.py --reading <file>`) |
 
 ```
-python3 ~/.claude/skills/process-improvement/scripts/cost.py [--project <dir>] [--session <id-prefix>] [--since <ISO time>] [--reading <file> ...]
+python3 ${CLAUDE_SKILL_DIR}/scripts/cost.py [--project <dir>] [--session <id-prefix>] [--since <ISO time>] [--reading <file> ...]
 ```
 
 With no `--project` it uses the project directory of the cwd; with no `--session`, the most recently written transcript there (the running session). `--since` counts only records from that time, so a run that started part-way through a session counts itself. It prints org lines for `* Cost`. For a cycle's or a change's cost, point it at the dispatcher's session and the window the cycle ran in.

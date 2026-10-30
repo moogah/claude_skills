@@ -5,7 +5,7 @@ description: "Convert a repository or orchestrator home from the OpenSpec layout
 
 # openspec-convert
 
-Moves a project's record from OpenSpec's markdown layout to the living org record the `orchestrate` skill reads, once. Afterwards there is one copy of the specs, edited in place by each change; no delta, sync or archive step; the git diff is the change record. The target forms are the orchestrate skill's templates: `~/.claude/skills/orchestrate/templates/spec.md`, `intent.md` and `design.md`. Read them before converting.
+Moves a project's record from OpenSpec's markdown layout to the living org record the `orchestrate` skill reads, once. Afterwards there is one copy of the specs, edited in place by each change; no delta, sync or archive step; the git diff is the change record. The target forms are the orchestrate skill's templates: `${CLAUDE_SKILL_DIR}/../orchestrate/templates/spec.md`, `intent.md` and `design.md`. Read them before converting.
 
 The OpenSpec CLI and the `/opsx-*` skills are not needed and are not used.
 
@@ -18,11 +18,11 @@ The OpenSpec CLI and the `/opsx-*` skills are not needed and are not used.
 | `docs/` goes to | the repository | the code root (`code-root` in `.claude/orchestrator/config.yaml`) |
 | Commits | one | one in the code root (the record), one in the home (removals, overlay, tasks) |
 
-`home.py where` (`~/.claude/skills/orchestrate/scripts/home.py`) prints the home and the code root. Below, `$HOME_DIR` is the directory holding `openspec/`, `$CODE_ROOT` where `docs/` goes; they are the same directory in the first layout.
+`home.py where` (`${CLAUDE_SKILL_DIR}/../orchestrate/scripts/home.py`) prints the home and the code root. Below, `$HOME_DIR` is the directory holding `openspec/`, `$CODE_ROOT` where `docs/` goes; they are the same directory in the first layout.
 
 ## The converter
 
-`python3 ~/.claude/skills/openspec-convert/scripts/spec_convert.py <verb> …`, stdlib only; every verb prints a report and exits 1 on a refusal.
+`python3 ${CLAUDE_SKILL_DIR}/scripts/spec_convert.py <verb> …`, stdlib only; every verb prints a report and exits 1 on a refusal.
 
 | Verb | Does |
 |---|---|
@@ -32,7 +32,7 @@ The OpenSpec CLI and the `/opsx-*` skills are not needed and are not used.
 | `count PATH…` | Requirements and scenarios per file, `.md` or `.org` (a directory is walked), and a total line. The before-and-after check. |
 | `file SRC OUT [--cap ID] [--kind spec\|change]` | One file: a stray spec outside a capability directory, or one change document. |
 
-`~/.claude/skills/orchestrate/scripts/coverage.py adopt-rows DESIGN_ORG --write` moves a converted design's legacy `* Scenario coverage` table into `:TEST:` properties on the scenarios (the `none` rows, and rows naming a test that carries no citation). After that, delete the table: coverage is computed.
+`${CLAUDE_SKILL_DIR}/../orchestrate/scripts/coverage.py adopt-rows DESIGN_ORG --write` moves a converted design's legacy `* Scenario coverage` table into `:TEST:` properties on the scenarios (the `none` rows, and rows naming a test that carries no citation). After that, delete the table: coverage is computed.
 
 ## Procedure
 
@@ -77,7 +77,7 @@ For each active change `<c>`:
 `git grep -n -i 'openspec\|opsx'` in each repository, and `grep -rn -i 'openspec\|opsx' ~/.claude/projects/<slug>/memory/` for each directory the project is worked from (`<slug>` is the path with `/` as `-`). Fix what tells a running process or a future session where things are or what to run; leave history as it is.
 
 - **Fix:**
-  - the overlay `.claude/orchestrator/config.yaml`: drop the `artifacts` keys that name `openspec/` paths (the defaults are the new layout), any `forward-mode` keys naming `/opsx-*` skills, and any section `~/.claude/skills/orchestrate/overlay.md` does not define that resolved under `openspec/changes/` (`scaffolding:`); fix a header comment naming `opsx-orchestrate`;
+  - the overlay `.claude/orchestrator/config.yaml`: drop the `artifacts` keys that name `openspec/` paths (the defaults are the new layout), any `forward-mode` keys naming `/opsx-*` skills, and any section `${CLAUDE_SKILL_DIR}/../orchestrate/overlay.md` does not define that resolved under `openspec/changes/` (`scaffolding:`); fix a header comment naming `opsx-orchestrate`;
   - the role overlays `roles/*.md` (`openspec/specs` → `docs/specs`);
   - `CLAUDE.md` and the memory files that say where the record is or which skills to run. Memory is outside the repository: edit it, it is not part of a commit;
   - project tools and hooks that build `openspec/changes/` paths or validate task files there;
@@ -91,7 +91,7 @@ For each active change `<c>`:
 
 ### 5. Check and commit
 
-- `python3 ~/.claude/skills/orchestrate/scripts/coverage.py --root "$CODE_ROOT"` runs. The citations that resolve to no scenario are listed. Each is either a capability that existed only in archived changes (fine), or a title the conversion changed (a bug: fix it before committing). `coverage.py` reads Emacs Lisp tests only; for another language every scenario shows `uncited` and this check sees nothing, so rely on `tree`'s `titles identical: True`.
+- `python3 ${CLAUDE_SKILL_DIR}/../orchestrate/scripts/coverage.py --root "$CODE_ROOT"` runs. The citations that resolve to no scenario are listed. Each is either a capability that existed only in archived changes (fine), or a title the conversion changed (a bug: fix it before committing). `coverage.py` reads Emacs Lisp tests only; for another language every scenario shows `uncited` and this check sees nothing, so rely on `tree`'s `titles identical: True`.
 - `home.py where` gives no `openspec/specs/` warning.
 - The grep of step 4 finds only history.
 - Commit the record in the code root (`Record: the specs move into docs/specs/ as org`, with the step 1 totals in the message). Commit the removals, the overlay, the task moves and the reference fixes in the home when it is a separate repository (`Record moved to docs/ in the code root`).

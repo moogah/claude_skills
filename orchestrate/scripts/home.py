@@ -29,6 +29,15 @@ from state import Refusal, find_change, now_iso, parse_yaml_subset  # noqa: E402
 import state as state_layer  # noqa: E402
 
 
+def sibling_script(name):
+    """Path of a script beside this one, ~-collapsed under $HOME: the installed tree gives
+    ~/.claude/skills/orchestrate/scripts/<name>, a dev worktree gives its own, so what `home init`
+    writes into config.yaml runs the tools of the tree that wrote it."""
+    p = os.path.join(os.path.dirname(os.path.abspath(__file__)), name)
+    home = os.path.expanduser("~")
+    return "~" + p[len(home):] if p.startswith(home + os.sep) else p
+
+
 def find_home(explicit=None):
     """(home, found): the home state.py finds (the nearest ancestor of cwd with
     .claude/orchestrator/config.yaml, or --home); (cwd, False) when there is none, which only `init` accepts."""
@@ -565,9 +574,9 @@ def render_config(args, shape, repos):
               "test:",
               f"  command: {tc}",
               f"  parser: {args.parser}   # emacs-results-txt | exit-code | junit-xml | tap",
-              ("  compare: python3 ~/.claude/skills/orchestrate/scripts/compare.py --parser " + args.parser
+              ("  compare: python3 " + sibling_script("compare.py") + " --parser " + args.parser
                if args.parser != "exit-code" else
-               "  # compare: python3 ~/.claude/skills/orchestrate/scripts/compare.py --parser <parser>   # needed when the baseline is red; exit-code cannot compare"),
+               "  # compare: python3 " + sibling_script("compare.py") + " --parser <parser>   # needed when the baseline is red; exit-code cannot compare"),
               "  # pending-style: xfail-strict | xit   # how the design round marks a pending test (default by runner)",
               "",
               "# Where worktrees go, from the home (overlay.md § Worktrees). The pattern is the workspace's convention.",

@@ -373,3 +373,19 @@ def test_every_tool_finds_the_same_home(tmp_path, monkeypatch):
 def test_open_writes_a_gitignore_that_keeps_the_exit_codes(repo):
     text = (repo / ".orchestrator" / ".gitignore").read_text()
     assert "after-*.txt" in text and "after-*\n" not in text and "baseline-*.txt" in text
+
+
+def test_sibling_script_is_the_installed_literal_when_installed(tmp_path):
+    """A tree at $HOME/.claude/skills/orchestrate/scripts keeps the ~-form the docs and old configs use."""
+    import shutil
+    import sys
+    scripts = tmp_path / ".claude" / "skills" / "orchestrate" / "scripts"
+    scripts.mkdir(parents=True)
+    for name in ("home.py", "state.py"):
+        shutil.copy(HERE / name, scripts / name)
+    out = subprocess.run(
+        [sys.executable, "-c",
+         "import importlib.util as u; s = u.spec_from_file_location('h', 'home.py'); m = u.module_from_spec(s);"
+         "s.loader.exec_module(m); print(m.sibling_script('compare.py'))"],
+        cwd=scripts, env={**os.environ, "HOME": str(tmp_path)}, capture_output=True, text=True, check=True).stdout.strip()
+    assert out == "~/.claude/skills/orchestrate/scripts/compare.py"
