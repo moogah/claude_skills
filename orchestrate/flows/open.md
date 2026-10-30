@@ -15,7 +15,7 @@ Not when the user wrote the intent and spec edits themselves: the round reads th
 
 The dispatcher's brief is the fixed one (`SKILL.md` § The dispatcher's loop) with the source in place of the cycle:
 
-> You are the phase agent for opening a change. Home: `<path>`. Source: `<the user's words, verbatim>` | `<.tasks/ paths>` | `<split ask id and its change>`. Run `state.py where`, then read and follow `~/.claude/skills/orchestrate/flows/open.md` to its commit. …
+> You are the phase agent for opening a change. Home: `<path>`. Source: `<the user's words, verbatim>` | `<.tasks/ paths>` | `<split ask id and its change>`. Run `state.py where`, then read and follow `<skill-dir>/flows/open.md` to its commit. …
 
 The dispatcher copies the user's words; it reads nothing to write the brief.
 

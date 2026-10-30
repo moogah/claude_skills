@@ -34,7 +34,7 @@ Nothing runs between an Implementor's commit and its merge. The Reviewer (§ 7) 
 Merges are not held for the batch. When an Implementor completes with a commit, its task joins the merge queue at once. The queue merges one task at a time, in the order tasks landed, while the other Implementors keep running; the chain is serial because there is one change integration branch. A task that merges and passes § 4 goes straight on through § 5-7 (its Reviewer is spawned), and the chain moves to the next queued task without waiting for that review. A task held by a blocking ask (§ 9) stays out of the queue; the tasks behind it merge. When the chain pauses (nothing queued, agents still running), the orchestrator runs `state.py inbox` and handles an answered file before it waits again (§ 9). The record shows why: a batch that waited for all seven Implementors made the first-finished task wait 10 minutes for its merge and 12 for its Reviewer, where batches merged as they landed spawned each Reviewer 0-3 minutes after its Implementor ended.
 
 ```bash
-eval "$(python3 ~/.claude/skills/orchestrate/scripts/state.py where --sh)"   # ORCH_HOME, ORCH_CHANGE, ORCH_CHANGE_DIR, CODE_ROOT, …
+eval "$(python3 <skill-dir>/scripts/state.py where --sh)"   # ORCH_HOME, ORCH_CHANGE, ORCH_CHANGE_DIR, CODE_ROOT, …
 git -C "$CODE_ROOT" merge --no-ff "$BRANCH_NAME" -m "Merge task $TASK_NAME: $DESCRIPTION"
 MERGE_COMMIT=$(git -C "$CODE_ROOT" rev-parse HEAD)
 ```

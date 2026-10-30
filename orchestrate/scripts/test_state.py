@@ -1619,7 +1619,7 @@ def test_home_init_writes_config_for_each_shape(tmp_path, capsys):
     assert out["worktrees"]["pattern"] == "<repo>/<branch>" and out["add_to_home_gitignore"] == []
     text = (ws / ".claude" / "orchestrator" / "config.yaml").read_text()
     assert "overlay-version: 1" in text and "project: ws" in text and "  command: make check" in text
-    assert "compare: python3 ~/.claude/skills/orchestrate/scripts/compare.py --parser tap" in text
+    assert f"compare: python3 {state.sibling_script('compare.py')} --parser tap" in text
     assert (ws / ".claude" / "orchestrator" / "roles").is_dir()
     code, out, _ = run(ws, "where")
     assert out["shape"] == "workspace" and out["warnings"] == [] and out["problems"] == []
@@ -2117,3 +2117,16 @@ def test_quality_reads_review_followups_of_earlier_cycles_and_counts_read_pendin
     ag = run("counts")[1]["agents"]
     assert ag["by_role"]["phase-integrate"]["agents"] == 1
     assert ag["missing_transcripts"] == ["last-int"]
+
+
+def test_sibling_script_is_the_installed_literal_when_installed(tmp_path):
+    """A tree at $HOME/.claude/skills/orchestrate/scripts keeps the ~-form the docs and old configs use."""
+    scripts = tmp_path / ".claude" / "skills" / "orchestrate" / "scripts"
+    scripts.mkdir(parents=True)
+    shutil.copy(HERE / "state.py", scripts / "state.py")
+    out = subprocess.run(
+        [sys.executable, "-c",
+         "import importlib.util as u; s = u.spec_from_file_location('st', 'state.py'); m = u.module_from_spec(s);"
+         "s.loader.exec_module(m); print(m.sibling_script('compare.py'))"],
+        cwd=scripts, env={**os.environ, "HOME": str(tmp_path)}, capture_output=True, text=True, check=True).stdout.strip()
+    assert out == "~/.claude/skills/orchestrate/scripts/compare.py"

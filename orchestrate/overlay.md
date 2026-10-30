@@ -49,7 +49,7 @@ build:
 test:
   command: ./bin/run-tests.sh       # REQUIRED
   parser: emacs-results-txt | exit-code | junit-xml | tap   # default: exit-code
-  compare: python3 ~/.claude/skills/orchestrate/scripts/compare.py --parser <parser>   # OPTIONAL; required when the baseline is red: `<cmd> <baseline-file> <after-file>` exits non-zero and prints the test ids that fail after but not before (flows/execute.md § 4)
+  compare: python3 <skill-dir>/scripts/compare.py --parser <parser>   # OPTIONAL; required when the baseline is red: `<cmd> <baseline-file> <after-file>` exits non-zero and prints the test ids that fail after but not before (flows/execute.md § 4)
   pending-style: xfail-strict | xit | <project value>   # how the design round marks a pending test; must be a style the runner reports as pending, never as failing (a red baseline disables regression detection). Default: xfail-strict for pytest, xit for buttercup
 
 # Where worktrees go (§ Worktrees): under the home, never under a code root. `pattern` is the path under
