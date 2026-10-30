@@ -533,6 +533,16 @@ def test_asks_prints_what_the_handshake_carries(home):
     assert home.ok("status")["inbox"] == {"open": 1, "answered": ["ask-cycle-1-1"]}
 
 
+def test_status_lists_every_waiting_ask_blocking_first(home):
+    started(home)
+    home.ask("ask-cycle-1-1")
+    home.ask("ask-cycle-1-2", blocks=["a"])
+    home.ask("ask-cycle-1-3", status="applied")
+    out = home.ok("status")
+    assert [a["id"] for a in out["asks"]] == ["ask-cycle-1-2", "ask-cycle-1-1"]
+    assert out["inbox"]["open"] == 2
+
+
 # ---------------------------------------------------------------- A task's tests pass at its merge
 
 def test_done_without_a_test_run_is_refused(home):

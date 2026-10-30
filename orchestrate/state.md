@@ -27,7 +27,7 @@ Git and worktree operations (branching, merging, removing a worktree) are the ag
 
 | Verb | Does |
 |---|---|
-| `status` | Read-only. The change's `stage` and `next` step (§ Stages), the open `cycle` and `phase` with that phase's `gate` report, the `intent`'s approval and status line, the `inbox` (`{open, answered}`), the `asks` that block work (open or answered, with `:BLOCKS:`), and `convention_breaks` when there are any. One call; needs no open cycle. |
+| `status` | Read-only. The change's `stage` and `next` step (§ Stages), the open `cycle` and `phase` with that phase's `gate` report, the `intent`'s approval and status line, the `inbox` (`{open, answered}`), the `asks` still waiting (open or answered, with `:BLOCKS:`), those that block work first, and `convention_breaks` when there are any. One call; needs no open cycle. |
 | `gate [<phase>]` | Read-only. The open cycle's gate for its phase (or the named one), every computed check evaluated afresh, every asserted check with who asserted it and when (§ Gates). Exit 1 when it does not pass. |
 | `conventions` | Read-only. Every break of the record's forms (§ Conventions), with where it is and the form expected. |
 | `check done <task>` | Refuses (`not_done`) unless the task's `Merge task <task>` commit is on the change branch, a review file names that commit, and the tests pass at it: `after-<task>-<sha12>.status` exists and holds 0, or, against a red baseline (`baseline-<cycle-id>.status` non-zero), `after-<task>-<sha12>.compare` holds 0 (`flows/execute.md` § 4). It reads the files and runs nothing. Prints the merge commit. Run before writing `status: done`. |
