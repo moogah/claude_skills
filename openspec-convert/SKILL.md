@@ -1,6 +1,6 @@
 ---
 name: openspec-convert
-description: "Convert a repository or orchestrator home from the OpenSpec layout (openspec/specs/, openspec/changes/ with delta specs, proposal.md and design.md) to the orchestrate skill's living org record (docs/specs/<capability>.org, docs/changes/<change>/{intent,design}.org). Use when a project still has an openspec/ directory, when `state.py where` warns that openspec/specs/ is still in the home, or when the user asks to migrate off OpenSpec. One-time migration; the orchestrate skill does not read the old layout."
+description: "Convert a repository or orchestrator home from the OpenSpec layout (openspec/specs/, openspec/changes/ with delta specs, proposal.md and design.md) to the orchestrate skill's living org record (docs/specs/<capability>.org, docs/changes/<change>/{intent,design}.org). Use when a project still has an openspec/ directory, when `home.py where` warns that openspec/specs/ is still in the home, or when the user asks to migrate off OpenSpec. One-time migration; the orchestrate skill does not read the old layout."
 ---
 
 # openspec-convert
@@ -70,7 +70,7 @@ For each active change `<c>`:
 - `project.md`: compare it with the project's `CLAUDE.md`. Move what only it says into `CLAUDE.md` or `docs/`; it is not kept.
 - `research/` and similar notes: move to `$CODE_ROOT/docs/research/` and fix the links that point at the old path (`git grep 'openspec/research'`).
 - `config.yaml` (the OpenSpec CLI's) and `openspec/changes/archive/`: deleted. Git history keeps the archived changes; they are not converted.
-- Then `git rm -r openspec/`. Ignored files (`__pycache__/`, editor backups) survive it: check that what is left on disk is only ignored files, then `rm -rf openspec`. A leftover `openspec/specs/` keeps `state.py where` warning.
+- Then `git rm -r openspec/`. Ignored files (`__pycache__/`, editor backups) survive it: check that what is left on disk is only ignored files, then `rm -rf openspec`. A leftover `openspec/specs/` keeps `home.py where` warning.
 
 ### 4. Live references
 
