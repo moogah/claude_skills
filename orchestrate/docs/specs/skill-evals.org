@@ -13,7 +13,7 @@ Research: =~/emacs-workspaces/claude-skills/research/skill-evals/brief.org= (goa
 
 * Key Concepts
 
-Terms in /italics/ at their first use are defined in =docs/glossary.org=. Four words below are not yet in the glossary and are marked (new): /case/, /trial/, /fixture/, /step/.
+Terms in /italics/ at their first use, and /step/, /case/, /trial/ and /fixture/ below, are defined in =docs/glossary.org=.
 
 ** The outcome list
 
@@ -21,10 +21,10 @@ Terms in /italics/ at their first use are defined in =docs/glossary.org=. Four w
 
 ** A step, a case, a trial, a fixture
 
-- A *step* (new) is one piece of work one agent does between receiving its input and handing back: the dispatcher's first step, a Reviewer's review of one task, the execute agent's routing and fixing of one review's findings.
-- A *case* (new) is one eval: it names one outcome or one rule, the step where that is observed, the step's input, and the checks and rubric items applied to what the step wrote.
-- A *trial* (new) is one run of a case. A case is run more than once because two runs of the same step on the same input differ.
-- A *fixture* (new) is what a step needs besides its /interface artifact/ in order to run: a checkout of the code at a commit for an Implementor or a Reviewer, a home with its record for a phase agent or the dispatcher.
+- A *step* is one piece of work one agent does between receiving its input and handing back: the dispatcher's first step, a Reviewer's review of one task, the execute agent's routing and fixing of one review's findings.
+- A *case* is one eval: it names one outcome or one rule, the step where that is observed, the step's input, and the checks and rubric items applied to what the step wrote.
+- A *trial* is one run of a case. A case is run more than once because two runs of the same step on the same input differ.
+- A *fixture* is what a step needs besides its /interface artifact/ in order to run: a checkout of the code at a commit for an Implementor or a Reviewer, a home with its record for a phase agent or the dispatcher.
 
 The input of a case is a constructed interface artifact plus a fixture. The same constructed artifact serves twice: as the input of the step that reads it, and as what the output of the step that writes it is compared against.
 

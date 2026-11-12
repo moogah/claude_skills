@@ -1,7 +1,7 @@
 #+TITLE: Glossary
 #+OPTIONS: ^:{} -:nil
 
-The orchestrate skill's agreed terms. The seven below were agreed during the research effort =~/emacs-workspaces/claude-skills/research/skill-evals/= (2026-11-11). The =state-layer= branch adds this file too, with its own terms; when the two meet, the file holds both sets.
+The orchestrate skill's agreed terms. The eleven below were agreed during the research effort =~/emacs-workspaces/claude-skills/research/skill-evals/= (2026-11-11). The =state-layer= branch adds this file too, with its own terms; when the two meet, the file holds both sets.
 
 * outcome
 Something =orchestrate= is supposed to result in that the user would notice without reading the skill text.
@@ -43,4 +43,28 @@ The fixed cases a skill change must pass before it is installed; expected to pas
 Cases run beside the regression set whose result is reported and blocks nothing; where what is not yet reliable is measured.
 - Example :: "gate the install with an advisory set alongside."
 - Avoid :: soft gate, capability set (the sources' word)
+- Specs :: skill-evals
+
+* step
+One piece of work one agent does between receiving its input and handing back.
+- Example :: "many if not most or all of the steps taken by skill roles can be run with some kind of constructed mock input."
+- Avoid :: phase (a phase holds many steps), task (a unit of the change's work)
+- Specs :: skill-evals
+
+* case
+One eval: it names one outcome or one rule, the step where that is observed, the step's input, and the checks and rubric items applied to what the step wrote.
+- Example :: the dispatcher's first step on a change whose cycle has closed, checked for a spawn of the plan phase agent.
+- Avoid :: test (a product's), scenario (a spec's)
+- Specs :: skill-evals
+
+* trial
+One run of a case. A case is run more than once because two runs of the same step on the same input differ.
+- Example :: "let measured agreement set the trials."
+- Avoid :: run alone (a replay is also run), attempt
+- Specs :: skill-evals
+
+* fixture
+What a step needs besides its interface artifact in order to run: a checkout of the code at a commit for an Implementor or a Reviewer, a home with its record for a phase agent or the dispatcher.
+- Example :: a clone of a home at the commit where a cycle closed.
+- Avoid :: snapshot, stand-in (the testing skill's word, for a fake of a real thing), mock
 - Specs :: skill-evals
