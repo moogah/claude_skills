@@ -4,13 +4,15 @@
 The orchestrate skill's agreed terms. The eleven below were agreed during the research effort =~/emacs-workspaces/claude-skills/research/skill-evals/= (2026-11-11). The =state-layer= branch adds this file too, with its own terms; when the two meet, the file holds both sets.
 
 * outcome
-Something =orchestrate= is supposed to result in that the user would notice without reading the skill text.
+Something =orchestrate= is supposed to result in that the user would notice without reading the skill text. Since 2026-11-12 the outcome list (=docs/outcomes.org=) is source material for the spec, and a requirement's =:GOAL:= carries the trace up to the north star.
 - Example :: "It would be better to establish a list of behaviors the orchestrate skill is supposed to result in, and have evals for those."
 - Avoid :: goal (the north star's word, for a whole change or many), requirement, behaviour (used loosely for both an outcome and a rule)
 - Specs :: skill-evals
 
 * rule
-An instruction in a flow or role doc that an agent must follow; how the skill produces an outcome.
+Retired 2026-11-12. In a spec, what a rule stated is a requirement or a scenario (=templates/spec.md=); a sentence of the skill text cited as the origin of a backfilled statement is a quote in its extraction record.
+
+/As agreed 2026-11-11:/ An instruction in a flow or role doc that an agent must follow; how the skill produces an outcome.
 - Example :: a hand-back is one line of at most 200 characters.
 - Avoid :: behaviour
 - Specs :: skill-evals
