@@ -1,0 +1,234 @@
+#+TITLE: skill-evals
+#+OPTIONS: ^:{} -:nil
+
+* Purpose
+
+The evals answer one question about a change to the =orchestrate= skill before it is installed: /does the skill still result in what it is supposed to, on the same cases as last time?/ They exist because the cycles used to judge a skill change were never the same twice, so a change that fixed one thing could make another worse and nobody would see it.
+
+They do this by running one step of the skill at a time, on a constructed interface artifact and a fixture, checking the structure of what the step wrote with a script and its content with an eval agent against a rubric, and keeping every result so that two versions of the skill can be set side by side.
+
+They do not own: proposing changes to the skill (the user and =process-improvement= do that; the results are kept in a form a program can read so that a proposer can be added later); evals for any skill but =orchestrate=; runs on other vendors' tools or models; the whole-cycle replay's tools (=findings/tools/replay-*= in the skills workspace), which they use and do not replace.
+
+Research: =~/emacs-workspaces/claude-skills/research/skill-evals/brief.org= (goals R1-R11, decided 2026-11-11; evidence E1-E9).
+
+* Key Concepts
+
+Terms in /italics/ at their first use are defined in =docs/glossary.org=. Four words below are not yet in the glossary and are marked (new): /case/, /trial/, /fixture/, /step/.
+
+** The outcome list
+
+=docs/outcomes.org= lists each /outcome/ the skill is supposed to result in: what the user would notice without reading the skill text. Each entry is traced up to a north-star goal and down to the /rules/ in the flows and roles that produce it. The rules may be rewritten while the outcome holds. The list is in the skills repository, so each branch carries the list for its own text. It grows, capability by capability, into a spec with scenarios like this one.
+
+** A step, a case, a trial, a fixture
+
+- A *step* (new) is one piece of work one agent does between receiving its input and handing back: the dispatcher's first step, a Reviewer's review of one task, the execute agent's routing and fixing of one review's findings.
+- A *case* (new) is one eval: it names one outcome or one rule, the step where that is observed, the step's input, and the checks and rubric items applied to what the step wrote.
+- A *trial* (new) is one run of a case. A case is run more than once because two runs of the same step on the same input differ.
+- A *fixture* (new) is what a step needs besides its /interface artifact/ in order to run: a checkout of the code at a commit for an Implementor or a Reviewer, a home with its record for a phase agent or the dispatcher.
+
+The input of a case is a constructed interface artifact plus a fixture. The same constructed artifact serves twice: as the input of the step that reads it, and as what the output of the step that writes it is compared against.
+
+** Structure and content
+
+What a step wrote is evaluated in two ways.
+
+| What | By | Decides |
+|------+----+---------|
+| Structure: the sections, fields and references the artifact's form requires; the tool calls and files the rule requires | a script | pass or fail |
+| Content: whether the artifact says what it should | an /eval agent/, against the /rubric/ for that kind of artifact, item by item | a recorded evaluation per item |
+
+The skill strives to give its interface artifacts a formal structure wherever possible, and a structure that exists is validated. The content is always evaluated as well: a well-formed artifact can be wrong.
+
+** The two sets
+
+| Set | Holds | Expected on the installed skill | A failure |
+|-----+-------+---------------------------------+-----------|
+| /regression set/ | structural checks, and rubric items that have been promoted | passes near 100% | blocks the install |
+| /advisory set/ | rubric items not yet promoted; checks of outcomes that need several steps | any | is reported and blocks nothing |
+
+** The history
+
+Every trial's result is kept. The history is the record by which two versions of the skill are compared, a step is seen to get slower or costlier, and a rubric item is promoted.
+
+* Requirements
+
+** Requirement: The outcome list is what the evals are written against
+The outcome list SHALL hold every outcome the skill is supposed to result in, each with the north-star goal it serves, the rules that produce it, the step or steps where it is observed, and the cases that cover it. Coverage SHALL be read from the list, not from which failures have been seen.
+
+*** Scenario: An outcome with no case is reported as not covered
+- *WHEN* the coverage of the outcome list is reported
+- *AND* an outcome on it names no case
+- *THEN* the report lists that outcome as not covered
+- *AND* it is not counted as passing
+
+*** Scenario: A case names an outcome or a rule on the list
+- *WHEN* a case is added
+- *THEN* it names one outcome on the list, or one rule traced to an outcome on the list
+- *AND* a case that names neither is refused
+
+*** Scenario: A rule is rewritten and its outcome's cases still apply
+- *WHEN* a change rewrites a rule in a flow or role doc
+- *AND* the outcome the rule is traced to is unchanged
+- *THEN* the outcome's cases run against the changed skill without being rewritten
+- *AND* the trace from the outcome to its rules is updated in the same commit as the rule
+
+** Requirement: A case evaluates one outcome or rule at one step
+A case SHALL run one step of the skill, on a constructed interface artifact and a fixture, without running a cycle.
+
+*** Scenario: A case runs without a cycle
+- *WHEN* a case is run
+- *THEN* only the step it names is run
+- *AND* the run ends when that step hands back, or at the point the case names
+
+*** Scenario: The expected result is established before the first trial
+- *WHEN* a case is written
+- *THEN* what a correct run of the step does is stated from the fixture's own state and the skill text, with the lines quoted
+- *AND* it is stated before any trial is run
+
+*** Scenario: A check is tried against a run read by hand before it counts
+- *WHEN* a structural check is added to a case
+- *THEN* one run is read by hand and each check's verdict compared with the script's
+- *AND* a check that disagrees with the hand reading is corrected before any trial counts
+
+*** Scenario: A trial writes only to its own copy
+- *WHEN* a trial runs
+- *THEN* it runs in a copy of the fixture made for that trial
+- *AND* every path in the copy that named the place the fixture was taken from names the copy
+- *AND* the home or repository the fixture was taken from is unchanged afterwards
+
+** Requirement: A step that gets a case gets a named, formed input
+When a step receives its first case, the change to the skill that makes the step runnable alone SHALL ship with it: the artifact or brief the step reads is named in the skill text and given a form, and what the step may read beyond it is stated. The skill is changed for this only where a case needs it.
+
+*** Scenario: The first case for a step names the step's input in the skill text
+- *WHEN* the first case for a step is added
+- *AND* the skill text names no artifact for the step's input, or gives it no form
+- *THEN* the same change names the artifact and gives it a form in the skill text
+
+*** Scenario: The execute agent's routing and fixing is one step
+- *WHEN* a case covers the execute agent's handling of a merged task's discoveries, or of a review's findings
+- *THEN* the routing and the fix are run as one step
+- *AND* the rubric scores the routing and the fix as separate items
+
+** Requirement: Structure is checked by a script and content by an eval agent against a rubric
+What a step wrote SHALL be evaluated on its full content. Where the artifact has a formal structure a script SHALL validate it. An eval agent SHALL examine the artifact and record an evaluation against each item of the rubric for that kind of artifact.
+
+*** Scenario: An artifact with a form is validated by a script
+- *WHEN* a step writes an artifact whose form the skill text fixes
+- *THEN* a script checks the artifact against that form
+- *AND* the result is pass or fail
+
+*** Scenario: A well-formed artifact is still evaluated on its content
+- *WHEN* a step writes an artifact that passes every structural check
+- *THEN* an eval agent evaluates it against the rubric for its kind
+- *AND* each rubric item's evaluation is recorded
+
+*** Scenario: The eval agent takes no part in what it evaluates
+- *WHEN* an eval agent evaluates an artifact
+- *THEN* it is not the agent that ran the step, and it changes nothing the step wrote
+
+** Requirement: Every result is kept, with what it ran on and what it cost
+Each trial's result SHALL be recorded in a form a program can read, and kept. It SHALL carry the case, the outcome or rule, the skill's branch and commit, the model id, the effort level, the harness version, the wall time and the tokens, each structural check's result and each rubric item's evaluation.
+
+*** Scenario: A result names the version of everything it ran on
+- *WHEN* a trial ends
+- *THEN* its result records the skill's branch and commit, the model id, the effort level and the harness version
+
+*** Scenario: A result carries its cost
+- *WHEN* a trial ends
+- *THEN* its result records the wall time and the tokens used
+- *AND* tokens are counted once per message
+
+*** Scenario: Cost never blocks an install
+- *WHEN* a case's wall time or tokens rise between two versions of the skill
+- *THEN* the rise is shown in the comparison
+- *AND* the install is not blocked by it
+
+*** Scenario: A result is not rewritten
+- *WHEN* a case is run again
+- *THEN* a new result is added
+- *AND* earlier results are unchanged
+
+** Requirement: A drop in the regression set blocks the install
+Before a skill change is installed, the regression set SHALL be run against it. A result worse than the installed skill's on the same cases SHALL stop the install, unless the user overrides it with a recorded reason. The advisory set SHALL be reported and SHALL block nothing.
+
+*** Scenario: A regression stops the install
+- *WHEN* the regression set is run against a skill change
+- *AND* a case that passes on the installed skill fails on the change
+- *THEN* the change is not installed
+- *AND* the report names the case, its outcome and the failing check or item
+
+*** Scenario: The user overrides with a recorded reason
+- *WHEN* the regression set has stopped an install
+- *AND* the user decides to install anyway
+- *THEN* the reason is recorded with the result
+- *AND* the install proceeds
+
+*** Scenario: An advisory failure blocks nothing
+- *WHEN* a case in the advisory set fails or its evaluation worsens
+- *THEN* the report shows it
+- *AND* the install is not blocked
+
+*** Scenario: Structural checks gate from the start
+- *WHEN* a case with structural checks is added
+- *THEN* its structural checks are in the regression set once they have been tried against a run read by hand
+
+** Requirement: A rubric item gates once its history shows it is stable
+A rubric item SHALL start in the advisory set. It SHALL be promoted to the regression set when the history shows that repeated evaluations of the same artifact agree and that it passes reliably on the installed skill.
+
+*** Scenario: A new rubric item is advisory
+- *WHEN* a rubric item is added
+- *THEN* its evaluations are recorded in the history
+- *AND* they block no install
+
+*** Scenario: A rubric item is promoted on its history
+- *WHEN* the history shows a rubric item's evaluations of the same artifact agree, and that it passes reliably on the installed skill
+- *THEN* the item is moved to the regression set
+- *AND* the history it was promoted on is named with the move
+
+** Requirement: Two versions of the skill are compared on the same cases
+The same cases SHALL be run on two trees of the skill and their results set side by side.
+
+*** Scenario: Old and new are run on the same cases
+- *WHEN* a skill change is compared with the installed skill
+- *THEN* each case is run on both trees from the same input
+- *AND* the comparison shows, per case, each tree's structural results, rubric evaluations, wall time and tokens
+
+*** Scenario: A case that cannot be observed on one tree is reported as such
+- *WHEN* a case names a step or an artifact that one of the two trees does not have
+- *THEN* the comparison reports the case as not observable on that tree
+- *AND* it is not counted as a failure
+
+** Requirement: One run of the regression set stays within its cap
+One run of the regression set SHALL cost about what one whole-cycle replay costs: about an hour and thirty dollars. The number of trials of a case SHALL be set from the agreement its earlier trials showed. Advisory runs are outside the cap.
+
+*** Scenario: A run reports its cost against the cap
+- *WHEN* the regression set has been run
+- *THEN* the report gives the run's wall time and cost beside the cap
+
+*** Scenario: A case whose trials agree runs fewer trials
+- *WHEN* a case's structural checks have been unanimous across its trials
+- *THEN* the case may run fewer trials
+- *AND* the number and the history it rests on are recorded with the case
+
+** Requirement: The whole-cycle replay keeps three jobs and is not the gate
+A whole-cycle replay SHALL remain the way an observed problem is confirmed as resolved. It SHALL be the advisory check, at a slower cadence than each install, for outcomes that show only across several steps. It SHALL supply fixtures for cases.
+
+*** Scenario: An outcome that needs several steps is checked by a replay, in the advisory set
+- *WHEN* an outcome on the list is observed only across several steps
+- *THEN* its check runs on a whole-cycle replay and is in the advisory set
+- *AND* the outcome list names the replay check as its coverage, or marks the outcome not covered
+
+*** Scenario: A replay's artifacts become fixtures
+- *WHEN* a replay has produced an interface artifact, a checkout or a home's record at a step
+- *THEN* it may be saved as the fixture or the constructed input of a case for that step
+
+* Open Questions
+
+None is critical: no answer changes a requirement above. Each goes to the hand edit.
+
+- What "agree" and "pass reliably" are in numbers, for promotion and for the number of trials.
+- Where the cases, the fixtures and the history are kept (the skills workspace's =evals/= holds one case today), and in what format a result is written.
+- What runs a case: =claude plugin eval= (already wrapped by =bin/skill-dev eval=), a script over =claude -p=, or both.
+- When a fixture has gone stale against the skill text, and what is done then.
+- The form of a rubric, and the model and effort an eval agent runs at.
+- Whether a promoted rubric item that stops agreeing is moved back.

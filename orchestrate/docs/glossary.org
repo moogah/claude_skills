@@ -1,0 +1,46 @@
+#+TITLE: Glossary
+#+OPTIONS: ^:{} -:nil
+
+The orchestrate skill's agreed terms. The seven below were agreed during the research effort =~/emacs-workspaces/claude-skills/research/skill-evals/= (2026-11-11). The =state-layer= branch adds this file too, with its own terms; when the two meet, the file holds both sets.
+
+* outcome
+Something =orchestrate= is supposed to result in that the user would notice without reading the skill text.
+- Example :: "It would be better to establish a list of behaviors the orchestrate skill is supposed to result in, and have evals for those."
+- Avoid :: goal (the north star's word, for a whole change or many), requirement, behaviour (used loosely for both an outcome and a rule)
+- Specs :: skill-evals
+
+* rule
+An instruction in a flow or role doc that an agent must follow; how the skill produces an outcome.
+- Example :: a hand-back is one line of at most 200 characters.
+- Avoid :: behaviour
+- Specs :: skill-evals
+
+* interface artifact
+A file one step of the skill writes and another step, usually of a different role, reads as its input; the place where work passes between agents.
+- Example :: "These 'interface artifacts' are an important part of the design of this skill and fundamentally how we spread complex work across many agents with different roles."
+- Avoid :: hand-off (research's word), contract (harness-design's word, for a dependency)
+- Specs :: skill-evals
+
+* rubric
+The written criteria for one kind of interface artifact that an eval agent scores an instance against, item by item.
+- Example :: "we'll need to provide them with relevant rubricks they can record their evaluations against."
+- Avoid :: checklist, criteria alone
+- Specs :: skill-evals
+
+* eval agent
+An agent that examines an artifact a step produced and records an evaluation against a rubric; it takes no part in the cycle it evaluates.
+- Example :: "eval agents will need to examine the artifacts."
+- Avoid :: judge (the sources' word), Reviewer (a role of the skill)
+- Specs :: skill-evals
+
+* regression set
+The fixed cases a skill change must pass before it is installed; expected to pass near 100% on the installed skill.
+- Example :: its absence: "the cycles we use to evaluate a skill change are never the same."
+- Avoid :: test suite, benchmark
+- Specs :: skill-evals
+
+* advisory set
+Cases run beside the regression set whose result is reported and blocks nothing; where what is not yet reliable is measured.
+- Example :: "gate the install with an advisory set alongside."
+- Avoid :: soft gate, capability set (the sources' word)
+- Specs :: skill-evals
