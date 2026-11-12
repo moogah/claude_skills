@@ -12,7 +12,7 @@ This file is the list of outcomes the =orchestrate= skill is supposed to result 
 - =SPANS= :: =one step= when the outcome can be seen in what one step wrote, given that step's input; =several steps= when it shows only across steps, phases or cycles (E7 Table 3, its C-numbers).
 - =STATE_LAYER= :: whether the statements quoted under Source stand, as quoted, in the =state-layer= branch's text (=3502e7c=): =same=, =differs: <how>=, or =not checked=. Only the Source statements were compared; a rule that differs there is named in the Note where it was seen.
 - =RECORD= :: the rows of E1 Table 3 (B1 to B13: what was fixed more than once, regressed or failed its measure) that concern this outcome, or =none=.
-- =CASES= :: the cases that cover the outcome, or =none=. Five cases over four outcomes were picked 2026-11-12 by the selection rule (research brief, * Decided 2026-11-11) and are marked =picked ..., not built= until the hand edit builds them.
+- =CASES= :: the cases that cover the outcome, or =none=. Five cases over four outcomes were picked 2026-11-12 by the selection rule (research brief, * Decided 2026-11-11) and were built at the hand edit the same day; each names its case in the skills workspace's =evals/cases/=.
 - Source :: the statement the outcome is drawn from, quoted, with its file and section heading. Code in a quote is written as in org; bold is dropped.
 - Rules :: the main rules that produce the outcome, quoted the same way. [O]: the source itself links the rule to the outcome (the rule states it, sits in the passage that states it, or points to it). [I]: the link is the drafter's inference.
 - Note :: an ambiguity, two sources that disagree, or the E7 rows merged into the entry.
@@ -119,7 +119,7 @@ This file is the list of outcomes the =orchestrate= skill is supposed to result 
 :SPANS: one step
 :STATE_LAYER: same
 :RECORD: B11
-:CASES: picked 2026-11-12, not built: the Architect at the design round, from an =intent.org= and its spec edits
+:CASES: =architect-ns6= (the Architect at the design round, from the intent and spec edits of a change with an error-message scenario); in the skills workspace's =evals/cases/=
 :END:
 - Source :: "Design records decisions and contracts, not implementation detail. It states what must hold and why. Guards, error strings, encodings, helper and test names live in the code and the tests; a Decision or row that names one is cut, not amended, at the round and at conformance." (=north-star.org= G6); "The design is the contract, and holds only contracts." (=SKILL.md= § Critical requirements)
 - Rules ::
@@ -229,7 +229,7 @@ This file is the list of outcomes the =orchestrate= skill is supposed to result 
 :SPANS: one step
 :STATE_LAYER: same
 :RECORD: B3
-:CASES: picked 2026-11-12, not built: (1) the Implementor, from a task file with a defect planted beside its code; (2) the Reviewer, from the author-blind input with a defect planted off the task's path
+:CASES: =implementor-ns12= (the Implementor, a defect planted beside its task), =reviewer-ns12= (the Reviewer, the same defect beside the diff); in the skills workspace's =evals/cases/=
 :END:
 - Source :: "Reporters never filter: every defect in present code is reported with its kind and routed by the main path, so YAGNI limits what gets built, never what gets seen." (=north-star.org= * Disposition); "Every defect an agent finds in code or text that exists is reported with a kind (=issue=, =question=, =thought=) and severity, whatever its likelihood" (=SKILL.md= § Critical requirements)
 - Rules ::
@@ -370,7 +370,7 @@ This file is the list of outcomes the =orchestrate= skill is supposed to result 
 :SPANS: one step
 :STATE_LAYER: same
 :RECORD: B2
-:CASES: picked 2026-11-12, not built: the dispatcher after a hand-back, from the hand-back line and two or three open ask files
+:CASES: =dispatcher-dp3= (the dispatcher after a plan agent's =stopped= hand-back with three open decision asks); in the skills workspace's =evals/cases/=
 :END:
 - Source :: "While the user is present they are put one per call, never as a list in chat: asks whose =:BLOCKS:= names work waiting now first, then the rest in =status= order, each call carrying the ask's recommendation and a =Not now= option that leaves the ask open" (=SKILL.md= § The dispatcher's loop); "One question per call, always." (=templates/ask.md= § The inline rule)
 - Rules ::
@@ -504,7 +504,7 @@ This file is the list of outcomes the =orchestrate= skill is supposed to result 
 :SPANS: one step
 :STATE_LAYER: same
 :RECORD: B4
-:CASES: picked 2026-11-12, not built: the execute agent at § 4, from a fixture repository where merging one task branch fails a test that passed
+:CASES: =execute-ex2= (the execute agent at § 4: of two queued tasks, the first's merge fails a test that passed); in the skills workspace's =evals/cases/=
 :END:
 - Source :: "A regression is a test that passed in the baseline and fails after the merge." (=flows/execute.md= § 4); "stop further merges; keep worktrees; raise an =environment=-kind ask (=templates/ask.md=) with the after-file paths" (=flows/execute.md= § 4)
 - Rules ::
@@ -615,7 +615,7 @@ This file is the list of outcomes the =orchestrate= skill is supposed to result 
 
 * First cases
 
-Picked 2026-11-12 at review, by the selection rule (research brief =research/skill-evals/brief.org=, * Decided 2026-11-11): each one is seen at one step, reads the same on =state-layer=, takes a file or saved brief as its input, and together they touch each role. Each role is covered through an outcome its rules are attached to, since no role has an outcome of its own. None is built yet; the hand edit builds them against =docs/specs/skill-evals.org=.
+Picked 2026-11-12 at review, by the selection rule (research brief =research/skill-evals/brief.org=, * Decided 2026-11-11): each one is seen at one step, reads the same on =state-layer=, takes a file or saved brief as its input, and together they touch each role. Each role is covered through an outcome its rules are attached to, since no role has an outcome of its own. All five were built and validated at the hand edit, 2026-11-12, and run three times each on =main= and =state-layer=.
 
 | Role        | Outcome  | Step and input                                                                                   | RECORD |
 |-------------+----------+--------------------------------------------------------------------------------------------------+--------|

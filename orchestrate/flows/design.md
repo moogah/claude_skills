@@ -16,7 +16,30 @@ A change with no scenario that needs a seam (a doc change, a config tweak) skips
 
 ### 1. Spawn the Architect
 
-The orchestrator spawns the Architect at its role default (`model: opus`, `effort: high`; `SKILL.md` § Agent settings) and records it with `role: architect-design`: the round has no cycle yet, so `state.py record add agents` keeps the entry for the first `init`. It assembles the brief (`roles/architect.md` § Design round): `intent.org` and its `#+BASE:`, the change's spec edits (`git -C "$CODE_ROOT" diff <base> -- docs/specs/`) and the spec files they touch, the output of `coverage.py --since <base>` (the change's scenarios and the tests already citing them) and of `coverage.py --scenario` for each scenario the intent's Capabilities names as stated but not met (`flows/open.md` § 3; these are the change's too), the intent's `* Open Questions` if any, the existing `design.org` if any, the overlay's `roles/architect.md`, `priors.md`, the test command and the test tree's layout, and `test.pending-style` from the overlay. The Architect works in the code root, the change's worktree, not a task worktree: it writes `design.org`, the pending tests and the `:TEST:` properties of § 3, and nothing else.
+The orchestrator spawns the Architect at its role default (`model: opus`, `effort: high`; `SKILL.md` § Agent settings) and records it with `role: architect-design`: the round has no cycle yet, so `state.py record add agents` keeps the entry for the first `init`. It assembles the brief (`roles/architect.md` § Design round): `intent.org` and its `#+BASE:`, the change's spec edits (`git -C "$CODE_ROOT" diff <base> -- docs/specs/`) and the spec files they touch, the output of `coverage.py --since <base>` (the change's scenarios and the tests already citing them) and of `coverage.py --scenario` for each scenario the intent's Capabilities names as stated but not met (`flows/open.md` § 3; these are the change's too), the intent's `* Open Questions` if any, the existing `design.org` if any, the overlay's `roles/architect.md`, `priors.md`, the test command and the test tree's layout, and `test.pending-style` from the overlay. The Architect works in the code root, the change's worktree, not a task worktree: it writes `design.org`, the pending tests and the `:TEST:` properties of § 3, and nothing else. The orchestrator saves the brief as `<change-dir>/briefs/design-round.md` (a scoped re-run: `design-round-<seam-id>.md`) before the spawn, and the `Agent` call's prompt is that file's text, so the round can be run again, alone, from the same input. Its form:
+
+```markdown
+You are the Architect for the design round of change `<change>`. Read and follow `~/.claude/skills/orchestrate/roles/architect.md` (§ Three runs, Design round) and `~/.claude/skills/orchestrate/flows/design.md` § 2-5; the design's form is `~/.claude/skills/orchestrate/templates/design.md`.
+
+- Code root (the change's worktree; you work here): `<code root>`. You write `docs/changes/<change>/design.org`, the pending tests and the scenarios' `:TEST:` properties, and nothing else. You do not commit.
+- Your scratch directory, for probes: `<scratch>/architect-design-round/`; `roles/implementor.md` § A machine shared with other agents holds for you too.
+- When you are done, hand back one line (`roles/architect.md` § Output).
+
+design_round_input:
+  intent: docs/changes/<change>/intent.org
+  base: <the intent's #+BASE:>
+  spec_edits: <git -C "$CODE_ROOT" diff <base> -- docs/specs/>
+  spec_files: <the spec files the edits touch>
+  coverage_since_base: <coverage.py --since <base>>
+  coverage_stated_not_met: <coverage.py --scenario for each scenario the intent's Capabilities names as stated but not met, or none>
+  intent_open_questions: <the intent's * Open Questions, or none>
+  design_org: <the existing design.org, or none>
+  overlay_roles_architect: <the overlay's roles/architect.md, or none>
+  priors: <priors.md, or none>
+  test_command: <test.command>
+  test_tree: <the test tree's layout: which file tests which module>
+  test_pending_style: <test.pending-style>
+```
 
 ### 2. Seams
 

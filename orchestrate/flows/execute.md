@@ -97,6 +97,20 @@ reviewer_input:
   project_priors: <overlay's priors.md, if present>
 ```
 
+The helper saves the Reviewer's brief as `<change-dir>/cycles/<cycle-id>/briefs/review-<task-name>.md` before the spawn, and the `Agent` call's prompt is that file's text, so a review can be run again, alone, from the same input. Its form: the spawn's fixed lines, then the block above filled in.
+
+```markdown
+You are the Reviewer for task `<task-name>` of change `<change>`, cycle `<cycle-id>`. Read and follow `~/.claude/skills/orchestrate/roles/reviewer.md`; this diff is up for review on task `<task-name>`.
+
+- Home: `<home>`. The change directory: `<change-dir>`.
+- The merge candidate, checked out clean at `merge_commit` <sha>: `<checkout path>`.
+- Your scratch directory, for probes: `<scratch>/review-<task-name>/` (create it; delete it when you are done).
+- Write your findings to `<change-dir>/cycles/<cycle-id>/reviews/<task-name>.md`, then hand back one line (`SKILL.md` § Hand-back lines).
+- The project's test command, run from the checkout's root: `<test.command>`
+
+<the reviewer_input block, every field filled in; a field with nothing to pass says `none`>
+```
+
 The helper **must not**:
 - Read or pass the Implementor's structured report.
 - Read or pass the `## Observations` or `## Discoveries` sections.

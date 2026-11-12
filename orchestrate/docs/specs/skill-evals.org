@@ -222,13 +222,13 @@ A whole-cycle replay SHALL remain the way an observed problem is confirmed as re
 - *WHEN* a replay has produced an interface artifact, a checkout or a home's record at a step
 - *THEN* it may be saved as the fixture or the constructed input of a case for that step
 
-* Open Questions
+* Decided
 
-None is critical: no answer changes a requirement above. Each goes to the hand edit.
+The six open questions, decided by the user at the hand edit, 2026-11-12 (each the recommended option).
 
-- What "agree" and "pass reliably" are in numbers, for promotion and for the number of trials.
-- Where the cases, the fixtures and the history are kept (the skills workspace's =evals/= holds one case today), and in what format a result is written.
-- What runs a case: =claude plugin eval= (already wrapped by =bin/skill-dev eval=), a script over =claude -p=, or both.
-- When a fixture has gone stale against the skill text, and what is done then.
-- The form of a rubric, and the model and effort an eval agent runs at.
-- Whether a promoted rubric item that stops agreeing is moved back.
+- *What runs a case.* A Python script over =claude -p= (=evals/run.py= in the skills workspace, grown from E8's harness): it copies the fixture for each trial, stops at the point the case names, records the versions and the cost, and runs the eval agent. =bin/skill-dev eval= (=claude plugin eval=) stays for prompt-only smoke checks. A tree of the skill is run from a copy of it in which =~/.claude/skills/= is rewritten to the copy, loaded as a plugin with the installed skills of the same names turned off.
+- *Where things are kept.* In the skills workspace: =evals/cases/<case-id>/= (=case.org= with the expected result and its quotes, the fixture's build script, =checks.py=), =evals/rubrics/<artifact-kind>.org=, and =evals/history.jsonl=, tracked and append-only, one JSON line per trial. Transcripts go to =evals/results/= (not tracked).
+- *Rubric and eval agent.* One org file per kind of artifact. Each item has an id, a question, what counts as pass, and the skill text it rests on. The eval agent answers per item in JSON (=pass=, =fail= or =n/a=, with a quote from the artifact). It runs as =claude-opus-5-5= at effort =high=, never as the agent that ran the step.
+- *The numbers.* A case starts at 3 trials, and each artifact is judged 3 times. An item /agrees/ when its 3 judgings of an artifact give the same verdict, on at least 90% of artifacts; it /passes reliably/ at 90% or more on the installed skill. It is promoted after 10 or more trials on the installed skill. A case whose structural checks are unanimous over 6 trials may drop to 2. These are a starting point, to be adjusted after the first runs.
+- *Stale fixtures.* A case names the skill files its fixture's form depends on and the commit it was built against. When those files differ in the tree under test, the result is marked "fixture may be stale", which is reported and not counted as a failure. Fixtures are rebuilt by their build script, by hand.
+- *Demotion.* A promoted item whose agreement falls below the threshold over its last 10 artifacts goes back to the advisory set, with the history named. A promoted item that fails while it still agrees is a regression and blocks the install.
