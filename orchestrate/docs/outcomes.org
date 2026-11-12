@@ -1,6 +1,6 @@
 #+TITLE: Outcomes of orchestrate
 #+OPTIONS: ^:{} -:nil
-#+STATUS: reviewed 2026-11-12: the 31 outcomes accepted as written; the first cases picked; four items left open (* Left open at review)
+#+STATUS: frozen 2026-11-12 as source material for the spec (research/skill-evals/brief.org R6, goal revision); was: reviewed 2026-11-12: the 31 outcomes accepted as written; the first cases picked; four items left open (* Left open at review)
 
 This file is the list of outcomes the =orchestrate= skill is supposed to result in. Each outcome is traced up to a north-star goal (=north-star.org= in the skills workspace) and down to the rules in the flows, roles and templates that produce it; the rules may be rewritten while the outcome holds. The evals are written against this list: a case names the outcome it covers, and an outcome with no case is marked as not covered. The file describes the skill text on the branch that carries it (here =skill-evals=, cut from installed =main= at =e9025c7=), so another branch carries its own list. Its terms (outcome, rule, step, case, interface artifact, rubric, eval agent, regression set, advisory set) are defined in =docs/glossary.org=. It was drafted from the evidence files E7 (the inventory of 216 statements, 39 of them at the outcome level) and E9 (the interface artifacts) of the research effort =research/skill-evals= in the skills workspace, with every quote checked against this tree, and was reviewed by the user on 2026-11-12, who accepted the 31 outcomes as written ("well stated enough for us to continue").
 
