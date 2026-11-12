@@ -73,3 +73,18 @@ What a step needs besides its interface artifact in order to run: a checkout of 
 The version of =orchestrate= a spec is extracted from: the current, working skill at a named commit, whose behaviour the spec first states. Agreed 2026-11-12 in the reopened research effort.
 - Example :: "we are taking the current orchestration skill as a known working baseline to start from"
 - Avoid :: baseline (=flows/execute.md='s word for the test run captured before merging), golden
+
+* extraction record
+The file, one per capability, in the research effort =research/skill-evals/extraction/= that shows where each statement backfilled into that capability's spec came from: the outcome ids, its provenance and its quotes from the reference skill. Frozen when the capability's spec is accepted; the spec never depends on it. Agreed 2026-11-12.
+- Example :: =extraction/execute.org=, whose entry for "execute § Only merging stops" quotes =flows/execute.md= § 4 on both trees.
+- Avoid :: basis, evidence (a research effort's agent files)
+
+* gap
+A behaviour a spec needs that the reference skill does not state: noted in the spec's =* Gaps= section, and never a requirement or scenario until the user decides it. Agreed 2026-11-12.
+- Example :: what becomes of the merge that broke a test, while the user decides the regression ask.
+- Avoid :: missing rule, TODO
+
+* provenance
+Whether a statement backfilled into a spec is =extracted= (the reference skill states it), =inferred= (our reading of it, reviewed by the user) or =filled= (a gap the user decided); recorded in the extraction record, not in the spec. Agreed 2026-11-12.
+- Example :: "execute § A regression is recorded against its task" is =inferred=: the two trees record it differently.
+- Avoid :: confidence
