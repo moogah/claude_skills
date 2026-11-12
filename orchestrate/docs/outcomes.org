@@ -1,8 +1,8 @@
 #+TITLE: Outcomes of orchestrate
 #+OPTIONS: ^:{} -:nil
-#+STATUS: draft 2026-11-11, not reviewed by the user
+#+STATUS: reviewed 2026-11-12: the 31 outcomes accepted as written; the first cases picked; four items left open (* Left open at review)
 
-This file is the list of outcomes the =orchestrate= skill is supposed to result in. Each outcome is traced up to a north-star goal (=north-star.org= in the skills workspace) and down to the rules in the flows, roles and templates that produce it; the rules may be rewritten while the outcome holds. The evals are written against this list: a case names the outcome it covers, and an outcome with no case is marked as not covered. The file describes the skill text on the branch that carries it (here =skill-evals=, cut from installed =main= at =e9025c7=), so another branch carries its own list. Its terms (outcome, rule, step, case, interface artifact, rubric, eval agent, regression set, advisory set) are defined in =docs/glossary.org=. It was drafted from the evidence files E7 (the inventory of 216 statements, 39 of them at the outcome level) and E9 (the interface artifacts) of the research effort =research/skill-evals= in the skills workspace, with every quote checked against this tree, and it is to be reviewed by the user line by line.
+This file is the list of outcomes the =orchestrate= skill is supposed to result in. Each outcome is traced up to a north-star goal (=north-star.org= in the skills workspace) and down to the rules in the flows, roles and templates that produce it; the rules may be rewritten while the outcome holds. The evals are written against this list: a case names the outcome it covers, and an outcome with no case is marked as not covered. The file describes the skill text on the branch that carries it (here =skill-evals=, cut from installed =main= at =e9025c7=), so another branch carries its own list. Its terms (outcome, rule, step, case, interface artifact, rubric, eval agent, regression set, advisory set) are defined in =docs/glossary.org=. It was drafted from the evidence files E7 (the inventory of 216 statements, 39 of them at the outcome level) and E9 (the interface artifacts) of the research effort =research/skill-evals= in the skills workspace, with every quote checked against this tree, and was reviewed by the user on 2026-11-12, who accepted the 31 outcomes as written ("well stated enough for us to continue").
 
 * How to read an entry
 
@@ -12,7 +12,7 @@ This file is the list of outcomes the =orchestrate= skill is supposed to result 
 - =SPANS= :: =one step= when the outcome can be seen in what one step wrote, given that step's input; =several steps= when it shows only across steps, phases or cycles (E7 Table 3, its C-numbers).
 - =STATE_LAYER= :: whether the statements quoted under Source stand, as quoted, in the =state-layer= branch's text (=3502e7c=): =same=, =differs: <how>=, or =not checked=. Only the Source statements were compared; a rule that differs there is named in the Note where it was seen.
 - =RECORD= :: the rows of E1 Table 3 (B1 to B13: what was fixed more than once, regressed or failed its measure) that concern this outcome, or =none=.
-- =CASES= :: the cases that cover the outcome; =none= throughout this draft.
+- =CASES= :: the cases that cover the outcome, or =none=. Five cases over four outcomes were picked 2026-11-12 by the selection rule (research brief, * Decided 2026-11-11) and are marked =picked ..., not built= until the hand edit builds them.
 - Source :: the statement the outcome is drawn from, quoted, with its file and section heading. Code in a quote is written as in org; bold is dropped.
 - Rules :: the main rules that produce the outcome, quoted the same way. [O]: the source itself links the rule to the outcome (the rule states it, sits in the passage that states it, or points to it). [I]: the link is the drafter's inference.
 - Note :: an ambiguity, two sources that disagree, or the E7 rows merged into the entry.
@@ -119,7 +119,7 @@ This file is the list of outcomes the =orchestrate= skill is supposed to result 
 :SPANS: one step
 :STATE_LAYER: same
 :RECORD: B11
-:CASES: none
+:CASES: picked 2026-11-12, not built: the Architect at the design round, from an =intent.org= and its spec edits
 :END:
 - Source :: "Design records decisions and contracts, not implementation detail. It states what must hold and why. Guards, error strings, encodings, helper and test names live in the code and the tests; a Decision or row that names one is cut, not amended, at the round and at conformance." (=north-star.org= G6); "The design is the contract, and holds only contracts." (=SKILL.md= § Critical requirements)
 - Rules ::
@@ -229,7 +229,7 @@ This file is the list of outcomes the =orchestrate= skill is supposed to result 
 :SPANS: one step
 :STATE_LAYER: same
 :RECORD: B3
-:CASES: none
+:CASES: picked 2026-11-12, not built: (1) the Implementor, from a task file with a defect planted beside its code; (2) the Reviewer, from the author-blind input with a defect planted off the task's path
 :END:
 - Source :: "Reporters never filter: every defect in present code is reported with its kind and routed by the main path, so YAGNI limits what gets built, never what gets seen." (=north-star.org= * Disposition); "Every defect an agent finds in code or text that exists is reported with a kind (=issue=, =question=, =thought=) and severity, whatever its likelihood" (=SKILL.md= § Critical requirements)
 - Rules ::
@@ -370,7 +370,7 @@ This file is the list of outcomes the =orchestrate= skill is supposed to result 
 :SPANS: one step
 :STATE_LAYER: same
 :RECORD: B2
-:CASES: none
+:CASES: picked 2026-11-12, not built: the dispatcher after a hand-back, from the hand-back line and two or three open ask files
 :END:
 - Source :: "While the user is present they are put one per call, never as a list in chat: asks whose =:BLOCKS:= names work waiting now first, then the rest in =status= order, each call carrying the ask's recommendation and a =Not now= option that leaves the ask open" (=SKILL.md= § The dispatcher's loop); "One question per call, always." (=templates/ask.md= § The inline rule)
 - Rules ::
@@ -504,7 +504,7 @@ This file is the list of outcomes the =orchestrate= skill is supposed to result 
 :SPANS: one step
 :STATE_LAYER: same
 :RECORD: B4
-:CASES: none
+:CASES: picked 2026-11-12, not built: the execute agent at § 4, from a fixture repository where merging one task branch fails a test that passed
 :END:
 - Source :: "A regression is a test that passed in the baseline and fails after the merge." (=flows/execute.md= § 4); "stop further merges; keep worktrees; raise an =environment=-kind ask (=templates/ask.md=) with the after-file paths" (=flows/execute.md= § 4)
 - Rules ::
@@ -612,6 +612,27 @@ This file is the list of outcomes the =orchestrate= skill is supposed to result 
   - "Inline path is for out-of-cycle trivial fixes the user asks for between cycles, not for tasks already in a batch." (=flows/inline.md= § When NOT to use inline even if technically eligible) [O]
   - "so the dispatcher itself reads no code" (=flows/inline.md=, opening) [I]
 - Note :: Not one of E7's 39 outcome rows; it is the part of NS13 (O-NS-11) seen at one step, drawn from the inline path's own opening sentence. E9: what carries the requested edit to the inline agent is not stated. In this tree a bailout has no hand-back line of its own and § Why preserve the integrate question routes a defect in adjacent code to a task or the hardening list; on =state-layer= the bailout hands back =inline <task>: bailed out, ...= and "the inline path creates no work".
+
+* First cases
+
+Picked 2026-11-12 at review, by the selection rule (research brief =research/skill-evals/brief.org=, * Decided 2026-11-11): each one is seen at one step, reads the same on =state-layer=, takes a file or saved brief as its input, and together they touch each role. Each role is covered through an outcome its rules are attached to, since no role has an outcome of its own. None is built yet; the hand edit builds them against =docs/specs/skill-evals.org=.
+
+| Role        | Outcome  | Step and input                                                                                   | RECORD |
+|-------------+----------+--------------------------------------------------------------------------------------------------+--------|
+| Architect   | O-NS-6   | The design round, from an =intent.org= and its spec edits                                        | B11    |
+| Implementor | O-NS-12  | The Implementor's step, from a task file with a defect planted beside its code                   | B3     |
+| Reviewer    | O-NS-12  | The review step, from the author-blind input with a defect planted off the task's path           | B3     |
+| Phase agent | O-EX-2   | Execute § 4, from a fixture repository where merging one task branch fails a test that passed    | B4     |
+| Dispatcher  | O-DP-3   | The dispatcher after a hand-back, from the hand-back line and two or three open ask files        | B2     |
+
+* Left open at review
+
+The user chose on 2026-11-12 to pick the cases without going through these; each stays as the draft has it until a later sitting takes it up.
+
+- The five outcomes whose goal link is the drafter's reading: O-XC-3, O-DP-2, O-DP-3, O-EX-2, O-IL-1. Two of them (O-DP-3, O-EX-2) have cases picked; the outcomes are accepted, only the =GOAL= link is unreviewed.
+- Whether the Implementor, the Reviewer, the Architect, the project manager and the state tool get outcomes of their own (* Parts with no stated outcome), and the groups of rules there.
+- The five places where the sources disagree (each in its entry's Note).
+- The seven entries under * Words wanted.
 
 * Parts with no stated outcome
 
