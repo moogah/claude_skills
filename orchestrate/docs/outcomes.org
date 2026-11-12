@@ -129,6 +129,9 @@ This file is the list of outcomes the =orchestrate= skill is supposed to result 
   - "A seam is a contract between two parts of the code, not a feature." (=flows/design.md= § 2) [O]
   - "A row holds current state only. No status, history, importance flags, dated notes or messages to future roles." (=flows/design.md= § 2) [I]
   - "A scenario names no symbol, guard or encoding; those are the round's and the code's." (=flows/open.md= § 3) [I]
+  - "Owning symbols are the boundary's entry points, not every helper." (=flows/design.md= § 2) [I]
+  - "The same binds the Decisions the round writes." (=flows/design.md= § 2) [O]
+- Untested :: R2 is =SKILL.md='s statement of R1, which the Architect's brief does not load; the case observes it only through R1's checks. R3 (conformance at integrate § 1 cuts a row back) has no case yet; one is next on the roadmap. R6 binds the scenarios, which the fixture supplies already written.
 - Note :: E7 row NS6. G6's "Know it by" line ("corrections to the design are rare and each one carries information") reads over many changes and is not in the sentence.
 
 ** O-NS-7. Only a question that needs the user's choice reaches the user as a question; a stale design row or sentence beside right code is corrected with a commit and a journal line and is never asked about.
@@ -241,6 +244,7 @@ This file is the list of outcomes the =orchestrate= skill is supposed to result 
   - "Record each as a =## Discoveries= entry with its kind (=issue= or =question=), severity and evidence, and list its id under =candidate_tasks= in the report, however small or unlikely it looks." (=roles/implementor.md= § What belongs in =## Observations=) [O]
   - "If you find nothing, say what you looked for and why you ruled it out: silence is not a pass." (=roles/reviewer.md= § Reviewer mindset) [I]
   - "Not style or preference" (=roles/reviewer.md= § Reviewer mindset) [I]
+- Untested :: R3 (a suspected defect as a =question=): the planted =_money= defect can be settled by a probe, so neither case calls for a =question=; a case for it is next on the roadmap. R5 is the Architect's rule, and no case runs the Architect on a defect yet; one is next on the roadmap.
 - Note :: Merges the first half of E7 row NS15 with NS16. The statement is about what is reported once found; no source says every defect present is found. The SKILL sentence lists =thought= among the kinds of a defect, while =templates/architect-finding.md= § Kind gives =thought= to a speculative need, which is not a defect.
 
 ** O-NS-13. Every reported defect ends in a fix, a task, an ask or an entry on the hardening list; none ends as a journal line or a remark.
@@ -378,6 +382,9 @@ This file is the list of outcomes the =orchestrate= skill is supposed to result 
   - "When the user is absent, they are relayed from =status= in one line each (id, question, path)" (=SKILL.md= § The dispatcher's loop) [O]
   - "=process= asks are never put." (=SKILL.md= § The dispatcher's loop) [O]
   - "The user answers in the call, the file or chat" (=SKILL.md= § The dispatcher's loop) [I]
+  - "While the user is present they are put one per call, never as a list in chat: asks whose =:BLOCKS:= names work waiting now first, then the rest in =status= order, each call carrying the ask's recommendation and a =Not now= option that leaves the ask open" (=SKILL.md= § The dispatcher's loop) [O]
+  - "writes the answer with =state.py record set asks <id> decision=<label>=" (=SKILL.md= § The dispatcher's loop) [I]
+- Untested :: R2, the user absent: =dispatcher-dp3='s user is present, by its design; an absent-user case is not yet picked. R3: the fixture holds no =process= ask. R4: the case's answers come only through the call, never the file or chat.
 - Note :: Not one of E7's 39 outcome rows: E7 lists it as a rule (DP4). It is listed here because it is what reaches the user, and the source's own record says the users asked for it; the user decides whether it stays. See O-IN-4 for a statement that reads differently.
 
 ** O-DP-4. When no overlay is found for the home, the user is told so explicitly before the skill falls back to defaults.
@@ -508,12 +515,18 @@ This file is the list of outcomes the =orchestrate= skill is supposed to result 
 :END:
 - Source :: "A regression is a test that passed in the baseline and fails after the merge." (=flows/execute.md= § 4); "stop further merges; keep worktrees; raise an =environment=-kind ask (=templates/ask.md=) with the after-file paths" (=flows/execute.md= § 4)
 - Rules ::
-  - "With a green baseline (~BASELINE_STATUS == 0~) the exit code decides" (=flows/execute.md= § 4) [O]
+  - "With a green baseline (~BASELINE_STATUS == 0~) the exit code decides: ~AFTER_STATUS != 0~ is a regression." (=flows/execute.md= § 4) [O]
   - "With a red baseline the exit code cannot decide (it is non-zero both times), so the check is per test id" (=flows/execute.md= § 4) [O]
   - "A count without names is no verdict either" (=flows/execute.md= § 4) [O]
   - "Only merging stops: Implementors still running finish and join the queue, and Reviewers already spawned carry on." (=flows/execute.md= § 4) [O]
   - "Captures a baseline test snapshot if one isn't already taken for this cycle" (=flows/execute.md= § 1) [O]
   - "a red baseline would disable the post-merge regression check for every cycle of the change" (=flows/design.md= § 4) [O]
+  - "When a regression is found: =state.py task set <name> regression_detected=true=; stop further merges; keep worktrees; raise an =environment=-kind ask (=templates/ask.md=) with the after-file paths. It blocks the merge chain, so it is asked at once (§ 9)." (=flows/execute.md= § 4) [O]
+  - "=environment= asks (a regression stop, a wedged runner) always take that route" (=flows/execute.md= § 9) [O]
+  - "the phase agent writes the file, first finishes the orchestrator-side work that does not depend on it (spawn Reviewers for merged tasks, report filing), and when nothing else can run hands back =stopped= naming the ask" (=flows/execute.md= § 9) [I]
+  - "commit it in the home with a subject naming the id" (=flows/execute.md= § 9) [I]
+  - "The queue merges one task at a time, in the order tasks landed" (=flows/execute.md= § 3) [I]
+- Untested :: R2, R3 and R6 apply to a red baseline, and =execute-ex2='s baseline is green; a red-baseline case is not yet picked. R5 (§ 1 captures the baseline) happens before the step: the fixture supplies the baseline.
 - Note :: Not one of E7's 39 outcome rows: E7 lists it as a rule (EX3). It is listed here because the stop and the ask reach the user; the user decides whether it stays. E7 C12 also names the design round (a green baseline) and the state tool. On =state-layer= the Source statements stand; the run's result is also kept in =.status= and =.compare= files, and the spec states a requirement ("A task's tests pass at its merge").
 
 * Integrate
