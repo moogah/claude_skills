@@ -28,13 +28,19 @@ title splits over several lines is joined first), ERT lines on the test name, py
 on the node id. An output whose summary counts tests of a framework but holds no line per test
 (a compact report, pytest without -v) is refused, naming its `Log:` path when it gives one.
 
+`--intent docs/changes/<change>/intent.org` selects the change's scenarios: those the diff from its
+`#+BASE:` touches, and those its `* Capabilities` names (`- <cap> § <title>: stated, not met`,
+templates/intent.md; a parenthesis may follow), which is how a change opened from a workspace integration branch whose spec
+edits lie before its base gets its own. A `--scenario` or intent name that matches no scenario is
+listed, never dropped silently.
+
 Run from a home above the code root (no `docs/specs` at the git root and no --root), the code
 root is the resolved change's, from `state.py where`.
 
 Usage:
   coverage.py [--root CODE_ROOT] [--specs DIR] [--tests DIR ...] [--output RUN_OUTPUT]
               [--capability ID] [--scenario 'CAP § TITLE' ...] [--since COMMIT]
-              [--uncited] [--json]
+              [--intent INTENT_ORG] [--uncited] [--json]
   coverage.py adopt-rows DESIGN_ORG [--root …] [--specs …] [--write]
       a change's legacy `* Scenario coverage` table -> `:TEST:` properties for its `none`
       rows and for rows naming a test that carries no citation; prints them, --write
@@ -559,6 +565,35 @@ def in_since(sc, touched):
     return lines is None or any(sc.line <= ln <= sc.end for ln in lines)
 
 
+# ---------------------------------------------------------------- intent
+
+_NAMED = re.compile(r"^- (\S+) § (.+?): stated, not met(?: \([^()]*\))?\s*$")
+
+
+def intent_scope(path):
+    """(base, [(cap, title)]): the intent's #+BASE: and the scenarios its * Capabilities names as
+    stated, not met. A list item's indented continuation lines are joined to it."""
+    try:
+        text = open(path, encoding="utf-8").read()
+    except OSError as e:
+        raise Refusal(f"cannot read the intent {path}: {e.strerror}")
+    m = re.search(r"^#\+BASE:\s*([0-9a-fA-F]{7,40})", text, re.M)
+    if not m:
+        raise Refusal(f"{path} has no #+BASE: line")
+    items, inside = [], False
+    for line in text.split("\n"):
+        if line.startswith("* "):
+            inside = line.strip() == "* Capabilities"
+        elif inside and line.startswith("- "):
+            items.append(line)
+        elif inside and items and line.startswith("  ") and line.strip():
+            items[-1] += " " + line.strip()
+        elif inside and not line.strip():
+            items.append("")
+    named = [(n.group(1), n.group(2)) for n in map(_NAMED.match, items) if n]
+    return m.group(1), named
+
+
 # ---------------------------------------------------------------- report
 
 def compute(root, specs_dir, tests=None, output=None):
@@ -605,7 +640,7 @@ def org_cell(s):
     return s.replace("|", "\\vert{}")
 
 
-def print_report(rows, unresolved, bad_props, root):
+def print_report(rows, unresolved, bad_props, root, unmatched=()):
     counts = {}
     for r in rows:
         key = "none" if r["status"].startswith("none:") else r["status"]
@@ -625,6 +660,10 @@ def print_report(rows, unresolved, bad_props, root):
         print(f"\nCitations that resolve to no scenario ({len(unresolved)}):")
         for c in unresolved:
             print(f"  {c.where(root)} ({c.shape}) {c.cap} § {c.title}")
+    if unmatched:
+        print(f"\nNamed scenarios that match no scenario ({len(unmatched)}):")
+        for cap, title in unmatched:
+            print(f"  {cap} § {title}")
 
 
 # ---------------------------------------------------------------- adopt-rows
@@ -745,6 +784,7 @@ def main(argv=None):
     ap.add_argument("--capability")
     ap.add_argument("--scenario", action="append", help="'<capability> § <title>'; repeatable")
     ap.add_argument("--since")
+    ap.add_argument("--intent", help="a change's intent.org: its #+BASE: and its named scenarios")
     ap.add_argument("--uncited", action="store_true")
     ap.add_argument("--json", action="store_true")
     args = ap.parse_args(argv)
@@ -763,15 +803,25 @@ def main(argv=None):
         if verb:
             return adopt_rows(args.design, root, specs, tests, args.write)
         rows, unresolved, bad_props = compute(root, specs, tests, args.output)
+        known = {(r["capability"], r["scenario"]) for r in rows}
         if args.capability:
             cap = args.capability
             rows = [r for r in rows if r["capability"] == cap or r["capability"].startswith(cap + "/")]
+        unmatched = []
         if args.scenario:
             keys = {tuple(x.split(" § ", 1)) for x in args.scenario}
+            unmatched += sorted(k for k in keys if k not in known)
             rows = [r for r in rows if (r["capability"], r["scenario"]) in keys]
         if args.since:
             touched = touched_lines(root, specs, args.since)
             rows = [r for r in rows if in_since(r["_sc"], touched)]
+        if args.intent:
+            intent = args.intent if os.path.isfile(args.intent) else os.path.join(root, args.intent)
+            base, named = intent_scope(intent)
+            names = set(named)
+            unmatched += [k for k in named if k not in known]
+            touched = touched_lines(root, specs, base)
+            rows = [r for r in rows if in_since(r["_sc"], touched) or (r["capability"], r["scenario"]) in names]
         if args.uncited:
             rows = [r for r in rows if r["status"] == "uncited"]
         if args.json:
@@ -779,10 +829,11 @@ def main(argv=None):
                               "unresolved": [{"where": c.where(root), "shape": c.shape, "capability": c.cap,
                                               "title": c.title} for c in unresolved],
                               "bad_test_properties": [{"spec": f"{os.path.relpath(s.path, root)}:{s.line}",
-                                                       "value": v, "why": w} for s, v, w in bad_props]},
+                                                       "value": v, "why": w} for s, v, w in bad_props],
+                              "unmatched_names": [f"{c} § {t}" for c, t in unmatched]},
                              separators=(",", ":")))
         else:
-            print_report(rows, unresolved, bad_props, root)
+            print_report(rows, unresolved, bad_props, root, unmatched)
         return 0
     except Refusal as e:
         print(f"refused: {e}", file=sys.stderr)

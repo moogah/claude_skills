@@ -53,7 +53,7 @@ These are asked with the round's own questions, in its one sitting before plan (
 
 ### 5. Commit
 
-First `coverage.py --root "$CODE_ROOT" --since <base>`: it must parse the edited specs and list the change's scenarios (`uncited` is expected; the round cites them). Then, in the code root, `intent.org` and the spec files, staged by name, in one commit `Open: <change>`, with the coverage summary line in its message. The home has nothing to commit; a `.tasks/` item taken up is named by path in the intent's Why and its file is left as it is.
+First `coverage.py --root "$CODE_ROOT" --intent docs/changes/<change>/intent.org`: it must parse the edited specs, list the change's scenarios and no name that matches none (`uncited` is expected; the round cites them). Then, in the code root, `intent.org` and the spec files, staged by name, in one commit `Open: <change>`, with the coverage summary line in its message. The home has nothing to commit; a `.tasks/` item taken up is named by path in the intent's Why and its file is left as it is.
 
 ## Hand-back
 

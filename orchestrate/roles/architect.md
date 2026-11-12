@@ -18,7 +18,7 @@ The role default is `opus` for every run, at `high` effort for the design round 
 
 Once per change, after its intent and spec edits are committed and before the first cycle. Re-run only when a `decision` or a spec change alters a seam, and then for that seam alone.
 
-- **Reads**: `intent.org`, the change's spec edits since its `#+BASE:` and the spec files they touch, `coverage.py --since <base>`, the existing `design.org` if any, the code root's HEAD and test tree, the project priors, the overlay's `roles/architect.md`.
+- **Reads**: `intent.org`, the change's spec edits since its `#+BASE:` and the spec files they and the intent's Capabilities touch, `coverage.py --intent docs/changes/<change>/intent.org` (the change's scenarios), the existing `design.org` if any, the code root's HEAD and test tree, the project priors, the overlay's `roles/architect.md`.
 - **Writes**, all in the code root: `design.org` (Context, Decisions with a seam id on the heading of one that names it, the Seams table, the Open Questions entries the round produces, and the Decisions entries once the user has answered); one pending test per `acceptance` or `contract` scenario whose behaviour HEAD does not yet satisfy, citing it; and `:TEST: none: <reason>` on each scenario no test is worth writing for. The orchestrator commits. An open question is written with its options, its recommendation and the rows and tests that depend on it, drafted in the recommended form and marked so; the Architect writes no provisional Decision for it (`flows/design.md` § 5).
 - **Cost**: one agent run per change; the most expensive of the three, and the one whose output every later run consumes.
 
@@ -82,7 +82,7 @@ Each run ends with a hand-back of **one line** and nothing else (`SKILL.md` § H
 
 ## Escalation contract
 
-- **Findings the routing decorates `blocking`** produce a follow-up task in the change (integrate § 7) and hold the integrate gate until `resolution` is no longer `pending`; those decorated `hardening` go on the change's hardening list (`templates/hardening.md`).
+- **Findings the routing decorates `blocking`** produce a candidate task in the change (integrate § 7), which the next plan writes; they hold the integrate gate until `resolution` is no longer `pending`; those decorated `hardening` go on the change's hardening list (`templates/hardening.md`).
 - **Code right, design stale**: amend the seam row (and the Decision or scenario steps naming the same thing) in place at the contract level, `resolution: design-amended`; the orchestrator journals one record correction and commits it (`templates/design.md` § Seams). Not Implementor work, not an ask.
 - **Design in question**: the finding says what the seam or scenario is for, its kind and evidence, and what it blocks; the orchestrator writes a `decision` ask file from it. The finding is not the ask.
 - **Cleanup**: a replaced implementation still on a live path is a defect, a finding like any other. Cleanup that changes no behaviour today (an uncalled function, two bodies that agree today) is a `thought`, and becomes work only when a project prior asks for cleanup (`templates/architect-finding.md` § The YAGNI check), as a task the orchestrator drafts. An uncalled producer is a `dead-branch` thought, not a second producer.

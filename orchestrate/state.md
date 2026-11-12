@@ -37,7 +37,7 @@ Run `state.py status` before anything else in a session, in the dispatcher and i
 | `gate pass <phase>` | Re-evaluates, then sets `passed` and `passed_at` if every check is true; otherwise names the failing checks. |
 | `counts [--write]` | The PM deterministic pass: counts, ratios, by-status, history, critical-path readout, class table, follow-ups by source, fired signals, and `agents` (§ Agent entry: spend by role from the agents' transcripts, and the quality signals beside it). `--write` saves `cycles/<id>/pm-signals.json`. |
 | `context <agent-id>` | A running agent's context: the tokens of the last call in its transcript (`$CLAUDE_CONFIG_DIR` or `~/.claude`, `projects/*/*/subagents/agent-<id>.jsonl`; a unique prefix of the id will do), against the overlay's `thresholds.phase-agent-context` (default 400000), with `over`. The dispatcher's reading (`SKILL.md` § The dispatcher's loop). Refuses `no_transcript`, `ambiguous_agent`. Needs no state. |
-| `handshake [--meta-discoveries <json\|@file>] [--task-refinements <json\|@file>] [--design-diff <json\|@file>]` | Assembles `handshake-<cycle-id>.json` from state (asks, goal-drift decisions, digest path), the design diff (read from `cycles/<id>/design-diff.json` unless given) and the two judgment fields, and validates it. |
+| `handshake [--meta-discoveries <json\|@file>] [--task-refinements <json\|@file>] [--design-diff <json\|@file>]` | Assembles `handshake-<cycle-id>.json` from state (asks, goal-drift decisions, digest path), the design diff (read from `cycles/<id>/design-diff.json` unless given), the candidate tasks (read from `cycles/<id>/candidate-tasks.json`; `bad_candidate_tasks` when one does not fit or a finding's `candidate-task-<name>` has none) and the two judgment fields, and validates it. |
 | `close [--abandon --why "<reason>"]` | Archives state and handshake to `cycles/<id>/` and marks the cycle closed. Requires the integrate gate unless abandoning. Reports `inbox_left` (open, answered, deferred); those files stay in the inbox for the next `init`. |
 
 Every verb prints JSON. A refusal is `{"ok": false, "error": "<slug>", "message": …}` on stderr, exit 1. The rules the tool enforces:
@@ -163,7 +163,7 @@ The state record is the index line; the finding file (`templates/architect-findi
   "seam": "<seam/<name> or null>",
   "evidence": "<the line, the run, the output, the shipped sentence | for a question: the reasoning and the reproduction to try>",
   "decoration": "blocking | hardening | null",
-  "resolution": "pending | inline-fixed | design-amended | followup-task-<task-name> | reverted | accepted-with-note | hardening-list",
+  "resolution": "pending | inline-fixed | design-amended | candidate-task-<name> | followup-task-<task-name> | reverted | accepted-with-note | hardening-list",
   "blocking_merge_until_resolved": true
 }
 ```
@@ -302,24 +302,28 @@ Computed by `gate check` from state and the files on disk: all of execute's chec
   "task_refinements": [
     {
       "task": ".orchestrator/changes/<change>/tasks/open/<name>.md",
-      "modes": ["created"] | ["in-place"] | ["append"] | ["in-place", "append"] | [],
-      "applied_learnings": [
+      "impact": [
         { "channel": "design-diff", "ref": "seam/violation-info" },
         { "channel": "meta-discovery", "ref": "vocabulary-cluster/permissive-default-vs-closed-vocabulary" },
         { "channel": "user-resolved-ask", "ref": "ask-arch-cycle-<id>-2" },
-        { "channel": "inline-fix", "ref": "arch-cycle-<id>-9" },
-        { "channel": "finding", "ref": "arch-cycle-<id>-10" },
-        { "channel": "open-ask", "ref": "ask-arch-cycle-<id>-10A" },
-        { "channel": "deferred-ask", "ref": "ask-arch-cycle-<id>-2" }
+        { "channel": "inline-fix", "ref": "arch-cycle-<id>-9" }
       ],
       "obsolescence_flagged": false
+    }
+  ],
+  "candidate_tasks": [
+    {
+      "name": "got-home-carries-line", "source": "arch-cycle-<id>-3", "discovered_by": "architect",
+      "discovered_class": "invariant-gap", "critical": true,
+      "quote": "<the finding, discovery or decision, verbatim>",
+      "evidence": ".orchestrator/changes/<change>/cycles/<cycle-id>/findings/<file>", "placement": "in-change"
     }
   ],
   "journal": [ /* the cycle's journal, copied */ ]
 }
 ```
 
-`pm_digest_path`, `user_resolved_goal_drift` and the two `asks_for_user_*` lists are assembled from state; `design_diff` is read from `cycles/<cycle-id>/design-diff.json` (integrate § 1) or passed as `--design-diff`; `meta_discoveries` and `task_refinements` are the orchestrator's judgment, passed as JSON (usually `@file`). **The seven fields are required** (`design_diff`, `pm_digest_path`, `meta_discoveries`, `user_resolved_goal_drift`, `asks_for_user_open`, `asks_for_user_resolved`, `task_refinements`); the tool defines the list once. An empty list is allowed; a missing field is not. Plan reads `design_diff` to know which seam rows moved; `meta_discoveries` to weigh when drafting the batch; `user_resolved_goal_drift` to know whether the intent was revised; `task_refinements` to know which open tasks already absorbed cycle learning (so plan doesn't re-touch them) and which were flagged as candidate-obsolete for user disposition; `journal` for the discoveries and decisions the cycle recorded.
+`pm_digest_path`, `user_resolved_goal_drift` and the two `asks_for_user_*` lists are assembled from state; `design_diff` is read from `cycles/<cycle-id>/design-diff.json` (integrate § 1) or passed as `--design-diff`; `candidate_tasks` is read from `cycles/<cycle-id>/candidate-tasks.json`, which execute § 5, § 8 and integrate § 7 append to (absent means `[]`; `name`, `source`, `discovered_by`, `critical` and `quote` required, `discovered_class`, `evidence` and `placement` optional, nothing else); `meta_discoveries` and `task_refinements` are the orchestrator's judgment, passed as JSON (usually `@file`). **The eight fields are required** (`design_diff`, `pm_digest_path`, `meta_discoveries`, `user_resolved_goal_drift`, `asks_for_user_open`, `asks_for_user_resolved`, `task_refinements`, `candidate_tasks`; a prior handshake written before `candidate_tasks` existed is read with it empty); the tool defines the list once. An empty list is allowed; a missing field is not. Plan reads `design_diff` to know which seam rows moved; `meta_discoveries` to weigh when drafting the batch; `user_resolved_goal_drift` to know whether the intent was revised; `task_refinements` for what each open task must absorb and which were flagged as candidate-obsolete for user disposition; `candidate_tasks` for the tasks it writes; `journal` for the discoveries and decisions the cycle recorded.
 
 ## Recovery
 
@@ -348,7 +352,8 @@ The home is a workspace holding worktrees of one or more repositories, or a repo
   pm-signals.json         # counts --write
   pm-digest.md            # integrate § 3
   meta-discoveries.json   # integrate § 4, input to the handshake
-  task-refinements.json   # integrate § 7, input to the handshake
+  task-refinements.json   # integrate § 7: each open task's impact set, input to the handshake
+  candidate-tasks.json    # execute § 5, § 8 and integrate § 7: tasks the next plan writes, input to the handshake
   asks/<ask-id>.org       # applied, declined and superseded asks (templates/ask.md); moved here by record set
   findings/<finding-id>.md
   reviews/<task-name>.md  # and reviews/whole-change.md (integrate § 9)

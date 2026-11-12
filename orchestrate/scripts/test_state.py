@@ -485,6 +485,33 @@ def test_handshake(run, repo, tmp_path):
     assert h["user_resolved_goal_drift"] == [{"ask": "ask-cycle-1-2", "decision": "continue",
                                               "rationale": "keep going"}]  # the matched option label
     assert h["task_refinements"] == [{"task": "t9", "refinement": "narrow scope"}]
+    assert h["candidate_tasks"] == [] and out["candidate_tasks"] == 0
+
+
+# 15d
+def test_handshake_candidate_tasks(run, repo):
+    """Execute and integrate route task candidates to cycles/<id>/candidate-tasks.json; plan writes them."""
+    init(run, "cycle-1", "--first-cycle")
+    r = run("record", "add", "findings", json.dumps({"trigger": "conformance", "kind": "issue", "class": "duplication", "severity": "medium",
+                                                  "title": "t", "evidence": "a.py:1"}))
+    assert r[0] == 0, r
+    r = run("record", "set", "findings", "arch-cycle-1-1", "decoration=blocking", "resolution=candidate-task-fix-a")
+    assert r[0] == 0, r
+    cyc = repo / ".orchestrator" / "changes" / "chg" / "cycles" / "cycle-1"
+    cyc.mkdir(parents=True)
+    cand = {"name": "fix-a", "source": "arch-cycle-1-1", "discovered_by": "architect",
+            "discovered_class": "duplication", "critical": True, "quote": "a.py:1 returns None"}
+    code, _, err = run("handshake")  # the finding names a candidate the file lacks
+    assert code == 1 and err["error"] == "bad_candidate_tasks" and "arch-cycle-1-1" in err["errors"][0]
+    for bad in ([{**cand, "critical": "yes"}], [{**cand, "placement": "elsewhere"}], [cand, cand],
+                [{k: v for k, v in cand.items() if k != "quote"}], [{**cand, "steps": "1."}], {"name": "x"}):
+        (cyc / "candidate-tasks.json").write_text(json.dumps(bad))
+        code, _, err = run("handshake")
+        assert code == 1 and err["error"] == "bad_candidate_tasks", bad
+    (cyc / "candidate-tasks.json").write_text(json.dumps([cand]))
+    code, out, _ = run("handshake")
+    assert code == 0 and out["candidate_tasks"] == 1
+    assert json.loads((repo / out["path"]).read_text())["candidate_tasks"] == [cand]
 
 
 # 15a
@@ -534,6 +561,14 @@ def test_handshake_design_diff_shape_refused(run, repo, tmp_path):
     (cyc / "design-diff.json").write_text("{not json")
     code, _, err = run("handshake")
     assert code == 1 and err["error"] == "bad_design_diff"
+
+
+# 15c
+def test_init_accepts_prior_handshake_without_candidate_tasks(run, repo):
+    """A handshake written before 2026-10-25 has no `candidate_tasks`: its integrate wrote task files."""
+    hp = repo / ".orchestrator" / "changes" / "chg" / "handshake-cycle-0.json"
+    hp.write_text(json.dumps(handshake_fixture()))
+    assert init(run, "cycle-1", "--prior-handshake", str(hp))[0] == 0
 
 
 # 15c

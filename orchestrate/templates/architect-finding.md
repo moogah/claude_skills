@@ -124,6 +124,7 @@ The state-file `architect_findings[].resolution` field tracks how each finding w
 - `pending` — not yet routed (blocks the integrate gate when its decoration is `blocking`)
 - `inline-fixed` — the orchestrator applied an inline fix (to code, or to a document other than `design.org`: a README, a usage page, a spec scenario the amended row cites)
 - `design-amended` — the code was right and the Architect amended the seam row (and the Decision or scenario steps that named the same thing); the orchestrator's `record-correction:` journal line and the commit carry the path
+- `candidate-task-<name>` — routed at integrate § 7 to a candidate the next plan writes as a task; `state.py handshake` refuses when `candidate-tasks.json` has no entry of that name
 - `followup-task-<task-name>` — became a task; the field carries the task name
 - `reverted` — the implicated merge was reverted
 - `accepted-with-note` — the user accepted the defect as it is; carries the ask id whose `decision_readback` is the rationale, or the `priors.md` line that already answered it
