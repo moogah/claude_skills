@@ -68,3 +68,8 @@ What a step needs besides its interface artifact in order to run: a checkout of 
 - Example :: a clone of a home at the commit where a cycle closed.
 - Avoid :: snapshot, stand-in (the testing skill's word, for a fake of a real thing), mock
 - Specs :: skill-evals
+
+* reference skill
+The version of =orchestrate= a spec is extracted from: the current, working skill at a named commit, whose behaviour the spec first states. Agreed 2026-11-12 in the reopened research effort.
+- Example :: "we are taking the current orchestration skill as a known working baseline to start from"
+- Avoid :: baseline (=flows/execute.md='s word for the test run captured before merging), golden
