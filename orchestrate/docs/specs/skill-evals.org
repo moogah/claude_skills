@@ -9,7 +9,7 @@ They do this by running one step of the skill at a time, on a constructed interf
 
 They do not own: proposing changes to the skill (the user and =process-improvement= do that; the results are kept in a form a program can read so that a proposer can be added later); evals for any skill but =orchestrate=; runs on other vendors' tools or models; the whole-cycle replay's tools (=findings/tools/replay-*= in the skills workspace), which they use and do not replace.
 
-Research: =~/emacs-workspaces/claude-skills/research/skill-evals/brief.org= (goals R1-R11, decided 2026-11-11; evidence E1-E9).
+Research: =~/emacs-workspaces/claude-skills/research/skill-evals/brief.org= (goals R1-R11, decided 2026-11-11; evidence E1-E9). Read and approved by the user as written, 2026-11-11.
 
 * Key Concepts
 
