@@ -1,6 +1,6 @@
 #+TITLE: execute
 #+OPTIONS: ^:{} -:nil
-#+STATUS: draft 2026-11-12, extracted from the reference skill (=main= =e356da7=); inferred statements reviewed 2026-11-12; three gaps filled and the regression requirement revised 2026-11-12; gaps open; not yet accepted
+#+STATUS: draft 2026-11-12, extracted from the reference skill (=main= =e356da7=); inferred statements reviewed 2026-11-12; four gaps filled and the regression requirement revised 2026-11-12; gaps open; not yet accepted
 
 * Purpose
 
@@ -125,7 +125,8 @@ The execute phase SHALL treat a test that passed in the baseline and fails after
 regression. On a regression it SHALL merge no further task until a run shows none, keep every
 task's worktree, keep the merge on the integration branch, and record the regression against the
 task; all work other than merging SHALL go on. The phase agent SHALL find the regression's cause
-and route it as a blocking defect, fixed in the change. The user SHALL be asked only when the fix
+and route it as a blocking defect, fixed in the change, and the task's review SHALL follow the
+fix. The user SHALL be asked only when the fix
 needs a choice that is theirs: a spec scenario or design row would change, or the goals do not
 say which of two clashing tasks is right.
 
@@ -162,6 +163,11 @@ say which of two clashing tasks is right.
 - *WHEN* the fix for a regression is in
 - *THEN* the tests are run again on the integration branch
 - *AND* the next queued task merges only once that run shows no regression
+
+*** Scenario: The task whose merge broke a test is reviewed after the fix
+- *WHEN* a task's merge caused a regression
+- *THEN* its Reviewer is spawned only once a run after the fix shows no regression
+- *AND* the code the Reviewer reads runs through the fix
 
 *** Scenario: A regression reaches the user only as a decision
 - *WHEN* fixing a regression would change a spec scenario or a design row, or the goals do not say which of two clashing tasks is right
@@ -470,18 +476,6 @@ task names, and SHALL record the setting it used.
 - *AND* the cycle's record holds it as a rework
 
 * Gaps
-
-** Gap: When the task whose merge broke a test is reviewed
-:PROPERTIES:
-:REQUIREMENT: A merge that breaks a passing test stops the merge chain
-:END:
-A task whose merge passes its tests goes on to its review. Nothing says when the task whose merge
-caused a regression is reviewed: before its regression is fixed, or after. Noticed at extraction;
-the trials cannot show it (the case gives the phase agent no way to spawn a Reviewer), and they
-left the task in different places: blocked in two counted trials on =main=; in the third the record
-still showed it as landed and not merged, though its merge was on the branch. Options: after the
-fix (the review reads the code that stays, fix included); at once, like any merged task (the
-Reviewer may help find the cause, and reviews code the fix then changes).
 
 ** Gap: What an inline fix's commit carries
 :PROPERTIES:
