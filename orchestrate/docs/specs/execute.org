@@ -126,9 +126,10 @@ regression. On a regression it SHALL merge no further task until a run shows non
 task's worktree, keep the merge on the integration branch, and record the regression against the
 task; all work other than merging SHALL go on. The phase agent SHALL find the regression's cause
 and route it as a blocking defect, fixed in the change, and the task's review SHALL follow the
-fix. The user SHALL be asked only when the fix
-needs a choice that is theirs: a spec scenario or design row would change, or the goals do not
-say which of two clashing tasks is right.
+fix. The user SHALL be asked only when the intent's goals do not settle what the code should do:
+which of two clashing tasks is right, or what a spec scenario the fix would change should say.
+When the goals settle it, a spec scenario or design row that says otherwise SHALL be left for
+integrate as a record correction.
 
 *** Scenario: A regression after a merge stops further merges
 - *WHEN* two tasks are queued and merging the first makes a test fail that passed in the baseline
@@ -155,9 +156,15 @@ say which of two clashing tasks is right.
 - *AND* the change's journal records the cause against the task
 
 *** Scenario: A regression is fixed in the change like a blocking defect
-- *WHEN* a regression's cause is found and fixing it changes no spec scenario or design row
+- *WHEN* a regression's cause is found and the intent's goals settle what the code should do
 - *THEN* it is fixed in the change: by an inline fix when the fix is simple, by a re-spawned Implementor otherwise, by a revert of the merge only when neither will do
 - *AND* no ask is filed for it
+- *AND* the change's journal names the goals that settle it
+
+*** Scenario: A spec statement the goals overrule is left for integrate
+- *WHEN* the fix the goals settle contradicts what a spec scenario or a design row says
+- *THEN* the execute phase changes neither the spec nor the design
+- *AND* the change's journal records the statement for integrate as a record correction
 
 *** Scenario: Merging resumes only after a run shows no regression
 - *WHEN* the fix for a regression is in
@@ -170,7 +177,7 @@ say which of two clashing tasks is right.
 - *AND* the code the Reviewer reads runs through the fix
 
 *** Scenario: A regression reaches the user only as a decision
-- *WHEN* fixing a regression would change a spec scenario or a design row, or the goals do not say which of two clashing tasks is right
+- *WHEN* the intent's goals do not settle what the code should do: neither which of two clashing tasks is right, nor what a spec scenario the fix would change should say
 - *THEN* a =decision= ask is filed that names the choice and where the failing test output is
 - *AND* the ask blocks the merge chain
 
