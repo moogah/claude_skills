@@ -78,7 +78,7 @@ The static files and git repositories fixtures are copied from, kept apart from 
 - Specs :: skill-evals
 
 * audit
-An eval agent's reading of one check in one trial, given the scenario it rests on, how it is computed, what it observed and the change being compared: /agrees/, or /suspect/ with a reason. It never changes the check's verdict; a suspect check goes to a person. Agreed 2026-11-12 in the review of how the evals work.
+An eval agent's reading of one check in one trial, given the scenario it rests on, how it is computed, what it observed and the item of the expected result it serves: does the check, as computed, observe what the item expects? /agrees/, or /suspect/ with a reason. It never changes the check's verdict; a suspect check goes to a person. Agreed 2026-11-12 in the review of how the evals work; revised 2026-11-13 (D11), when checks came to read only what a spec fixes and the audit stopped being given the skill's change between two trees.
 - Example :: "instructing the evaluating agent to consider the results of the check in context of the desired change and how the check is performed"
 - Avoid :: override, re-judge, review (a role of the skill)
 - Specs :: skill-evals

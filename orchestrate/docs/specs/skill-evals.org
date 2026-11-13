@@ -9,7 +9,7 @@ They do this by running one step of the skill at a time, on a constructed interf
 
 They do not own: proposing changes to the skill (the user and =process-improvement= do that; the results are kept in a form a program can read so that a proposer can be added later); evals for any skill but =orchestrate=; runs on other vendors' tools or models; the whole-cycle replay's tools (=findings/tools/replay-*= in the skills workspace), which they use and do not replace.
 
-Research: =~/emacs-workspaces/claude-skills/research/skill-evals/brief.org= (goals R1-R11, decided 2026-11-11; evidence E1-E9). Read and approved by the user as written, 2026-11-11. Revised 2026-11-12 by the review of how the evals work (=research/skill-evals/evals-review.org=, directions D1-D9) and by the spec form (=research/skill-evals/spec-form.org=, points 3 and 5). Revised 2026-11-13: a case's checks are listed under the items of its expected result (* Decided, D10).
+Research: =~/emacs-workspaces/claude-skills/research/skill-evals/brief.org= (goals R1-R11, decided 2026-11-11; evidence E1-E9). Read and approved by the user as written, 2026-11-11. Revised 2026-11-12 by the review of how the evals work (=research/skill-evals/evals-review.org=, directions D1-D9) and by the spec form (=research/skill-evals/spec-form.org=, points 3 and 5). Revised 2026-11-13: a case's checks are listed under the items of its expected result (* Decided, D10); a check rests only on what a spec fixes, and a scenario whose evidence no spec fixes is a gap in that spec (* Decided, D11).
 
 * Key Concepts
 
@@ -30,15 +30,14 @@ The input of a case is a constructed interface artifact plus a fixture. Fixtures
 
 ** What a script decides and what an eval agent reads
 
-What a step left is evaluated in three ways.
+What a step left is evaluated in two ways.
 
 | What | By | Decides |
 |------+----+---------|
-| A fact of the end state (a commit, a file present or unchanged, a tool called or not), or a form the spec itself fixes | a script | pass or fail |
-| A form only the skill text fixes (a file name, a commit subject, a record field the spec leaves open) | a script, its verdict /audited/ by an eval agent against the change being compared | pass or fail, with the audit beside it |
+| A fact of the end state (a commit, a file present or unchanged, a tool called or not), or a form a spec fixes (a commit subject, an entry in the record against a task, a file in the home) | a script | pass or fail |
 | What an artifact or a record says (does the journal name the cause, does the review report the defect) | an /eval agent/, from evidence the script collects, against the case's expected result and the /rubric/ for that kind of artifact | a recorded evaluation per item |
 
-An eval agent never changes a script's verdict: it audits each check (/agrees/, or /suspect/ with its reason), and a suspect check is put in front of a person.
+A check reads only what a spec fixes: the capability's own spec, or the spec of the capability whose boundary the evidence is (a record's form is the state layer's). A form only the skill text chooses is never checked; a scenario that leaves no evidence a spec fixes is a gap in that spec. An eval agent never changes a script's verdict: it /audits/ each check, asking whether the check as computed observes what its item expects (/agrees/, or /suspect/ with its reason), and a suspect check is put in front of a person.
 
 ** The two sets
 
@@ -76,7 +75,7 @@ A case SHALL cite the scenarios it tests by their titles, and coverage SHALL be 
 - *WHEN* a change rewrites the skill text
 - *AND* the spec is unchanged
 - *THEN* the spec's cases run against the changed skill without being rewritten
-- *AND* a check that reads a form the rewrite changed is named by the audit
+- *AND* no check needs rewriting, since each reads only what a spec fixes
 
 ** Requirement: A case evaluates its scenarios at one step
 A case SHALL run one step of the skill, on a constructed interface artifact and a fixture, without running a cycle, and SHALL state before its first trial what a correct run does.
@@ -143,12 +142,17 @@ A trial's fixture SHALL be taken from the fixture library and generated only whe
 - *AND* what an eval found is kept in the research or the extraction record
 
 ** Requirement: A script decides what it can see for certain, and an eval agent reads the rest
-What a step left SHALL be evaluated on its full content. A script SHALL decide the facts of the end state and the forms the spec fixes. A form only the skill text fixes SHALL be checked by a script and audited. What an artifact or a record says SHALL be evaluated by an eval agent, from evidence the script collects, against the case's expected result.
+What a step left SHALL be evaluated on its full content. A script SHALL decide the facts of the end state and the forms a spec fixes, and SHALL check nothing else. A scenario whose behaviour leaves no evidence a spec fixes SHALL be recorded as a gap in that spec. What an artifact or a record says SHALL be evaluated by an eval agent, from evidence the script collects, against the case's expected result.
 
 *** Scenario: A fact or a form the spec fixes is decided by a script
 - *WHEN* a scenario is observed in a fact of the end state, or in a form the spec itself fixes
 - *THEN* a script checks it
 - *AND* the result is pass or fail
+
+*** Scenario: A form only the skill text chooses is not checked
+- *WHEN* a scenario's behaviour can be seen only in a form no spec fixes (a file name, a record field, a path the skill text chose)
+- *THEN* no check is written on that form
+- *AND* the scenario is recorded as a gap in its capability's spec, that the evidence it leaves is not stated, and the case's item for it is evaluated by the eval agent alone until the spec states it
 
 *** Scenario: What a record says is read by an eval agent from collected evidence
 - *WHEN* a scenario is observed in what an artifact or a record says
@@ -157,7 +161,7 @@ What a step left SHALL be evaluated on its full content. A script SHALL decide t
 
 *** Scenario: Every check is audited
 - *WHEN* a trial's checks have run
-- *THEN* an eval agent is given, for each check, the scenario it rests on, how it is computed, what it observed and the case's expected result, and, on a comparison, the change to the skill text between the two trees
+- *THEN* an eval agent is given, for each check, the scenario it rests on, how it is computed, what it observed and the item of the expected result it serves
 - *AND* it records for each check /agrees/, or /suspect/ with its reason
 
 *** Scenario: An audit never changes a verdict
@@ -173,7 +177,7 @@ What a step left SHALL be evaluated on its full content. A script SHALL decide t
 *** Scenario: The audit and the report are read per item
 - *WHEN* a trial's items are judged and its checks audited
 - *THEN* the result shows each item's verdict with, beneath it, the verdicts of its checks and their audits
-- *AND* an item that no /decide/ or /audited/ check observes is shown as evaluated by the eval agent alone
+- *AND* an item that no deciding check observes is shown as evaluated by the eval agent alone
 
 *** Scenario: A well-formed artifact is still evaluated on its content
 - *WHEN* a step writes an artifact that passes every check
@@ -323,7 +327,7 @@ A scenario may allow several ways to satisfy it (=execute § A regression is fix
 :PROPERTIES:
 :REQUIREMENT: A script decides what it can see for certain, and an eval agent reads the rest
 :END:
-Some of today's checks decide meaning by matching words, and two of them passed or failed wrongly before a hand reading corrected them (=research/skill-evals/evals-review.org= § Part 3). The spec gives meaning to the eval agent and does not yet say what a word match may still do. Options: none; a recorded signal that decides nothing, set side by side across the two trees and handed to the eval agent with the evidence; or a check that decides where the audit confirms it. To be judged on the cases as they are moved. The user, 2026-11-12: "I'm suspicious of a hard line against using word matching, that may be a useful way of providing an apples-apples comparison, but it's the context of that comparison which ultimately is valuable so there may be cases where seeing a word match result differ between spec changes leads us to evaluate something useful."
+Some of today's checks decide meaning by matching words, and two of them passed or failed wrongly before a hand reading corrected them (=research/skill-evals/evals-review.org= § Part 3). The spec gives meaning to the eval agent and does not yet say what a word match may still do. Options: none; a recorded signal that decides nothing, set side by side across the two trees and handed to the eval agent with the evidence; or a check that decides where the audit confirms it. To be judged on the cases as they are moved. Narrowed 2026-11-13 by D11: where a spec fixes where the evidence is, a check decides that it is there and the eval agent reads what it says, so the third option goes; what is left is whether a word match is kept as a signal set side by side across two trees. The user, 2026-11-12: "I'm suspicious of a hard line against using word matching, that may be a useful way of providing an apples-apples comparison, but it's the context of that comparison which ultimately is valuable so there may be cases where seeing a word match result differ between spec changes leads us to evaluate something useful."
 
 * Decided
 
@@ -336,3 +340,4 @@ The six open questions, decided by the user at the hand edit, 2026-11-12 (each t
 - *Out-of-date cases.* A case names the skill files its fixture and checks depend on. Its version and its hand reading's commit are git's; it is out of date when those files changed on the reference skill since that commit, which is reported and not counted as a failure. Fixtures are refreshed in the library by hand.
 - *Demotion.* A promoted item whose agreement falls below the threshold over its last 10 artifacts goes back to the advisory set, with the history named. A promoted item that fails while it still agrees is a regression and blocks the install.
 - *Checks under the items (D10).* Decided by the user, 2026-11-13, after reading the first case on a spec with its checks in =case.org= and its items in =expected.org=: two lists that cited the same scenarios and were joined only by those citations. What earns its keep is the difference between a stated expectation (an item, written before any trial, judged by the eval agent) and a computed fact (a check, run by a script, free and repeatable): the audit needs a reference the check does not define. Keeping them in two documents added nothing to that, and cost an expectation written twice, two lists to keep in step, and a join the reader and the eval agent had to make. So the item is the unit: it names its checks, and the report reads per item, which also shows an item no check decides, one observed only by signals or by nothing. A check's code stays in the case's =checks.py=. Not yet applied to the cases.
+- *Checks rest only on what a spec fixes (D11).* Decided by the user, 2026-11-13: "I agree definitly that checks should not be written based on things not specified in our specs. And I think a good spec should be testable: meaning it requires whatever performs the behavior to leave behind some testable evidence." The kind /audited/ (a form only the skill text fixes, checked and audited) goes: such a check tests the skill's choice, not the spec, and fails when a rewrite moves the form while the behaviour holds. A check reads a fact of the end state or a form a spec fixes, the capability's own or that of the capability whose boundary the evidence is (the boundary rule, =research/skill-evals/spec-form.org=, holds). Where no spec fixes the evidence, the scenario is a gap in its spec, and its item is evaluated by the eval agent alone until the spec states it. Meaning splits in two: a spec fixes where the evidence is, a check decides it is there, and the eval agent reads what it says. The audit stays, narrowed to whether a check as computed observes what its item expects; it is no longer given the skill's change between two trees. Supersedes the spec form's "a check that has to read mechanism to see behaviour keeps doing so: checks are per tree" (§ Tests, 2026-11-12). Not yet applied: each case's checks of the old kind /audited/ are sorted into a form a spec fixes (the check decides) or a gap in the capability's spec.
