@@ -1,6 +1,6 @@
 #+TITLE: execute
 #+OPTIONS: ^:{} -:nil
-#+STATUS: draft 2026-11-12, extracted from the reference skill (=main= =e356da7=); inferred statements reviewed 2026-11-12; a gap filled and the regression requirement revised 2026-11-12; gaps open; not yet accepted
+#+STATUS: draft 2026-11-12, extracted from the reference skill (=main= =e356da7=); inferred statements reviewed 2026-11-12; two gaps filled and the regression requirement revised 2026-11-12; gaps open; not yet accepted
 
 * Purpose
 
@@ -51,7 +51,8 @@ close only when every task of the batch is done or explicitly stopped.
 The execute phase SHALL merge each task into the change's integration branch as soon as its
 Implementor lands a commit, one task at a time and in the order they landed, without waiting for
 the rest of the batch or for an earlier task's review; each task SHALL arrive as a merge commit of
-its own.
+its own. The phase agent SHALL resolve a merge conflict itself when it can keep what both sides
+meant without dropping code or a test, and SHALL send any other conflict back to the task.
 
 *** Scenario: Tasks merge in the order they landed
 - *WHEN* two Implementors land their commits one after the other while a third still runs
@@ -71,12 +72,23 @@ its own.
 - *WHEN* a task of the batch depends on other tasks of the batch
 - *THEN* its Implementor is spawned only once all of them have merged
 
-*** Scenario: A merge conflict holds back only its task
-- *WHEN* a task's merge conflicts with the integration branch
+*** Scenario: A conflict that keeps both sides is resolved by hand
+- *WHEN* a task's merge conflicts and the phase agent can keep what both sides meant without dropping code or a test
+- *THEN* it resolves the conflict in the merge
+- *AND* the change's journal records the resolution as a decision, naming what each side kept
+- *AND* the merge the task's Reviewer reads holds the resolution
+
+*** Scenario: Any other conflict goes back to the task
+- *WHEN* a task's merge conflicts and the phase agent cannot resolve it that way
 - *THEN* the merge is abandoned and the integration branch is as it was before it
-- *AND* the task is blocked, with a merge conflict as the reason
-- *AND* its worktree is kept
-- *AND* the next queued task merges
+- *AND* the task's worktree is kept
+- *AND* a re-spawned Implementor brings the task up to date with the integration branch and resolves the conflict, and the task rejoins the merge queue
+- *AND* the next queued task merges meanwhile
+
+*** Scenario: A conflict that needs a choice is a decision ask
+- *WHEN* resolving a conflict needs a choice of spec or goal
+- *THEN* a =decision= ask is filed that names the choice
+- *AND* the ask blocks the task
 
 *** Scenario: A task held by an ask stays out of the merge queue
 - *WHEN* a task is blocked by an ask and tasks that landed after it are queued
@@ -216,11 +228,6 @@ as a journal line alone.
 *** Scenario: A journal line is never where a defect ends
 - *WHEN* execute closes
 - *THEN* every defect it routed has a fix, a task, an ask or a hardening-list entry
-
-*** Scenario: A conflict resolved by hand is recorded as a decision
-- *WHEN* the phase agent drops, restructures or regenerates code while reconciling two branches
-- *THEN* the change's journal records it as a decision
-- *AND* when it touched a contract or dropped a test, a follow-up candidate is written for it
 
 *** Scenario: An aborted merge that shows a structural issue is a discovery
 - *WHEN* the reason a merge was abandoned is itself a structural issue
@@ -457,19 +464,6 @@ task names, and SHALL record the setting it used.
 - *AND* the cycle's record holds it as a rework
 
 * Gaps
-
-** Gap: Whether the phase agent resolves a merge conflict itself
-:PROPERTIES:
-:REQUIREMENT: Tasks merge one at a time, as they land
-:END:
-The reference skill says two things. On a conflict the merge is abandoned, the task blocked and the
-chain goes on; elsewhere it describes the phase agent reconciling two branches by hand, dropping,
-restructuring or regenerating code, and recording that as a decision. It does not say when each
-applies, nor what becomes of a task blocked on a conflict: no ask is filed and no candidate is
-written, so nothing says who takes it up. Noticed at extraction; no case or trial covers a
-conflict. Options: a conflict always abandons the merge, and the blocked task goes to the next plan
-to be rebased or rewritten; the phase agent may reconcile a conflict by hand and records it as a
-decision, abandoning only when it cannot; a conflict is an ask.
 
 ** Gap: Who decides whether the user is present for an ask that blocks waiting work
 :PROPERTIES:
