@@ -30,7 +30,7 @@ The written criteria for one kind of interface artifact that an eval agent score
 - Specs :: skill-evals
 
 * eval agent
-An agent that examines an artifact a step produced and records an evaluation against a rubric; it takes no part in the cycle it evaluates.
+An agent that evaluates what a step left, against the case's expected result and the rubric for its kind of artifact, and audits each of the case's checks; it takes no part in the step it evaluates and changes no verdict. Revised 2026-11-12 (the evals' spec revision); until then it evaluated against a rubric only.
 - Example :: "eval agents will need to examine the artifacts."
 - Avoid :: judge (the sources' word), Reviewer (a role of the skill)
 - Specs :: skill-evals
@@ -54,7 +54,7 @@ One piece of work one agent does between receiving its input and handing back.
 - Specs :: skill-evals
 
 * case
-One eval: it names one outcome or one rule, the step where that is observed, the step's input, and the checks and rubric items applied to what the step wrote.
+One eval: it cites the scenarios it tests, names the step where they are observed and the step's input, states its expected result, and holds the checks applied to what the step left. Revised 2026-11-12 (the evals' spec revision); until then it named one outcome or one rule.
 - Example :: the dispatcher's first step on a change whose cycle has closed, checked for a spawn of the plan phase agent.
 - Avoid :: test (a product's), scenario (a spec's)
 - Specs :: skill-evals
@@ -69,6 +69,18 @@ One run of a case. A case is run more than once because two runs of the same ste
 What a step needs besides its interface artifact in order to run: a checkout of the code at a commit for an Implementor or a Reviewer, a home with its record for a phase agent or the dispatcher.
 - Example :: a clone of a home at the commit where a cycle closed.
 - Avoid :: snapshot, stand-in (the testing skill's word, for a fake of a real thing), mock
+- Specs :: skill-evals
+
+* fixture library
+The static files and git repositories fixtures are copied from, kept apart from the cases that explain what they plant. Agreed 2026-11-12 in the review of how the evals work.
+- Example :: "we want to prefer a library of static text (including git repos) instead of generating things all the time"
+- Avoid :: fixture builder, snapshot
+- Specs :: skill-evals
+
+* audit
+An eval agent's reading of one check in one trial, given the scenario it rests on, how it is computed, what it observed and the change being compared: /agrees/, or /suspect/ with a reason. It never changes the check's verdict; a suspect check goes to a person. Agreed 2026-11-12 in the review of how the evals work.
+- Example :: "instructing the evaluating agent to consider the results of the check in context of the desired change and how the check is performed"
+- Avoid :: override, re-judge, review (a role of the skill)
 - Specs :: skill-evals
 
 * reference skill
