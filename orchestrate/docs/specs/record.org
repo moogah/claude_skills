@@ -1,6 +1,6 @@
 #+TITLE: record
 #+OPTIONS: ^:{} -:nil
-#+STATUS: draft 2026-11-13, extracted from the reference skill (=main= =e356da7=); limited to what =execute= and =asks= name; its one gap filled 2026-11-13 (the state file's shape is the boundary); not yet reviewed
+#+STATUS: draft 2026-11-13, extracted from the reference skill (=main= =e356da7=); limited to what =execute= and =asks= name; the boundary gap filled 2026-11-13 (the state file's shape); one gap set aside (whether test runs are tracked); not yet reviewed
 
 * Purpose
 
@@ -95,5 +95,16 @@ changes this spec.
 
 * Gaps
 
-None open. The one this draft had, "Which form of the record is its boundary", was filled by the user
+** Gap: Whether the test runs are tracked
+:PROPERTIES:
+:REQUIREMENT: A change has a directory of its own in the home
+:END:
+The test runs' output is kept in the change's directory and ignored by the home's git, a rule made
+2026-10-09 while the change's directory was still inside the code repository, to keep noise out of
+it; no cost of tracking was observed then (=findings/2026-10-09-findings-and-questions-as-files.org=).
+The home has been above the code root since 2026-10-10. Measured 2026-11-13, the Emacs homes hold
+61-273 MB of test output each (files up to 1.2 MB), and those homes are pushed on every leave. Set
+aside by the user, to be decided later: "We'll decide to track test runs in the future, I suspect we can optimize the system such that fewer test files are created."
+
+The gap this draft had first, "Which form of the record is its boundary", was filled by the user
 2026-11-13: "The state file's shape is the boundary" (the requirement of that name).
