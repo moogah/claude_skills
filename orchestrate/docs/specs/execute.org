@@ -1,6 +1,6 @@
 #+TITLE: execute
 #+OPTIONS: ^:{} -:nil
-#+STATUS: draft 2026-11-12, extracted from the reference skill (=main= =e356da7=); inferred statements reviewed 2026-11-12; five gaps filled and the regression requirement revised 2026-11-12; gaps open; not yet accepted
+#+STATUS: draft 2026-11-12, extracted from the reference skill (=main= =e356da7=); inferred statements reviewed 2026-11-12; six gaps filled and the regression requirement revised 2026-11-12; gaps open; not yet accepted
 
 * Purpose
 
@@ -432,6 +432,11 @@ point and leave a handover a fresh agent can continue from.
 - *WHEN* a fresh execute agent is given a handover
 - *THEN* it redoes nothing the handover lists as done
 
+*** Scenario: A fresh agent leaves the handover as written
+- *WHEN* a fresh execute agent continues from a handover
+- *THEN* it does not change the handover
+- *AND* when it is asked to hand over in its turn, it writes the handover anew, whole, and commits it in the home
+
 ** Requirement: Execute leaves its work in the home and nothing outside its part
 :PROPERTIES:
 :GOAL:     none stated
@@ -482,15 +487,6 @@ task names, and SHALL record the setting it used.
 - *AND* the cycle's record holds it as a rework
 
 * Gaps
-
-** Gap: What a fresh agent may do to the handover it continues from
-:PROPERTIES:
-:REQUIREMENT: The phase hands the dispatcher one line, and hands over when asked
-:END:
-The handover is written by the agent that hands over and read by the one that continues. Nothing
-says whether the continuing agent may change it. Seen in the hand reading of one =execute-ex2= trial
-on =main= (=20261112T120816= t1): the agent rewrote the handover it was given. Options: the handover
-is left as written, and a later handover is a new file; the continuing agent may update it in place.
 
 ** Gap: Where the phase agent keeps its own working files
 :PROPERTIES:
