@@ -1,0 +1,99 @@
+#+TITLE: record
+#+OPTIONS: ^:{} -:nil
+#+STATUS: draft 2026-11-13, extracted from the reference skill (=main= =e356da7=); limited to what =execute= and =asks= name; one gap open; not yet reviewed
+
+* Purpose
+
+The record is where a change's process is kept in the home: the change's own directory, its state,
+and the journal of short narrative. Other capabilities state that something is recorded ("the
+change's record shows the regression against the task", "the change's journal records the cause");
+this spec states where and in what form, so that what they record can be found and read.
+
+This draft covers only what =execute= and =asks= name. Not yet extracted: the gates and their
+checks, the counts, the cycle archive, the handshake, the agent entries, migration and recovery.
+
+* Requirements
+
+** Requirement: A change has a directory of its own in the home
+:PROPERTIES:
+:GOAL:     none stated
+:END:
+Each open change SHALL have one directory in the home, named for the change, holding its process
+files. The home's git SHALL track that directory, except the output of test runs and the tool's
+own temporary files.
+
+*** Scenario: The change's directory is named for the change, under the home
+- *WHEN* a change is open
+- *THEN* its process files are in =.orchestrator/changes/<change>/= under the home
+- *AND* that directory holds the change's state, its cycles, its inbox of asks, its handshakes and its test runs
+
+*** Scenario: The change's directory is tracked by the home, its test runs are not
+- *WHEN* the home's git is asked what it tracks under =.orchestrator/=
+- *THEN* it tracks the change's directory
+- *AND* it ignores the test runs' output, the tool's temporary and lock files and its migration backups
+
+** Requirement: The change's state is written only through the state tool
+:PROPERTIES:
+:GOAL:     none stated
+:END:
+The change's state SHALL be one file in the change's directory, written only through the state
+tool's commands, which refuse what does not fit its form.
+
+*** Scenario: The state is one file of the change's directory
+- *WHEN* a cycle of a change is open
+- *THEN* the change's state is one file in the change's directory
+
+*** Scenario: No role edits the state file by hand
+- *WHEN* any role changes the change's state
+- *THEN* it does so through a state tool command
+- *AND* never by writing the file with an editor, a heredoc or a text filter
+
+** Requirement: A fact about a task is recorded on the task's entry
+:PROPERTIES:
+:GOAL:     none stated
+:END:
+The change's state SHALL hold one entry per task of the cycle, and a fact found about a task SHALL
+be recorded on that task's entry, with the evidence it rests on where it has one.
+
+*** Scenario: A regression is marked on the task's entry, with the run that shows it
+- *WHEN* a merge causes a regression
+- *THEN* the entry of the task whose merge caused it marks that a regression was found
+- *AND* the entry names the file holding the test run after that merge
+
+** Requirement: The journal holds short narrative, each line against what it concerns
+:PROPERTIES:
+:GOAL:     none stated
+:END:
+The change's state SHALL hold a journal: one entry per piece of short narrative that has no other
+home (a discovery, a decision, an inline fix, a deviation from the flow, a push-back, a note), each
+naming its kind and what it concerns, in one line, with any longer form in a file.
+
+*** Scenario: A journal entry names its kind and what it is against
+- *WHEN* a role records a discovery, a decision, an inline fix, a deviation, a push-back or a note
+- *THEN* the journal gains one entry giving its kind, one line of text and the time
+- *AND* the entry names the task, finding, ask or seam it is against, when it is against one
+
+*** Scenario: A journal line is short, and the long form is a file
+- *WHEN* what a role has to record runs longer than one line
+- *THEN* the journal entry is at most 280 characters
+- *AND* it names the file that holds the rest
+
+* Gaps
+
+** Gap: Which form of the record is its boundary
+:PROPERTIES:
+:REQUIREMENT: A fact about a task is recorded on the task's entry
+:END:
+The scenarios say a regression is marked on the task's entry and a journal entry names what it is
+against, but not in what form another reader finds them. On the reference skill the state file's
+shape is written down in full, key by key (=state.md=), and only the state tool writes it; the
+tool's orientation command lists each task's name, status, merge and blockers and the last five
+journal lines, and no command shows whether a task's entry carries a regression. Three answers:
+- The state file's shape is the boundary :: the spec names the fields a reader may rely on (the
+  task's regression mark and its run's path; the journal entry's kind, ref and text). A check reads
+  the file. The file's shape becomes a contract every version of the tool keeps.
+- The tool's commands are the boundary :: the spec states a read command that shows a task's entry
+  and the journal, and a check runs the tree's own tool. Needs a command the reference skill does
+  not have, so a change to the skill.
+- Neither yet :: the scenarios stay as they are, and their items are judged by the eval agent alone
+  from the state file in the evidence.

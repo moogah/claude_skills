@@ -1,0 +1,79 @@
+#+TITLE: asks
+#+OPTIONS: ^:{} -:nil
+#+STATUS: draft 2026-11-13, extracted from the reference skill (=main= =e356da7=); limited to the ask file: what makes a file an ask, where it lives, how it is committed; not yet reviewed
+
+* Purpose
+
+An ask is a question only the user can settle, put to them as a file, so a question
+is never lost in a chat turn: the user answers in the file, git carries its history, and any later
+session finds it. Other capabilities state that a question "is an ask file in the change's inbox";
+this spec states what such a file is and where it lives.
+
+This draft covers only the file. Not yet extracted: which kinds are put to the user and when (the
+inline rule), the answer protocol and the readback, the sync points, what each section must say so the
+user can decide without the code, and what a finding must carry for an ask to be written from it.
+
+* Requirements
+
+** Requirement: Every question for the user is a file of its own
+:PROPERTIES:
+:GOAL:     none stated
+:END:
+Every question the orchestrator needs the user to answer, whichever role raised it, SHALL be one org
+file, written when the question is raised, in any phase. The orchestrator SHALL write it; the role
+that raised the question SHALL NOT.
+
+*** Scenario: A question for the user is one file, written when it is raised
+- *WHEN* any role raises a question only the user can answer
+- *THEN* one ask file holds it, written at once
+- *AND* the orchestrator writes it, not the role that raised it
+
+** Requirement: An ask file is known by its form
+:PROPERTIES:
+:GOAL:     none stated
+:END:
+An ask file SHALL open with a file-level property drawer holding at least its id, its kind and its
+status, and SHALL carry the question as its title. Its id SHALL name the cycle it was raised in and be
+the file's name. Its kind SHALL be one of a closed set.
+
+*** Scenario: An ask file opens with its id, kind and status, and its title is the question
+- *WHEN* an ask file is written
+- *THEN* it opens with a file-level property drawer holding its id, its kind and its status
+- *AND* its title is the question: one plain sentence, ending in a question mark
+
+*** Scenario: An ask's id names its cycle and is the file's name
+- *WHEN* an ask is given its id
+- *THEN* the id is =ask-<cycle-id>-<n>=, the cycle it was raised in and a sequence number
+- *AND* the file is named =<id>.org=
+
+*** Scenario: An ask's kind is one of a closed set
+- *WHEN* an ask file is written
+- *THEN* its kind is one of =decision=, =process=, =environment= or =confirmation=, or the retired =doc-correction= on a file written before it was retired
+
+** Requirement: An ask file lives in the change's directory, where its status puts it
+:PROPERTIES:
+:GOAL:     none stated
+:END:
+An ask file's place SHALL follow from its id and its status alone: the change's inbox while the
+question is still open, and the asks directory of its cycle once it is settled.
+
+*** Scenario: An unsettled ask is in the change's inbox
+- *WHEN* an ask is open, answered or deferred
+- *THEN* its file is in the inbox of the change's directory
+
+*** Scenario: A settled ask is in its cycle's asks directory
+- *WHEN* an ask is applied, declined or superseded
+- *THEN* its file is in the asks directory of the cycle its id names, under the change's directory
+- *AND* it is no longer in the inbox
+
+** Requirement: An ask file is committed in the home when it is written
+:PROPERTIES:
+:GOAL:     none stated
+:END:
+A new ask file SHALL be committed in the home when it is created, in a commit whose subject names its
+id, so the trail of every ask can be found in the home's history.
+
+*** Scenario: A new ask is committed with a subject naming its id
+- *WHEN* an ask file is created
+- *THEN* it is committed in the home
+- *AND* the commit's subject names the ask's id

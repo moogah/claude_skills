@@ -1,6 +1,6 @@
 #+TITLE: execute
 #+OPTIONS: ^:{} -:nil
-#+STATUS: draft 2026-11-12, extracted from the reference skill (=main= =e356da7=); inferred statements reviewed 2026-11-12; seven gaps filled and the regression requirement revised 2026-11-12; no gap open; not yet accepted
+#+STATUS: draft 2026-11-12, extracted from the reference skill (=main= =e356da7=); inferred statements reviewed 2026-11-12; seven gaps filled and the regression requirement revised 2026-11-12; one gap open 2026-11-13 (the run after a fix); not yet accepted
 
 * Purpose
 
@@ -500,4 +500,22 @@ task names, and SHALL record the setting it used.
 
 * Gaps
 
-None open.
+** Gap: Whether the run after a fix is kept, and where
+:PROPERTIES:
+:REQUIREMENT: A merge that breaks a passing test stops the merge chain
+:END:
+=§ Merging resumes only after a run shows no regression= has the tests run again once the fix is in,
+and says nothing of that run's output. =§ Every merge is followed by a test run whose output is kept=
+keeps the run after the merge in a file named for the task. The reference skill on =main= has no run
+after a fix (it files an ask instead); the skill text the 2026-11-12 decision added says only "run
+this section's test again". Two trials have done it two ways: one wrote the second run to a file of
+its own beside the first (=20261112T215456=), one overwrote the failing run's file with it
+(=20261113T150809=), so the run the merge scenario says is kept was lost. Found 2026-11-13 by the
+evals (=research/skill-evals/missing-specs.org=). Three answers:
+- Kept beside the run after the merge :: the run after the fix is kept in the change's directory in a
+  file of its own, named for the task, and the run after the merge stays as it was. Both runs are
+  there for the Reviewer and the integrate phase to read.
+- Kept in place of it :: the run after the fix replaces the run after the merge. Only the latest run
+  is kept; the failing one survives only where the journal or the fix's commit quotes it.
+- Not kept :: the run after the fix is not kept; its result is in the journal line that records the
+  fix.
