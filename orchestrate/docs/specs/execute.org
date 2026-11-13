@@ -129,6 +129,11 @@ is; all work other than merging SHALL go on.
 - *THEN* the Implementor finishes and its task joins the merge queue
 - *AND* the Reviewer finishes its review
 
+*** Scenario: The merge that broke a test stays on the branch
+- *WHEN* a merge causes a regression
+- *THEN* the merge stays on the integration branch until the regression is resolved
+- *AND* it is reverted only when a revert is the chosen resolution
+
 *** Scenario: Against a green baseline, any failing run is a regression
 - *WHEN* every test passed in the baseline and the run after a merge fails
 - *THEN* a regression is found
@@ -430,18 +435,6 @@ task names, and SHALL record the setting it used.
 - *AND* the cycle's record holds it as a rework
 
 * Gaps
-
-** Gap: What becomes of the merge that broke a test
-:PROPERTIES:
-:REQUIREMENT: A merge that breaks a passing test stops the merge chain
-:END:
-The requirement says merges stop, worktrees are kept and the user is asked. It does not say whether
-the merge that broke the test stays on the change's integration branch while the user decides, or
-is reverted first. Noticed at extraction; in all four =execute-ex2= trials on =main= it stayed, and
-the branch stayed red. Two of the three counted trials' asks offered a revert as one option; the
-third offered "do nothing", which leaves the branch red. Options: it stays until the answer (what
-the trials did, and what the ask's options then act on); it is reverted before the ask (the branch
-is green while the user decides, and the ask's options act on a reverted task).
 
 ** Gap: Whether the phase agent resolves a merge conflict itself
 :PROPERTIES:
