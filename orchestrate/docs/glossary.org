@@ -83,6 +83,12 @@ An eval agent's reading of one check in one trial, given the scenario it rests o
 - Avoid :: override, re-judge, review (a role of the skill)
 - Specs :: skill-evals
 
+* validation
+A person's reading of one trial of a case, in full, against each of its checks, items and audits, recorded with the commit it was made at (the case's =:VALIDATED:=). The case's trials count only while what runs of it is unchanged since that commit. Agreed 2026-11-13, in place of "hand reading".
+- Example :: "the phrase “Hand reading” is strange, can we name this better?"
+- Avoid :: hand reading, review (a role of the skill), calibration (suggests tuning), sign-off
+- Specs :: skill-evals
+
 * reference skill
 The version of =orchestrate= a spec is extracted from: the current, working skill at a named commit, whose behaviour the spec first states. Agreed 2026-11-12 in the reopened research effort.
 - Example :: "we are taking the current orchestration skill as a known working baseline to start from"

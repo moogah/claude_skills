@@ -9,7 +9,7 @@ They do this by running one step of the skill at a time, on a constructed interf
 
 They do not own: proposing changes to the skill (the user and =process-improvement= do that; the results are kept in a form a program can read so that a proposer can be added later); evals for any skill but =orchestrate=; runs on other vendors' tools or models; the whole-cycle replay's tools (=findings/tools/replay-*= in the skills workspace), which they use and do not replace.
 
-Research: =~/emacs-workspaces/claude-skills/research/skill-evals/brief.org= (goals R1-R11, decided 2026-11-11; evidence E1-E9). Read and approved by the user as written, 2026-11-11. Revised 2026-11-12 by the review of how the evals work (=research/skill-evals/evals-review.org=, directions D1-D9) and by the spec form (=research/skill-evals/spec-form.org=, points 3 and 5). Revised 2026-11-13: a case's checks are listed under the items of its expected result (* Decided, D10); a check rests only on what a spec fixes, and a scenario whose evidence no spec fixes is a gap in that spec (* Decided, D11). Revised 2026-11-13: what a word match is for, and what decides an item no check observes (* Decided, D12); how an item is promoted left as a gap.
+Research: =~/emacs-workspaces/claude-skills/research/skill-evals/brief.org= (goals R1-R11, decided 2026-11-11; evidence E1-E9). Read and approved by the user as written, 2026-11-11. Revised 2026-11-12 by the review of how the evals work (=research/skill-evals/evals-review.org=, directions D1-D9) and by the spec form (=research/skill-evals/spec-form.org=, points 3 and 5). Revised 2026-11-13: a case's checks are listed under the items of its expected result (* Decided, D10); a check rests only on what a spec fixes, and a scenario whose evidence no spec fixes is a gap in that spec (* Decided, D11). Revised 2026-11-13: what a word match is for, and what decides an item no check observes (* Decided, D12); how an item is promoted left as a gap; /validation/ named in place of "hand reading".
 
 * Key Concepts
 
@@ -91,21 +91,21 @@ A case SHALL run one step of the skill, on a constructed interface artifact and 
 - *AND* it quotes no skill text
 - *AND* it is stated before any trial is run
 
-*** Scenario: A check is tried against a run read by hand before it counts
-- *WHEN* a check is added to a case, or changed
-- *THEN* one run is read by hand and each check's verdict compared with the script's
-- *AND* a check that disagrees with the hand reading is corrected before any trial counts
+*** Scenario: A case is validated before its trials count
+- *WHEN* a case is added, or what runs of it changes (its checks, build, fixture or expected result)
+- *THEN* one trial is /validated/: a person reads it in full and compares each check's verdict, each item's evaluation and each audit with what the trial did
+- *AND* a check or item that disagrees is corrected before any trial counts
 - *AND* a check that cannot fail in the trial's setting (it looks for a tool the trial does not have) is removed
 
-*** Scenario: A changed case does not count until it is read again
-- *WHEN* a case's checks, build or expected result differ from the version its hand reading was made at
+*** Scenario: A changed case does not count until it is validated again
+- *WHEN* a case's checks, build or expected result differ from the version it was validated at
 - *THEN* its trials are recorded as not counting
 - *AND* the version is the case's state in git, uncommitted edits recorded as such
 
 *** Scenario: A case document holds the case as it is
-- *WHEN* a case is changed or read by hand again
-- *THEN* its document states the case as it now is, and the hand reading of its current version
-- *AND* earlier versions and readings are reached through history, not kept in the document
+- *WHEN* a case is changed or validated again
+- *THEN* its document states the case as it now is, and the validation of its current version
+- *AND* earlier versions and validations are reached through history, not kept in the document
 
 ** Requirement: A trial's fixture comes from the library, and its answer is out of its reach
 A trial's fixture SHALL be taken from the fixture library and generated only where it must be. Nothing the agent under test can read SHALL name its case, its fixture or what a correct run finds.
@@ -232,8 +232,8 @@ Each trial's result SHALL be recorded in a form a program can read, and kept. Th
 *** Scenario: Details are kept locally under a retention rule
 - *WHEN* a trial ends
 - *THEN* the checks' details, the eval agent's quotes and reasons, and the transcripts are kept outside the tracked record
-- *AND* they are kept at least for the runs a case's checks were read by hand on, and for the latest runs, and removed after that
-- *AND* the trial's directory is removed once its result is recorded, unless it is kept for a hand reading
+- *AND* they are kept at least for the runs a case was validated on, and for the latest runs, and removed after that
+- *AND* the trial's directory is removed once its result is recorded, unless it is kept for a validation
 
 ** Requirement: A drop in the regression set blocks the install
 Before a skill change is installed, the regression set SHALL be run against it. A result worse than the installed skill's on the same cases SHALL stop the install, unless the user overrides it with a recorded reason. The advisory set SHALL be reported and SHALL block nothing.
@@ -257,7 +257,7 @@ Before a skill change is installed, the regression set SHALL be run against it. 
 
 *** Scenario: Checks gate from the start
 - *WHEN* a case with checks is added
-- *THEN* its checks are in the regression set once they have been tried against a run read by hand
+- *THEN* its checks are in the regression set once the case has been validated
 
 ** Requirement: An eval agent's item gates once its history shows it is stable
 An item the eval agent evaluates, of a case's expected result or of a rubric, SHALL start in the advisory set. It SHALL be promoted to the regression set when the history shows that repeated evaluations of the same artifact agree and that it passes reliably on the installed skill.
@@ -291,7 +291,7 @@ The same cases SHALL be run on two trees of the skill and their results set side
 - *AND* it is not counted as a failure
 
 *** Scenario: A case is out of date only on the reference tree
-- *WHEN* the skill files a case names have changed on the reference skill since the commit the case's hand reading was made at
+- *WHEN* the skill files a case names have changed on the reference skill since the commit the case was validated at
 - *THEN* the case's results are marked out of date, which is reported and not counted as a failure
 - *AND* a tree that differs from the reference skill in those files is not marked: the difference is what the comparison measures
 
@@ -332,17 +332,17 @@ A scenario may allow several ways to satisfy it (=execute § A regression is fix
 :PROPERTIES:
 :REQUIREMENT: An eval agent's item gates once its history shows it is stable
 :END:
-The rule (10 trials on the installed skill, 90% agreement, 90% passing; * Decided, The numbers) does not yet fit the rest of the evals, noticed 2026-11-13: an item's set is written in the expected result, so promoting it makes a new version of the case, which stops counting until it is read by hand again; the history an item is promoted on is not tied to one version of the case or to the installed skill; and an item on behaviour a change introduces fails on the installed skill by design, so it cannot be promoted until the change is installed, which is when it would matter most. Set aside by the user to be thought through on its own: "I think we need to set aside time to think through how we intend to manage promoting items".
+The rule (10 trials on the installed skill, 90% agreement, 90% passing; * Decided, The numbers) does not yet fit the rest of the evals, noticed 2026-11-13: an item's set is written in the expected result, so promoting it makes a new version of the case, which stops counting until it is validated again; the history an item is promoted on is not tied to one version of the case or to the installed skill; and an item on behaviour a change introduces fails on the installed skill by design, so it cannot be promoted until the change is installed, which is when it would matter most. Set aside by the user to be thought through on its own: "I think we need to set aside time to think through how we intend to manage promoting items".
 
 * Decided
 
 The six open questions, decided by the user at the hand edit, 2026-11-12 (each the recommended option), as revised the same day by the review of how the evals work (D1-D9).
 
 - *What runs a case.* A Python script over =claude -p= (=evals/run.py= in the skills workspace, grown from E8's harness): it makes the fixture for each trial from the library, searches it and the skill's copy for the case's answer, states in the trial's settings that it reads only its own directory and records reads outside it, stops at the point the case names, records the versions and the cost, and runs the eval agent. =bin/skill-dev eval= (=claude plugin eval=) stays for prompt-only smoke checks. A tree of the skill is run from a copy of it in which =~/.claude/skills/= is rewritten to the copy, loaded as a plugin with the installed skills of the same names turned off.
-- *Where things are kept.* In the skills workspace: =evals/cases/<case-id>/= (=case.org= with the expected result, what its fixture plants and why, and its current hand reading; the build script; =checks.py=), =evals/fixtures/<name>/= (the fixture library: files and git repositories in a form git can restore, with no explanation of what they plant), =evals/rubrics/<artifact-kind>.org=, and =evals/history.jsonl=, tracked and append-only, one JSON line per trial with what comparison and promotion read. Details and transcripts go to =evals/results/= (not tracked), under the retention rule.
+- *Where things are kept.* In the skills workspace: =evals/cases/<case-id>/= (=case.org= with the expected result, what its fixture plants and why, and its current validation; the build script; =checks.py=), =evals/fixtures/<name>/= (the fixture library: files and git repositories in a form git can restore, with no explanation of what they plant), =evals/rubrics/<artifact-kind>.org=, and =evals/history.jsonl=, tracked and append-only, one JSON line per trial with what comparison and promotion read. Details and transcripts go to =evals/results/= (not tracked), under the retention rule.
 - *Rubric and eval agent.* One org file per kind of artifact, holding what is true of every artifact of that kind; what a case expects of its own fixture is in its expected result. Each item has an id, a question, what counts as pass, and the scenarios it cites. The eval agent answers per item in JSON (=pass=, =fail= or =n/a=, with a quote from the evidence), and per check =agrees= or =suspect= with a reason. It runs as =claude-opus-5-5= at effort =high=, never as the agent that ran the step.
 - *The numbers.* A case starts at 3 trials, and each artifact is judged 3 times. An item /agrees/ when its 3 judgings of an artifact give the same verdict, on at least 90% of artifacts; it /passes reliably/ at 90% or more on the installed skill. It is promoted after 10 or more trials on the installed skill. A case whose checks are unanimous over 6 trials may drop to 2. These are a starting point, to be adjusted after the first runs.
-- *Out-of-date cases.* A case names the skill files its fixture and checks depend on. Its version and its hand reading's commit are git's; it is out of date when those files changed on the reference skill since that commit, which is reported and not counted as a failure. Fixtures are refreshed in the library by hand.
+- *Out-of-date cases.* A case names the skill files its fixture and checks depend on. Its version and its validation's commit are git's; it is out of date when those files changed on the reference skill since that commit, which is reported and not counted as a failure. Fixtures are refreshed in the library by hand.
 - *Demotion.* A promoted item whose agreement falls below the threshold over its last 10 artifacts goes back to the advisory set, with the history named. A promoted item that fails while it still agrees is a regression and blocks the install.
 - *Checks under the items (D10).* Decided by the user, 2026-11-13, after reading the first case on a spec with its checks in =case.org= and its items in =expected.org=: two lists that cited the same scenarios and were joined only by those citations. What earns its keep is the difference between a stated expectation (an item, written before any trial, judged by the eval agent) and a computed fact (a check, run by a script, free and repeatable): the audit needs a reference the check does not define. Keeping them in two documents added nothing to that, and cost an expectation written twice, two lists to keep in step, and a join the reader and the eval agent had to make. So the item is the unit: it names its checks, and the report reads per item, which also shows an item no check decides, one observed only by signals or by nothing. A check's code stays in the case's =checks.py=. Not yet applied to the cases.
 - *Checks rest only on what a spec fixes (D11).* Decided by the user, 2026-11-13: "I agree definitly that checks should not be written based on things not specified in our specs. And I think a good spec should be testable: meaning it requires whatever performs the behavior to leave behind some testable evidence." The kind /audited/ (a form only the skill text fixes, checked and audited) goes: such a check tests the skill's choice, not the spec, and fails when a rewrite moves the form while the behaviour holds. A check reads a fact of the end state or a form a spec fixes, the capability's own or that of the capability whose boundary the evidence is (the boundary rule, =research/skill-evals/spec-form.org=, holds). Where no spec fixes the evidence, the scenario is a gap in its spec, and its item is evaluated by the eval agent alone until the spec states it. Meaning splits in two: a spec fixes where the evidence is, a check decides it is there, and the eval agent reads what it says. The audit stays, narrowed to whether a check as computed observes what its item expects; it is no longer given the skill's change between two trees. Supersedes the spec form's "a check that has to read mechanism to see behaviour keeps doing so: checks are per tree" (§ Tests, 2026-11-12). Not yet applied: each case's checks of the old kind /audited/ are sorted into a form a spec fixes (the check decides) or a gap in the capability's spec.
