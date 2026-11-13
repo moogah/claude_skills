@@ -1,0 +1,15 @@
+#+TITLE: Worked example: the execute spec's page
+#+OPTIONS: ^:{} -:nil
+
+Copied from the skills repo, branch =skill-evals= at =b0d3358=, =orchestrate/docs/pages/= (2026-11-13). It is the first spec page: the orchestrate skill's =execute= spec, proven by an LLM eval case (=execute-ex2=) run three times per tree.
+
+- =build.py= :: reads =docs/specs/<capability>.org=, the eval cases on that capability (=evals/cases/*/case.org= with =:CAPABILITY:=, their =expected.org= items and =:CITES:=), =evals/history.jsonl= (the latest counted run per tree), and each trial's =t<n>.details.json=, =t<n>.artifact.txt= and =t<n>.jsonl=. Writes =<capability>.data.js= and =<capability>.html=.
+- =spec.template.html= :: the page. All layout, styles and script; no data.
+
+What is specific to that workspace, and is replaced when adapting it:
+
+- the paths: =SPECS=, =WORKTREE=, =EVALS=, and =TREES= (the trees a page shows, the one implementing the spec first);
+- the results' format: history rows (=run_id=, =tree=, =trial=, =counts=, =rubric=, =checks=, =cites=, =versions=, =details=) and the details file (=checks= with =detail=, =rubric= with =reasons= and =quotes=, =audit= with =verdicts= and =reasons=);
+- the end state's sections in =t<n>.artifact.txt= (the change branch's log, the journal, ask files, agents spawned), which the case's =checks.py= writes;
+- the milestone kinds and their lanes, which are those of an orchestrate execute phase;
+- the link from a milestone to a check, by matching the check's detail text (a heuristic: rule 6 of =SKILL.md=).
