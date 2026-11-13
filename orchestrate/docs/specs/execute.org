@@ -1,6 +1,6 @@
 #+TITLE: execute
 #+OPTIONS: ^:{} -:nil
-#+STATUS: draft 2026-11-12, extracted from the reference skill (=main= =e356da7=); inferred statements reviewed 2026-11-12; seven gaps filled and the regression requirement revised 2026-11-12; the gap on the run after a fix filled 2026-11-13; no gap open; four gaps opened 2026-11-13 at the hand-off review; not yet accepted
+#+STATUS: draft 2026-11-12, extracted from the reference skill (=main= =e356da7=); inferred statements reviewed 2026-11-12; seven gaps filled and the regression requirement revised 2026-11-12; the gap on the run after a fix filled 2026-11-13; no gap open; four gaps opened 2026-11-13 at the hand-off review, one filled the same day; not yet accepted
 
 * Purpose
 
@@ -297,8 +297,16 @@ list.
 *** Scenario: A blocking finding is reproduced, then fixed, before the task is done
 - *WHEN* a review reports a defect on the change's main path
 - *THEN* a test or probe that fails on the defect comes first, and the fix makes it pass
-- *AND* the fix is an inline fix, a re-spawned Implementor or a revert of the merge
 - *AND* the task is not done until the fix is in
+- *AND* no follow-up candidate is written for it
+
+*** Scenario: A simple fix for a blocking finding is made inline
+- *WHEN* the fix for a blocking finding is in one file, touches no seam's code, and is checked by a run whose output is predictable
+- *THEN* the phase agent makes it as an inline fix
+
+*** Scenario: Any other fix for a blocking finding is made by a re-spawned Implementor
+- *WHEN* the fix for a blocking finding is not simple
+- *THEN* an Implementor is spawned again for the task, with the finding as the scope of its fix
 
 *** Scenario: A question on the main path that does not reproduce goes on the hardening list
 - *WHEN* a review's question about the main path is tried and its reproduction does not fail
@@ -341,11 +349,6 @@ list.
 - *THEN* its subject is =Inline fix after <merging|review of> task <task>: <what>=
 - *AND* the message names what it answers: the review file and finding number, the discovery, or the regression
 - *AND* the message names the test or probe that pins it, which failed before the fix and passes after it
-
-*** Scenario: A follow-up from a review is a candidate placed in the change
-- *WHEN* the fix for a review's finding becomes a follow-up
-- *THEN* it is a candidate that names the review file and the finding
-- *AND* it is placed in this change, since the defect blocks the change
 
 *** Scenario: A flagged choice with a sound unwritten reason is written down
 - *WHEN* a Reviewer flags a choice the Implementor made for a reason that holds but was not written
@@ -507,7 +510,6 @@ task names, and SHALL record the setting it used.
 
 Opened 2026-11-13 at the hand-off review (the splits D14 calls for, =research/skill-evals/evals-review.org=).
 
-- *Which fix a blocking review finding takes.* § A blocking finding is reproduced, then fixed, before the task is done offers an inline fix, a re-spawned Implementor or a revert, with no condition deciding between them.
 - *When a fix is a revert of the merge.* § A regression is fixed in the change like a blocking defect says "only when neither will do", which no WHEN can decide; the blocking finding states no condition at all.
 - *What a re-spawned Implementor is given.* How the spawn names its task and the scope of its fix (a regression's cause, or a review file's finding) is not stated, so no check can tell a rework spawn from another.
 - *How a Reviewer's spawn names its task.* No scenario says what in a Reviewer's input identifies the task it reviews, so a check can tell which task a spawn reviews only by its words (=execute-ex2= EX-S14, EX-S19 stay signals).
