@@ -122,9 +122,10 @@ A trial's fixture SHALL be taken from the fixture library and generated only whe
 - *AND* every path in the copy that named the place the fixture was taken from names the copy
 - *AND* the fixture library is unchanged afterwards
 
-*** Scenario: A trial reads only its own copy
+*** Scenario: A trial is told to read only its own copy
 - *WHEN* a trial runs
-- *THEN* the agent under test can read the trial's directory and nothing outside it
+- *THEN* its settings state that the agent under test reads the trial's directory and nothing outside it
+- *AND* a read outside it is recorded with the result, not prevented: the settings are a statement of intent, not a box
 
 *** Scenario: What a fixture plants is written in its case, never in the fixture
 - *WHEN* a fixture holds a planted defect or a premise a case depends on
@@ -318,7 +319,7 @@ Some of today's checks decide meaning by matching words, and two of them passed 
 
 The six open questions, decided by the user at the hand edit, 2026-11-12 (each the recommended option), as revised the same day by the review of how the evals work (D1-D9).
 
-- *What runs a case.* A Python script over =claude -p= (=evals/run.py= in the skills workspace, grown from E8's harness): it makes the fixture for each trial from the library, searches it and the skill's copy for the case's answer, confines the trial's reads to its directory, stops at the point the case names, records the versions and the cost, and runs the eval agent. =bin/skill-dev eval= (=claude plugin eval=) stays for prompt-only smoke checks. A tree of the skill is run from a copy of it in which =~/.claude/skills/= is rewritten to the copy, loaded as a plugin with the installed skills of the same names turned off.
+- *What runs a case.* A Python script over =claude -p= (=evals/run.py= in the skills workspace, grown from E8's harness): it makes the fixture for each trial from the library, searches it and the skill's copy for the case's answer, states in the trial's settings that it reads only its own directory and records reads outside it, stops at the point the case names, records the versions and the cost, and runs the eval agent. =bin/skill-dev eval= (=claude plugin eval=) stays for prompt-only smoke checks. A tree of the skill is run from a copy of it in which =~/.claude/skills/= is rewritten to the copy, loaded as a plugin with the installed skills of the same names turned off.
 - *Where things are kept.* In the skills workspace: =evals/cases/<case-id>/= (=case.org= with the expected result, what its fixture plants and why, and its current hand reading; the build script; =checks.py=), =evals/fixtures/<name>/= (the fixture library: files and git repositories in a form git can restore, with no explanation of what they plant), =evals/rubrics/<artifact-kind>.org=, and =evals/history.jsonl=, tracked and append-only, one JSON line per trial with what comparison and promotion read. Details and transcripts go to =evals/results/= (not tracked), under the retention rule.
 - *Rubric and eval agent.* One org file per kind of artifact, holding what is true of every artifact of that kind; what a case expects of its own fixture is in its expected result. Each item has an id, a question, what counts as pass, and the scenarios it cites. The eval agent answers per item in JSON (=pass=, =fail= or =n/a=, with a quote from the evidence), and per check =agrees= or =suspect= with a reason. It runs as =claude-opus-5-5= at effort =high=, never as the agent that ran the step.
 - *The numbers.* A case starts at 3 trials, and each artifact is judged 3 times. An item /agrees/ when its 3 judgings of an artifact give the same verdict, on at least 90% of artifacts; it /passes reliably/ at 90% or more on the installed skill. It is promoted after 10 or more trials on the installed skill. A case whose checks are unanimous over 6 trials may drop to 2. These are a starting point, to be adjusted after the first runs.
