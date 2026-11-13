@@ -148,6 +148,11 @@ A trial's fixture SHALL be taken from the fixture library and generated only whe
 - *AND* the skill's copy or the fixture names the case, the fixture, or the words of what the fixture plants
 - *THEN* the trial is refused, naming the file and the words
 
+*** Scenario: Documentation computed from the eval runs is left out of a trial's copy
+- *WHEN* the skill carries documentation computed from the eval runs (its spec pages)
+- *THEN* the skill keeps it, and a trial's copy of the skill leaves it out
+- *AND* the same holds for what describes the evals rather than the skill (the frozen outcome list, the evals' own spec)
+
 *** Scenario: The skill text cites no eval case
 - *WHEN* the skill text gives the evidence for a rule
 - *THEN* it cites what real homes did, never an eval case or its result
