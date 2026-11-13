@@ -1,6 +1,6 @@
 #+TITLE: execute
 #+OPTIONS: ^:{} -:nil
-#+STATUS: draft 2026-11-12, extracted from the reference skill (=main= =e356da7=); inferred statements reviewed 2026-11-12; seven gaps filled and the regression requirement revised 2026-11-12; the gap on the run after a fix filled 2026-11-13; no gap open; four gaps opened 2026-11-13 at the hand-off review, two filled the same day; not yet accepted
+#+STATUS: draft 2026-11-12, extracted from the reference skill (=main= =e356da7=); inferred statements reviewed 2026-11-12; seven gaps filled and the regression requirement revised 2026-11-12; the gap on the run after a fix filled 2026-11-13; no gap open; four gaps opened 2026-11-13 at the hand-off review, three filled the same day; not yet accepted
 
 * Purpose
 
@@ -322,6 +322,16 @@ list.
 - *WHEN* the fix for a blocking finding is not simple
 - *THEN* an Implementor is spawned again for the task, with the finding as the scope of its fix
 
+*** Scenario: A re-spawned Implementor's brief names its task and the scope of its fix
+- *WHEN* an Implementor is spawned again to fix a blocking finding or a regression
+- *THEN* its brief, saved in the cycle's directory in the home, holds the task's text read from the home
+- *AND* the scope of its fix: the review file and the finding's number, or the failing run's file and the cause the change's journal records
+- *AND* the instruction to write a test or probe that fails on the defect before the fix; for a regression the failing test is that reproduction
+
+*** Scenario: A re-spawned Implementor works in its task's worktree, or in a new one
+- *WHEN* an Implementor is spawned again to fix a blocking finding or a regression
+- *THEN* it works in the task's worktree when that is kept, and otherwise in a new worktree cut from the tip of the integration branch
+
 *** Scenario: A failed rework of a blocking finding reverts its merge
 - *WHEN* the Implementor re-spawned to fix a blocking finding commits nothing, or its fix does not make the finding's reproduction pass
 - *THEN* the task's merge is reverted on the integration branch
@@ -529,6 +539,5 @@ task names, and SHALL record the setting it used.
 
 Opened 2026-11-13 at the hand-off review (the splits D14 calls for, =research/skill-evals/evals-review.org=).
 
-- *What a re-spawned Implementor is given.* How the spawn names its task and the scope of its fix (a regression's cause, or a review file's finding) is not stated, so no check can tell a rework spawn from another.
 - *How a Reviewer's spawn names its task.* No scenario says what in a Reviewer's input identifies the task it reviews, so a check can tell which task a spawn reviews only by its words (=execute-ex2= EX-S14, EX-S19 stay signals).
 
