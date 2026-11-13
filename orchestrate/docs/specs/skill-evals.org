@@ -9,7 +9,7 @@ They do this by running one step of the skill at a time, on a constructed interf
 
 They do not own: proposing changes to the skill (the user and =process-improvement= do that; the results are kept in a form a program can read so that a proposer can be added later); evals for any skill but =orchestrate=; runs on other vendors' tools or models; the whole-cycle replay's tools (=findings/tools/replay-*= in the skills workspace), which they use and do not replace.
 
-Research: =~/emacs-workspaces/claude-skills/research/skill-evals/brief.org= (goals R1-R11, decided 2026-11-11; evidence E1-E9). Read and approved by the user as written, 2026-11-11. Revised 2026-11-12 by the review of how the evals work (=research/skill-evals/evals-review.org=, directions D1-D9) and by the spec form (=research/skill-evals/spec-form.org=, points 3 and 5).
+Research: =~/emacs-workspaces/claude-skills/research/skill-evals/brief.org= (goals R1-R11, decided 2026-11-11; evidence E1-E9). Read and approved by the user as written, 2026-11-11. Revised 2026-11-12 by the review of how the evals work (=research/skill-evals/evals-review.org=, directions D1-D9) and by the spec form (=research/skill-evals/spec-form.org=, points 3 and 5). Revised 2026-11-13: a case's checks are listed under the items of its expected result (* Decided, D10).
 
 * Key Concepts
 
@@ -164,6 +164,16 @@ What a step left SHALL be evaluated on its full content. A script SHALL decide t
 - *WHEN* the audit finds a check suspect
 - *THEN* the check's verdict stands in the result
 - *AND* the report shows the audit beside it, for a person to decide or the check to be corrected
+
+*** Scenario: A case's checks are listed under the items they observe
+- *WHEN* a case's expected result is written
+- *THEN* each item states what counts as pass and names the checks that observe it, each with its kind and what it computes
+- *AND* the expected result is the one list of what the case expects; there is no separate list of checks, and every check is named by at least one item
+
+*** Scenario: The audit and the report are read per item
+- *WHEN* a trial's items are judged and its checks audited
+- *THEN* the result shows each item's verdict with, beneath it, the verdicts of its checks and their audits
+- *AND* an item that no /decide/ or /audited/ check observes is shown as evaluated by the eval agent alone
 
 *** Scenario: A well-formed artifact is still evaluated on its content
 - *WHEN* a step writes an artifact that passes every check
@@ -325,3 +335,4 @@ The six open questions, decided by the user at the hand edit, 2026-11-12 (each t
 - *The numbers.* A case starts at 3 trials, and each artifact is judged 3 times. An item /agrees/ when its 3 judgings of an artifact give the same verdict, on at least 90% of artifacts; it /passes reliably/ at 90% or more on the installed skill. It is promoted after 10 or more trials on the installed skill. A case whose checks are unanimous over 6 trials may drop to 2. These are a starting point, to be adjusted after the first runs.
 - *Out-of-date cases.* A case names the skill files its fixture and checks depend on. Its version and its hand reading's commit are git's; it is out of date when those files changed on the reference skill since that commit, which is reported and not counted as a failure. Fixtures are refreshed in the library by hand.
 - *Demotion.* A promoted item whose agreement falls below the threshold over its last 10 artifacts goes back to the advisory set, with the history named. A promoted item that fails while it still agrees is a regression and blocks the install.
+- *Checks under the items (D10).* Decided by the user, 2026-11-13, after reading the first case on a spec with its checks in =case.org= and its items in =expected.org=: two lists that cited the same scenarios and were joined only by those citations. What earns its keep is the difference between a stated expectation (an item, written before any trial, judged by the eval agent) and a computed fact (a check, run by a script, free and repeatable): the audit needs a reference the check does not define. Keeping them in two documents added nothing to that, and cost an expectation written twice, two lists to keep in step, and a join the reader and the eval agent had to make. So the item is the unit: it names its checks, and the report reads per item, which also shows an item no check decides, one observed only by signals or by nothing. A check's code stays in the case's =checks.py=. Not yet applied to the cases.
