@@ -1,7 +1,7 @@
 #+TITLE: Worked example: the execute spec's page
 #+OPTIONS: ^:{} -:nil
 
-Copied from the skills repo, branch =skill-evals= at =b0d3358=, =orchestrate/docs/pages/= (2026-11-13). It is the first spec page: the orchestrate skill's =execute= spec, proven by an LLM eval case (=execute-ex2=) run three times per tree.
+Copied from the skills repo, branch =skill-evals= at =b0d3358=, =orchestrate/docs/pages/= (2026-11-13). It is the first spec page: the orchestrate skill's =execute= spec, proven by an LLM eval case run three times per tree.
 
 - =build.py= :: reads =docs/specs/<capability>.org=, the eval cases on that capability (=evals/cases/*/case.org= with =:CAPABILITY:=, their =expected.org= items and =:CITES:=), =evals/history.jsonl= (the latest counted run per tree), and each trial's =t<n>.details.json=, =t<n>.artifact.txt= and =t<n>.jsonl=. Writes =<capability>.data.js= and =<capability>.html=.
 - =spec.template.html= :: the page. All layout, styles and script; no data.
