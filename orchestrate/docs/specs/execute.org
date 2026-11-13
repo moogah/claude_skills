@@ -324,7 +324,7 @@ list.
 
 *** Scenario: A re-spawned Implementor's brief names its task and the scope of its fix
 - *WHEN* an Implementor is spawned again to fix a blocking finding or a regression
-- *THEN* its brief, saved in the cycle's directory in the home, holds the task's text read from the home
+- *THEN* its brief, saved in the cycle's directory in the home in a file of its own, holds the task's text read from the home
 - *AND* the scope of its fix: the review file and the finding's number, or the failing run's file and the cause the change's journal records
 - *AND* the instruction to write a test or probe that fails on the defect before the fix; for a regression the failing test is that reproduction
 
@@ -528,7 +528,7 @@ task names, and SHALL record the setting it used.
 *** Scenario: A Reviewer runs at its role default or the task's raised setting
 - *WHEN* a Reviewer is spawned for a task
 - *THEN* it runs at the Reviewer's role default, or at the task's Reviewer setting when the plan raised it
-- *AND* the cycle's record holds the agent and its setting
+- *AND* the cycle's record holds the agent, its setting and the task it reviews
 
 *** Scenario: A rework runs at the task's setting, never a stronger one
 - *WHEN* an Implementor is spawned again to fix a blocking finding
@@ -537,7 +537,5 @@ task names, and SHALL record the setting it used.
 
 * Gaps
 
-Opened 2026-11-13 at the hand-off review (the splits D14 calls for, =research/skill-evals/evals-review.org=).
-
-- *How a Reviewer's spawn names its task.* No scenario says what in a Reviewer's input identifies the task it reviews, so a check can tell which task a spawn reviews only by its words (=execute-ex2= EX-S14, EX-S19 stay signals).
+None open.
 
