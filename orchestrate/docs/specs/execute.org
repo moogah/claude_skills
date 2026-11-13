@@ -1,6 +1,6 @@
 #+TITLE: execute
 #+OPTIONS: ^:{} -:nil
-#+STATUS: draft 2026-11-12, extracted from the reference skill (=main= =e356da7=); inferred statements reviewed 2026-11-12; six gaps filled and the regression requirement revised 2026-11-12; gaps open; not yet accepted
+#+STATUS: draft 2026-11-12, extracted from the reference skill (=main= =e356da7=); inferred statements reviewed 2026-11-12; seven gaps filled and the regression requirement revised 2026-11-12; no gap open; not yet accepted
 
 * Purpose
 
@@ -458,6 +458,11 @@ task files to the phases that own them.
 - *WHEN* a task's merge passes its tests
 - *THEN* the task's worktree is removed
 
+*** Scenario: The phase agent's working files stay in its own scratch directory
+- *WHEN* the phase agent needs a working file outside the home, such as a draft
+- *THEN* it writes it in the scratch directory its brief names, never under a fixed name shared with other agents
+- *AND* the directory is gone once the phase closes
+
 *** Scenario: Execute leaves the design, the specs and the intent alone
 - *WHEN* execute closes
 - *THEN* it has not changed the change's design, its specs or the intent's status line
@@ -488,12 +493,4 @@ task names, and SHALL record the setting it used.
 
 * Gaps
 
-** Gap: Where the phase agent keeps its own working files
-:PROPERTIES:
-:REQUIREMENT: Execute leaves its work in the home and nothing outside its part
-:END:
-An Implementor and a Reviewer are given a scratch directory of their own; the execute phase agent is
-given none. Seen in the hand reading of =execute-ex2= on =main= and =state-layer=: the phase agent
-wrote its ask draft to =/tmp=, outside any directory named for it, on a machine shared with other
-agents. Options: the phase agent is given a scratch directory, as its workers are; its drafts go
-only in the change's directory in the home; nothing is stated.
+None open.
