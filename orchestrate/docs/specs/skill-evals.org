@@ -214,7 +214,7 @@ Each trial's result SHALL be recorded in a form a program can read, and kept. Th
 - *WHEN* a trial ends
 - *THEN* the checks' details, the eval agent's quotes and reasons, and the transcripts are kept outside the tracked record
 - *AND* they are kept at least for the runs a case's checks were read by hand on, and for the latest runs, and removed after that
-- *AND* the trial's directory is removed once its result is recorded
+- *AND* the trial's directory is removed once its result is recorded, unless it is kept for a hand reading
 
 ** Requirement: A drop in the regression set blocks the install
 Before a skill change is installed, the regression set SHALL be run against it. A result worse than the installed skill's on the same cases SHALL stop the install, unless the user overrides it with a recorded reason. The advisory set SHALL be reported and SHALL block nothing.
