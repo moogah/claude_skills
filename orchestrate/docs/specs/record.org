@@ -1,6 +1,6 @@
 #+TITLE: record
 #+OPTIONS: ^:{} -:nil
-#+STATUS: draft 2026-11-13, extracted from the reference skill (=main= =e356da7=); limited to what =execute= and =asks= name; one gap open; not yet reviewed
+#+STATUS: draft 2026-11-13, extracted from the reference skill (=main= =e356da7=); limited to what =execute= and =asks= name; its one gap filled 2026-11-13 (the state file's shape is the boundary); not yet reviewed
 
 * Purpose
 
@@ -41,7 +41,7 @@ tool's commands, which refuse what does not fit its form.
 
 *** Scenario: The state is one file of the change's directory
 - *WHEN* a cycle of a change is open
-- *THEN* the change's state is one file in the change's directory
+- *THEN* the change's state is the file =state.json= in the change's directory
 
 *** Scenario: No role edits the state file by hand
 - *WHEN* any role changes the change's state
@@ -57,8 +57,8 @@ be recorded on that task's entry, with the evidence it rests on where it has one
 
 *** Scenario: A regression is marked on the task's entry, with the run that shows it
 - *WHEN* a merge causes a regression
-- *THEN* the entry of the task whose merge caused it marks that a regression was found
-- *AND* the entry names the file holding the test run after that merge
+- *THEN* in the state file, the entry of the task whose merge caused it has =regression_detected= true
+- *AND* its =after_snapshot= names the file holding the test run after that merge
 
 ** Requirement: The journal holds short narrative, each line against what it concerns
 :PROPERTIES:
@@ -70,30 +70,30 @@ naming its kind and what it concerns, in one line, with any longer form in a fil
 
 *** Scenario: A journal entry names its kind and what it is against
 - *WHEN* a role records a discovery, a decision, an inline fix, a deviation, a push-back or a note
-- *THEN* the journal gains one entry giving its kind, one line of text and the time
-- *AND* the entry names the task, finding, ask or seam it is against, when it is against one
+- *THEN* the state file's =journal= gains one entry whose =kind= is that kind, whose =text= is one line and whose =at= is the time
+- *AND* its =ref= names the task, finding, ask or seam it is against, when it is against one
 
 *** Scenario: A journal line is short, and the long form is a file
 - *WHEN* what a role has to record runs longer than one line
-- *THEN* the journal entry is at most 280 characters
-- *AND* it names the file that holds the rest
+- *THEN* the journal entry's =text= is at most 280 characters
+- *AND* its =path= names the file that holds the rest
+
+** Requirement: The state file's shape is the record's boundary
+:PROPERTIES:
+:GOAL:     none stated
+:END:
+What another role, or an eval, may rely on in the record SHALL be the state file and the fields this
+spec names: the change's directory, =state.json=, a task's entry by its =task_name= with its
+=regression_detected= and =after_snapshot=, and the =journal= with each entry's =kind=, =ref=, =text=,
+=at= and =path=. The rest of the file is the state tool's own. A tool that changes a named field
+changes this spec.
+
+*** Scenario: A reader finds a task's facts by the fields the record names
+- *WHEN* a reader outside the state tool needs to know whether a regression was recorded against a task, or what the journal holds against it
+- *THEN* it reads the change's =state.json= and finds them in the fields this spec names
+- *AND* it needs nothing else of the file's shape
 
 * Gaps
 
-** Gap: Which form of the record is its boundary
-:PROPERTIES:
-:REQUIREMENT: A fact about a task is recorded on the task's entry
-:END:
-The scenarios say a regression is marked on the task's entry and a journal entry names what it is
-against, but not in what form another reader finds them. On the reference skill the state file's
-shape is written down in full, key by key (=state.md=), and only the state tool writes it; the
-tool's orientation command lists each task's name, status, merge and blockers and the last five
-journal lines, and no command shows whether a task's entry carries a regression. Three answers:
-- The state file's shape is the boundary :: the spec names the fields a reader may rely on (the
-  task's regression mark and its run's path; the journal entry's kind, ref and text). A check reads
-  the file. The file's shape becomes a contract every version of the tool keeps.
-- The tool's commands are the boundary :: the spec states a read command that shows a task's entry
-  and the journal, and a check runs the tree's own tool. Needs a command the reference skill does
-  not have, so a change to the skill.
-- Neither yet :: the scenarios stay as they are, and their items are judged by the eval agent alone
-  from the state file in the evidence.
+None open. The one this draft had, "Which form of the record is its boundary", was filled by the user
+2026-11-13: "The state file's shape is the boundary" (the requirement of that name).
