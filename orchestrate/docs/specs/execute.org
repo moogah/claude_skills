@@ -1,6 +1,6 @@
 #+TITLE: execute
 #+OPTIONS: ^:{} -:nil
-#+STATUS: draft 2026-11-12, extracted from the reference skill (=main= =e356da7=); inferred statements reviewed 2026-11-12; two gaps filled and the regression requirement revised 2026-11-12; gaps open; not yet accepted
+#+STATUS: draft 2026-11-12, extracted from the reference skill (=main= =e356da7=); inferred statements reviewed 2026-11-12; three gaps filled and the regression requirement revised 2026-11-12; gaps open; not yet accepted
 
 * Purpose
 
@@ -336,7 +336,7 @@ list.
 The execute phase SHALL write every question that arises while it runs as an ask file at once,
 committed in the home. It SHALL stop for an ask only when the ask blocks work waiting now, and then
 only after finishing the work that does not wait on it; any other ask SHALL hold only the tasks it
-names.
+names. Whether the user is present is the dispatcher's to know, not the phase agent's.
 
 *** Scenario: An ask is a file at once, committed in the home
 - *WHEN* a question arises while execute runs
@@ -354,9 +354,15 @@ names.
 - *AND* hands back that it stopped, naming the ask
 
 *** Scenario: An ask that blocks waiting work stops the phase after the rest is done
-- *WHEN* an ask blocks a merge in this batch or a task not yet spawned, and the user is present
+- *WHEN* an ask blocks a merge in this batch or a task not yet spawned
 - *THEN* the phase agent first spawns Reviewers for merged tasks and files the reports
-- *AND* when nothing else can run, hands back that it stopped, naming the ask
+- *AND* when nothing else can run, hands back that it stopped, naming the ask, whether or not the user is present
+
+*** Scenario: Resumed with the user absent, the phase goes on without the answer
+- *WHEN* the phase agent stopped on an ask that blocks waiting work and is resumed with word that the user is absent
+- *THEN* each task the ask names is blocked on it
+- *AND* the merge chain goes on with the tasks behind them
+- *AND* when nothing else can run the phase passes its gate if it can and goes on to integrate
 
 *** Scenario: An ask that blocks nothing waiting does not stop the phase
 - *WHEN* an ask does not block work waiting now
@@ -464,19 +470,6 @@ task names, and SHALL record the setting it used.
 - *AND* the cycle's record holds it as a rework
 
 * Gaps
-
-** Gap: Who decides whether the user is present for an ask that blocks waiting work
-:PROPERTIES:
-:REQUIREMENT: A question raised during execute is a file at once
-:END:
-An ask that blocks a merge in this batch or a task not yet spawned stops the phase when the user is
-present, and otherwise holds only the tasks it names. The phase agent has no user and cannot see
-when the user last acted, so it cannot tell which applies; the dispatcher can. Noticed at
-extraction; no case covers a non-=environment= blocking ask. Options: the phase agent hands back on
-every ask that blocks waiting work and the dispatcher decides from the user's presence whether to
-ask or to stop with the pointer (as it already does for an =environment= ask); the dispatcher tells
-the phase agent in its brief whether the user is present; the phase agent treats the user as
-absent.
 
 ** Gap: When the task whose merge broke a test is reviewed
 :PROPERTIES:
