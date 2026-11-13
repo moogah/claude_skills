@@ -1,6 +1,6 @@
 #+TITLE: execute
 #+OPTIONS: ^:{} -:nil
-#+STATUS: draft 2026-11-12, extracted from the reference skill (=main= =e356da7=); inferred statements reviewed 2026-11-12; seven gaps filled and the regression requirement revised 2026-11-12; the gap on the run after a fix filled 2026-11-13; no gap open; four gaps opened 2026-11-13 at the hand-off review, one filled the same day; not yet accepted
+#+STATUS: draft 2026-11-12, extracted from the reference skill (=main= =e356da7=); inferred statements reviewed 2026-11-12; seven gaps filled and the regression requirement revised 2026-11-12; the gap on the run after a fix filled 2026-11-13; no gap open; four gaps opened 2026-11-13 at the hand-off review, two filled the same day; not yet accepted
 
 * Purpose
 
@@ -148,7 +148,7 @@ integrate as a record correction.
 *** Scenario: The merge that broke a test stays on the branch
 - *WHEN* a merge causes a regression
 - *THEN* the merge stays on the integration branch until the regression is resolved
-- *AND* it is reverted only when a revert is the chosen resolution
+- *AND* it is reverted only when the task's rework fails, or when the answer to a =decision= ask chooses a revert
 
 *** Scenario: The phase agent finds the regression's cause
 - *WHEN* a regression is found
@@ -157,9 +157,23 @@ integrate as a record correction.
 
 *** Scenario: A regression is fixed in the change like a blocking defect
 - *WHEN* a regression's cause is found and the intent's goals settle what the code should do
-- *THEN* it is fixed in the change: by an inline fix when the fix is simple, by a re-spawned Implementor otherwise, by a revert of the merge only when neither will do
+- *THEN* it is fixed in the change
 - *AND* no ask is filed for it
 - *AND* the change's journal names the goals that settle it
+
+*** Scenario: A simple fix for a regression is made inline
+- *WHEN* the fix for a regression is in one file, touches no seam's code, and is checked by a run whose output is predictable
+- *THEN* the phase agent makes it as an inline fix
+
+*** Scenario: Any other fix for a regression is made by a re-spawned Implementor
+- *WHEN* the fix for a regression is not simple
+- *THEN* an Implementor is spawned again for the task whose code holds the cause, with the regression as the scope of its fix
+
+*** Scenario: A failed rework of a regression reverts its merge
+- *WHEN* the Implementor re-spawned to fix a regression commits nothing, or the run after its fix still shows the regression
+- *THEN* the merge that caused the regression is reverted on the integration branch
+- *AND* the task is failed and its worktree is kept
+- *AND* the next queued task merges once a run after the revert shows no regression
 
 *** Scenario: A spec statement the goals overrule is left for integrate
 - *WHEN* the fix the goals settle contradicts what a spec scenario or a design row says
@@ -307,6 +321,11 @@ list.
 *** Scenario: Any other fix for a blocking finding is made by a re-spawned Implementor
 - *WHEN* the fix for a blocking finding is not simple
 - *THEN* an Implementor is spawned again for the task, with the finding as the scope of its fix
+
+*** Scenario: A failed rework of a blocking finding reverts its merge
+- *WHEN* the Implementor re-spawned to fix a blocking finding commits nothing, or its fix does not make the finding's reproduction pass
+- *THEN* the task's merge is reverted on the integration branch
+- *AND* the task is failed and its worktree is kept
 
 *** Scenario: A question on the main path that does not reproduce goes on the hardening list
 - *WHEN* a review's question about the main path is tried and its reproduction does not fail
@@ -510,7 +529,6 @@ task names, and SHALL record the setting it used.
 
 Opened 2026-11-13 at the hand-off review (the splits D14 calls for, =research/skill-evals/evals-review.org=).
 
-- *When a fix is a revert of the merge.* § A regression is fixed in the change like a blocking defect says "only when neither will do", which no WHEN can decide; the blocking finding states no condition at all.
 - *What a re-spawned Implementor is given.* How the spawn names its task and the scope of its fix (a regression's cause, or a review file's finding) is not stated, so no check can tell a rework spawn from another.
 - *How a Reviewer's spawn names its task.* No scenario says what in a Reviewer's input identifies the task it reviews, so a check can tell which task a spawn reviews only by its words (=execute-ex2= EX-S14, EX-S19 stay signals).
 
