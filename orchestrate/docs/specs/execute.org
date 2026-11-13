@@ -1,6 +1,6 @@
 #+TITLE: execute
 #+OPTIONS: ^:{} -:nil
-#+STATUS: draft 2026-11-12, extracted from the reference skill (=main= =e356da7=); inferred statements reviewed 2026-11-12; gaps open; not yet accepted
+#+STATUS: draft 2026-11-12, extracted from the reference skill (=main= =e356da7=); inferred statements reviewed 2026-11-12; a gap filled and the regression requirement revised 2026-11-12; gaps open; not yet accepted
 
 * Purpose
 
@@ -110,15 +110,17 @@ output in the change's directory in the home.
 :GOAL:     none stated
 :END:
 The execute phase SHALL treat a test that passed in the baseline and fails after a merge as a
-regression, and on a regression SHALL merge no further task, keep every task's worktree, record
-the regression against the task, and ask the user at once, naming where the failing test output
-is; all work other than merging SHALL go on.
+regression. On a regression it SHALL merge no further task until a run shows none, keep every
+task's worktree, keep the merge on the integration branch, and record the regression against the
+task; all work other than merging SHALL go on. The phase agent SHALL find the regression's cause
+and route it as a blocking defect, fixed in the change. The user SHALL be asked only when the fix
+needs a choice that is theirs: a spec scenario or design row would change, or the goals do not
+say which of two clashing tasks is right.
 
 *** Scenario: A regression after a merge stops further merges
 - *WHEN* two tasks are queued and merging the first makes a test fail that passed in the baseline
 - *THEN* the second task is not merged
 - *AND* both tasks' worktrees still exist
-- *AND* an =environment= ask is filed that names where the failing test output is
 
 *** Scenario: A regression is recorded against its task
 - *WHEN* a merge causes a regression
@@ -134,6 +136,31 @@ is; all work other than merging SHALL go on.
 - *THEN* the merge stays on the integration branch until the regression is resolved
 - *AND* it is reverted only when a revert is the chosen resolution
 
+*** Scenario: The phase agent finds the regression's cause
+- *WHEN* a regression is found
+- *THEN* the phase agent reads the failing run and the baseline to find what caused it
+- *AND* the change's journal records the cause against the task
+
+*** Scenario: A regression is fixed in the change like a blocking defect
+- *WHEN* a regression's cause is found and fixing it changes no spec scenario or design row
+- *THEN* it is fixed in the change: by an inline fix when the fix is simple, by a re-spawned Implementor otherwise, by a revert of the merge only when neither will do
+- *AND* no ask is filed for it
+
+*** Scenario: Merging resumes only after a run shows no regression
+- *WHEN* the fix for a regression is in
+- *THEN* the tests are run again on the integration branch
+- *AND* the next queued task merges only once that run shows no regression
+
+*** Scenario: A regression reaches the user only as a decision
+- *WHEN* fixing a regression would change a spec scenario or a design row, or the goals do not say which of two clashing tasks is right
+- *THEN* a =decision= ask is filed that names the choice and where the failing test output is
+- *AND* the ask blocks the merge chain
+
+*** Scenario: A test run that cannot be read is an environment ask
+- *WHEN* the run after a merge gives no verdict: the runner hangs, or the run's output cannot be read
+- *THEN* an =environment= ask is filed
+- *AND* no fix is attempted on that run
+
 *** Scenario: Against a green baseline, any failing run is a regression
 - *WHEN* every test passed in the baseline and the run after a merge fails
 - *THEN* a regression is found
@@ -142,11 +169,6 @@ is; all work other than merging SHALL go on.
 - *WHEN* the baseline already has failing tests and a merge leaves only those failing
 - *THEN* no regression is found
 - *AND* when a merge makes a test fail that passed in the baseline, a regression is found
-
-*** Scenario: The regression ask reaches the user at once
-- *WHEN* a regression ask is filed and nothing else can run
-- *THEN* the execute phase agent hands back one line saying it stopped on that ask and what the ask blocks
-- *AND* while the user is present the ask is put to them before the change goes on
 
 ** Requirement: Every defect reported while merging is routed
 :PROPERTIES:
@@ -462,18 +484,17 @@ ask or to stop with the pointer (as it already does for an =environment= ask); t
 the phase agent in its brief whether the user is present; the phase agent treats the user as
 absent.
 
-** Gap: Whether the task whose merge broke a test is reviewed while the user decides
+** Gap: When the task whose merge broke a test is reviewed
 :PROPERTIES:
 :REQUIREMENT: A merge that breaks a passing test stops the merge chain
 :END:
-A task whose merge passes its tests goes on to its review. The reference skill does not say what
-happens to the review of a task whose merge caused a regression, nor where the task stands while the
-user decides. Noticed at extraction; the trials cannot show it (the case gives the phase agent no
-way to spawn a Reviewer), and they left the task in different places: blocked in two counted trials
-on =main=; in the third the record still showed it as landed and not merged, though its merge was
-on the branch. Options: no review until the answer is applied
-(the review then reads the code that stays); a review at once, like any merged task (the Reviewer
-may find the cause before the user answers).
+A task whose merge passes its tests goes on to its review. Nothing says when the task whose merge
+caused a regression is reviewed: before its regression is fixed, or after. Noticed at extraction;
+the trials cannot show it (the case gives the phase agent no way to spawn a Reviewer), and they
+left the task in different places: blocked in two counted trials on =main=; in the third the record
+still showed it as landed and not merged, though its merge was on the branch. Options: after the
+fix (the review reads the code that stays, fix included); at once, like any merged task (the
+Reviewer may help find the cause, and reviews code the fix then changes).
 
 ** Gap: What an inline fix's commit carries
 :PROPERTIES:
