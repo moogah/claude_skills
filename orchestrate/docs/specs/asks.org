@@ -1,6 +1,6 @@
 #+TITLE: asks
 #+OPTIONS: ^:{} -:nil
-#+STATUS: draft 2026-11-13, extracted from the reference skill (=main= =e356da7=); limited to the ask file: what makes a file an ask, where it lives, how it is committed; not yet reviewed
+#+STATUS: draft 2026-11-13, extracted from the reference skill (=main= =e356da7=); limited to the ask file: what makes a file an ask, where it lives, how it is committed; its one inferred scenario reviewed by the user 2026-11-13
 
 * Purpose
 
@@ -54,16 +54,18 @@ the file's name. Its kind SHALL be one of a closed set.
 :PROPERTIES:
 :GOAL:     none stated
 :END:
-An ask file's place SHALL follow from its id and its status alone: the change's inbox while the
-question is still open, and the asks directory of its cycle once it is settled.
+An ask file's place SHALL follow from its id and its status alone, and SHALL be in the home (the
+repository that holds the orchestrator's files, not the change's worktree), under the change's
+directory: the change's inbox while the question is still open, and the asks directory of its cycle
+once it is settled.
 
 *** Scenario: An unsettled ask is in the change's inbox
 - *WHEN* an ask is open, answered or deferred
-- *THEN* its file is in the inbox of the change's directory
+- *THEN* its file is =.orchestrator/changes/<change>/inbox/<id>.org= in the home
 
 *** Scenario: A settled ask is in its cycle's asks directory
 - *WHEN* an ask is applied, declined or superseded
-- *THEN* its file is in the asks directory of the cycle its id names, under the change's directory
+- *THEN* its file is =.orchestrator/changes/<change>/cycles/<cycle-id>/asks/<id>.org= in the home, the cycle being the one its id names
 - *AND* it is no longer in the inbox
 
 ** Requirement: An ask file is committed in the home when it is written

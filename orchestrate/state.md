@@ -180,7 +180,7 @@ Every question to the user, whichever role raised it, is one org file (`template
   "kind": "decision | doc-correction | process | environment | confirmation",
   "status": "open | answered | applied | deferred | declined | superseded",
   "blocks": [],
-  "path": ".orchestrator/changes/<change>/inbox/<id>.org | .orchestrator/cycles/<cycle-from-id>/asks/<id>.org"
+  "path": ".orchestrator/changes/<change>/inbox/<id>.org | .orchestrator/changes/<change>/cycles/<cycle-from-id>/asks/<id>.org"
 }
 ```
 
