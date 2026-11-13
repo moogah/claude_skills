@@ -1,6 +1,6 @@
 #+TITLE: execute
 #+OPTIONS: ^:{} -:nil
-#+STATUS: draft 2026-11-12, extracted from the reference skill (=main= =e356da7=); inferred statements reviewed 2026-11-12; seven gaps filled and the regression requirement revised 2026-11-12; the gap on the run after a fix filled 2026-11-13; no gap open; not yet accepted
+#+STATUS: draft 2026-11-12, extracted from the reference skill (=main= =e356da7=); inferred statements reviewed 2026-11-12; seven gaps filled and the regression requirement revised 2026-11-12; the gap on the run after a fix filled 2026-11-13; no gap open; four gaps opened 2026-11-13 at the hand-off review; not yet accepted
 
 * Purpose
 
@@ -505,4 +505,10 @@ task names, and SHALL record the setting it used.
 
 * Gaps
 
-None open.
+Opened 2026-11-13 at the hand-off review (the splits D14 calls for, =research/skill-evals/evals-review.org=).
+
+- *Which fix a blocking review finding takes.* § A blocking finding is reproduced, then fixed, before the task is done offers an inline fix, a re-spawned Implementor or a revert, with no condition deciding between them.
+- *When a fix is a revert of the merge.* § A regression is fixed in the change like a blocking defect says "only when neither will do", which no WHEN can decide; the blocking finding states no condition at all.
+- *What a re-spawned Implementor is given.* How the spawn names its task and the scope of its fix (a regression's cause, or a review file's finding) is not stated, so no check can tell a rework spawn from another.
+- *How a Reviewer's spawn names its task.* No scenario says what in a Reviewer's input identifies the task it reviews, so a check can tell which task a spawn reviews only by its words (=execute-ex2= EX-S14, EX-S19 stay signals).
+
