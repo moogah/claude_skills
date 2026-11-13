@@ -1,6 +1,6 @@
 #+TITLE: execute
 #+OPTIONS: ^:{} -:nil
-#+STATUS: draft 2026-11-12, extracted from the reference skill (=main= =e356da7=); inferred statements reviewed 2026-11-12; four gaps filled and the regression requirement revised 2026-11-12; gaps open; not yet accepted
+#+STATUS: draft 2026-11-12, extracted from the reference skill (=main= =e356da7=); inferred statements reviewed 2026-11-12; five gaps filled and the regression requirement revised 2026-11-12; gaps open; not yet accepted
 
 * Purpose
 
@@ -324,6 +324,12 @@ list.
 - *AND* a test against a fake of the surface is not taken as the pin
 - *AND* where the tests cannot drive the surface, the fix commit and the task's Observations say so
 
+*** Scenario: An inline fix's commit names its task, its cause and its pin
+- *WHEN* the phase agent commits an inline fix
+- *THEN* its subject is =Inline fix after <merging|review of> task <task>: <what>=
+- *AND* the message names what it answers: the review file and finding number, the discovery, or the regression
+- *AND* the message names the test or probe that pins it, which failed before the fix and passes after it
+
 *** Scenario: A follow-up from a review is a candidate placed in the change
 - *WHEN* the fix for a review's finding becomes a follow-up
 - *THEN* it is a candidate that names the review file and the finding
@@ -476,18 +482,6 @@ task names, and SHALL record the setting it used.
 - *AND* the cycle's record holds it as a rework
 
 * Gaps
-
-** Gap: What an inline fix's commit carries
-:PROPERTIES:
-:REQUIREMENT: Review findings are routed, and a blocking one is fixed before the task is done
-:END:
-The reference skill asks for an attribution on the phase agent's inline-fix commits but does not
-say what the commit message holds: the finding it fixes, the task, who found it. A text
-correction's subject is stated (=Text correction: <what>=); an inline fix's is not. Noticed at
-extraction; no case or trial covers an inline fix. Options: the subject names
-the task and the finding (review file and number, or the discovery) it fixes; it follows the text
-correction's form, =Inline fix: <what>=, with the finding in the body; it is left to the
-reference skill.
 
 ** Gap: What a fresh agent may do to the handover it continues from
 :PROPERTIES:
