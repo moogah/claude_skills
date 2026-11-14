@@ -1,6 +1,6 @@
 #+TITLE: implementor
 #+OPTIONS: ^:{} -:nil
-#+STATUS: draft 2026-11-13, extracted from the reference skill (=main= =e356da7=); six gaps opened; at the hand-off review 2026-11-13: two filled by the cross-spec decisions (the blocked hand-back, G7); the seam objection's section and the failed hand-back filled; the obsolete-flag gap closed with no scenario (plan's); the clean worktree filled; no gap open; the brief's contents added from a boundary note; accepted 2026-11-13 by the user at the hand-off review
+#+STATUS: draft 2026-11-13, extracted from the reference skill (=main= =e356da7=); six gaps opened; at the hand-off review 2026-11-13: two filled by the cross-spec decisions (the blocked hand-back, G7); the seam objection's section and the failed hand-back filled; the obsolete-flag gap closed with no scenario (plan's); the clean worktree filled; no gap open; the brief's contents added from a boundary note; accepted 2026-11-13 by the user at the hand-off review; amended 2026-11-14 after acceptance (a seam row against a cited scenario; two scenarios marked not test-worthy), from the evals' build-out (=research/skill-evals/overnight/plan.org= § Decided with the user, 2026-11-14 morning)
 
 * Purpose
 
@@ -189,6 +189,7 @@ SHALL record a seam objection as a Discoveries entry naming the row, and SHALL l
 - *WHEN* the work shows that a cited seam row is wrong for the code
 - *THEN* the commit implements what the code needs, not what the row says
 - *AND* a Discoveries entry names the row as its =affected_seam=, with a class that says how it is wrong
+- *AND* this holds when the row also contradicts a scenario the task cites and the task's own claims are silent on the point
 
 *** Scenario: A seam objection is written in Discoveries only
 - *WHEN* the Implementor makes a seam objection
@@ -214,7 +215,7 @@ the work and declared; one that changes what the task should do SHALL stop the t
 - *AND* an Observation names the claim and what HEAD has
 
 *** Scenario: A wrong premise that changes the task stops it
-- *WHEN* a claim of the task is wrong in a way that changes what the task should do: the behaviour it adds is there already, it contradicts a cited row or scenario, or the work belongs to another seam
+- *WHEN* a claim of the task is wrong in a way that changes what the task should do: the behaviour it adds is there already, the task's own claim contradicts a cited row or scenario, or the work belongs to another seam
 - *THEN* the Implementor hands back =blocked <task>: premise wrong, <the claim>=
 - *AND* its report states the claim and what HEAD has
 - *AND* this holds whether or not the Architect checked the task's premises at plan
@@ -298,6 +299,9 @@ report.
 - *AND* its report is written with an empty =commit_sha=, and the task file's Observations and Discoveries as they stand
 
 *** Scenario: A task whose verification cannot be made to pass is handed back failed
+:PROPERTIES:
+:TEST: none: a fixture that makes the verification impossible to pass makes something outside the task stop it, which is the blocked hand-back
+:END:
 - *WHEN* the Implementor cannot make the task's verification pass, and nothing outside the task stops it
 - *THEN* it hands back =failed <task>: <why>=, in one clause
 - *AND* no commit of its own is on its task's branch
@@ -339,6 +343,9 @@ processes, and any resource in use by another, as they were.
 - *AND* it edits or deletes no scratch file outside it, including one at the top level of a scratchpad it shares with the agent that spawned it
 
 *** Scenario: A container or server is named after the task's branch
+:PROPERTIES:
+:TEST: none: the evals' fixture project starts no compose project or server
+:END:
 - *WHEN* the Implementor starts a compose project or a server
 - *THEN* it is named after its worktree's branch, never a fixed name
 - *AND* a port or socket already in use is left to whoever holds it
