@@ -1,6 +1,6 @@
 #+TITLE: asks
 #+OPTIONS: ^:{} -:nil
-#+STATUS: draft 2026-11-13, extracted from the reference skill (=main= =e356da7=); first limited to the ask file (where it lives, how it is committed; its one inferred scenario reviewed by the user 2026-11-13); extended 2026-11-13 to the asks' full scope (the kinds, the blocking rule, the sections, answering and applying, the sync points, the index), two gaps opened; at the hand-off review 2026-11-13: both filled by the cross-spec decisions G1 and G3, and G11 applied; accepted 2026-11-13 by the user at the hand-off review
+#+STATUS: draft 2026-11-13, extracted from the reference skill (=main= =e356da7=); first limited to the ask file (where it lives, how it is committed; its one inferred scenario reviewed by the user 2026-11-13); extended 2026-11-13 to the asks' full scope (the kinds, the blocking rule, the sections, answering and applying, the sync points, the index), two gaps opened; at the hand-off review 2026-11-13: both filled by the cross-spec decisions G1 and G3, and G11 applied; accepted 2026-11-13 by the user at the hand-off review; amended 2026-11-14 after acceptance (a design-round question's If unanswered; a decision settled in execute left for integrate; an ask's status once answered; an ask settled with no cycle open), from the evals' build-out (=research/skill-evals/overnight/plan.org= § Decided with the user, 2026-11-14 morning)
 
 * Purpose
 
@@ -66,7 +66,8 @@ the file's name. Its kind SHALL be one of a closed set.
 An ask file's place SHALL follow from its id and its status alone, and SHALL be in the home (the
 repository that holds the process's files, not the change's worktree), under the change's
 directory: the change's inbox while the question is still open, and the asks directory of its cycle
-once it is settled.
+once it is settled; an ask settled while no cycle of its change is open SHALL stay in the inbox until
+the first cycle opens.
 
 *** Scenario: An unsettled ask is in the change's inbox
 - *WHEN* an ask is open, answered or deferred
@@ -76,6 +77,11 @@ once it is settled.
 - *WHEN* an ask is applied, declined or superseded
 - *THEN* its file is =.orchestrator/changes/<change>/cycles/<cycle-id>/asks/<id>.org= in the home, the cycle being the one its id names
 - *AND* it is no longer in the inbox
+
+*** Scenario: An ask settled before any cycle waits in the inbox for the first
+- *WHEN* an ask is applied, declined or superseded while no cycle of its change is open, such as a design-round question
+- *THEN* its file stays in the change's inbox, with its settled status
+- *AND* when the change's first cycle opens it moves to that cycle's asks directory
 
 ** Requirement: An ask file is committed in the home when it is written
 :PROPERTIES:
@@ -167,7 +173,7 @@ dispatcher's to know (=dispatcher=), and the act of putting an ask is the dispat
 *** Scenario: The design round's questions are all answered before plan
 - *WHEN* the design round files its open questions as asks
 - *THEN* plan starts only once every one of them is answered, whether the user is present or not
-- *AND* none of them has an If unanswered section
+- *AND* each one's If unanswered says the change waits (§ A design-round question's If unanswered says the change waits)
 
 *** Scenario: The change waits for the MVP decision
 - *WHEN* the MVP decision ask is open
@@ -317,6 +323,11 @@ nothing more, and SHALL release the tasks the ask blocked.
 - *WHEN* the user answers an ask in chat
 - *THEN* the answer is written under the ask's =* Answer=
 
+*** Scenario: An ask whose answer is written is answered
+- *WHEN* an answer naming one of an ask's options' labels, or a readback the user confirmed, is written in its file
+- *THEN* the ask's status is =answered= until it is applied, declined or superseded
+- *AND* a sync point that finds such an answer under an ask still marked =open= handles it as answered
+
 *** Scenario: An answer naming an option's label is applied without a readback
 - *WHEN* an ask's Answer names one of its options' labels, matched regardless of case, spacing and trailing punctuation
 - *THEN* it is applied at the next sync point with no readback
@@ -352,6 +363,7 @@ nothing more, and SHALL release the tasks the ask blocked.
 *** Scenario: A spec statement a decision settles is edited in the commit that applies it
 - *WHEN* a decision settles or contradicts a requirement or a scenario of the specs
 - *THEN* the requirement or scenario is edited in place, in the code root's commit that applies the decision
+- *AND* when execute applies the decision, the statement is left as it is and journaled for integrate as a record correction (=execute= § A spec statement the goals overrule is left for integrate), which integrate makes
 
 *** Scenario: A reversal is a new ask that supersedes the old one
 - *WHEN* the user reverses a decision
