@@ -3,6 +3,8 @@
 
 The orchestrate skill's agreed terms. The eleven below were agreed during the research effort =~/emacs-workspaces/claude-skills/research/skill-evals/= (2026-11-11). The =state-layer= branch adds this file too, with its own terms; when the two meet, the file holds both sets.
 
+The orchestrate terms below the evals' were drafted from the reference skill (=main= =e356da7=) and agreed with the user at the hand-off review of the =execute= spec, 2026-11-13; the draft, with each entry's source in =main=, is =research/skill-evals/glossary-draft.org=.
+
 * outcome
 Something =orchestrate= is supposed to result in that the user would notice without reading the skill text. Since 2026-11-12 the outcome list (=docs/outcomes.org=) is source material for the spec, and a requirement's =:GOAL:= carries the trace up to the north star.
 - Example :: "It would be better to establish a list of behaviors the orchestrate skill is supposed to result in, and have evals for those."
@@ -108,3 +110,70 @@ A behaviour a spec needs that the reference skill does not state: noted in the s
 Whether a statement backfilled into a spec is =extracted= (the reference skill states it), =inferred= (our reading of it, reviewed by the user) or =filled= (a gap the user decided); recorded in the extraction record, not in the spec. Agreed 2026-11-12.
 - Example :: "execute § A regression is recorded against its task" is =inferred=: the two trees record it differently.
 - Avoid :: confidence
+
+* home
+The directory, with its own git repository, that holds a project's orchestrator configuration and
+every change's process artifacts; usually a workspace above one or more repositories, sometimes a
+repository's own root.
+- Example :: "committed in the home with a subject naming its id"
+- Avoid :: workspace (main's word for the usual shape of a home, not for the home itself), repo root, =$ORCH_HOME= in prose
+- Specs :: execute
+
+* code root
+The change's own worktree of its repository, on the change's integration branch: where task
+worktrees branch from, where tasks are merged and tested, and where code and the change's
+documents (specs, intent, design) are committed.
+- Example :: "merged, reviewed code on the change's integration branch, in its code root"
+- Avoid :: repo, checkout, the change's worktree (true but confusable with a task's worktree), =$CODE_ROOT= in prose
+- Specs :: execute
+
+* change
+One piece of work on one repository toward the goals its intent states, carried from opening
+through one or more cycles to done; it has its own integration branch, its own worktree and its
+own directory in the home.
+- Example :: "the change's integration branch"
+- Avoid :: proposal (OpenSpec's word, still in =externalisation.md=), feature, project
+- Specs :: execute
+
+* cycle
+One pass of plan, execute and integrate over a change; a change runs as many cycles as its work
+needs, each with its own id.
+- Example :: "once in each cycle before any merge (the baseline)"
+- Avoid :: iteration, sprint, round (main's "design round" runs before any cycle), wave (main uses it once, loosely, for a batch)
+- Specs :: execute
+
+* batch
+The set of tasks plan composes for one cycle, which that cycle's execute phase implements.
+- Example :: "turns a cycle's batch into merged, reviewed code"
+- Avoid :: wave, sprint, task list
+- Specs :: execute
+
+* integration branch
+The branch named after the change, in the change's repository, that each of its tasks merges into
+and on which its tests run.
+- Example :: "merged into the change's integration branch"
+- Avoid :: main, the trunk; workspace integration branch (another branch: the one several changes of one repository share and merge into when done)
+- Specs :: execute
+
+* worktree
+A separate checkout of the change's repository on a branch of its own. In the execute spec it is
+always a task's worktree: cut from the integration branch for one task, where that task's
+Implementor works, kept or removed as the task ends.
+- Example :: "its worktree is kept"
+- Avoid :: checkout (main's word for the Reviewer's), sandbox, workspace
+- Specs :: execute
+
+* the change's directory
+The change's place in the home that holds its process artifacts: its state, its cycles' directories,
+its inbox, its task files, its hardening list and the test outputs.
+- Example :: "its output is kept in the change's directory in the home"
+- Avoid :: change dir, =<change-dir>=, =$ORCH_CHANGE_DIR= in prose; the change's docs (that is the record in the code root)
+- Specs :: execute
+
+* the cycle's directory
+The directory, inside the change's directory, that holds one cycle's artifacts: the briefs, the
+Implementors' reports, the reviews, the applied asks, the handover and, once the cycle closes, its
+archived state.
+- Example :: "saved in the cycle's directory in the home"
+- Avoid :: cycle archive (main's heading for it, which suggests it is written only at close), =cycles/<id>/=
+- Specs :: execute

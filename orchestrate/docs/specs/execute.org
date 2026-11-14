@@ -5,11 +5,11 @@
 * Purpose
 
 The execute phase turns a cycle's batch into merged, reviewed code on the change's integration
-branch. Each task is implemented by an Implementor in a worktree of its own, merged as it lands,
-tested after its merge against the cycle's baseline, and reviewed author-blind by a Reviewer of its
-own. Every defect reported on the way ends in a fix, a task, an ask or an entry on the change's
-hardening list. The phase hands the dispatcher one line. It writes no task file and amends no
-design, spec or intent: those belong to plan and integrate.
+branch, in its code root. Each task is implemented by an Implementor in a worktree of its own,
+merged as it lands, tested after its merge against the cycle's baseline, and reviewed author-blind
+by a Reviewer of its own. Every defect reported on the way ends in a fix, a task, an ask or an entry
+on the change's hardening list. The phase hands the dispatcher one line. It writes no task file and
+amends no design, spec or intent: those belong to plan and integrate.
 
 * Requirements
 
