@@ -1,6 +1,6 @@
 #+TITLE: reviewer
 #+OPTIONS: ^:{} -:nil
-#+STATUS: draft 2026-11-13, extracted from the reference skill (=main= =e356da7=); not yet reviewed; at the hand-off review 2026-11-13: G8 and G11 applied, its role default added; the recommended actions and the direction of a defect outside the work and read-only filled; no gap open; accepted 2026-11-13 by the user at the hand-off review
+#+STATUS: draft 2026-11-13, extracted from the reference skill (=main= =e356da7=); not yet reviewed; at the hand-off review 2026-11-13: G8 and G11 applied, its role default added; the recommended actions and the direction of a defect outside the work and read-only filled; no gap open; accepted 2026-11-13 by the user at the hand-off review; amended 2026-11-14 after acceptance (a design-round finding's id and trigger), from the evals' build-out (=research/skill-evals/overnight/plan.org= § Decided with the user, 2026-11-14 morning)
 
 * Purpose
 
@@ -268,10 +268,11 @@ thought SHALL never be a finding file.
 - *WHEN* the Architect reports a finding
 - *THEN* it is one file, =.orchestrator/changes/<change>/cycles/<cycle-id>/findings/<finding-id>.md= in the home
 - *AND* its id is =arch-<cycle-id>-<n>=
+- *AND* a finding of the design round, before any cycle, is in the change's directory instead, with id =arch-<change>-<n>= (=architect= § A defect found at the design round is a finding of the change, outside any cycle)
 
 *** Scenario: An Architect's finding carries its labels in its front matter
 - *WHEN* an Architect's finding file is written
-- *THEN* its front matter holds =finding_id=, =trigger= (=premise-check= or =conformance=), =kind=, =severity=, =class=, a =title= of at most 80 characters, =discovered_from=, =discovered_by: architect=, =discovered_at=, the =seam= it is about when there is one, and =evidence=
+- *THEN* its front matter holds =finding_id=, =trigger= (=premise-check=, =conformance= or =design-round=), =kind=, =severity=, =class=, a =title= of at most 80 characters, =discovered_from=, =discovered_by: architect=, =discovered_at=, the =seam= it is about when there is one, and =evidence=
 - *AND* its =class= is one of =shape-fragmentation=, =vocabulary-mismatch=, =responsibility-leakage=, =dead-branch=, =interface-drift=, =mutation=, =invariant-gap= or =duplication=
 - *AND* the Architect writes no =decoration=
 
