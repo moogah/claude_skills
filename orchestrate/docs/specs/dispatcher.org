@@ -1,6 +1,6 @@
 #+TITLE: dispatcher
 #+OPTIONS: ^:{} -:nil
-#+STATUS: draft 2026-11-13, extracted from the reference skill (=main= =e356da7=); not yet reviewed
+#+STATUS: draft 2026-11-13, extracted from the reference skill (=main= =e356da7=); at the hand-off review 2026-11-13: G4, G6 and G10 applied, the design round's asks no longer go to plan (G1, G5)
 
 * Purpose
 
@@ -64,11 +64,11 @@ one is open, and SHALL leave a waiting answer to the phase agent it spawns or re
 - *AND* spawns the design round's phase agent for the change
 
 *** Scenario: A change with no seams yet goes to the design round
-- *WHEN* a change has its intent, no cycle has started, and its design has no Seams table or does not exist
+- *WHEN* a change has its intent, no cycle has started, and its design has no Seams section or does not exist
 - *THEN* the dispatcher spawns the design round's phase agent
 
 *** Scenario: A designed change with no cycle starts a plan
-- *WHEN* a change has its intent and a design with its Seams table, and no cycle has started
+- *WHEN* a change has its intent and a design with its Seams section, and no cycle has started
 - *THEN* the dispatcher spawns the plan phase agent, which starts the first cycle
 
 *** Scenario: An open phase is taken up by a phase agent for it
@@ -96,9 +96,10 @@ one is open, and SHALL leave a waiting answer to the phase agent it spawns or re
 - *THEN* the dispatcher does not apply the answer
 - *AND* the phase agent it spawns or resumes next handles it
 
-*** Scenario: Open questions before the first cycle go to plan
-- *WHEN* the design round hands back that it stopped on open questions and no cycle exists
-- *THEN* the dispatcher spawns the plan phase agent, which starts the cycle and files the asks
+*** Scenario: A design round plan finds unfinished is run before any cycle
+- *WHEN* the plan phase agent hands back =failed= naming the change's unfinished design round
+- *THEN* the dispatcher spawns the design round's phase agent for the change
+- *AND* no cycle has been opened
 
 *** Scenario: A rethink answer sends the change back to opening
 - *WHEN* the plan phase agent hands back that it did not start because the user answered rethink on the MVP decision
@@ -156,7 +157,7 @@ a phase that finished.
 - *AND* the results follow, or go in a message of their own
 
 *** Scenario: A failed phase is reported and nothing further is spawned
-- *WHEN* a phase agent hands back that it failed
+- *WHEN* a phase agent hands back that it failed, other than plan naming an unfinished design round
 - *THEN* the dispatcher tells the user what failed, as the line says
 - *AND* spawns no further phase agent
 
@@ -223,6 +224,11 @@ or when it blocks plan; and SHALL write each answer back into the ask's file.
 - *THEN* each is put to the user in a call of its own
 - *AND* the asks that block work waiting now are put first, then the rest in the order the change lists them
 
+*** Scenario: After integrate, a present user is put the open decisions one per call
+- *WHEN* integrate's phase agent has handed back and the user is present
+- *THEN* the open =decision= asks are put one per call, the blocking ones first, as after any hand-back
+- *AND* none is printed as a list line
+
 *** Scenario: Open decisions are never listed in chat while the user is present
 - *WHEN* the user is present and two or more =decision= asks are open
 - *THEN* no message the dispatcher writes lists them before they are put
@@ -235,6 +241,14 @@ or when it blocks plan; and SHALL write each answer back into the ask's file.
 - *WHEN* the user is present and a =decision= ask blocks no work waiting now
 - *THEN* it is put after the asks that do, in a call of its own
 - *AND* the call offers =Not now=
+
+*** Scenario: Every call offers Not now
+- *WHEN* the dispatcher puts any ask to the user
+- *THEN* the call offers =Not now=, whatever the ask blocks
+
+*** Scenario: Not now on a blocking ask goes on as if the user were absent
+- *WHEN* the user answers =Not now= to an ask that blocks work waiting now
+- *THEN* the dispatcher goes on as it does for that ask when the user is absent
 
 *** Scenario: Not now leaves the ask open
 - *WHEN* the user answers a call with =Not now=
@@ -315,28 +329,12 @@ overlay with the user present, one question per call.
 
 * Gaps
 
-** Gap: Whether a call for an ask that blocks waiting work offers Not now
-:PROPERTIES:
-:REQUIREMENT: Asks reach the user only through the dispatcher, one per call
-:END:
-The reference skill gives every call a =Not now= option in one place, attaches it to an ask that
-blocks nothing in another, and gives the design round's questions no default. Not stated for an ask
-that blocks plan, a merge or a task.
-
 ** Gap: How a call shows which option is the recommendation
 :PROPERTIES:
 :REQUIREMENT: Asks reach the user only through the dispatcher, one per call
 :END:
 A call carries the ask's recommendation; whether it is an option marked as recommended, a sentence
 in the question, or both, is not stated.
-
-** Gap: What a present user sees of the open decisions after integrate
-:PROPERTIES:
-:REQUIREMENT: Asks reach the user only through the dispatcher, one per call
-:END:
-After a hand-back a present user is put the open decisions one per call, never as a list; after
-integrate, and for a new ask file, the user is shown one line per open decision. Which one a
-present user gets after integrate is not stated.
 
 ** Gap: Whether the asks that block nothing are put before the stopped agent is resumed
 :PROPERTIES:
