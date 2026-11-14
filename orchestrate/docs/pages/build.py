@@ -7,7 +7,7 @@
 Either way index.html is rebuilt from every <capability>.data.js in this directory.
 
 Writes <capability>.data.js (generated, deterministic) and <capability>.html (from spec.template.html)
-next to this file. Everything on the page is computed; nothing is authored (the research effort's
+next to this file. They are not kept in git (.gitignore): publish.sh builds them and puts them on gh-pages. Everything on the page is computed; nothing is authored (the research effort's
 brief, research/document-as-you-go/brief.org, * Decided 2026-11-13).
 
 Reads, and never writes:
@@ -408,6 +408,32 @@ def run_data(case, rows_by_tree, tasks):
 
 # ---------------------------------------------------------------- the page
 
+def prune(capability, cases):
+    """Keep of each case only what this page shows: the items that cite one of this spec's scenarios (now or in
+    the run's version), the checks under them or citing one, and their results. A case citing one scenario here
+    no longer brings every item, verdict and reason it has for other specs. The run's version of the items is kept
+    only where it differs from the case's own (the page falls back to the case's). Milestones and their calls are
+    kept whole: the walkthrough's "show the whole trial" shows them all."""
+    pre = capability + " § "
+    mine = lambda cs: any(x.startswith(pre) for x in cs)
+    for c in cases:
+        keep = {it["id"] for it in c["items"] if mine(it["cites"])}
+        keep |= {i for r in c["runs"].values() for i, cs in r["cites"].items() if re.search(r"-E\d+$", i) and mine(cs)}
+        c["items"] = [it for it in c["items"] if it["id"] in keep]
+        for r in c["runs"].values():
+            chk = {x for i in keep for x in r["item_checks"].get(i, [])}
+            chk |= {i for i, cs in r["cites"].items() if not re.search(r"-E\d+$", i) and mine(cs)}
+            r["items_then"] = [it for it in r["items_then"] if it["id"] in keep]
+            if r["items_then"] == c["items"]:
+                r["items_then"] = []
+            r["cites"] = {i: cs for i, cs in r["cites"].items() if i in keep or i in chk}
+            r["item_checks"] = {i: v for i, v in r["item_checks"].items() if i in keep}
+            for t in r["trials"]:
+                t["items"] = {i: v for i, v in t["items"].items() if i in keep}
+                t["judge"] = {i: v for i, v in t["judge"].items() if i in keep}
+                t["checks"] = {i: v for i, v in t["checks"].items() if i in chk}
+
+
 def summary(capability, spec, cases):
     """The page header's coverage line, computed as the page computes it (spec.template.html, status()), for the
     index: a scenario passes when every trial of every item citing it passed on the first tree with a run."""
@@ -468,6 +494,7 @@ def build(capability):
             "source": {"spec": f"orchestrate/docs/specs/{capability}.org", "worktree_head": head, "spec_dirty": dirty,
                        "evals_head": evals_head},
             "cases": cases, "unknown_citations": unknown}
+    prune(capability, cases)
     data["summary"] = summary(capability, spec, cases)
     js = f"window.SPEC_PAGE = {mask(json.dumps(data, indent=1, sort_keys=True, ensure_ascii=False))};\n"
     open(f"{HERE}/{capability}.data.js", "w").write(js)
