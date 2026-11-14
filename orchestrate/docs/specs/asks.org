@@ -1,6 +1,6 @@
 #+TITLE: asks
 #+OPTIONS: ^:{} -:nil
-#+STATUS: draft 2026-11-13, extracted from the reference skill (=main= =e356da7=); first limited to the ask file (where it lives, how it is committed; its one inferred scenario reviewed by the user 2026-11-13); extended 2026-11-13 to the asks' full scope (the kinds, the blocking rule, the sections, answering and applying, the sync points, the index), two gaps opened; at the hand-off review 2026-11-13: both filled by the cross-spec decisions G1 and G3, and G11 applied
+#+STATUS: draft 2026-11-13, extracted from the reference skill (=main= =e356da7=); first limited to the ask file (where it lives, how it is committed; its one inferred scenario reviewed by the user 2026-11-13); extended 2026-11-13 to the asks' full scope (the kinds, the blocking rule, the sections, answering and applying, the sync points, the index), two gaps opened; at the hand-off review 2026-11-13: both filled by the cross-spec decisions G1 and G3, and G11 applied; accepted 2026-11-13 by the user at the hand-off review
 
 * Purpose
 
