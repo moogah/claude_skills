@@ -1,6 +1,6 @@
 #+TITLE: implementor
 #+OPTIONS: ^:{} -:nil
-#+STATUS: draft 2026-11-13, extracted from the reference skill (=main= =e356da7=); six gaps opened; at the hand-off review 2026-11-13: two filled by the cross-spec decisions (the blocked hand-back, G7); the seam objection's section and the failed hand-back filled; the obsolete-flag gap closed with no scenario (plan's)
+#+STATUS: draft 2026-11-13, extracted from the reference skill (=main= =e356da7=); six gaps opened; at the hand-off review 2026-11-13: two filled by the cross-spec decisions (the blocked hand-back, G7); the seam objection's section and the failed hand-back filled; the obsolete-flag gap closed with no scenario (plan's); the clean worktree filled; no gap open
 
 * Purpose
 
@@ -28,6 +28,11 @@ outside its task, and SHALL declare any work beyond it.
 - *WHEN* an Implementor hands back =done=
 - *THEN* its task's branch has exactly one commit beyond the point it was cut from
 - *AND* that commit's subject is =Implement task <task>: <description>=
+
+*** Scenario: A done Implementor leaves its worktree clean
+- *WHEN* an Implementor hands back =done=
+- *THEN* its worktree has nothing uncommitted
+- *AND* nothing untracked outside the files the repository ignores
 
 *** Scenario: The commit passes the task's verification
 - *WHEN* the Implementor commits its work
@@ -330,10 +335,5 @@ The Implementor's role default SHALL be the model =opus= at =medium= effort.
 
 * Gaps
 
-** Gap: Whether the Implementor leaves its worktree clean
-:PROPERTIES:
-:REQUIREMENT: The task's work is one commit on its task's branch
-:END:
-The reference skill says the work is committed in one commit, and not that nothing is left
-uncommitted or untracked in the worktree when the Implementor hands back. =implementor-ns12= checks
-that the worktree is clean.
+No gap open. The six this draft had were filled or closed 2026-11-13 at the hand-off review
+(=research/skill-evals/extraction/implementor.org= § Gap decisions).
