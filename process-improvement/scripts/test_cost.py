@@ -75,3 +75,30 @@ def test_skill_command_and_mid_turn_message_are_typed(tmp_path, capsys):
     cost.main(["--project", str(proj)])
     _, users = capsys.readouterr().out.splitlines()
     assert "2 prompts typed" in users
+
+
+def test_working_time_and_attention(tmp_path, capsys):
+    # a question answered after 10 min, a delivered hand-back (not typed: the session's own wait),
+    # and a typed prompt 20 min after the session's last word, with a local command between
+    proj = tmp_path / "proj"
+    ask = [{"type": "text", "text": "one two three"},
+           {"type": "tool_use", "id": "q1", "name": "AskUserQuestion",
+            "input": {"questions": [{"question": "Which?", "options": [{"label": "A", "description": "x"}]}]}}]
+    write(proj / "s3.jsonl", [
+        dict(user("2026-11-14T10:00:00Z", "start"), origin={"kind": "human"}),
+        asst("m1", "2026-11-14T10:01:00Z", 5, ask),
+        user("2026-11-14T10:11:00Z", [{"type": "tool_result", "tool_use_id": "q1", "content": "A"}]),
+        asst("m2", "2026-11-14T10:12:00Z", 5),
+        dict(user("2026-11-14T10:20:00Z", "Another Claude session sent a message"), isMeta=True,
+             origin={"kind": "peer"}),
+        asst("m3", "2026-11-14T10:21:00Z", 5, [{"type": "text", "text": "done here"}]),
+        {"type": "system", "subtype": "local_command", "timestamp": "2026-11-14T10:30:00Z"},
+        dict(user("2026-11-14T10:41:00Z", "next"), origin={"kind": "human"}),
+        asst("m4", "2026-11-14T10:42:00Z", 5, [{"type": "text", "text": "bye now"}]),
+    ])
+    cost.main(["--project", str(proj)])
+    machine, users = capsys.readouterr().out.splitlines()
+    assert "42 min wall clock, 12 min working" in machine      # 42 less 10 (question) less 20 (typed)
+    assert "2 prompts typed" in users                           # the hand-back is not one
+    # responses: start (0 words read), the question (3 + "Which? A x" = 6), next ("done here" = 2)
+    assert "(3 responses, 10 words read)" in users              # handed: "bye now" = 2

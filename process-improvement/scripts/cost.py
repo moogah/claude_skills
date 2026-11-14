@@ -7,8 +7,15 @@
 Machine: tokens of the parent transcript and its subagents, each assistant message counted
 once (a message is written as several records, each carrying the same usage), split into
 input, cache write, cache read and output; wall clock from the first to the last record of the
-parent; subagents spawned. The user's: typed prompts and question-tool calls (and the questions
-in them) in the parent; lines and words of each `--reading` file.
+parent, and working time: the wall clock less the waits on the user (each question call's wait
+for its answer, and each gap before a message the user typed); subagents spawned. The user's:
+typed prompts and question-tool calls (and the questions in them) in the parent; lines and words
+of each `--reading` file; and the attention cost (ATTENTION below).
+
+A typed prompt is a message the user wrote. Since Claude Code records where a message came from
+(`origin.kind`), only `human` counts: a background agent's hand-back (`peer`), a task notification
+and a skill's text are delivered to the session, not typed, and the wait before them is the
+session's own. Transcripts without `origin` fall back to the shape of the message.
 
 With no --project, the project directory of the cwd under ~/.claude/projects/; with no
 --session, the most recently written transcript there (the running session). --since counts
@@ -61,13 +68,36 @@ def tokens(path, since):
     return sums, stamps
 
 
+ATTENTION = """The attention cost, as the evals state it (evals/lib/attention.py, approved 2026-11-14):
+the sum over responses of 1 + reading minutes + avoidability, plus the handed reading's minutes, at
+238 words a minute. A response here is a question call or a typed prompt; what the user read for it
+is the session's text since the previous response (and the call's questions and options). The
+handed reading is the text after the last response and the --reading files. Avoidability is 0:
+nothing rates it outside the evals. Permission prompts leave no record in a transcript and are not
+counted."""
+WPM = 238
+
+
+def origin(o):
+    a = o.get("attachment") or {}
+    return (a.get("origin") if o.get("type") == "attachment" else o.get("origin")) or None
+
+
 def typed(o):
     """A prompt the user typed: a message, a command that sends a prompt (`<command-message>`, a
     skill's `/name args`), or a message queued mid-turn (a `queued_command` attachment); not meta,
-    a local command's echo, a reminder or a tool result."""
+    a local command's echo, a reminder, a tool result, or a message delivered to the session (an
+    agent's hand-back, a task notification), which `origin` tells apart where it is recorded."""
+    org = origin(o)
     if o.get("type") == "attachment":
-        return (o.get("attachment") or {}).get("type") == "queued_command"
-    if o.get("type") != "user" or o.get("isMeta"):
+        if (o.get("attachment") or {}).get("type") != "queued_command":
+            return False
+        return org is None or org.get("kind") == "human"
+    if o.get("type") != "user":
+        return False
+    if org is not None:
+        return org.get("kind") == "human"
+    if o.get("isMeta"):
         return False
     c = (o.get("message") or {}).get("content")
     texts = [c] if isinstance(c, str) else [b.get("text", "") for b in c or []
@@ -87,6 +117,53 @@ def user_side(path, since):
                     calls += 1
                     questions += len((b.get("input") or {}).get("questions") or [1])
     return prompts, calls, questions
+
+
+def words(text):
+    return len(re.findall(r"\S+", text or ""))
+
+
+def attention(path, since, reading_words=0):
+    """Working-time waits and the attention cost's parts from the parent transcript. Returns
+    (seconds waited on the user, responses [{kind, words}], handed words)."""
+    asked, waited, out, text, last = {}, 0.0, [], [], None
+    for o in records(path, since):
+        ts = when(o["timestamp"]) if o.get("timestamp") else None
+        if o.get("type") == "assistant":
+            for b in (o.get("message") or {}).get("content") or []:
+                if not isinstance(b, dict):
+                    continue
+                if b.get("type") == "text":
+                    text.append(b.get("text", ""))
+                elif b.get("type") == "tool_use" and b.get("name") == "AskUserQuestion":
+                    if b.get("id"):
+                        asked[b["id"]] = ts
+                    qs = (b.get("input") or {}).get("questions") or []
+                    shown = "\n".join(text + [q.get("question", "") + " " + " ".join(
+                        f"{x.get('label', '')} {x.get('description', '')}" for x in q.get("options") or [])
+                        for q in qs])
+                    out.append({"kind": "question", "words": words(shown)}); text = []
+        elif o.get("type") == "user":
+            c = (o.get("message") or {}).get("content")
+            for b in c if isinstance(c, list) else []:
+                tid = b.get("tool_use_id") if isinstance(b, dict) else None
+                if b.get("type") == "tool_result" and tid and tid in asked:
+                    t0 = asked.pop(tid)
+                    if t0 and ts:
+                        waited += (ts - t0).total_seconds()
+            if typed(o):
+                if last and ts:
+                    waited += (ts - last).total_seconds()
+                out.append({"kind": "message", "words": words("\n".join(text))}); text = []
+        elif typed(o):                  # a message queued mid-turn: a response, but the session was working
+            out.append({"kind": "message", "words": words("\n".join(text))}); text = []
+        if ts and o.get("type") == "assistant":   # the session's last word; local commands and
+            last = ts                               # attachments between it and a typed prompt are the user's time
+    return waited, out, words("\n".join(text)) + reading_words
+
+
+def attention_cost(responses, handed):
+    return sum(1 + r["words"] / WPM for r in responses) + handed / WPM
 
 
 def project_dir(arg):
@@ -129,16 +206,22 @@ def main(argv=None):
                 total[k] += sums[k]
     minutes = (max(stamps) - min(stamps)).total_seconds() / 60 if stamps else 0
     prompts, calls, questions = user_side(parent, a.since)
-
-    split = ", ".join(f"{k} {fmt(v)}" for k, v in total.items())
-    print(f"- Machine :: {fmt(sum(total.values()))} tokens ({split}); "
-          f"{minutes:.0f} min wall clock; {agents} agents spawned (session {parent.stem[:8]}).")
-    reading = []
+    reading, rwords = [], 0
     for f in a.reading:
         text = pathlib.Path(f).read_text()
         reading.append(f"{f} {len(text.splitlines())} lines, {len(text.split())} words")
+        rwords += words(text)
+    waited, responses, handed = attention(parent, a.since, rwords)
+    working = max(minutes - waited / 60, 0)
+
+    split = ", ".join(f"{k} {fmt(v)}" for k, v in total.items())
+    print(f"- Machine :: {fmt(sum(total.values()))} tokens ({split}); "
+          f"{minutes:.0f} min wall clock, {working:.0f} min working; {agents} agents spawned "
+          f"(session {parent.stem[:8]}).")
     print(f"- The user's :: {prompts} prompts typed; {calls} question calls ({questions} questions)"
-          + (f"; reading handed over: {'; '.join(reading)}." if reading else "."))
+          + (f"; reading handed over: {'; '.join(reading)}" if reading else "")
+          + f"; attention cost {attention_cost(responses, handed):.1f} ({len(responses)} responses, "
+          f"{sum(r['words'] for r in responses) + handed} words read).")
 
 
 if __name__ == "__main__":

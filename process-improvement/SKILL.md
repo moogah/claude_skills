@@ -119,8 +119,8 @@ The homes' `:KIND: process` ask files reach the skills the same way: a run in th
 
 | Currency | Counted from | How |
 |---|---|---|
-| Machine | session transcripts under `~/.claude/projects/<project>/` (a parent `<session>.jsonl`, its `<session>/subagents/*.jsonl`) | `scripts/cost.py`: tokens per assistant message once (a message spans several records), split into input, cache-write, cache-read and output; wall clock from first to last record; agents spawned |
-| The user's | the same transcripts and the home's files | typed prompts and question-tool calls (`cost.py`); ask files of kind `decision` raised (`inbox/` and `cycles/*/asks/`); reading handed over, as the lines and words of the files the user is asked to read (`cost.py --reading <file>`) |
+| Machine | session transcripts under `~/.claude/projects/<project>/` (a parent `<session>.jsonl`, its `<session>/subagents/*.jsonl`) | `scripts/cost.py`: tokens per assistant message once (a message spans several records), split into input, cache-write, cache-read and output; wall clock from first to last record, and working time: wall clock less each question call's wait for its answer and each gap before a typed prompt; agents spawned |
+| The user's | the same transcripts and the home's files | typed prompts (`origin` `human` where recorded: an agent's hand-back or a task notification is not one) and question-tool calls (`cost.py`); the attention cost, by the evals' formula (`cost.py`, avoidability 0); ask files of kind `decision` raised (`inbox/` and `cycles/*/asks/`); reading handed over, as the lines and words of the files the user is asked to read (`cost.py --reading <file>`) |
 
 ```
 python3 ~/.claude/skills/process-improvement/scripts/cost.py [--project <dir>] [--session <id-prefix>] [--since <ISO time>] [--reading <file> ...]
