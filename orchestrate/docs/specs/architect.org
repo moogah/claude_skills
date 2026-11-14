@@ -1,6 +1,6 @@
 #+TITLE: architect
 #+OPTIONS: ^:{} -:nil
-#+STATUS: draft 2026-11-13, extracted from the reference skill (=main= =e356da7=); not yet reviewed; nine gaps open
+#+STATUS: draft 2026-11-13, extracted from the reference skill (=main= =e356da7=); nine gaps open; at the hand-off review 2026-11-13: G2, G5, G7, G8 and G11 applied, its role default added
 
 * Purpose
 
@@ -214,6 +214,11 @@ SHALL change neither the design nor any test.
 - *WHEN* the premise check finds a defect in code or text that exists, outside the scope of every task it was given
 - *THEN* it writes a finding for it, marked as found by the premise check, found from the cycle's batch
 
+*** Scenario: A stale seam row is an interface-drift finding of the premise check
+- *WHEN* the premise check finds a seam row stale: the code or the test tree is right and the row is not
+- *THEN* it writes a finding of class =interface-drift= for the row, found by the premise check
+- *AND* it leaves the row as it is
+
 *** Scenario: The premise check changes neither the design nor the tests
 - *WHEN* the premise check hands back, whether or not it found a seam row stale
 - *THEN* the change's design is as it was before the check
@@ -282,7 +287,7 @@ the design. It SHALL list every row the cycle added, amended or retired.
 :PROPERTIES:
 :GOAL:     none stated (=outcomes.org= O-NS-12; =north-star.org= * Disposition states it, no goal does)
 :END:
-At the premise check and at conformance the Architect SHALL report each defect it finds in code or
+At each of its runs the Architect SHALL report each defect it finds in code or
 text that exists, whatever its likelihood, as a finding: one file per finding in the cycle's
 directory, carrying the labels the =reviewer= spec states for a finding, the run that found it, its
 class, the seam it concerns when there is one, and a recommended resolution. It SHALL write no route
@@ -294,6 +299,11 @@ line in the change's journal and not a finding. Style and preference SHALL not b
 - *THEN* one file for that defect is in the =findings/= directory of the cycle's directory
 - *AND* it carries the labels the =reviewer= spec states for a finding
 - *AND* it names the run that found it, premise check or conformance, the task or the batch it was found from, and the seam it concerns when there is one
+
+*** Scenario: A defect found at the design round is a finding of the change, outside any cycle
+- *WHEN* at the design round the Architect finds a defect in code or text that exists
+- *THEN* one finding file for it is in the =findings/= directory of the change's directory, outside any cycle
+- *AND* the design's Open Questions has no entry for it
 
 *** Scenario: A finding carries the class of the design checklist
 - *WHEN* the Architect writes a finding
@@ -318,6 +328,11 @@ line in the change's journal and not a finding. Style and preference SHALL not b
 - *WHEN* at the premise check or conformance the Architect notices a need that would arise only after a future change, or a cleanup that changes no behaviour today, and no project prior asks for that kind of work
 - *THEN* the change's journal gains one thought line for it
 - *AND* no finding file is written for it
+
+*** Scenario: A design-round thought goes to the file its brief names
+- *WHEN* at the design round the Architect notices a speculative need or a cleanup that changes no behaviour today
+- *THEN* it writes one thought line for it in the file of its scratch directory that its brief names
+- *AND* its hand-back stays one line
 
 *** Scenario: The Architect writes no route for a finding
 - *WHEN* the Architect writes a finding
@@ -356,6 +371,10 @@ names.
 - *THEN* it hands back one line that starts =conformance <cycle-id>: <f> findings, <a> rows amended;= and nothing else
 - *AND* the line is at most 200 characters
 
+*** Scenario: Conformance's hand-back names its design diff
+- *WHEN* conformance hands back
+- *THEN* its line ends =; <path>=, the path of the cycle's =design-diff.json= relative to the home, which every conformance run writes
+
 *** Scenario: No run commits, spawns an agent or writes a task
 - *WHEN* any run of the Architect hands back
 - *THEN* it has made no commit, in the code root or in the home
@@ -367,30 +386,18 @@ names.
 - *THEN* it does so in the scratch directory its brief names
 - *AND* the probe changes no file of the code root or the home
 
+** Requirement: The Architect's role default
+:PROPERTIES:
+:GOAL:     none stated
+:END:
+Each run of the Architect SHALL be at its role default; a task override SHALL NOT reach it.
+
+*** Scenario: The Architect's role default is opus, at high for the design round and conformance and medium for the premise check
+- *WHEN* the Architect is spawned
+- *THEN* it runs at =opus=, at =high= effort for the design round and for conformance
+- *AND* at =medium= for the premise check
+
 * Gaps
-
-** Gap: Where a defect found at the design round is reported
-:PROPERTIES:
-:REQUIREMENT: Every defect the Architect finds is a finding, and it routes none
-:END:
-A finding is a file in a cycle's directory, and the design round runs before the first cycle; the
-reference skill names no place for a defect the round finds in existing code. In the held case the
-Architect put such a defect to the user as an open question.
-
-** Gap: Where the design round's thoughts go
-:PROPERTIES:
-:REQUIREMENT: A seam row states only what must hold at the boundary
-:END:
-A thought is a journal line, and the design round runs before the change's record has a journal;
-the reference skill puts the round's thoughts in a report of the Architect's, while every run
-hands back one line and nothing else.
-
-** Gap: Who writes the Decision for an answered open question
-:PROPERTIES:
-:REQUIREMENT: A design-round question is written for the user, never decided
-:END:
-The role says the Architect writes the Decisions once the user has answered; the design flow says
-the resumed agent writes each answer into the Decisions.
 
 ** Gap: Where a property a Decision drops on purpose is written
 :PROPERTIES:
@@ -398,27 +405,6 @@ the resumed agent writes each answer into the Decisions.
 :END:
 A property the replaced mechanism provided and the new one drops goes in the intent's Removals, a
 file the design round does not write.
-
-** Gap: Where a finding says what it blocks
-:PROPERTIES:
-:REQUIREMENT: Every defect the Architect finds is a finding, and it routes none
-:END:
-The premise check settles at once a finding that blocks a task of the batch, and a finding that
-puts the design in question says what it blocks; the finding's form has no place for what it blocks.
-
-** Gap: How the premise check reports a stale seam row
-:PROPERTIES:
-:REQUIREMENT: The premise check writes a verdict on each premise and leaves the design alone
-:END:
-A stale row the premise check finds is corrected by the phase agent; the reference skill does not
-say in which of the check's outputs the Architect reports it.
-
-** Gap: Which file conformance's hand-back names
-:PROPERTIES:
-:REQUIREMENT: Each run hands back one line and leaves the rest to its spawner
-:END:
-The line ends in =<path>=, and conformance writes several files: findings, =design-diff.json= and
-the amended design.
 
 ** Gap: What the premise check and conformance may write besides their outputs
 :PROPERTIES:

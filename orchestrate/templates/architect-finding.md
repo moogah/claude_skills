@@ -6,7 +6,7 @@ Reporting and routing are separate steps, done by different agents. The agent th
 
 ## Form
 
-Architect findings go in `<change-dir>/cycles/<cycle-id>/findings/<finding-id>.md`; the state file's `architect_findings` array carries the index fields in JSON form (`state.md`).
+Architect findings go in `<change-dir>/cycles/<cycle-id>/findings/<finding-id>.md` (a design-round finding, made before any cycle, in `<change-dir>/findings/<finding-id>.md`); the state file's `architect_findings` array carries the index fields in JSON form (`state.md`).
 
 ```yaml
 ---
