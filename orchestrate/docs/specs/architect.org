@@ -1,6 +1,6 @@
 #+TITLE: architect
 #+OPTIONS: ^:{} -:nil
-#+STATUS: draft 2026-11-13, extracted from the reference skill (=main= =e356da7=); nine gaps open; at the hand-off review 2026-11-13: G2, G5, G7, G8 and G11 applied, its role default added; the dropped property, what each run writes and the prior's cleanup filled; no gap open
+#+STATUS: draft 2026-11-13, extracted from the reference skill (=main= =e356da7=); nine gaps open; at the hand-off review 2026-11-13: G2, G5, G7, G8 and G11 applied, its role default added; the dropped property, what each run writes and the prior's cleanup filled; no gap open; accepted 2026-11-13 by the user at the hand-off review
 
 * Purpose
 

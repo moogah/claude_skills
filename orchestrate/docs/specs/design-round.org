@@ -1,6 +1,6 @@
 #+TITLE: design-round
 #+OPTIONS: ^:{} -:nil
-#+STATUS: draft 2026-11-13, extracted from the reference skill (=main= =e356da7=); at the hand-off review 2026-11-13: G1, G2, G3, G5 and G6 applied, no gap open
+#+STATUS: draft 2026-11-13, extracted from the reference skill (=main= =e356da7=); at the hand-off review 2026-11-13: G1, G2, G3, G5 and G6 applied, no gap open; accepted 2026-11-13 by the user at the hand-off review
 
 * Purpose
 
