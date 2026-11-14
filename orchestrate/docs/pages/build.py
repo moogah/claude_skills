@@ -4,6 +4,8 @@
   docs/pages/build.py                 every spec in docs/specs that an eval case is on
   docs/pages/build.py execute         one spec
 
+Either way index.html is rebuilt from every <capability>.data.js in this directory.
+
 Writes <capability>.data.js (generated, deterministic) and <capability>.html (from spec.template.html)
 next to this file. Everything on the page is computed; nothing is authored (the research effort's
 brief, research/document-as-you-go/brief.org, * Decided 2026-11-13).
@@ -93,22 +95,28 @@ def case_props(text):
     return dict(re.findall(r"^:([A-Z_]+):\s*(.*)$", blk.group(1), re.M)) if blk else {}
 
 
-def load_cases(capability):
+def load_cases(capability, rows=()):
+    """The cases on this capability, and every other case whose items cite one of its scenarios, now or in a run
+    (a page keys on the spec's scenarios, not on the case's own capability)."""
     cases = []
     root = f"{EVALS}/cases"
+    pre = capability + " § "
+    then = {r.get("case") for r in rows if any(c.startswith(pre) for v in (r.get("cites") or {}).values() for c in v)}
     for d in sorted(os.listdir(root)):
         p = f"{root}/{d}/case.org"
         if not os.path.exists(p):
             continue
         text = open(p).read()
         props = case_props(text)
-        if props.get("CAPABILITY") != capability:
-            continue
         exp = f"{root}/{d}/expected.org"
+        items = parse_items(open(exp).read()) if os.path.exists(exp) else []
+        if props.get("CAPABILITY") != capability and d not in then \
+                and not any(c.startswith(pre) for it in items for c in it["cites"]):
+            continue
         cases.append({"id": d, "title": re.search(r"^#\+TITLE:\s*(.*)$", text, re.M).group(1).strip(),
-                      "step": props.get("STEP", ""), "trials": int(props.get("TRIALS", "1")),
-                      "validated": props.get("VALIDATED", ""),
-                      "items": parse_items(open(exp).read()) if os.path.exists(exp) else []})
+                      "capability": props.get("CAPABILITY", ""), "step": props.get("STEP", ""),
+                      "trials": int(props.get("TRIALS", "1")), "validated": props.get("VALIDATED", ""),
+                      "items": items})
     return cases
 
 
@@ -172,6 +180,14 @@ def transcript_calls(path):
         out.append({"n": n, "tool": u["name"], "input": u["input"], "raw": json.dumps(u["input"]),
                     "result": r, "error": err})
     return out
+
+
+def mask(s):
+    """A trial's scratch directory becomes <trial>/, a run's <run>/, the user's home ~ (rule 8: deterministic and
+    no machine paths, in calls, reasons, quotes and check details alike)."""
+    s = re.sub(r"/private/tmp/skill-evals/\d{8}T\d{6}(?:-\d+)?/\d{3}/", "<trial>/", s)
+    s = re.sub(r"/private/tmp/skill-evals/\d{8}T\d{6}(?:-\d+)?/(?:\d{3}\b)?", "<run>/", s)
+    return re.sub(r"/Users/[^/\"\\ ]+/", "~/", s)
 
 
 def cut(s, n):
@@ -392,6 +408,47 @@ def run_data(case, rows_by_tree, tasks):
 
 # ---------------------------------------------------------------- the page
 
+def summary(capability, spec, cases):
+    """The page header's coverage line, computed as the page computes it (spec.template.html, status()), for the
+    index: a scenario passes when every trial of every item citing it passed on the first tree with a run."""
+    tree = next((t for t in TREES if any(c["runs"].get(t) for c in cases)), None)
+    n = cited = passing = failing = 0
+    for r in spec["requirements"]:
+        for sc in r["scenarios"]:
+            key = f"{capability} § {sc['title']}"
+            n += 1
+            cited += any(key in it["cites"] for c in cases for it in c["items"])
+            p = k = 0
+            for c in cases:
+                run = c["runs"].get(tree)
+                if not run:
+                    continue
+                for iid, cs in run["cites"].items():
+                    if re.search(r"-E\d+$", iid) and key in cs:
+                        for t in run["trials"]:
+                            if iid in t["items"]:
+                                k += 1
+                                p += t["items"][iid] == "pass"
+            passing += bool(k) and p == k
+            failing += bool(k) and p < k
+    return {"title": spec["title"], "tree": tree, "scenarios": n, "cited": cited, "pass": passing, "fail": failing,
+            "cases": len(cases), "validation": sum(1 for c in cases if (c["runs"].get(tree) or {}).get("validation"))}
+
+
+def build_index():
+    """index.html: every page in this directory, its spec's title and coverage line, from each data file's summary."""
+    pages = []
+    for f in sorted(os.listdir(HERE)):
+        if f.endswith(".data.js") and f != "index.data.js":
+            d = json.loads(open(f"{HERE}/{f}").read()[len("window.SPEC_PAGE = "):-2])
+            pages.append(dict(d["summary"], capability=d["capability"]))
+    js = f"window.SPEC_INDEX = {json.dumps({'pages': pages}, indent=1, sort_keys=True, ensure_ascii=False)};\n"
+    open(f"{HERE}/index.data.js", "w").write(js)
+    tpl = open(f"{HERE}/index.template.html").read()
+    open(f"{HERE}/index.html", "w").write(tpl.replace("{{data_version}}", hashlib.sha1(js.encode()).hexdigest()[:10]))
+    print(f"index: {len(pages)} page(s) -> index.html")
+
+
 def build(capability):
     spec_path = f"{SPECS}/{capability}.org"
     spec = parse_spec(spec_path)
@@ -400,7 +457,7 @@ def build(capability):
     evals_head = sh("git", "rev-parse", "--short", "HEAD", cwd=EVALS)
     rows = history()
     cases = []
-    for c in load_cases(capability):
+    for c in load_cases(capability, rows):
         tasks = sorted(set(re.findall(r"=([a-z]+-[a-z]+(?:-[a-z]+)?)=", open(f"{EVALS}/cases/{c['id']}/case.org").read())))
         c["runs"] = run_data(c, latest_counting(rows, c["id"], c["validated"]), tasks)
         cases.append(c)
@@ -411,7 +468,8 @@ def build(capability):
             "source": {"spec": f"orchestrate/docs/specs/{capability}.org", "worktree_head": head, "spec_dirty": dirty,
                        "evals_head": evals_head},
             "cases": cases, "unknown_citations": unknown}
-    js = f"window.SPEC_PAGE = {json.dumps(data, indent=1, sort_keys=True, ensure_ascii=False)};\n"
+    data["summary"] = summary(capability, spec, cases)
+    js = f"window.SPEC_PAGE = {mask(json.dumps(data, indent=1, sort_keys=True, ensure_ascii=False))};\n"
     open(f"{HERE}/{capability}.data.js", "w").write(js)
     tpl = open(f"{HERE}/spec.template.html").read()
     version = hashlib.sha1(js.encode()).hexdigest()[:10]  # a browser caches the data file; its hash busts that
@@ -427,4 +485,5 @@ if __name__ == "__main__":
     caps = sys.argv[1:] or sorted({case_props(open(f"{EVALS}/cases/{d}/case.org").read()).get("CAPABILITY")
                                    for d in os.listdir(f"{EVALS}/cases") if os.path.exists(f"{EVALS}/cases/{d}/case.org")} - {None})
     bad = [u for cap in caps for u in build(cap)]
+    build_index()
     sys.exit(1 if bad else 0)

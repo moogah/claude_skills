@@ -26,6 +26,7 @@
 body { margin: 0; background: var(--bg); color: var(--ink); font: 15px/1.5 var(--sans); }
 header { padding: 28px 24px 12px; max-width: 1280px; margin: 0 auto; }
 .crumb { color: var(--muted); font-size: 13px; }
+.crumb a { color: var(--accent); text-decoration: none; }
 h1 { font-size: 26px; margin: 4px 0 6px; }
 .link { background: none; border: 0; color: var(--accent); cursor: pointer; padding: 0; font: inherit; }
 #detail { min-width: 0; }
@@ -57,6 +58,8 @@ h3 { font-size: 13px; letter-spacing: .06em; text-transform: uppercase; color: v
 .tag { font: 12px var(--mono); color: var(--muted); }
 .res { display: inline-flex; gap: 6px; align-items: center; margin-right: 14px; font-size: 13px; }
 .note { font-size: 13px; color: var(--muted); margin-top: 4px; }
+.case { border-top: 1px solid var(--line); padding-top: 10px; margin-top: 18px; font-weight: 600; }
+.case.first { border-top: 0; margin-top: 0; padding-top: 0; }
 .empty { color: var(--muted); background: var(--panel); border: 1px dashed var(--line); border-radius: 6px; padding: 12px 14px; }
 .tabs { display: flex; gap: 6px; margin: 4px 0 10px; flex-wrap: wrap; align-items: center; }
 .seq { background: var(--panel); border: 1px solid var(--line); border-radius: 6px; overflow-x: auto; }
@@ -109,7 +112,7 @@ footer { max-width: 1280px; margin: 0 auto; padding: 0 24px 40px; color: var(--f
 <header id="top"></header>
 <main><nav id="nav"></nav><section id="detail"></section></main>
 <footer id="foot"></footer>
-<script src="execute.data.js?v=d7c14cb969"></script>
+<script src="execute.data.js?v=69b8ce3795"></script>
 <script>
 (function () {
 const D = window.SPEC_PAGE, cap = D.capability;
@@ -148,7 +151,7 @@ const nCited = scen.filter((s) => s.items.length).length, nPass = scen.filter((s
 const nFail = scen.filter((s) => s.status === "fail" || s.status === "mixed").length;
 const nVal = D.cases.filter((c) => c.runs[TREE] && c.runs[TREE].validation).length;
 $("#top").innerHTML = `
-  <div class="crumb">orchestrate · specs · ${esc(D.source.spec)}</div>
+  <div class="crumb">orchestrate · <a href="index.html">specs</a> · ${esc(D.source.spec)}</div>
   <h1>${esc(D.spec.title)}</h1>
   <div class="cov"><div class="bar">
     <span style="width:${(100 * nPass) / scen.length}%;background:var(--pass)"></span>
@@ -235,8 +238,12 @@ function runCites(run, s) {
 }
 
 let tree = null, open = {};
-function proof(s, c) {
+function proof(s, c, i) {
   const trees = treesOf(c);
+  const head = `<div class="case${i ? "" : " first"}">${esc(c.title)}</div>`;
+  return head + proofBody(s, c, trees);
+}
+function proofBody(s, c, trees) {
   if (!trees.length) return `<div class="empty">${esc(c.id)} cites this scenario, but no run of it counts yet.</div>`;
   if (!tree || !c.runs[tree]) tree = trees[0];
   const run = c.runs[tree], N = run.trials.length, rc = runCites(run, s), rows = align(run.trials);
@@ -304,7 +311,7 @@ function show(s) {
     </div>
     <h3>How it was checked</h3>`;
   const cs = D.cases.filter((c) => c.items.some((it) => it.cites.includes(s.key)) || D.trees.some((t) => c.runs[t] && runCites(c.runs[t], s).items.length + runCites(c.runs[t], s).checks.length));
-  h += cs.length ? cs.map((c) => proof(s, c)).join("") : `<div class="empty">No eval case cites this scenario yet${s.test ? `; the spec marks it ${esc(s.test)}` : ""}.</div>`;
+  h += cs.length ? cs.map((c, i) => proof(s, c, i)).join("") : `<div class="empty">No eval case cites this scenario yet${s.test ? `; the spec marks it ${esc(s.test)}` : ""}.</div>`;
   $("#detail").innerHTML = h;
   $("#detail").querySelectorAll("[data-t]").forEach((b) => (b.onclick = () => { tree = b.dataset.t; open = {}; show(s); }));
   $("#detail").querySelectorAll("[data-o]").forEach((b) => (b.onclick = () => { open[b.dataset.o] = !open[b.dataset.o]; show(s); }));

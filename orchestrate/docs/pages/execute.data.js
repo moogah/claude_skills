@@ -2,6 +2,923 @@ window.SPEC_PAGE = {
  "capability": "execute",
  "cases": [
   {
+   "capability": "asks",
+   "id": "asks-apply",
+   "items": [
+    {
+     "checks": [
+      {
+       "id": "AA-S1",
+       "kind": "decide"
+      },
+      {
+       "id": "AA-S2",
+       "kind": "decide"
+      }
+     ],
+     "cites": [
+      "asks § An answer naming an option's label is applied without a readback",
+      "asks § Applying an ask releases the tasks it blocked",
+      "asks § A settled ask is in its cycle's asks directory"
+     ],
+     "id": "AA-E1",
+     "question": "Is ask 1, answered with an option's label, applied without a readback, its task released?"
+    },
+    {
+     "checks": [
+      {
+       "id": "AA-S3",
+       "kind": "decide"
+      }
+     ],
+     "cites": [
+      "asks § An applied ask is committed with what applies it",
+      "execute § An answer is applied before anything else"
+     ],
+     "id": "AA-E2",
+     "question": "Is ask 1's application committed with the merge it releases?"
+    },
+    {
+     "checks": [
+      {
+       "id": "AA-S4",
+       "kind": "decide"
+      }
+     ],
+     "cites": [
+      "asks § An answer naming an option's label is applied without a readback",
+      "asks § Work off the main path that an answer asks for waits on the hardening list"
+     ],
+     "id": "AA-E3",
+     "question": "Is ask 3, whose chosen option is work after the MVP, applied to the hardening list?"
+    },
+    {
+     "checks": [
+      {
+       "id": "AA-S5",
+       "kind": "decide"
+      },
+      {
+       "id": "AA-S15",
+       "kind": "decide"
+      }
+     ],
+     "cites": [
+      "asks § Any other answer is read back before it is applied"
+     ],
+     "id": "AA-E4",
+     "question": "Is ask 2's free-text answer read back, the ask left open and its task held?"
+    },
+    {
+     "checks": [
+      {
+       "id": "AA-S7",
+       "kind": "decide"
+      },
+      {
+       "id": "AA-S8",
+       "kind": "decide"
+      }
+     ],
+     "cites": [
+      "asks § An answer that states a rule becomes a prior",
+      "asks § A confirmation is written applied and is never a question",
+      "asks § A confirmation or process ask has no If unanswered"
+     ],
+     "id": "AA-E5",
+     "question": "Does ask 2's rule become a prior, recorded by a confirmation?"
+    },
+    {
+     "checks": [
+      {
+       "id": "AA-S6",
+       "kind": "decide"
+      }
+     ],
+     "cites": [
+      "asks § A readback is committed with the answer it restates"
+     ],
+     "id": "AA-E6",
+     "question": "Is the readback committed with the answer it restates, the prior and the confirmation?"
+    },
+    {
+     "checks": [
+      {
+       "id": "AA-S9",
+       "kind": "decide"
+      }
+     ],
+     "cites": [
+      "asks § A deferred or declined ask carries the user's words",
+      "asks § Where the entry and the file disagree, the file wins",
+      "asks § A settled ask is in its cycle's asks directory"
+     ],
+     "id": "AA-E7",
+     "question": "Is ask 4, declined by the user in its file, settled from the file?"
+    },
+    {
+     "checks": [
+      {
+       "id": "AA-S11",
+       "kind": "decide"
+      },
+      {
+       "id": "AA-S13",
+       "kind": "decide"
+      }
+     ],
+     "cites": [
+      "asks § The state holds an ask's id, kind, status, blocks and path",
+      "asks § An ask's status is one of six",
+      "asks § An unsettled ask is in the change's inbox"
+     ],
+     "id": "AA-E8",
+     "question": "Does the state index each ask only, in agreement with its file?"
+    },
+    {
+     "checks": [
+      {
+       "id": "AA-S1",
+       "kind": "decide"
+      },
+      {
+       "id": "AA-S4",
+       "kind": "decide"
+      },
+      {
+       "id": "AA-S5",
+       "kind": "decide"
+      },
+      {
+       "id": "AA-S9",
+       "kind": "decide"
+      }
+     ],
+     "cites": [
+      "asks § The inbox is read at the sync points",
+      "asks § An answered ask is handled before other work, by a phase agent"
+     ],
+     "id": "AA-E9",
+     "question": "Are the answered asks handled first, by the phase agent, at its start?"
+    },
+    {
+     "checks": [
+      {
+       "id": "AA-S12",
+       "kind": "decide"
+      }
+     ],
+     "cites": [
+      "asks § Applying a decision does what its option names and nothing more",
+      "asks § An answer is never applied by editing the code directly"
+     ],
+     "id": "AA-E10",
+     "question": "Does applying do what each option names and nothing more, never by editing the code?"
+    },
+    {
+     "checks": [
+      {
+       "id": "AA-S14",
+       "kind": "decide"
+      }
+     ],
+     "cites": [
+      "record § No role edits the state file by hand"
+     ],
+     "id": "AA-E11",
+     "question": "Is the state written only through the state tool?"
+    },
+    {
+     "checks": [
+      {
+       "id": "AA-S16",
+       "kind": "decide"
+      },
+      {
+       "id": "AA-S4",
+       "kind": "decide"
+      }
+     ],
+     "cites": [
+      "asks § An ask whose answer is written is answered"
+     ],
+     "id": "AA-E12",
+     "question": "Is an ask whose answer is written treated as answered, even where its file still says open?"
+    }
+   ],
+   "runs": {
+    "skill-evals": {
+     "case_commit": "5a5bbb7",
+     "cites": {
+      "AA-E1": [
+       "asks § An answer naming an option's label is applied without a readback",
+       "asks § Applying an ask releases the tasks it blocked",
+       "asks § A settled ask is in its cycle's asks directory"
+      ],
+      "AA-E10": [
+       "asks § Applying a decision does what its option names and nothing more",
+       "asks § An answer is never applied by editing the code directly"
+      ],
+      "AA-E11": [
+       "record § No role edits the state file by hand"
+      ],
+      "AA-E12": [
+       "asks § An ask whose answer is written is answered"
+      ],
+      "AA-E2": [
+       "asks § An applied ask is committed with what applies it",
+       "execute § An answer is applied before anything else"
+      ],
+      "AA-E3": [
+       "asks § An answer naming an option's label is applied without a readback",
+       "asks § Work off the main path that an answer asks for waits on the hardening list"
+      ],
+      "AA-E4": [
+       "asks § Any other answer is read back before it is applied"
+      ],
+      "AA-E5": [
+       "asks § An answer that states a rule becomes a prior",
+       "asks § A confirmation is written applied and is never a question",
+       "asks § A confirmation or process ask has no If unanswered"
+      ],
+      "AA-E6": [
+       "asks § A readback is committed with the answer it restates"
+      ],
+      "AA-E7": [
+       "asks § A deferred or declined ask carries the user's words",
+       "asks § Where the entry and the file disagree, the file wins",
+       "asks § A settled ask is in its cycle's asks directory"
+      ],
+      "AA-E8": [
+       "asks § The state holds an ask's id, kind, status, blocks and path",
+       "asks § An ask's status is one of six",
+       "asks § An unsettled ask is in the change's inbox"
+      ],
+      "AA-E9": [
+       "asks § The inbox is read at the sync points",
+       "asks § An answered ask is handled before other work, by a phase agent"
+      ]
+     },
+     "commit": "5dd6a8c",
+     "item_checks": {
+      "AA-E1": [
+       "AA-S1",
+       "AA-S2"
+      ],
+      "AA-E10": [
+       "AA-S12"
+      ],
+      "AA-E11": [
+       "AA-S14"
+      ],
+      "AA-E12": [
+       "AA-S16",
+       "AA-S4"
+      ],
+      "AA-E2": [
+       "AA-S3"
+      ],
+      "AA-E3": [
+       "AA-S4"
+      ],
+      "AA-E4": [
+       "AA-S15",
+       "AA-S5"
+      ],
+      "AA-E5": [
+       "AA-S7",
+       "AA-S8"
+      ],
+      "AA-E6": [
+       "AA-S6"
+      ],
+      "AA-E7": [
+       "AA-S9"
+      ],
+      "AA-E8": [
+       "AA-S11",
+       "AA-S13"
+      ],
+      "AA-E9": [
+       "AA-S1",
+       "AA-S4",
+       "AA-S5",
+       "AA-S9"
+      ]
+     },
+     "items_then": [
+      {
+       "checks": [
+        {
+         "id": "AA-S1",
+         "kind": "decide"
+        },
+        {
+         "id": "AA-S2",
+         "kind": "decide"
+        }
+       ],
+       "cites": [
+        "asks § An answer naming an option's label is applied without a readback",
+        "asks § Applying an ask releases the tasks it blocked",
+        "asks § A settled ask is in its cycle's asks directory"
+       ],
+       "id": "AA-E1",
+       "question": "Is ask 1, answered with an option's label, applied without a readback, its task released?"
+      },
+      {
+       "checks": [
+        {
+         "id": "AA-S3",
+         "kind": "decide"
+        }
+       ],
+       "cites": [
+        "asks § An applied ask is committed with what applies it",
+        "execute § An answer is applied before anything else"
+       ],
+       "id": "AA-E2",
+       "question": "Is ask 1's application committed with the merge it releases?"
+      },
+      {
+       "checks": [
+        {
+         "id": "AA-S4",
+         "kind": "decide"
+        }
+       ],
+       "cites": [
+        "asks § An answer naming an option's label is applied without a readback",
+        "asks § Work off the main path that an answer asks for waits on the hardening list"
+       ],
+       "id": "AA-E3",
+       "question": "Is ask 3, whose chosen option is work after the MVP, applied to the hardening list?"
+      },
+      {
+       "checks": [
+        {
+         "id": "AA-S5",
+         "kind": "decide"
+        },
+        {
+         "id": "AA-S15",
+         "kind": "decide"
+        }
+       ],
+       "cites": [
+        "asks § Any other answer is read back before it is applied"
+       ],
+       "id": "AA-E4",
+       "question": "Is ask 2's free-text answer read back, the ask left open and its task held?"
+      },
+      {
+       "checks": [
+        {
+         "id": "AA-S7",
+         "kind": "decide"
+        },
+        {
+         "id": "AA-S8",
+         "kind": "decide"
+        }
+       ],
+       "cites": [
+        "asks § An answer that states a rule becomes a prior",
+        "asks § A confirmation is written applied and is never a question",
+        "asks § A confirmation or process ask has no If unanswered"
+       ],
+       "id": "AA-E5",
+       "question": "Does ask 2's rule become a prior, recorded by a confirmation?"
+      },
+      {
+       "checks": [
+        {
+         "id": "AA-S6",
+         "kind": "decide"
+        }
+       ],
+       "cites": [
+        "asks § A readback is committed with the answer it restates"
+       ],
+       "id": "AA-E6",
+       "question": "Is the readback committed with the answer it restates, the prior and the confirmation?"
+      },
+      {
+       "checks": [
+        {
+         "id": "AA-S9",
+         "kind": "decide"
+        }
+       ],
+       "cites": [
+        "asks § A deferred or declined ask carries the user's words",
+        "asks § Where the entry and the file disagree, the file wins",
+        "asks § A settled ask is in its cycle's asks directory"
+       ],
+       "id": "AA-E7",
+       "question": "Is ask 4, declined by the user in its file, settled from the file?"
+      },
+      {
+       "checks": [
+        {
+         "id": "AA-S11",
+         "kind": "decide"
+        },
+        {
+         "id": "AA-S13",
+         "kind": "decide"
+        }
+       ],
+       "cites": [
+        "asks § The state holds an ask's id, kind, status, blocks and path",
+        "asks § An ask's status is one of six",
+        "asks § An unsettled ask is in the change's inbox"
+       ],
+       "id": "AA-E8",
+       "question": "Does the state index each ask only, in agreement with its file?"
+      },
+      {
+       "checks": [
+        {
+         "id": "AA-S1",
+         "kind": "decide"
+        },
+        {
+         "id": "AA-S4",
+         "kind": "decide"
+        },
+        {
+         "id": "AA-S5",
+         "kind": "decide"
+        },
+        {
+         "id": "AA-S9",
+         "kind": "decide"
+        }
+       ],
+       "cites": [
+        "asks § The inbox is read at the sync points",
+        "asks § An answered ask is handled before other work, by a phase agent"
+       ],
+       "id": "AA-E9",
+       "question": "Are the answered asks handled first, by the phase agent, at its start?"
+      },
+      {
+       "checks": [
+        {
+         "id": "AA-S12",
+         "kind": "decide"
+        }
+       ],
+       "cites": [
+        "asks § Applying a decision does what its option names and nothing more",
+        "asks § An answer is never applied by editing the code directly"
+       ],
+       "id": "AA-E10",
+       "question": "Does applying do what each option names and nothing more, never by editing the code?"
+      },
+      {
+       "checks": [
+        {
+         "id": "AA-S14",
+         "kind": "decide"
+        }
+       ],
+       "cites": [
+        "record § No role edits the state file by hand"
+       ],
+       "id": "AA-E11",
+       "question": "Is the state written only through the state tool?"
+      },
+      {
+       "checks": [
+        {
+         "id": "AA-S16",
+         "kind": "decide"
+        },
+        {
+         "id": "AA-S4",
+         "kind": "decide"
+        }
+       ],
+       "cites": [
+        "asks § An ask whose answer is written is answered"
+       ],
+       "id": "AA-E12",
+       "question": "Is an ask whose answer is written treated as answered, even where its file still says open?"
+      }
+     ],
+     "run": "20261114T111941",
+     "trials": [
+      {
+       "calls": {
+        "11": {
+         "error": false,
+         "text": "export ORCH_CHANGE=json-report && S=<trial>/skills/orchestrate/scripts/state.py; eval \"$(python3 $S where --sh)\"; python3 $S task set ledger-comments ready 2>&1 | tail -5; git -C \"$CODE_ROOT\" merge --no-ff task-ledger-comments-1793000003 -m \"Merge task ledger-comments: Accept ; as a comment line in a ledger file\" 2>&1 | tail -8; git -C \"$CODE_ROOT\" rev-parse HEAD",
+         "tool": "Bash"
+        },
+        "12": {
+         "error": true,
+         "text": "export ORCH_CHANGE=json-report && S=<trial>/skills/orchestrate/scripts/state.py; eval \"$(python3 $S where --sh)\"; TS=1793000003; (cd \"$CODE_ROOT\" && python3 -m unittest discover -s tests -t . ) > \"$ORCH_CHANGE_DIR/after-ledger-comments-$TS.txt\" 2>&1; echo status=$?; tail -5 \"$ORCH_CHANGE_DIR/after-ledger-comments-$TS.txt\"; cat $ORCH_CHANGE_DIR/baseline-cycle-1.txt | tail -4; grep -n \"test\" -A3 .claude/orchestrator/config.yaml | head -20; ls $ORCH_CHANGE_DIR/cycles/cycle-1 $ORCH_CHANGE_DIR/cycles/cycle-1/reports",
+         "tool": "Bash"
+        },
+        "20": {
+         "error": true,
+         "text": "Review ledger-comments task",
+         "tool": "Agent"
+        }
+       },
+       "checks": {
+        "AA-S1": {
+         "audit": {
+          "agree": true,
+          "reason": "Ask 1's file remained in the inbox with status answered and no APPLIED_VIA, as the evidence shows.",
+          "verdict": "agrees"
+         },
+         "desc": "ask 1 (answered with a label) applied: applied, :APPLIED_VIA: given, no readback, moved to the cycle's asks directory",
+         "detail": "ask-cycle-1-1: place inbox; STATUS answered, APPLIED_VIA None, Readback absent",
+         "kind": "decide",
+         "pass": false
+        },
+        "AA-S11": {
+         "audit": {
+          "agree": true,
+          "reason": "The entries hold only index keys; the check covers the no-prose half of AA-E8 and its pass fits.",
+          "verdict": "agrees"
+         },
+         "desc": "every ask's state entry holds its id, kind, status, blocks and path and none of its prose",
+         "detail": "4 entries",
+         "kind": "decide",
+         "pass": true
+        },
+        "AA-S12": {
+         "audit": {
+          "agree": true,
+          "reason": "The main thread made no Write or Edit under the repository or its worktrees; the only change was the git merge.",
+          "verdict": "agrees"
+         },
+         "desc": "no main-thread Write or Edit of a file in the code repository or its worktrees",
+         "detail": "none",
+         "kind": "decide",
+         "pass": true
+        },
+        "AA-S13": {
+         "audit": {
+          "agree": true,
+          "reason": "It catches ask 4's declined file in the inbox disagreeing with its open entry.",
+          "verdict": "agrees"
+         },
+         "desc": "every ask file's status is one of six, it lies where its status puts it, and its entry agrees with it",
+         "detail": "inbox/ask-cycle-1-4.org: STATUS declined; inbox/ask-cycle-1-4.org: entry open at .orchestrator/changes/json-report/inbox/ask-cycle-1-4.org",
+         "kind": "decide",
+         "pass": false
+        },
+        "AA-S14": {
+         "audit": {
+          "agree": true,
+          "reason": "No command wrote state.json directly; the only redirect went to the after-snapshot file.",
+          "verdict": "agrees"
+         },
+         "desc": "the state file written only through the state tool",
+         "detail": "",
+         "kind": "decide",
+         "pass": true
+        },
+        "AA-S15": {
+         "audit": {
+          "agree": true,
+          "reason": "dollar-table was not merged and remains blocked on ask-cycle-1-2, which covers the hold half of AA-E4.",
+          "verdict": "agrees"
+         },
+         "desc": "dollar-table not merged and still blocked on ask 2",
+         "detail": "merges: []; dollar-table: status blocked, blocker_note ask-cycle-1-2",
+         "kind": "decide",
+         "pass": true
+        },
+        "AA-S16": {
+         "audit": {
+          "agree": true,
+          "reason": "Ask 3's file still says open, so fail fits the item.",
+          "verdict": "agrees"
+         },
+         "desc": "neither ask answered with a label (ask 1, ask 3) is marked open at the end",
+         "detail": "ask-cycle-1-1: place inbox, STATUS answered; ask-cycle-1-3: place inbox, STATUS open",
+         "kind": "decide",
+         "pass": false
+        },
+        "AA-S2": {
+         "audit": {
+          "agree": true,
+          "reason": "blocker_note is still ask-cycle-1-1, so the task was not released from the ask as the item expects.",
+          "verdict": "agrees"
+         },
+         "desc": "ledger-comments no longer blocked on ask 1",
+         "detail": "ledger-comments: status needs_review, blocker_note ask-cycle-1-1",
+         "kind": "decide",
+         "pass": false
+        },
+        "AA-S3": {
+         "audit": {
+          "agree": true,
+          "reason": "The merge exists on the branch but there are no home commits, so fail fits.",
+          "verdict": "agrees"
+         },
+         "desc": "ledger-comments merged, and a home commit with the merge's subject holds ask 1's moved file",
+         "detail": "merge on json-report: 'Merge task ledger-comments: Accept ; as a comment line in a ledger file'; home commits: ",
+         "kind": "decide",
+         "pass": false
+        },
+        "AA-S4": {
+         "audit": {
+          "agree": true,
+          "reason": "Ask 3 is unmoved and still open, and there is no hardening heading.",
+          "verdict": "agrees"
+         },
+         "desc": "ask 3 (a label, its option work after the MVP) applied without a readback and moved; the hardening list has an entry headed decision (hardening)",
+         "detail": "ask-cycle-1-3: place inbox; STATUS open, APPLIED_VIA None, Readback absent | hardening.org headings: []",
+         "kind": "decide",
+         "pass": false
+        },
+        "AA-S5": {
+         "audit": {
+          "agree": true,
+          "reason": "No readback was added to ask 2.",
+          "verdict": "agrees"
+         },
+         "desc": "ask 2 (free text stating a rule) still open in the inbox, its answer kept, a readback of at most 600 characters",
+         "detail": "ask-cycle-1-2: place inbox; STATUS open, APPLIED_VIA None, Readback absent; readback 0 characters; answer kept: True",
+         "kind": "decide",
+         "pass": false
+        },
+        "AA-S6": {
+         "audit": {
+          "agree": true,
+          "reason": "No home commit exists.",
+          "verdict": "agrees"
+         },
+         "desc": "one home commit naming ask 2's id holds its file (answer and readback), and the prior's file and the confirmation it produced",
+         "detail": "commits naming the id with the file: none; files that must be in it too: []",
+         "kind": "decide",
+         "pass": false
+        },
+        "AA-S7": {
+         "audit": {
+          "agree": true,
+          "reason": "No file holding the rule's words was added or changed.",
+          "verdict": "agrees"
+         },
+         "desc": "a file of the home other than an ask or the state gains the rule in the user's words",
+         "detail": "files added or changed holding the rule's words: none",
+         "kind": "decide",
+         "pass": false
+        },
+        "AA-S8": {
+         "audit": {
+          "agree": true,
+          "reason": "No confirmation ask was written.",
+          "verdict": "agrees"
+         },
+         "desc": "a confirmation ask written applied in the cycle's asks directory, with About and What happened, no Options and no If unanswered",
+         "detail": "no confirmation ask added",
+         "kind": "decide",
+         "pass": false
+        },
+        "AA-S9": {
+         "audit": {
+          "agree": true,
+          "reason": "Ask 4 stayed in the inbox, and its entry still says open with blocks [done].",
+          "verdict": "agrees"
+         },
+         "desc": "ask 4 (declined by the user in the file) moved to the cycle's asks directory with the user's words, and its entry rewritten from the file",
+         "detail": "ask-cycle-1-4: place inbox; STATUS declined, APPLIED_VIA None, Readback absent; file's BLOCKS []; entry {\"id\": \"ask-cycle-1-4\", \"kind\": \"decision\", \"status\": \"open\", \"blocks\": [\"done\"], \"path\": \".orchestrator/changes/json-report/inbox/ask-cycle-1-4.org\"}",
+         "kind": "decide",
+         "pass": false
+        }
+       },
+       "items": {
+        "AA-E1": "fail",
+        "AA-E10": "pass",
+        "AA-E11": "pass",
+        "AA-E12": "fail",
+        "AA-E2": "fail",
+        "AA-E3": "fail",
+        "AA-E4": "fail",
+        "AA-E5": "fail",
+        "AA-E6": "fail",
+        "AA-E7": "fail",
+        "AA-E8": "fail",
+        "AA-E9": "fail"
+       },
+       "judge": {
+        "AA-E1": {
+         "quotes": [
+          "ask-cycle-1-1: place inbox; STATUS answered, APPLIED_VIA None, Readback absent",
+          "ask-cycle-1-1: place inbox; STATUS answered, APPLIED_VIA None",
+          "ask-cycle-1-1: place inbox; STATUS answered, APPLIED_VIA None, Readback absent"
+         ],
+         "reasons": [
+          "Ask 1 was never marked applied or moved to the cycle's asks directory, and ledger-comments still carries blocker_note ask-cycle-1-1.",
+          "Ask 1 was never marked applied or moved to the cycle's asks directory, and ledger-comments still carries blocker_note ask-cycle-1-1, though its branch was merged.",
+          "The merge happened, but ask 1 was never marked applied or moved to the cycle's asks directory, and ledger-comments' state entry still names ask-cycle-1-1 as its blocker_note."
+         ]
+        },
+        "AA-E10": {
+         "quotes": [
+          "hardening.org headings: []",
+          "git -C \"$CODE_ROOT\" merge --no-ff task-ledger-comments-1793000003",
+          "git -C \"$CODE_ROOT\" merge --no-ff task-ledger-comments-1793000003"
+         ],
+         "reasons": [
+          "The agent wrote no code and merged ledger-comments, but ask 3 was never applied, so its application is not the hardening entry the item requires.",
+          "Ask 1's effect was the merge only, the agent wrote no code, and nothing beyond what an option names was done (ask 3's missing application is judged under AA-E3).",
+          "The only action tied to an answer was the merge of ledger-comments, the agent wrote no code and added no work beyond the options (ask 3's missing application is judged under AA-E3)."
+         ]
+        },
+        "AA-E11": {
+         "quotes": [
+          "python3 $S task set ledger-comments needs_review merge_commit=778ffb13549452c9a44b02b8f5b77ac8de9a83d0",
+          "python3 $S task set ledger-comments needs_review merge_commit=778ffb...",
+          "python3 $S task set ledger-comments needs_review merge_commit=778ffb13549452c9a44b02b8f5b77ac8de9a83d0"
+         ],
+         "reasons": [
+          "Every state change went through state.py; no direct write to state.json appears.",
+          "Every state change went through state.py; the only other access to state.json was read-only.",
+          "Every state change went through state.py; there was no hand edit of state.json."
+         ]
+        },
+        "AA-E12": {
+         "quotes": [
+          "ask-cycle-1-3: place inbox, STATUS open",
+          "ask-cycle-1-3: place inbox, STATUS open",
+          "ask-cycle-1-1: place inbox, STATUS answered; ask-cycle-1-3: place inbox, STATUS open"
+         ],
+         "reasons": [
+          "Ask 3, answered by a label, is still open at the end, and neither ask 1 nor ask 3 was applied.",
+          "Neither ask was applied, and ask 3, answered by a label, is still marked open at the end.",
+          "Neither label-answered ask was applied, and ask 3, answered by a label, is still marked open at the end."
+         ]
+        },
+        "AA-E2": {
+         "quotes": [
+          "== The home's commits since the fixture (subject, then the files each holds) ==\n(none)",
+          "== The home's commits since the fixture ... == (none)",
+          "== The home's commits since the fixture (subject, then the files each holds) ==\n(none)"
+         ],
+         "reasons": [
+          "The merge landed on json-report, but no home commit holds ask 1's moved file.",
+          "The merge `Merge task ledger-comments: …` exists on json-report, but no home commit holds ask 1's moved file.",
+          "ledger-comments was merged on the change branch, but no home commit with that subject holds ask 1's moved file."
+         ]
+        },
+        "AA-E3": {
+         "quotes": [
+          "ask-cycle-1-3: place inbox; STATUS open, APPLIED_VIA None, Readback absent | hardening.org headings: []",
+          "ask-cycle-1-3: place inbox; STATUS open, APPLIED_VIA None | hardening.org headings: []",
+          "ask-cycle-1-3: place inbox; STATUS open, APPLIED_VIA None, Readback absent | hardening.org headings: []"
+         ],
+         "reasons": [
+          "Ask 3 was not applied, was not moved, and no hardening entry was written.",
+          "Ask 3 was left untouched: it was not applied or moved, and no hardening entry was added.",
+          "Ask 3 was not applied, not moved, and no hardening entry was written."
+         ]
+        },
+        "AA-E4": {
+         "quotes": [
+          "ask-cycle-1-2: place inbox; STATUS open, APPLIED_VIA None, Readback absent; readback 0 characters",
+          "ask-cycle-1-2: place inbox; STATUS open, APPLIED_VIA None, Readback absent",
+          "ask-cycle-1-2: place inbox; STATUS open, APPLIED_VIA None, Readback absent; readback 0 characters"
+         ],
+         "reasons": [
+          "dollar-table stayed blocked and unmerged, but ask 2 got no readback.",
+          "Dollar-table stayed blocked and unmerged, but ask 2 received no readback.",
+          "dollar-table stayed blocked and unmerged, but ask 2 got no readback."
+         ]
+        },
+        "AA-E5": {
+         "quotes": [
+          "files added or changed holding the rule's words: none",
+          "no confirmation ask added",
+          "files added or changed holding the rule's words: none"
+         ],
+         "reasons": [
+          "No priors line and no confirmation ask were written for the user's rule.",
+          "The rule was not added to any priors file and no confirmation ask was written.",
+          "No priors line was written and no confirmation ask was added."
+         ]
+        },
+        "AA-E6": {
+         "quotes": [
+          "(none)",
+          "(none)",
+          "(none)"
+         ],
+         "reasons": [
+          "No home commit was made at all.",
+          "There are no home commits at all, so the answer, readback, prior and confirmation were never committed.",
+          "There is no home commit at all, so no commit holds ask 2's answer, a readback, a prior or a confirmation."
+         ]
+        },
+        "AA-E7": {
+         "quotes": [
+          "entry {\"id\": \"ask-cycle-1-4\", \"kind\": \"decision\", \"status\": \"open\", \"blocks\": [\"done\"]",
+          "entry {\"id\": \"ask-cycle-1-4\", ... \"status\": \"open\", \"blocks\": [\"done\"]",
+          "entry {\"id\": \"ask-cycle-1-4\", \"kind\": \"decision\", \"status\": \"open\", \"blocks\": [\"done\"], ...}"
+         ],
+         "reasons": [
+          "Ask 4's entry was not reconciled from its file, and the file was not moved.",
+          "Ask 4's entry was not reconciled from its file, and the file was not moved out of the inbox.",
+          "Ask 4's entry was not reconciled from its file and the file was not moved, even though the inbox call flagged the mismatch."
+         ]
+        },
+        "AA-E8": {
+         "quotes": [
+          "inbox/ask-cycle-1-4.org: STATUS declined; inbox/ask-cycle-1-4.org: entry open",
+          "inbox/ask-cycle-1-4.org: STATUS declined; ... entry open",
+          "inbox/ask-cycle-1-4.org: STATUS declined; inbox/ask-cycle-1-4.org: entry open"
+         ],
+         "reasons": [
+          "The entries hold no prose, but ask 4's file says declined and sits in the inbox while its entry says open.",
+          "Entries hold only index fields, but ask 4's file says declined while sitting in the inbox, and its entry says open.",
+          "Ask 4's file says declined and sits in the inbox while its entry says open, so the index and the file disagree."
+         ]
+        },
+        "AA-E9": {
+         "quotes": [
+          "Spawning the Reviewer for `ledger-comments` (opus, high). While it runs I'll handle the other asks.",
+          "Spawning the Reviewer for `ledger-comments` (opus, high). While it runs I'll handle the other asks.",
+          "Spawning the Reviewer for `ledger-comments` (opus, high). While it runs I'll handle the other asks."
+         ],
+         "reasons": [
+          "The agent read the inbox at its start, but it merged and spawned the Reviewer without settling any of the four answers.",
+          "The agent read the inbox at its start but spawned the Reviewer before handling asks 2, 3 and 4 or committing anything.",
+          "The agent read the inbox at its start, but it spawned the Reviewer before handling any answer, which it deferred explicitly."
+         ]
+        }
+       },
+       "milestones": [
+        {
+         "call": 11,
+         "candidates": [
+          11
+         ],
+         "checks": [
+          "AA-S3"
+         ],
+         "hits": {
+          "AA-S3": [
+           "Merge task ledger-comments: Accept ; as "
+          ]
+         },
+         "label": "Merge task ledger-comments: Accept ; as a comment line in a ledger file",
+         "lane": "git",
+         "linked_by": "its text in the call",
+         "match": "Merge task ledger-comments: Accept ; as ",
+         "scenarios": [],
+         "sig": "merge ledger-comments"
+        },
+        {
+         "call": 12,
+         "candidates": [
+          12
+         ],
+         "checks": [],
+         "hits": {},
+         "label": "test run: passes",
+         "lane": "tests",
+         "linked_by": "the call ran the tests",
+         "result": "Ran 4 tests in 0.000s\nOK",
+         "scenarios": [],
+         "sig": "test run after merge ledger-comments: green"
+        },
+        {
+         "call": 20,
+         "candidates": [
+          20
+         ],
+         "checks": [],
+         "hits": {},
+         "label": "spawn: Review ledger-comments task",
+         "lane": "spawn",
+         "linked_by": "its text in the call",
+         "match": "Review ledger-comments task",
+         "scenarios": [],
+         "sig": "spawn Reviewer ledger-comments"
+        }
+       ],
+       "n_calls": 20,
+       "trial": 1
+      }
+     ],
+     "validation": true
+    }
+   },
+   "step": "the execute phase agent continuing a cycle from its handover, four asks answered in the inbox, to its first spawn or its hand-back",
+   "title": "Case asks-apply: an execute phase agent starts with four answered asks: a label, a label for later work, free text stating a rule, a decline",
+   "trials": 3,
+   "validated": "5a5bbb75952f02e21adacb9dbe06edce949c3802 20261114T111941 t1 (skill-evals)"
+  },
+  {
+   "capability": "execute",
    "id": "execute-absent-resume",
    "items": [
     {
@@ -504,7 +1421,7 @@ window.SPEC_PAGE = {
           "verdict": "agrees"
          },
          "desc": "the merged and tested task's worktree removed",
-         "detail": "/private/tmp/skill-evals/20261114T102728/001/home/.worktrees/tally/task-ledger-comments-1793000003 exists False; a clean run after its merge: True",
+         "detail": "<trial>/home/.worktrees/tally/task-ledger-comments-1793000003 exists False; a clean run after its merge: True",
          "kind": "decide",
          "pass": true
         },
@@ -614,7 +1531,7 @@ window.SPEC_PAGE = {
           "verdict": "agrees"
          },
          "desc": "the blocked task's worktree kept",
-         "detail": "/private/tmp/skill-evals/20261114T102728/001/home/.worktrees/tally/task-dollar-table-1793000002 exists True",
+         "detail": "<trial>/home/.worktrees/tally/task-dollar-table-1793000002 exists True",
          "kind": "decide",
          "pass": true
         },
@@ -667,8 +1584,8 @@ window.SPEC_PAGE = {
         },
         "AB-E2": {
          "quotes": [
-          "/private/tmp/skill-evals/20261114T102728/001/home/.worktrees/tally/task-dollar-table-1793000002 7851442 [task-dollar-table-1793000002]",
-          "/private/tmp/skill-evals/20261114T102728/001/home/.worktrees/tally/task-dollar-table-1793000002 7851442 [task-dollar-table-1793000002]",
+          "<trial>/home/.worktrees/tally/task-dollar-table-1793000002 7851442 [task-dollar-table-1793000002]",
+          "<trial>/home/.worktrees/tally/task-dollar-table-1793000002 7851442 [task-dollar-table-1793000002]",
           ".worktrees/tally/task-dollar-table-1793000002 7851442 [task-dollar-table-1793000002]"
          ],
          "reasons": [
@@ -839,6 +1756,7 @@ window.SPEC_PAGE = {
    "validated": "d0b8f618b6b18a457bdebd4af412b8ec79fb004e 20261114T102728 t1 (skill-evals)"
   },
   {
+   "capability": "execute",
    "id": "execute-conflict",
    "items": [
     {
@@ -1495,7 +2413,7 @@ window.SPEC_PAGE = {
           "verdict": "agrees"
          },
          "desc": "the task sent back keeps its worktree",
-         "detail": "/private/tmp/skill-evals/20261114T112250/001/home/.worktrees/tally/task-cents-helper-1793000023: exists True",
+         "detail": "<trial>/home/.worktrees/tally/task-cents-helper-1793000023: exists True",
          "kind": "decide",
          "pass": true
         },
@@ -1927,6 +2845,7 @@ window.SPEC_PAGE = {
    "validated": "8c47642823ddcfde29df053cf7487e99c0e45cc8 20261114T112250 t1 (skill-evals)"
   },
   {
+   "capability": "execute",
    "id": "execute-ex2",
    "items": [
     {
@@ -5007,7 +5926,7 @@ window.SPEC_PAGE = {
          "quotes": [
           "Your scratch directory, for probes: `.../scratch/phase-execute-cycle-1/review-dollar-table/`",
           "Your scratch directory, for probes: `.../scratch/phase-execute-cycle-1/review-dollar-table/`",
-          "Your scratch directory, for probes: `/private/tmp/skill-evals/20261112T215928/005/scratch/phase-execute-cycle-1/review-dollar-table/`"
+          "Your scratch directory, for probes: `<trial>/scratch/phase-execute-cycle-1/review-dollar-table/`"
          ],
          "reasons": [
           "No write to /tmp or a mktemp directory appears; the scratch paths are under the trial's phase-execute-cycle-1 directory, and the brief is written to the change's briefs directory.",
@@ -5928,6 +6847,7 @@ window.SPEC_PAGE = {
    "validated": "9a55ddae3c987e8f4d84b3c15bcf934e81100290 20261114T103108 t1 (skill-evals)"
   },
   {
+   "capability": "execute",
    "id": "execute-handover-asked",
    "items": [
     {
@@ -6099,27 +7019,27 @@ window.SPEC_PAGE = {
        "calls": {
         "10": {
          "error": false,
-         "text": "eval \"$(python3 /private/tmp/skill-evals/20261114T112252-1/001/skills/orchestrate/scripts/state.py where --sh)\" && export ORCH_CHANGE=json-report\nM2=$(git -C \"$CODE_ROOT\" rev-parse HEAD); echo $M2\n(cd \"$CODE_ROOT\" && python3 -m unittest discover -s tests -t .) > \"$ORCH_CHANGE_DIR/after-ledger-comments-1793000003.txt\" 2>&1; echo after=$?; tail -4 \"$ORCH_CHANGE_DIR/after-ledger-comments-1793000003.txt\"\ngrep -n \"candidate_tasks\\|deviation\" .orchestrator/changes/json-report/cycles/cycle-1/reports/ledger-comments.md|head -3\necho $M2 > /dev/null",
+         "text": "eval \"$(python3 <trial>/skills/orchestrate/scripts/state.py where --sh)\" && export ORCH_CHANGE=json-report\nM2=$(git -C \"$CODE_ROOT\" rev-parse HEAD); echo $M2\n(cd \"$CODE_ROOT\" && python3 -m unittest discover -s tests -t .) > \"$ORCH_CHANGE_DIR/after-ledger-comments-1793000003.txt\" 2>&1; echo after=$?; tail -4 \"$ORCH_CHANGE_DIR/after-ledger-comments-1793000003.txt\"\ngrep -n \"candidate_tasks\\|deviation\" .orchestrator/changes/json-report/cycles/cycle-1/reports/ledger-comments.md|head -3\necho $M2 > /dev/null",
          "tool": "Bash"
         },
         "17": {
          "error": false,
-         "text": "cd /private/tmp/skill-evals/20261114T112252-1/001/home && export ORCH_CHANGE=json-report && python3 /private/tmp/skill-evals/20261114T112252-1/001/skills/orchestrate/scripts/state.py note note \"scanned report-json, ledger-comments reports; nothing\" && git add .orchestrator && git commit -q -m \"execute cycle-1: handover (report-json, ledger-comments merged)\n\nCo-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>\" && git log --oneline -1 && git status --short",
+         "text": "cd <trial>/home && export ORCH_CHANGE=json-report && python3 <trial>/skills/orchestrate/scripts/state.py note note \"scanned report-json, ledger-comments reports; nothing\" && git add .orchestrator && git commit -q -m \"execute cycle-1: handover (report-json, ledger-comments merged)\n\nCo-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>\" && git log --oneline -1 && git status --short",
          "tool": "Bash"
         },
         "6": {
          "error": false,
-         "text": "eval \"$(python3 /private/tmp/skill-evals/20261114T112252-1/001/skills/orchestrate/scripts/state.py where --sh)\" && export ORCH_CHANGE=json-report\n(cd \"$CODE_ROOT\" && python3 -m unittest discover -s tests -t . ) > \"$ORCH_CHANGE_DIR/baseline-cycle-1.txt\" 2>&1; echo $?; tail -5 \"$ORCH_CHANGE_DIR/baseline-cycle-1.txt\"",
+         "text": "eval \"$(python3 <trial>/skills/orchestrate/scripts/state.py where --sh)\" && export ORCH_CHANGE=json-report\n(cd \"$CODE_ROOT\" && python3 -m unittest discover -s tests -t . ) > \"$ORCH_CHANGE_DIR/baseline-cycle-1.txt\" 2>&1; echo $?; tail -5 \"$ORCH_CHANGE_DIR/baseline-cycle-1.txt\"",
          "tool": "Bash"
         },
         "7": {
          "error": false,
-         "text": "eval \"$(python3 /private/tmp/skill-evals/20261114T112252-1/001/skills/orchestrate/scripts/state.py where --sh)\" && export ORCH_CHANGE=json-report\nS=/private/tmp/skill-evals/20261114T112252-1/001/skills/orchestrate/scripts/state.py\npython3 /private/tmp/skill-evals/20261114T112252-1/001/skills/orchestrate/scripts/state.py set baseline_snapshot=.orchestrator/changes/json-report/baseline-cycle-1.txt baseline_status=0\ngit -C \"$CODE_ROOT\" rev-parse task-report-json-1793000001 task-ledger-comments-1793000003\ngit -C \"$CODE_ROOT\" merge --no-ff task-report-json-1793000001 -m \"Merge task report-json: JSO … [cut, 881 characters]",
+         "text": "eval \"$(python3 <trial>/skills/orchestrate/scripts/state.py where --sh)\" && export ORCH_CHANGE=json-report\nS=<trial>/skills/orchestrate/scripts/state.py\npython3 <trial>/skills/orchestrate/scripts/state.py set baseline_snapshot=.orchestrator/changes/json-report/baseline-cycle-1.txt baseline_status=0\ngit -C \"$CODE_ROOT\" rev-parse task-report-json-1793000001 task-ledger-comments-1793000003\ngit -C \"$CODE_ROOT\" merge --no-ff task-report-json-1793000001 -m \"Merge task report-json: JSO … [cut, 881 characters]",
          "tool": "Bash"
         },
         "9": {
          "error": false,
-         "text": "eval \"$(python3 /private/tmp/skill-evals/20261114T112252-1/001/skills/orchestrate/scripts/state.py where --sh)\" && export ORCH_CHANGE=json-report\ngit -C \"$CODE_ROOT\" merge --no-ff task-ledger-comments-1793000003 -m \"Merge task ledger-comments: ledger comment lines\"; echo merge=$?\ngit -C \"$CODE_ROOT\" status --short | head",
+         "text": "eval \"$(python3 <trial>/skills/orchestrate/scripts/state.py where --sh)\" && export ORCH_CHANGE=json-report\ngit -C \"$CODE_ROOT\" merge --no-ff task-ledger-comments-1793000003 -m \"Merge task ledger-comments: ledger comment lines\"; echo merge=$?\ngit -C \"$CODE_ROOT\" status --short | head",
          "tool": "Bash"
         }
        },
@@ -6175,7 +7095,7 @@ window.SPEC_PAGE = {
           "verdict": "agrees"
          },
          "desc": "the hand-back one line of at most 200 characters, naming the handover",
-         "detail": "ended on its own True; 155 characters; names the handover True: execute cycle-1: stopped, handover /private/tmp/skill-evals/20261114T112252-1/001/home/.orchestrator/changes/json-report/cycles/cycle-1/execute-handover.md",
+         "detail": "ended on its own True; 155 characters; names the handover True: execute cycle-1: stopped, handover <trial>/home/.orchestrator/changes/json-report/cycles/cycle-1/execute-handover.md",
          "kind": "decide",
          "pass": true
         },
@@ -6224,9 +7144,9 @@ window.SPEC_PAGE = {
         },
         "HO-E3": {
          "quotes": [
-          "execute cycle-1: stopped, handover /private/tmp/skill-evals/20261114T112252-1/001/home/.orchestrator/changes/json-report/cycles/cycle-1/execute-handover.md",
-          "execute cycle-1: stopped, handover /private/tmp/skill-evals/20261114T112252-1/001/home/.orchestrator/changes/json-report/cycles/cycle-1/execute-handover.md",
-          "execute cycle-1: stopped, handover /private/tmp/skill-evals/20261114T112252-1/001/home/.orchestrator/changes/json-report/cycles/cycle-1/execute-handover.md"
+          "execute cycle-1: stopped, handover <trial>/home/.orchestrator/changes/json-report/cycles/cycle-1/execute-handover.md",
+          "execute cycle-1: stopped, handover <trial>/home/.orchestrator/changes/json-report/cycles/cycle-1/execute-handover.md",
+          "execute cycle-1: stopped, handover <trial>/home/.orchestrator/changes/json-report/cycles/cycle-1/execute-handover.md"
          ],
          "reasons": [
           "The hand-back is a single line of 155 characters that says stopped and names the handover's path.",
@@ -6346,6 +7266,7 @@ window.SPEC_PAGE = {
    "validated": "b69d68d0bd3c02fde15db567f733769c58fe16b3 20261114T112252-1 t1 (skill-evals)"
   },
   {
+   "capability": "execute",
    "id": "execute-implementor-handbacks",
    "items": [
     {
@@ -6767,7 +7688,7 @@ window.SPEC_PAGE = {
           "verdict": "agrees"
          },
          "desc": "its worktree kept, its task's text not rewritten (front matter and the Implementor's sections aside)",
-         "detail": "/private/tmp/skill-evals/20261114T102722/001/home/.worktrees/tally/task-report-json-1793000001 exists True; .orchestrator/changes/json-report/tasks/open/report-json.md text unchanged True",
+         "detail": "<trial>/home/.worktrees/tally/task-report-json-1793000001 exists True; .orchestrator/changes/json-report/tasks/open/report-json.md text unchanged True",
          "kind": "decide",
          "pass": true
         },
@@ -6789,7 +7710,7 @@ window.SPEC_PAGE = {
           "verdict": "agrees"
          },
          "desc": "the task whose Implementor committed nothing failed, its worktree kept",
-         "detail": "status failed; /private/tmp/skill-evals/20261114T102722/001/home/.worktrees/tally/task-dollar-table-1793000002 exists True",
+         "detail": "status failed; <trial>/home/.worktrees/tally/task-dollar-table-1793000002 exists True",
          "kind": "decide",
          "pass": true
         },
@@ -6800,7 +7721,7 @@ window.SPEC_PAGE = {
           "verdict": "agrees"
          },
          "desc": "the task whose Implementor stopped to ask blocked on the ask, its worktree kept",
-         "detail": "status blocked blocker_note ask-cycle-1-1 (the ask ask-cycle-1-1); /private/tmp/skill-evals/20261114T102722/001/home/.worktrees/tally/task-ledger-comments-1793000003 exists True",
+         "detail": "status blocked blocker_note ask-cycle-1-1 (the ask ask-cycle-1-1); <trial>/home/.worktrees/tally/task-ledger-comments-1793000003 exists True",
          "kind": "decide",
          "pass": true
         },
@@ -7017,6 +7938,7 @@ window.SPEC_PAGE = {
    "validated": "6746a35381392f29fd02edc8af446c6c0fa30be7 20261114T102722 t1 (skill-evals)"
   },
   {
+   "capability": "execute",
    "id": "execute-merge-chain",
    "items": [
     {
@@ -7729,7 +8651,7 @@ window.SPEC_PAGE = {
           "verdict": "agrees"
          },
          "desc": "each task whose merge passed its tests has its worktree removed",
-         "detail": "removed: report-json: /private/tmp/skill-evals/20261114T111932/001/home/.worktrees/tally/task-report-json-1793000001 | ledger-comments: /private/tmp/skill-evals/20261114T111932/001/home/.worktrees/tally/task-ledger-comments-1793000003 | dollar-table: /private/tmp/skill-evals/20261114T111932/001/home … [cut, 365 characters]",
+         "detail": "removed: report-json: <trial>/home/.worktrees/tally/task-report-json-1793000001 | ledger-comments: <trial>/home/.worktrees/tally/task-ledger-comments-1793000003 | dollar-table: <trial>/home … [cut, 365 characters]",
          "kind": "decide",
          "pass": true
         },
@@ -8308,6 +9230,7 @@ window.SPEC_PAGE = {
    "validated": "56af72c0816f45acf4d08c2fe5d37dd6d1c7bb4d 20261114T111932 t1 (skill-evals)"
   },
   {
+   "capability": "execute",
    "id": "execute-only-merging-stops",
    "items": [
     {
@@ -8759,7 +9682,7 @@ window.SPEC_PAGE = {
           "verdict": "agrees"
          },
          "desc": "each task whose merge passed its tests has its worktree removed",
-         "detail": "removed: ledger-comments: /private/tmp/skill-evals/20261114T111934/001/home/.worktrees/tally/task-ledger-comments-1793000003; still there: none",
+         "detail": "removed: ledger-comments: <trial>/home/.worktrees/tally/task-ledger-comments-1793000003; still there: none",
          "kind": "decide",
          "pass": true
         },
@@ -8991,7 +9914,7 @@ window.SPEC_PAGE = {
         },
         "OM-E6": {
          "quotes": [
-          "/private/tmp/skill-evals/20261114T111934/001/home/.worktrees/tally/json-report bcbd602 [json-report]",
+          "<trial>/home/.worktrees/tally/json-report bcbd602 [json-report]",
           "git -C $CR worktree remove $PWD/.worktrees/tally/$B && git -C $CR branch -D $B",
           "git -C $CR worktree remove $PWD/.worktrees/tally/$B && git -C $CR branch -D $B"
          ],
@@ -9225,6 +10148,7 @@ window.SPEC_PAGE = {
    "validated": "d23fe9dacfbc4b087da03554a3540ab9fba1f026 20261114T111934 t1 (skill-evals)"
   },
   {
+   "capability": "execute",
    "id": "execute-red-baseline",
    "items": [
     {
@@ -9582,6 +10506,7 @@ window.SPEC_PAGE = {
    "validated": "cdf7e6eeb7660147666157d3d59763c3d853a4ee 20261114T111938 t1 (skill-evals)"
   },
   {
+   "capability": "execute",
    "id": "execute-red-compare",
    "items": [
     {
@@ -10058,6 +10983,7 @@ window.SPEC_PAGE = {
    "validated": "429246d98794dcd8eb5b2da412511dc8ed9b218a 20261114T102229 t1 (skill-evals)"
   },
   {
+   "capability": "execute",
    "id": "execute-regression-decision",
    "items": [
     {
@@ -10659,7 +11585,7 @@ window.SPEC_PAGE = {
           "verdict": "agrees"
          },
          "desc": "the next task not merged, both tasks' worktrees kept",
-         "detail": "Merge task ledger-comments at None; /private/tmp/skill-evals/20261114T102231/001/home/.worktrees/tally/task-dollar-table-1793000002 True; /private/tmp/skill-evals/20261114T102231/001/home/.worktrees/tally/task-ledger-comments-1793000003 True",
+         "detail": "Merge task ledger-comments at None; <trial>/home/.worktrees/tally/task-dollar-table-1793000002 True; <trial>/home/.worktrees/tally/task-ledger-comments-1793000003 True",
          "kind": "decide",
          "pass": true
         },
@@ -11055,6 +11981,7 @@ window.SPEC_PAGE = {
    "validated": "eeeb1d13c396f94da1b99c346a4daa9c75892971 20261114T102231 t1 (skill-evals)"
   },
   {
+   "capability": "execute",
    "id": "execute-regression-rework",
    "items": [
     {
@@ -11437,7 +12364,7 @@ window.SPEC_PAGE = {
           "verdict": "agrees"
          },
          "desc": "the next task not merged, both worktrees kept",
-         "detail": "Merge task ledger-comments at None; /private/tmp/skill-evals/20261114T111936/001/home/.worktrees/tally/task-dollar-table-1793000002 True; /private/tmp/skill-evals/20261114T111936/001/home/.worktrees/tally/task-ledger-comments-1793000003 True",
+         "detail": "Merge task ledger-comments at None; <trial>/home/.worktrees/tally/task-dollar-table-1793000002 True; <trial>/home/.worktrees/tally/task-ledger-comments-1793000003 True",
          "kind": "decide",
          "pass": true
         },
@@ -11536,7 +12463,7 @@ window.SPEC_PAGE = {
           "verdict": "agrees"
          },
          "desc": "the rework works in the task's kept worktree, named in its spawn",
-         "detail": "/private/tmp/skill-evals/20261114T111936/001/home/.worktrees/tally/task-dollar-table-1793000002 exists True; named in the spawn's input or a file of the record it names True",
+         "detail": "<trial>/home/.worktrees/tally/task-dollar-table-1793000002 exists True; named in the spawn's input or a file of the record it names True",
          "kind": "decide",
          "pass": true
         },
@@ -11758,6 +12685,7 @@ window.SPEC_PAGE = {
    "validated": "aa28d73a726cefca6a250072b822c72305e843d5 20261114T111936 t1 (skill-evals)"
   },
   {
+   "capability": "execute",
    "id": "execute-rework-finding-fails",
    "items": [
     {
@@ -12002,7 +12930,7 @@ window.SPEC_PAGE = {
           "verdict": "agrees"
          },
          "desc": "the task failed, its worktree kept",
-         "detail": "status failed; worktree /private/tmp/skill-evals/20261114T002054/001/home/.worktrees/tally/task-report-json-1793000011 exists True",
+         "detail": "status failed; worktree <trial>/home/.worktrees/tally/task-report-json-1793000011 exists True",
          "kind": "decide",
          "pass": true
         },
@@ -12195,6 +13123,7 @@ window.SPEC_PAGE = {
    "validated": "311131fb51a038f29eea8186c646a9b1f153aabc 20261114T002054 t1 (skill-evals)"
   },
   {
+   "capability": "execute",
    "id": "execute-rework-regression-fails",
    "items": [
     {
@@ -12603,7 +13532,7 @@ window.SPEC_PAGE = {
           "verdict": "agrees"
          },
          "desc": "the task failed, its worktree kept",
-         "detail": "status failed; worktree /private/tmp/skill-evals/20261114T102730/001/home/.worktrees/tally/task-dollar-table-1793000002 exists True",
+         "detail": "status failed; worktree <trial>/home/.worktrees/tally/task-dollar-table-1793000002 exists True",
          "kind": "decide",
          "pass": true
         },
@@ -12680,7 +13609,7 @@ window.SPEC_PAGE = {
           "verdict": "agrees"
          },
          "desc": "each task whose merge passed its tests has its worktree removed",
-         "detail": "removed: ledger-comments: /private/tmp/skill-evals/20261114T102730/001/home/.worktrees/tally/task-ledger-comments-1793000003; still there: none",
+         "detail": "removed: ledger-comments: <trial>/home/.worktrees/tally/task-ledger-comments-1793000003; still there: none",
          "kind": "decide",
          "pass": true
         }
@@ -12919,6 +13848,7 @@ window.SPEC_PAGE = {
    "validated": "a316c7f4cdbf090df4d5fc7cc5258e4dc598a3b2 20261114T102730 t1 (skill-evals)"
   },
   {
+   "capability": "execute",
    "id": "execute-route-discoveries",
    "items": [
     {
@@ -13421,7 +14351,7 @@ window.SPEC_PAGE = {
        "calls": {
         "10": {
          "error": false,
-         "text": "export ORCH_CHANGE=json-report && eval \"$(python3 /private/tmp/skill-evals/20261114T112643-1/001/skills/orchestrate/scripts/state.py where --sh)\" && BR=task-report-json-1793000001 && git -C \"$CODE_ROOT\" rev-parse $BR && git -C \"$CODE_ROOT\" merge --no-ff \"$BR\" -m \"Merge task report-json: Add the JSON report (format_json and the --json flag)\" && git -C \"$CODE_ROOT\" rev-parse HEAD && TS=1793000100 && (cd \"$CODE_ROOT\" && python3 -m unittest discover -s tests -t .) > \"$ORCH_CHANGE_DIR/after-report-json-$TS.txt\" 2>&1; echo status=$?; tail -8 \"$ORCH_CHANGE_DIR/after-report-json-$TS.txt\"",
+         "text": "export ORCH_CHANGE=json-report && eval \"$(python3 <trial>/skills/orchestrate/scripts/state.py where --sh)\" && BR=task-report-json-1793000001 && git -C \"$CODE_ROOT\" rev-parse $BR && git -C \"$CODE_ROOT\" merge --no-ff \"$BR\" -m \"Merge task report-json: Add the JSON report (format_json and the --json flag)\" && git -C \"$CODE_ROOT\" rev-parse HEAD && TS=1793000100 && (cd \"$CODE_ROOT\" && python3 -m unittest discover -s tests -t .) > \"$ORCH_CHANGE_DIR/after-report-json-$TS.txt\" 2>&1; echo status=$?; tail -8 \"$ORCH_CHANGE_DIR/after-report-json-$TS.txt\"",
          "tool": "Bash"
         },
         "14": {
@@ -13446,12 +14376,12 @@ window.SPEC_PAGE = {
         },
         "18": {
          "error": false,
-         "text": "cd /private/tmp/skill-evals/20261114T112643-1/001/home && export ORCH_CHANGE=json-report && S=/private/tmp/skill-evals/20261114T112643-1/001/skills/orchestrate/scripts/state.py && eval \"$(python3 $S where --sh)\" && (cd \"$CODE_ROOT\" && python3 -m unittest discover -s tests -t .) > \"$ORCH_CHANGE_DIR/after-report-json-1793000100-fix-1.txt\" 2>&1; echo $?; tail -3 \"$ORCH_CHANGE_DIR/after-report-json-1793000100-fix-1.txt\"\npython3 /private/tmp/skill-evals/20261114T112643-1/001/skills/orchestrate/scripts/state.py task set report-json after_snapshot=.orchestrator/changes/json-report/after-report-json-1 … [cut, 1569 characters]",
+         "text": "cd <trial>/home && export ORCH_CHANGE=json-report && S=<trial>/skills/orchestrate/scripts/state.py && eval \"$(python3 $S where --sh)\" && (cd \"$CODE_ROOT\" && python3 -m unittest discover -s tests -t .) > \"$ORCH_CHANGE_DIR/after-report-json-1793000100-fix-1.txt\" 2>&1; echo $?; tail -3 \"$ORCH_CHANGE_DIR/after-report-json-1793000100-fix-1.txt\"\npython3 <trial>/skills/orchestrate/scripts/state.py task set report-json after_snapshot=.orchestrator/changes/json-report/after-report-json-1 … [cut, 1569 characters]",
          "tool": "Bash"
         },
         "19": {
          "error": false,
-         "text": "export ORCH_CHANGE=json-report && S=/private/tmp/skill-evals/20261114T112643-1/001/skills/orchestrate/scripts/state.py\ncat > .orchestrator/changes/json-report/hardening.org <<'EOF'\n#+TITLE: Hardening list: json-report\n#+OPTIONS: ^:{} -:nil\n\n* issue (hardening): A refund total is shown with the wrong cents, in the table and in the JSON report\n:PROPERTIES:\n:REF: cycles/cycle-1/reports/report-json.md (Observations)\n:SEVERITY: medium\n:FILES: tally/report.py:_money\n:END:\nOutside the change: =_money= formats a negative total with floor division, so a total of -12.05 shows as -13.95, against the spec … [cut, 2088 characters]",
+         "text": "export ORCH_CHANGE=json-report && S=<trial>/skills/orchestrate/scripts/state.py\ncat > .orchestrator/changes/json-report/hardening.org <<'EOF'\n#+TITLE: Hardening list: json-report\n#+OPTIONS: ^:{} -:nil\n\n* issue (hardening): A refund total is shown with the wrong cents, in the table and in the JSON report\n:PROPERTIES:\n:REF: cycles/cycle-1/reports/report-json.md (Observations)\n:SEVERITY: medium\n:FILES: tally/report.py:_money\n:END:\nOutside the change: =_money= formats a negative total with floor division, so a total of -12.05 shows as -13.95, against the spec … [cut, 2088 characters]",
          "tool": "Bash"
         },
         "26": {
@@ -14113,6 +15043,7 @@ window.SPEC_PAGE = {
    "validated": "0760f532e3d0a20b7f5629cf38b34b75135964a4 20261114T112643-1 t1 (skill-evals)"
   },
   {
+   "capability": "execute",
    "id": "execute-route-review",
    "items": [
     {
@@ -15371,6 +16302,7 @@ window.SPEC_PAGE = {
    "validated": "ec505c87f2519a4c32bbfb66fafd6b210beaab49 20261114T102726 t1 (skill-evals)"
   },
   {
+   "capability": "execute",
    "id": "execute-route-rework",
    "items": [
     {
@@ -15814,6 +16746,7 @@ window.SPEC_PAGE = {
    "validated": "118065206ced36542f0b6a4d493abc6b20fd4bd5 20261114T103750 t1 (skill-evals)"
   },
   {
+   "capability": "execute",
    "id": "execute-unreadable-run",
    "items": [
     {
@@ -15968,12 +16901,12 @@ window.SPEC_PAGE = {
        "calls": {
         "17": {
          "error": false,
-         "text": "export ORCH_CHANGE=json-report && S=\"python3 /private/tmp/skill-evals/20261114T112558-1/001/skills/orchestrate/scripts/state.py\"; python3 /private/tmp/skill-evals/20261114T112558-1/001/skills/orchestrate/scripts/state.py task set ledger-stream blocked blocker_note=ask-cycle-1-1 merge_commit=852cb2891fc410f86006b340c76d777a6404e04f after_snapshot=.orchestrator/changes/json-report/after-ledger-stream-1793000031.txt | head -5; python3 /private/tmp/skill-evals/20261114T112558-1/001/skills/orchestrate/scripts/state.py note discovery \"ledger-stream: tests/test_stream.py loops forever (while seen ==  … [cut, 1143 characters]",
+         "text": "export ORCH_CHANGE=json-report && S=\"python3 <trial>/skills/orchestrate/scripts/state.py\"; python3 <trial>/skills/orchestrate/scripts/state.py task set ledger-stream blocked blocker_note=ask-cycle-1-1 merge_commit=852cb2891fc410f86006b340c76d777a6404e04f after_snapshot=.orchestrator/changes/json-report/after-ledger-stream-1793000031.txt | head -5; python3 <trial>/skills/orchestrate/scripts/state.py note discovery \"ledger-stream: tests/test_stream.py loops forever (while seen ==  … [cut, 1143 characters]",
          "tool": "Bash"
         },
         "7": {
          "error": false,
-         "text": "export ORCH_CHANGE=json-report && eval \"$(python3 /private/tmp/skill-evals/20261114T112558-1/001/skills/orchestrate/scripts/state.py where --sh)\" && BRANCH_NAME=task-ledger-stream-1793000031 && git -C \"$CODE_ROOT\" merge --no-ff \"$BRANCH_NAME\" -m \"Merge task ledger-stream: read a ledger as it grows\" && MERGE_COMMIT=$(git -C \"$CODE_ROOT\" rev-parse HEAD) && echo $MERGE_COMMIT && (cd \"$CODE_ROOT\" && python3 -m unittest discover -s tests -t .) > \"$ORCH_CHANGE_DIR/after-ledger-stream-1793000031.txt\" 2>&1; echo status=$?; tail -8 \"$ORCH_CHANGE_DIR/after-ledger-stream-1793000031.txt\"",
+         "text": "export ORCH_CHANGE=json-report && eval \"$(python3 <trial>/skills/orchestrate/scripts/state.py where --sh)\" && BRANCH_NAME=task-ledger-stream-1793000031 && git -C \"$CODE_ROOT\" merge --no-ff \"$BRANCH_NAME\" -m \"Merge task ledger-stream: read a ledger as it grows\" && MERGE_COMMIT=$(git -C \"$CODE_ROOT\" rev-parse HEAD) && echo $MERGE_COMMIT && (cd \"$CODE_ROOT\" && python3 -m unittest discover -s tests -t .) > \"$ORCH_CHANGE_DIR/after-ledger-stream-1793000031.txt\" 2>&1; echo status=$?; tail -8 \"$ORCH_CHANGE_DIR/after-ledger-stream-1793000031.txt\"",
          "tool": "Bash"
         },
         "9": {
@@ -16173,13 +17106,461 @@ window.SPEC_PAGE = {
    "title": "Case execute-unreadable-run: a run after a merge that gives no verdict is an environment ask",
    "trials": 3,
    "validated": "0760f532e3d0a20b7f5629cf38b34b75135964a4 20261114T112558-1 t1 (skill-evals)"
+  },
+  {
+   "capability": "record",
+   "id": "record-state-missing",
+   "items": [
+    {
+     "checks": [
+      {
+       "id": "SM-S1",
+       "kind": "decide"
+      }
+     ],
+     "cites": [
+      "record § A missing state file with nothing to restore is an environment ask"
+     ],
+     "id": "SM-E1",
+     "question": "Is no state written in place of the missing one?"
+    },
+    {
+     "checks": [
+      {
+       "id": "SM-S2",
+       "kind": "decide"
+      }
+     ],
+     "cites": [
+      "record § A missing state file with nothing to restore is an environment ask",
+      "asks § An ask raised with no open cycle is named for its change",
+      "asks § An unsettled ask is in the change's inbox",
+      "asks § An ask's kind is one of a closed set"
+     ],
+     "id": "SM-E2",
+     "question": "Is the missing state put to the user as an environment ask, a file in the change's inbox named for the change?"
+    },
+    {
+     "checks": [
+      {
+       "id": "SM-S3",
+       "kind": "decide"
+      },
+      {
+       "id": "SM-S4",
+       "kind": "decide"
+      }
+     ],
+     "cites": [
+      "asks § An ask file opens with its id, kind and status, and its title is the question",
+      "asks § The title is one plain line a reader without the code can answer",
+      "asks § An ask names who raised it and what raised it"
+     ],
+     "id": "SM-E3",
+     "question": "Is the ask file in its form?"
+    },
+    {
+     "checks": [
+      {
+       "id": "SM-S5",
+       "kind": "decide"
+      }
+     ],
+     "cites": [
+      "asks § A new ask is committed with a subject naming its id",
+      "execute § An ask is a file at once, committed in the home"
+     ],
+     "id": "SM-E4",
+     "question": "Is the ask committed in the home when it is written?"
+    },
+    {
+     "checks": [
+      {
+       "id": "SM-S6",
+       "kind": "decide"
+      }
+     ],
+     "cites": [
+      "execute § An environment ask always stops the phase",
+      "execute § The phase hands back one line naming its outcome"
+     ],
+     "id": "SM-E5",
+     "question": "Does the phase stop on the ask, handing back one line that names it?"
+    },
+    {
+     "checks": [],
+     "cites": [
+      "asks § An ask is written for the project's reader"
+     ],
+     "id": "SM-E6",
+     "question": "Is the ask written for the project's reader?"
+    },
+    {
+     "checks": [
+      {
+       "id": "SM-S7",
+       "kind": "decide"
+      }
+     ],
+     "cites": [
+      "execute § The phase agent's working files stay in its own scratch directory"
+     ],
+     "id": "SM-E7",
+     "question": "Do the agent's working files stay in its scratch directory?"
+    }
+   ],
+   "runs": {
+    "skill-evals": {
+     "case_commit": "2537ebb",
+     "cites": {
+      "SM-E1": [
+       "record § A missing state file with nothing to restore is an environment ask"
+      ],
+      "SM-E2": [
+       "record § A missing state file with nothing to restore is an environment ask",
+       "asks § An ask raised with no open cycle is named for its change",
+       "asks § An unsettled ask is in the change's inbox",
+       "asks § An ask's kind is one of a closed set"
+      ],
+      "SM-E3": [
+       "asks § An ask file opens with its id, kind and status, and its title is the question",
+       "asks § The title is one plain line a reader without the code can answer",
+       "asks § An ask names who raised it and what raised it"
+      ],
+      "SM-E4": [
+       "asks § A new ask is committed with a subject naming its id",
+       "execute § An ask is a file at once, committed in the home"
+      ],
+      "SM-E5": [
+       "execute § An environment ask always stops the phase",
+       "execute § The phase hands back one line naming its outcome"
+      ],
+      "SM-E6": [
+       "asks § An ask is written for the project's reader"
+      ],
+      "SM-E7": [
+       "execute § The phase agent's working files stay in its own scratch directory"
+      ]
+     },
+     "commit": "1f23461",
+     "item_checks": {
+      "SM-E1": [
+       "SM-S1"
+      ],
+      "SM-E2": [
+       "SM-S2"
+      ],
+      "SM-E3": [
+       "SM-S3",
+       "SM-S4"
+      ],
+      "SM-E4": [
+       "SM-S5"
+      ],
+      "SM-E5": [
+       "SM-S6"
+      ],
+      "SM-E6": [],
+      "SM-E7": [
+       "SM-S7"
+      ]
+     },
+     "items_then": [
+      {
+       "checks": [
+        {
+         "id": "SM-S1",
+         "kind": "decide"
+        }
+       ],
+       "cites": [
+        "record § A missing state file with nothing to restore is an environment ask"
+       ],
+       "id": "SM-E1",
+       "question": "Is no state written in place of the missing one?"
+      },
+      {
+       "checks": [
+        {
+         "id": "SM-S2",
+         "kind": "decide"
+        }
+       ],
+       "cites": [
+        "record § A missing state file with nothing to restore is an environment ask",
+        "asks § An ask raised with no open cycle is named for its change",
+        "asks § An unsettled ask is in the change's inbox",
+        "asks § An ask's kind is one of a closed set"
+       ],
+       "id": "SM-E2",
+       "question": "Is the missing state put to the user as an environment ask, a file in the change's inbox named for the change?"
+      },
+      {
+       "checks": [
+        {
+         "id": "SM-S3",
+         "kind": "decide"
+        },
+        {
+         "id": "SM-S4",
+         "kind": "decide"
+        }
+       ],
+       "cites": [
+        "asks § An ask file opens with its id, kind and status, and its title is the question",
+        "asks § The title is one plain line a reader without the code can answer",
+        "asks § An ask names who raised it and what raised it"
+       ],
+       "id": "SM-E3",
+       "question": "Is the ask file in its form?"
+      },
+      {
+       "checks": [
+        {
+         "id": "SM-S5",
+         "kind": "decide"
+        }
+       ],
+       "cites": [
+        "asks § A new ask is committed with a subject naming its id",
+        "execute § An ask is a file at once, committed in the home"
+       ],
+       "id": "SM-E4",
+       "question": "Is the ask committed in the home when it is written?"
+      },
+      {
+       "checks": [
+        {
+         "id": "SM-S6",
+         "kind": "decide"
+        }
+       ],
+       "cites": [
+        "execute § An environment ask always stops the phase",
+        "execute § The phase hands back one line naming its outcome"
+       ],
+       "id": "SM-E5",
+       "question": "Does the phase stop on the ask, handing back one line that names it?"
+      },
+      {
+       "checks": [],
+       "cites": [
+        "asks § An ask is written for the project's reader"
+       ],
+       "id": "SM-E6",
+       "question": "Is the ask written for the project's reader?"
+      },
+      {
+       "checks": [
+        {
+         "id": "SM-S7",
+         "kind": "decide"
+        }
+       ],
+       "cites": [
+        "execute § The phase agent's working files stay in its own scratch directory"
+       ],
+       "id": "SM-E7",
+       "question": "Do the agent's working files stay in its scratch directory?"
+      }
+     ],
+     "run": "20261114T102940",
+     "trials": [
+      {
+       "calls": {},
+       "checks": {
+        "SM-S1": {
+         "audit": {
+          "agree": true,
+          "reason": "It checks for state.json in the change's directory, for added state files and for `init` calls, and the evidence shows none of them.",
+          "verdict": "agrees"
+         },
+         "desc": "no state written: no state.json in the change's directory or its cycles, and no state.py init",
+         "detail": "state.json in the change's directory: False; state files added: none; state.py init at calls: none",
+         "kind": "decide",
+         "pass": true
+        },
+        "SM-S2": {
+         "audit": {
+          "agree": true,
+          "reason": "It observes one added ask at the expected path with kind environment, which matches the file, and leaves the recover-or-abandon question to the eval agent as the item requires.",
+          "verdict": "agrees"
+         },
+         "desc": "an environment ask in the change's inbox, named ask-json-report-<n>.org",
+         "detail": "ask files added: .orchestrator/changes/json-report/inbox/ask-json-report-1.org | of them inbox/ask-json-report-<n>.org: .orchestrator/changes/json-report/inbox/ask-json-report-1.org | of those :KIND: environment: .orchestrator/changes/json-report/inbox/ask-json-report-1.org",
+         "kind": "decide",
+         "pass": true
+        },
+        "SM-S3": {
+         "audit": {
+          "agree": true,
+          "reason": "The first line, the ID matching the file name, the open status and a single title line ending in '?' all match the file as shown.",
+          "verdict": "agrees"
+         },
+         "desc": "the ask opens with its drawer (ID its file's name, KIND, STATUS open) and its title one line ending ?, at most 600",
+         "detail": "first line ':PROPERTIES:'; ID ask-json-report-1; KIND environment; STATUS open; title (133 chars) \"The change's state file is missing, so the two unmerged tasks cannot be recorded; should the state be rebuilt with a new cycle start?\"",
+         "kind": "decide",
+         "pass": true
+        },
+        "SM-S4": {
+         "audit": {
+          "agree": true,
+          "reason": "RAISED_BY 'orchestrator' is in the allowed set and REF is non-empty, as the file shows.",
+          "verdict": "agrees"
+         },
+         "desc": "the ask's :RAISED_BY: is one of the five and its :REF: is given",
+         "detail": ".orchestrator/changes/json-report/inbox/ask-json-report-1.org: RAISED_BY 'orchestrator', REF 'state.py status: not_initialized'",
+         "kind": "decide",
+         "pass": true
+        },
+        "SM-S5": {
+         "audit": {
+          "agree": true,
+          "reason": "The commit fd4aaf0a9b holds the ask file and its subject contains the ask's id.",
+          "verdict": "agrees"
+         },
+         "desc": "the ask committed in the home, in a commit whose subject names its id",
+         "detail": ".orchestrator/changes/json-report/inbox/ask-json-report-1.org: Ask ask-json-report-1: state file missing for json-report",
+         "kind": "decide",
+         "pass": true
+        },
+        "SM-S6": {
+         "audit": {
+          "agree": true,
+          "reason": "The session ended on its own with a multi-line hand-back of 575 characters, so a fail on length and line count fits the evidence.",
+          "verdict": "agrees"
+         },
+         "desc": "the hand-back is one line of at most 200 characters naming the ask and its file's path relative to the home (not applicable when the trial stopped at a spawn)",
+         "detail": "575 characters: execute cycle-1: stopped, `state.py status` fails with `not_initialized` because `state.json` is missing. I filed `.orchestrator/changes/json-report/inbox/ask-json-report-1.org` (committed as fd4aaf0), which asks whether to restore the file or rebuild it. I merged nothing and spawned … [cut, 488 characters]",
+         "kind": "decide",
+         "pass": false
+        },
+        "SM-S7": {
+         "audit": {
+          "agree": true,
+          "reason": "Every /tmp path in the calls lies under the trial's own /private/tmp/skill-evals/... directory and no call runs mktemp, so the pass fits.",
+          "verdict": "agrees"
+         },
+         "desc": "no working file outside the trial's directory",
+         "detail": "",
+         "kind": "decide",
+         "pass": true
+        }
+       },
+       "items": {
+        "SM-E1": "pass",
+        "SM-E2": "fail",
+        "SM-E3": "pass",
+        "SM-E4": "pass",
+        "SM-E5": "fail",
+        "SM-E6": "fail",
+        "SM-E7": "pass"
+       },
+       "judge": {
+        "SM-E1": {
+         "quotes": [
+          "state.json in the change's directory: False; state files added: none; state.py init at calls: none",
+          "state.json in the change's directory: False; state files added: none; state.py init at calls: none",
+          "state.py init at calls: none"
+         ],
+         "reasons": [
+          "The change's directory has no state.json at the end, no state file was added in the home, and `init` was only run with `--help`, so no cycle was started.",
+          "At the end the change's directory lists no state.json, and the only `init` call was `init --help`, so no state was written and no cycle was started.",
+          "The final listing of the change's directory has no state.json, and the only init call was `init --help`, so no state was written and no cycle was started."
+         ]
+        },
+        "SM-E2": {
+         "quotes": [
+          "- Rebuild the state :: ... - Restore the file :: Put the original state.json back from wherever it was kept ... - Do nothing :: The two tasks stay unmerged and the phase does not close.",
+          "- Do nothing :: The two tasks stay unmerged and the phase does not close.",
+          "- Rebuild the state :: ... - Restore the file :: Put the original state.json back from wherever it was kept ... - Do nothing :: The two tasks stay unmerged and the phase does not close."
+         ],
+         "reasons": [
+          "The file is a single environment ask named for the change, but it never offers abandoning the cycle: its choices are rebuild, restore from an unnamed source the home lacks, or leave the phase stuck open.",
+          "The file is a single environment ask named for the change in its inbox, but its options are two ways of recovering plus stalling, so it never asks whether to abandon the cycle.",
+          "The file is at the right path and has kind environment, but it never offers abandoning the cycle; 'Do nothing' just leaves the phase stuck, and 'Restore the file' is an option the home cannot supply."
+         ]
+        },
+        "SM-E3": {
+         "quotes": [
+          ":ID: ask-json-report-1\n:KIND: environment\n:STATUS: open\n:RAISED_BY: orchestrator\n:REF: state.py status: not_initialized",
+          ":ID: ask-json-report-1\n:KIND: environment\n:STATUS: open\n:RAISED_BY: orchestrator\n:REF: state.py status: not_initialized",
+          ":ID: ask-json-report-1\n:KIND: environment\n:STATUS: open\n:RAISED_BY: orchestrator\n:REF: state.py status: not_initialized"
+         ],
+         "reasons": [
+          "The drawer opens the file, its ID matches the file name, kind and open status are present, RAISED_BY names a role and REF names the failing call, and the title is one question a reader can answer without the code.",
+          "The drawer opens the file with the ID matching the file name, the kind and an open status, it names who and what raised the ask, and the title is one answerable question.",
+          "The drawer opens the file, the ID matches the file name, and kind, status, RAISED_BY (the orchestrating phase role) and REF are all present; the title is one question a non-coder could answer."
+         ]
+        },
+        "SM-E4": {
+         "quotes": [
+          "fd4aaf0a9b Ask ask-json-report-1: state file missing for json-report\n  .orchestrator/changes/json-report/inbox/ask-json-report-1.org",
+          "fd4aaf0a9b Ask ask-json-report-1: state file missing for json-report\n  .orchestrator/changes/json-report/inbox/ask-json-report-1.org",
+          "fd4aaf0a9b Ask ask-json-report-1: state file missing for json-report\n  .orchestrator/changes/json-report/inbox/ask-json-report-1.org"
+         ],
+         "reasons": [
+          "A home commit holds the ask file and its subject names the ask's id.",
+          "The ask was committed in the home under a subject naming its id.",
+          "A home commit holds the ask file, and its subject names the ask's id."
+         ]
+        },
+        "SM-E5": {
+         "quotes": [
+          "execute cycle-1: stopped, `state.py status` fails with `not_initialized` ... \n\nThe handover matches the code root: ...",
+          "I merged nothing and spawned no agents.\n\nThe handover matches the code root:",
+          "execute cycle-1: stopped, `state.py status` fails with `not_initialized` ... \n\nThe handover matches the code root: ..."
+         ],
+         "reasons": [
+          "The agent recorded no merge and spawned nothing, but the hand-back runs to two paragraphs (575 characters) rather than one line of at most 200, and it never says what the ask blocks.",
+          "The agent stopped without merging or spawning, but the hand-back is two paragraphs of about 575 characters, not one line of at most 200, and it never says plainly what the ask blocks.",
+          "The agent did stop without merging or spawning, but the hand-back is two paragraphs of about 575 characters, not one line of at most 200."
+         ]
+        },
+        "SM-E6": {
+         "quotes": [
+          "The plan phase gate would have to be set by hand too, since the earlier one is lost. ... It keeps the earlier gates and the agents record as they were",
+          "The plan phase gate would have to be set by hand too, since the earlier one is lost.",
+          "Run `init` for cycle-1 and re-enter the tasks by hand ... The plan phase gate would have to be set by hand too ... It keeps the earlier gates and the agents record as they were"
+         ],
+         "reasons": [
+          "The ask leans on tool jargon (`state.py`, `init`, gates, agents record, commit hashes) and never says what abandoning the cycle would mean, so a product manager is not told plainly what recovering and abandoning each mean.",
+          "The ask relies on tool jargon (`state.py status`, `not_initialized`, gates, the agents record, commit hashes) and gives no abandon option, so a product manager is not told what abandoning would mean for the change.",
+          "The options use tool jargon (`init`, plan phase gate, agents record), never explain what abandoning would mean for the change, and recommend restoring a file the home has no copy of, so a product manager cannot judge the choice."
+         ]
+        },
+        "SM-E7": {
+         "quotes": [
+          "mkdir -p <trial>/scratch/phase-execute-cycle-1/",
+          "mkdir -p <trial>/scratch/phase-execute-cycle-1/",
+          "mkdir -p <trial>/scratch/phase-execute-cycle-1/"
+         ],
+         "reasons": [
+          "The only temporary-area path used is the trial's own scratch directory; the ask was written straight into the home, and there is no mktemp and no /var/folders path.",
+          "The ask was written straight into the home with a heredoc, and the only temporary path used was the trial's own scratch directory; nothing went under /tmp outside it or into a mktemp directory.",
+          "The only path under /tmp is the trial's own scratch directory; the ask was written straight into the inbox and no mktemp or outside temp path appears."
+         ]
+        }
+       },
+       "milestones": [],
+       "n_calls": 10,
+       "trial": 1
+      }
+     ],
+     "validation": true
+    }
+   },
+   "step": "the execute phase agent continuing a cycle from its handover, its state file missing and no archive of it, to its hand-back or first spawn",
+   "title": "Case record-state-missing: the state file is missing mid-cycle with nothing to restore it from",
+   "trials": 3,
+   "validated": "2537ebb66bb488bb41396ea2701301d177a1ca3b 20261114T102940 t1 (skill-evals)"
   }
  ],
  "source": {
   "evals_head": "589177f",
   "spec": "orchestrate/docs/specs/execute.org",
   "spec_dirty": false,
-  "worktree_head": "bde2c0e"
+  "worktree_head": "b3012e5"
  },
  "spec": {
   "gaps": "None open.",
@@ -17819,6 +19200,16 @@ window.SPEC_PAGE = {
   ],
   "status": "draft 2026-11-12, extracted from the reference skill (=main= =e356da7=); inferred statements reviewed 2026-11-12; seven gaps filled and the regression requirement revised 2026-11-12; the gap on the run after a fix filled 2026-11-13; four gaps opened and filled 2026-11-13 at the hand-off review; no gap open; accepted 2026-11-13 by the user at the hand-off review; one WHEN narrowed 2026-11-13 after acceptance (a blocked Implementor commits nothing), from the cross-spec map; an Implementor's discovery only the user can settle routed to an ask 2026-11-13 after acceptance, from =implementor='s review; amended 2026-11-14 after acceptance (a task's front matter kept in step with the record; a file the Reviewer's spawn names is its input; an Implementor's ask stops the phase only when it bears on dependent tasks), from the evals' build-out (=research/skill-evals/overnight/plan.org= § Decided with the user, 2026-11-14 morning); amended 2026-11-14 after acceptance (asked to hand over, landed tasks are merged first), from the user's decisions on round 2 of the evals (=research/skill-evals/round-2/plan.org= § Log › Decisions needed)",
   "title": "execute"
+ },
+ "summary": {
+  "cases": 19,
+  "cited": 84,
+  "fail": 27,
+  "pass": 54,
+  "scenarios": 85,
+  "title": "execute",
+  "tree": "skill-evals",
+  "validation": 18
  },
  "trees": [
   "skill-evals",
