@@ -83,6 +83,8 @@ whole change       -        -            -               1
 | 1 | Should a video you fetch by hand be added to the archive? | — | Do nothing to the code | `<change-dir>/inbox/ask-cycle-N-9.org` |
 | 2 | Keep working through the refactor batch, or return to the critical path first? | next-plan | Return to the critical path | `<change-dir>/inbox/ask-cycle-N-3.org` |
 
+A candidate question the PM raised has its row too, its File column `not yet filed`; the phase agent writes its file.
+
 Answer in the file's `* Answer` section (paths are relative to the home), or in chat.
 Applied without asking: 3 (`cycles/<cycle-id>/asks/`). Process notes: 1 (inbox).
 Findings: 3 issues, 1 question; on the hardening list: 2 (`.orchestrator/changes/<change>/hardening.org`).

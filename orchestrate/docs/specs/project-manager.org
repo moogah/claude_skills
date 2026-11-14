@@ -1,6 +1,6 @@
 #+TITLE: project-manager
 #+OPTIONS: ^:{} -:nil
-#+STATUS: draft 2026-11-13, extracted from the reference skill (=main= =e356da7=); eight gaps opened; at the hand-off review 2026-11-13: G8 applied, its role default added; the sections' order, the throughput rows the recommendation's values, goal drift's drainage and the queue filled
+#+STATUS: draft 2026-11-13, extracted from the reference skill (=main= =e356da7=); eight gaps opened; at the hand-off review 2026-11-13: G8 applied, its role default added; the sections' order, the throughput rows the recommendation's values, goal drift's drainage, the queue and the candidates' rows filled
 
 * Purpose
 
@@ -234,6 +234,11 @@ settled without the user and what was recorded rather than asked.
 - *THEN* it is a plain question for the reader the project's configuration names
 - *AND* it says what it blocks and gives a recommendation
 
+*** Scenario: A candidate question is a row of the asks table, marked not yet filed
+- *WHEN* the digest carries a candidate question
+- *THEN* the asks table has a row for it with its question, what it blocks and its recommendation
+- *AND* its file column says =not yet filed=
+
 *** Scenario: The PM writes no ask file
 - *WHEN* the PM writes its digest
 - *THEN* it writes no ask file; its candidate questions are in the digest only
@@ -313,13 +318,6 @@ The PM's agent pass SHALL run at its role default.
 - *THEN* it runs at =sonnet=, =medium=
 
 * Gaps
-
-** Gap: Whether the asks table holds candidate questions, and with what file
-:PROPERTIES:
-:REQUIREMENT: Blocked work and open asks reach the digest's asks
-:END:
-The asks table's question column is the PM's candidate questions and its file column is rendered from
-the open asks; a candidate question has no file yet when the digest is written.
 
 ** Gap: Whether a digest is written when the prose pass fails
 :PROPERTIES:
