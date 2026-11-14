@@ -1,6 +1,6 @@
 #+TITLE: design-round
 #+OPTIONS: ^:{} -:nil
-#+STATUS: draft 2026-11-13, extracted from the reference skill (=main= =e356da7=); not yet reviewed
+#+STATUS: draft 2026-11-13, extracted from the reference skill (=main= =e356da7=); at the hand-off review 2026-11-13: G1, G2, G3, G5 and G6 applied, no gap open
 
 * Purpose
 
@@ -27,6 +27,11 @@ change's design.
 - *WHEN* a change's intent and spec edits are committed in the code root and the change has no design with a Seams table
 - *THEN* the design round runs before the change's first cycle is opened
 - *AND* the round's commit in the code root comes after the commit of the intent and the spec edits
+
+*** Scenario: A change no scenario needs a seam for skips the design with one line
+- *WHEN* the round's phase agent finds that no scenario of the change needs a seam
+- *THEN* it writes one line at the top of the design's Seams section saying so and why
+- *AND* it spawns no Architect
 
 *** Scenario: No design exists before the round
 - *WHEN* a change is opened or split by the skill
@@ -55,6 +60,12 @@ change's base as it was.
 - *WHEN* taking in the workspace integration branch conflicts in the specs or in the glossary
 - *THEN* the conflict is resolved by hand, the change keeping its own edits and taking the other change's
 - *AND* the merge is committed in the code root with the subject =Take in <branch>: <change>=
+
+*** Scenario: A conflict in code when the branch is taken in is an environment ask
+- *WHEN* taking in the workspace integration branch conflicts in code
+- *THEN* the merge is aborted and the change's integration branch left as it was
+- *AND* an =environment= ask names the conflicting files, filed in the change's inbox (named for the change before its first cycle)
+- *AND* the round hands back that it stopped, naming the ask
 
 ** Requirement: A phase agent runs the round and the Architect writes the design
 :PROPERTIES:
@@ -108,6 +119,11 @@ priors, Architect additions and test setup.
 - *THEN* its brief holds the project's own additions to the Architect's role and its priors
 - *AND* the project's test command, the layout of its test tree and its style for marking a test pending
 
+*** Scenario: The Architect's brief is kept in the change's directory
+- *WHEN* the round's phase agent spawns the Architect
+- *THEN* the brief it gives is saved in the change's directory in the home, named for the round, and for its seam on a re-run
+- *AND* it is committed in the home with the round
+
 *** Scenario: The change's scenarios include those the intent names as not met
 - *WHEN* the intent names scenarios as stated but not met
 - *THEN* the Architect's brief lists them among the change's scenarios
@@ -139,6 +155,16 @@ lines.
 - *THEN* the project's pre-commit check, when it has one, passes in the code root
 - *AND* the project's tests pass at the round's commit, each pending test reported as pending, not as failing
 
+*** Scenario: A failed check re-spawns the Architect once with the failure as its scope
+- *WHEN* the phase agent's check of the Architect's output fails: an uncited scenario, a name the intent gives that matches none, a failing test run or pre-commit check
+- *THEN* it re-spawns the Architect once, its brief naming the failure as the scope
+- *AND* it commits nothing until the check passes
+
+*** Scenario: A second failed check hands back failed
+- *WHEN* the check fails again after the Architect's second run
+- *THEN* the round hands back =design-round <change>: failed, <the failure>=
+- *AND* nothing of the round is committed
+
 *** Scenario: Against tests that already failed, the failing set is unchanged
 - *WHEN* the round commits and some of the project's tests already failed before the change
 - *THEN* the project has a way to compare two runs test by test
@@ -148,23 +174,18 @@ lines.
 :PROPERTIES:
 :GOAL:     G5 (O-DR-1, inferred there)
 :END:
-The design round SHALL hand the dispatcher =gate passed= only when the design has a Seams table, every
+The design round SHALL hand the dispatcher =gate passed= only when the design has a Seams section, every
 scenario of the change is cited by a test or marked not test-worthy, every open question is decided
 and the project's tests pass with the pending ones reported as pending; with open questions it SHALL
 hand back that it stopped. It SHALL write no task and implement nothing.
 
 *** Scenario: The round hands back gate passed only when it is complete
 - *WHEN* the round's phase agent hands back =design-round <change>: gate passed=
-- *THEN* the design has a Seams table
+- *THEN* the design has a Seams section: a Seams table, or the one line saying no scenario needs a seam
 - *AND* every scenario of the change is cited by a test that exists, pending or not, or is marked not test-worthy with a reason
 - *AND* every scenario the intent names exists
 - *AND* every open question in the design has its Decision, and the intent has no open questions left
 - *AND* the project's tests pass at the round's commit, the pending tests reported as pending
-
-*** Scenario: With open questions before the first cycle, the round hands back stopped
-- *WHEN* the round leaves open questions in the design and no cycle of the change exists
-- *THEN* the phase agent hands back =design-round <change>: stopped, <n> open questions; design.org § Open Questions=
-- *AND* it writes no ask file
 
 *** Scenario: The round writes no task and implements nothing
 - *WHEN* the round ends
@@ -186,10 +207,14 @@ documents it settles.
 - *THEN* a =decision= ask is filed for it
 - *AND* the ask blocks plan and points at the design's Open Questions
 
-*** Scenario: Inside an open cycle, the round's phase agent files the asks
-- *WHEN* a re-run of the round inside an open cycle leaves open questions
-- *THEN* the round's phase agent files their asks
-- *AND* it hands back that it stopped, naming the asks
+*** Scenario: A design-round ask says the change waits if it is unanswered
+- *WHEN* an ask for one of the round's questions is filed
+- *THEN* its If unanswered says the change waits and plan drafts nothing until it is answered
+
+*** Scenario: The round's phase agent files the asks and hands back stopped
+- *WHEN* the round leaves open questions in the design, before the first cycle or inside one
+- *THEN* the round's phase agent files their asks in the change's inbox, named for the change when no cycle is open
+- *AND* it hands back =design-round <change>: stopped, asks <ids> block plan=
 
 *** Scenario: The round's questions are put in one sitting, one per call
 - *WHEN* the round's asks are filed and the user is present
@@ -203,7 +228,7 @@ documents it settles.
 
 *** Scenario: An answer is written into the design's Decisions and the spec it settles
 - *WHEN* an ask for one of the round's open questions is answered
-- *THEN* the answer is written into the design's Decisions, and in place into the spec it settles
+- *THEN* the round's phase agent, resumed with the answers, writes it into the design's Decisions, and in place into the spec it settles
 - *AND* the ask is applied, naming its Decision
 
 *** Scenario: An answer other than the recommendation re-runs the round for its seam
@@ -278,40 +303,5 @@ change, alters a seam, and then only for that seam.
 
 * Gaps
 
-** Gap: Who decides that a change skips the round, and what stands in for its Seams table
-:PROPERTIES:
-:REQUIREMENT: The round runs once per change, before its first cycle
-:END:
-A change with no scenario that needs a seam skips the round, and its design's Seams section says so
-in one line. Nothing says who decides the skip or writes that line, and the round's completion and
-plan's input both ask for a Seams table, which such a design does not have.
-
-** Gap: What the phase agent does when its check of the Architect's output fails
-:PROPERTIES:
-:REQUIREMENT: The round's output is checked and committed in one commit
-:END:
-The phase agent reads the design against the design checklist, checks the change's coverage and runs
-the tests before it commits. Nothing says what follows when a check fails: an uncited scenario, a name
-the intent gives that matches no scenario, a failing or red test run, a pre-commit failure, a design
-that fails the checklist. The reading against the checklist also leaves no evidence.
-
-** Gap: How an environment ask is filed before the first cycle
-:PROPERTIES:
-:REQUIREMENT: A moved workspace integration branch is taken in first
-:END:
-Taking in a moved workspace integration branch that conflicts in code is an =environment= ask, but no
-cycle exists yet to file an ask in, and the round's own questions wait for plan to open one.
-
-** Gap: Whether the Architect's brief is kept
-:PROPERTIES:
-:REQUIREMENT: The Architect is given the change, its scenarios and the project's test setup
-:END:
-The round lists what the Architect's brief holds but names no file it is kept in, so what the
-Architect was given can be read only from the spawn itself.
-
-** Gap: What a design-round ask says will happen if it is left unanswered
-:PROPERTIES:
-:REQUIREMENT: Every question the round raises is asked in one sitting before plan drafts
-:END:
-Every ask states what happens if it is left unanswered, and a design-round question has no such
-default; the reference skill states both.
+No gap open. The five this draft had were filled 2026-11-13 by the user's decisions on the cross-spec
+map (G1, G2, G3, G6; =research/skill-evals/extraction/design-round.org= § Gap decisions).
