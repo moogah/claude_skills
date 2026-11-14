@@ -1,6 +1,6 @@
 #+TITLE: design-round
 #+OPTIONS: ^:{} -:nil
-#+STATUS: draft 2026-11-13, extracted from the reference skill (=main= =e356da7=); at the hand-off review 2026-11-13: G1, G2, G3, G5 and G6 applied, no gap open; accepted 2026-11-13 by the user at the hand-off review
+#+STATUS: draft 2026-11-13, extracted from the reference skill (=main= =e356da7=); at the hand-off review 2026-11-13: G1, G2, G3, G5 and G6 applied, no gap open; accepted 2026-11-13 by the user at the hand-off review; amended 2026-11-14 after acceptance (the round's commit holds the intent's Removals; the gate against a red baseline; the brief names the change's directory and the thought file, and may point at the spec edits), from the evals' build-out (=research/skill-evals/overnight/plan.org= § Decided with the user, 2026-11-14 morning)
 
 * Purpose
 
@@ -96,7 +96,7 @@ Architect SHALL NOT commit.
 
 *** Scenario: The round's commit holds only the files the Architect wrote
 - *WHEN* the round's output is committed
-- *THEN* the commit holds the files the Architect names as written, and no other
+- *THEN* the commit holds the files the Architect names as written, and no other but the intent, when a property a Decision drops is added to its Removals
 
 ** Requirement: The Architect is given the change, its scenarios and the project's test setup
 :PROPERTIES:
@@ -104,15 +104,17 @@ Architect SHALL NOT commit.
 :END:
 The design round SHALL give the Architect a brief holding the change's intent, its spec edits, its
 scenarios with their tests, the intent's open questions, the existing design, and the project's
-priors, Architect additions and test setup.
+priors, Architect additions and test setup, and SHALL name where the Architect's findings and thought
+lines go.
 
 *** Scenario: The Architect's brief holds the change and its scenarios
 - *WHEN* the Architect is spawned for the round
 - *THEN* its brief holds the intent and the change's base
-- *AND* the change's spec edits since its base, and the spec files they and the intent's capabilities touch
+- *AND* the change's spec edits since its base, as their text or as the command that shows them with a summary of each, and the spec files they and the intent's capabilities touch
 - *AND* the change's scenarios, each with the tests that already cite it
 - *AND* the intent's open questions, when it has any
 - *AND* the change's design, when one exists
+- *AND* the change's directory in the home, where a finding of the round goes, and the file in its scratch directory where its thought lines go
 
 *** Scenario: The Architect's brief holds the project's setup
 - *WHEN* the Architect is spawned for the round
@@ -140,7 +142,7 @@ lines.
 
 *** Scenario: The round's output is one commit in the code root
 - *WHEN* the round's output is committed
-- *THEN* one commit in the code root, subject =Design round: <change>=, holds the design, the not-test-worthy marks on the spec's scenarios and the tests
+- *THEN* one commit in the code root, subject =Design round: <change>=, holds the design, the not-test-worthy marks on the spec's scenarios and the tests, and the intent's Removals when a Decision drops a property
 
 *** Scenario: A property a Decision drops is copied into the intent's Removals
 - *WHEN* a Decision of the round marks a property of a replaced mechanism as dropped
@@ -180,7 +182,7 @@ lines.
 :END:
 The design round SHALL hand the dispatcher =gate passed= only when the design has a Seams section, every
 scenario of the change is cited by a test or marked not test-worthy, every open question is decided
-and the project's tests pass with the pending ones reported as pending; with open questions it SHALL
+and no test fails that was not failing before the change, the pending ones reported as pending; with open questions it SHALL
 hand back that it stopped. It SHALL write no task and implement nothing.
 
 *** Scenario: The round hands back gate passed only when it is complete
@@ -189,7 +191,7 @@ hand back that it stopped. It SHALL write no task and implement nothing.
 - *AND* every scenario of the change is cited by a test that exists, pending or not, or is marked not test-worthy with a reason
 - *AND* every scenario the intent names exists
 - *AND* every open question in the design has its Decision, and the intent has no open questions left
-- *AND* the project's tests pass at the round's commit, the pending tests reported as pending
+- *AND* at the round's commit no test fails that was not failing before the change, the pending tests reported as pending
 
 *** Scenario: The round writes no task and implements nothing
 - *WHEN* the round ends
