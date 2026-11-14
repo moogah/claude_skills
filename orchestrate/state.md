@@ -151,7 +151,7 @@ The state record is the index line; the finding file (`templates/architect-findi
 ```json
 {
   "finding_id": "arch-<cycle-id>-<seq>",
-  "trigger": "premise-check | conformance",
+  "trigger": "premise-check | conformance | design-round",
   "kind": "issue | question",
   "severity": "high | medium | low",
   "class": "shape-fragmentation | vocabulary-mismatch | responsibility-leakage | dead-branch | interface-drift | mutation | invariant-gap | duplication",
