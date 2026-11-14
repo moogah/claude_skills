@@ -605,8 +605,8 @@ task is.
 
 * handshake
 The file integrate leaves in the change's directory when a cycle closes, which the next cycle's plan
-reads before it drafts: the seam rows that moved, the PM digest's path, the meta-discoveries
-(patterns across tasks), the user's goal-drift answers, the asks open and settled, each open task's
+reads before it drafts: the seam rows that moved, the meta-discoveries (patterns across tasks), the
+PM's goal-drift recommendation, the user's goal-drift answers, the asks open and settled, each open task's
 impact set, the follow-up candidates and the cycle's journal. No cycle after the first starts
 without it.
 - Example :: "Integrate SHALL leave in the change's directory a handshake for its cycle"
@@ -618,21 +618,22 @@ The numbers of a cycle computed from the change's state: the tasks created, carr
 completed, reviewed, sent back, fixed inline, externalised, blocked, failed and done, and the four
 ratios between them; never stored in the state and never written by an agent.
 - Example :: "A cycle's counts SHALL be computed from the change's state"
-- Avoid :: metrics, stats, signals (the PM digest's word for what it reads from them)
+- Avoid :: metrics, stats, signals (the retired PM digest's word for what it read from them)
 - Specs :: record
 
 * PM digest
-The PM's one file per cycle, written at integrate in the cycle's directory: the counts and the
-signals they fire, the asks for the user, the trends to watch, the meta-discoveries and the
-goal-drift check; integrate's gate checks that its Signals section is not empty.
-- Example :: "the cycle's PM digest exists with a non-empty Signals section"
-- Avoid :: report (the Implementor's file), status report, summary, the digest alone where the reader may not know whose, =pm-signals.json= (the computed output it is written from)
-- Specs :: record, integrate, project-manager
+Retired 2026-11-14 (=research/skill-evals/state-layer/plan.org= F4-1): what the next plan needs from
+the PM, its meta-discoveries and goal-drift recommendation, travels in the handshake; spend and
+quality by role are read from the record on demand. It was the PM's one file per cycle: the counts
+and the signals they fire, the asks for the user, the trends to watch, the meta-discoveries and the
+goal-drift check. The reference skill (=main=) still writes it, and =record= names its gate.
+- Avoid :: report (the Implementor's file), status report, summary, =pm-signals.json= (the computed output it was written from)
+- Specs :: record
 
 * goal drift
-A sign, read by the PM from the counts across cycles, that the change is moving away from the goals
-its intent states (the main path's completion flat or falling while other work completes); integrate
-puts it to the user as a =decision= ask with four options (revise, split, abandon, continue), and the
+A sign, read by the PM across cycles against the intent's goals, that the change is moving away from
+them (the main path's tasks open or blocked while work off it merges); the PM's goal-drift
+recommendation names a course, and integrate puts it to the user as a =decision= ask with four options (revise, split, abandon, continue), and the
 next plan waits for the answer.
 - Example :: "every goal-drift recommendation the prior integrate carried has the user's answer"
 - Avoid :: scope creep, divergence alone (=divergent= is the intent's status once the ask is raised)
@@ -877,9 +878,10 @@ rewrite the goals and run to a new MVP; or end the change as it is.
 - Specs :: plan
 
 * PM
-The project manager: the role agent that, at each integrate, reads the cycle's counts and signals and
-writes the PM digest; it reads no code, recommends, and decides nothing.
-- Example :: "*WHEN* the PM's goal-drift query fires"
+The project manager: the role agent that, at each integrate, reads the cycle against the intent's
+goals and writes the meta-discoveries and the goal-drift recommendation the handshake carries; it
+computes no counts, reads no code, recommends, and decides nothing.
+- Example :: "*WHEN* the PM's goal-drift recommendation is other than =none= and the phase agent agrees the drift is real"
 - Avoid :: project manager agent, manager, PM agent pass (main's name for one of its halves); project manager in full only once
 - Specs :: integrate, project-manager
 
@@ -890,11 +892,29 @@ hardening entries worked and left, the open tasks left, and the corrections made
 - Avoid :: final report, release notes, summary alone
 - Specs :: integrate
 
+* meta-discovery
+A pattern the PM reads across a cycle's tasks that the next plan should weigh (a vocabulary mismatch
+recurring at one boundary, follow-ups clustering on one module), with its kind, scope, evidence and
+one sentence of implication; the PM writes the cycle's as one file and the handshake carries them.
+Drafted 2026-11-14 (F4-1), for the user's review.
+- Example :: "A follow-up cascade is a meta-discovery naming the cluster"
+- Avoid :: pattern alone where the reader may not know whose, insight, lesson
+- Specs :: project-manager, integrate
+
+* goal-drift recommendation
+The PM's course for the intent after reading the cycle against its goals: =none=, =revise=,
+=split=, =abandon= or =continue=, with a one-line reason; handed back by the PM and carried in the
+handshake; it changes nothing until the user decides. Drafted 2026-11-14 (F4-1), for the user's
+review.
+- Example :: "the prior handshake's goal-drift recommendation is =revise=, =split= or =abandon="
+- Avoid :: goal-drift signal, goal-drift check (the retired digest's section)
+- Specs :: project-manager, integrate, plan
+
 * goal-drift ask
 The =decision= ask integrate raises when the PM reads goal drift, offering the user revise, split,
 abandon or continue; plan waits for its answer.
 - Example :: "or =revise= on a goal-drift ask"
-- Avoid :: goal-drift signal (the PM's evidence that raises it), divergence
+- Avoid :: goal-drift signal (the retired digest's evidence that raised it; now the PM's goal-drift recommendation), divergence
 - Specs :: opening, integrate, plan
 
 * cross-change backlog
@@ -936,36 +956,33 @@ correction.
 - Specs :: inline-path, integrate
 
 * signal
-One line of the PM digest's Signals section: a condition on the counts that holds or not this cycle,
-marked ⚠ (actionable), ✓ (healthy) or ◦ (informational), with what it recommends.
-- Example :: "the digest carries a ⚠ throughput signal"
+Retired 2026-11-14 with the PM digest (F4-1): one line of the digest's Signals section, a condition
+on the counts marked ⚠, ✓ or ◦. The PM now reads patterns and computes nothing.
 - Avoid :: alert, warning; spec signal (a Reviewer's direction: a different thing)
-- Specs :: project-manager
 
 * history window
-The cycles before this one whose counts the digest shows and the signals read; five unless the
-project sets another.
-- Example :: "for this cycle and each cycle of the history window"
+The cycles before this one whose counts a cycle's state carries; five unless the project sets
+another. The retired PM digest (F4-1) showed them and read its signals over them.
 - Avoid :: K in prose, lookback
-- Specs :: project-manager
+- Specs :: record
 
 * drainage
 Tasks completed over tasks created in a cycle, created counting no task carried in; below one the
-change's queue grows.
-- Example :: "drainage below 1.0 for 3 consecutive cycles"
+change's queue grows. One of the counts' ratios; the retired PM digest (F4-1) fired a signal on it.
 - Avoid :: throughput (the table's name), velocity
-- Specs :: project-manager
+- Specs :: record
 
 * cascade
-One task from which more tasks were discovered than the project's threshold, repeatedly; a sign of a
-design or contract gap around it. Its cluster is the task and the tasks discovered from it.
+Follow-ups discovered from one task, one after another and across Implementors, as the PM reads the
+cycle; a sign of a design or contract gap around it. Its cluster is the task and the tasks
+discovered from it.
 - Example :: "A cascade starts the Architect's conformance, not a question"
 - Avoid :: follow-up cascade (main's heading), explosion
 - Specs :: project-manager
 
 * candidate question
-A question the PM proposes in its digest, from which the phase agent writes an ask file; never an ask
-until written.
+A question the PM proposes in its hand-back, from which the phase agent writes an ask file; never an
+ask until written.
 - Example :: "A task blocked on anything else is a candidate question"
 - Avoid :: candidate ask, ask (the file), follow-up candidate (a task proposed for plan)
 - Specs :: project-manager

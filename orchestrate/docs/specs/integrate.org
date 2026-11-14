@@ -1,6 +1,6 @@
 #+TITLE: integrate
 #+OPTIONS: ^:{} -:nil
-#+STATUS: draft 2026-11-13, extracted from the reference skill (=main= =e356da7=); at the hand-off review 2026-11-13: G4 and G7 applied, the hardening list's form and a prior's thought carried in, "conformance check" reworded "conformance"; the unpinned disagreement the take-in regression and the MVP's review filled; no gap open; accepted 2026-11-13 by the user at the hand-off review; amended 2026-11-14 after acceptance (an untrue sentence the whole-change review finds is a record correction), from the evals' build-out (=research/skill-evals/overnight/plan.org= § Decided with the user, 2026-11-14 morning)
+#+STATUS: draft 2026-11-13, extracted from the reference skill (=main= =e356da7=); at the hand-off review 2026-11-13: G4 and G7 applied, the hardening list's form and a prior's thought carried in, "conformance check" reworded "conformance"; the unpinned disagreement the take-in regression and the MVP's review filled; no gap open; accepted 2026-11-13 by the user at the hand-off review; amended 2026-11-14 after acceptance (an untrue sentence the whole-change review finds is a record correction), from the evals' build-out (=research/skill-evals/overnight/plan.org= § Decided with the user, 2026-11-14 morning); amended 2026-11-14 after acceptance (the PM digest retired into the handshake, =research/skill-evals/state-layer/plan.org= F4-1)
 
 * Purpose
 
@@ -139,8 +139,8 @@ no ask for what the user's own words already answer.
 :GOAL:     G11 (O-NS-9)
 :END:
 At every integrate whose cycle merged code, the integrate phase SHALL spawn one Reviewer over the
-whole change, author-blind, after the workspace integration branch is taken in and before the PM
-digest and the routing to the next plan; the change SHALL go no further while a blocking finding of
+whole change, author-blind, after the workspace integration branch is taken in and before the PM's
+pass and the routing to the next plan; the change SHALL go no further while a blocking finding of
 that review is open.
 
 *** Scenario: A cycle that merged code gets a whole-change review
@@ -188,9 +188,9 @@ that review is open.
 - *THEN* a =decision= ask names both branches and the run's output
 - *AND* no =environment= ask is filed for it
 
-*** Scenario: The digest and the routing count the whole-change review
+*** Scenario: The PM's pass and the routing take in the whole-change review
 - *WHEN* a whole-change review runs in the cycle
-- *THEN* the PM digest counts its findings and the corrections they led to
+- *THEN* the PM is spawned only after the review's hand-back, so the review and the corrections it led to are in what the PM reads
 - *AND* each of its blocking findings is among the cycle's follow-up candidates
 
 *** Scenario: A blocking whole-change finding holds the change for another cycle
@@ -313,37 +313,41 @@ summary with the status line and commit both in the code root.
 :PROPERTIES:
 :GOAL:     G2 (O-NS-2)
 :END:
-When the PM digest reports that the change's goals may be drifting, the integrate phase SHALL mark the
-intent divergent with the signal and its evidence and SHALL file one =decision= ask with the options
+When the PM recommends a course on goal drift and the phase agent agrees the drift is real, the
+integrate phase SHALL mark the intent divergent with the PM's reading and its evidence and SHALL file one =decision= ask with the options
 revise, split, abandon and continue; the user's answer SHALL reach the next plan through the
 handshake.
 
 *** Scenario: Goal drift marks the intent divergent
-- *WHEN* the PM's goal-drift query fires
-- *THEN* the intent's status line becomes =divergent <date> <ask-id>=, with the signal and its evidence under its =* Status=
+- *WHEN* the PM's goal-drift recommendation is other than =none= and the phase agent agrees the drift is real
+- *THEN* the intent's status line becomes =divergent <date> <ask-id>=, with the PM's reading and its evidence under its =* Status=
 - *AND* the change is committed in the code root
 
 *** Scenario: Goal drift is a decision ask with four fixed options
-- *WHEN* the PM's goal-drift query fires
+- *WHEN* the PM's goal-drift recommendation is other than =none= and the phase agent agrees the drift is real
 - *THEN* one =decision= ask is filed whose options are exactly =revise=, =split=, =abandon= and =continue=
 
 *** Scenario: The user's answer on goal drift reaches the next plan
 - *WHEN* the user has answered the goal-drift ask
 - *THEN* the handshake carries the ask, the chosen option and the user's reason
 
+*** Scenario: The PM's goal-drift recommendation reaches the next plan
+- *WHEN* integrate writes the handshake
+- *THEN* it carries the PM's goal-drift recommendation and its one-line reason, =none= when the PM read no drift
+
 ** Requirement: Integrate leaves the next plan a handshake of everything the cycle found
 :PROPERTIES:
 :GOAL:     none stated (O-XC-1 states it for plan)
 :END:
 The integrate phase SHALL route everything the cycle found and asked to where it lands and SHALL
-write, at each cycle, a handshake for the next plan holding the seam rows the cycle changed, the PM
-digest, the patterns seen across tasks, the user's answer on goal drift, the open and the resolved
+write, at each cycle, a handshake for the next plan holding the seam rows the cycle changed, the
+patterns seen across tasks, the PM's goal-drift recommendation, the user's answer on goal drift, the open and the resolved
 asks, every open task's impact set and the follow-up candidates. It SHALL write no task text.
 
 *** Scenario: Each integrate writes a handshake with all its parts
 - *WHEN* integrate passes its gate
 - *THEN* the change's directory holds the handshake for the cycle
-- *AND* it holds the seam rows changed, the PM digest's path, the patterns across tasks, the goal-drift answer, the open asks, the resolved asks, the impact sets and the follow-up candidates
+- *AND* it holds the seam rows changed, the patterns across tasks, the PM's goal-drift recommendation, the goal-drift answer, the open asks, the resolved asks, the impact sets and the follow-up candidates
 - *AND* a part with nothing in it is present and empty
 
 *** Scenario: The seam rows the cycle moved are listed with what moved them
@@ -444,8 +448,8 @@ goes wrong in product terms. =plan= and =execute= cite this form.
 :PROPERTIES:
 :GOAL:     none stated
 :END:
-The integrate phase SHALL handle the answers waiting in the inbox first, SHALL leave a PM digest each
-cycle, SHALL commit the change's documents it corrected in the code root and the rest of its work in
+The integrate phase SHALL handle the answers waiting in the inbox first, SHALL leave the PM's
+meta-discoveries each cycle, SHALL commit the change's documents it corrected in the code root and the rest of its work in
 the home with one close commit, SHALL change no code except an untrue sentence in prose, SHALL spawn
 each agent at its role default, and SHALL hand the dispatcher one line.
 
@@ -458,9 +462,9 @@ each agent at its role default, and SHALL hand the dispatcher one line.
 - *THEN* no ask file is written for it
 - *AND* the change's journal has its line
 
-*** Scenario: Each integrate leaves a PM digest
+*** Scenario: Each integrate leaves the PM's meta-discoveries
 - *WHEN* integrate passes its gate
-- *THEN* the cycle's directory holds the PM digest, with its signals
+- *THEN* the cycle's directory holds the PM's meta-discoveries file, and the handshake carries them
 
 *** Scenario: Corrected documents are committed in the code root before the close commit
 - *WHEN* integrate corrected the design or a spec in the cycle
@@ -468,7 +472,7 @@ each agent at its role default, and SHALL hand the dispatcher one line.
 
 *** Scenario: Integrate closes with one commit in the home
 - *WHEN* integrate closes
-- *THEN* one commit in the home, subject =Orchestrator: <cycle-id> integrate closed=, holds the cycle's archived state and handshake, the PM digest and signals, the findings, the list of seam rows changed, the follow-up candidates and the impact sets
+- *THEN* one commit in the home, subject =Orchestrator: <cycle-id> integrate closed=, holds the cycle's archived state and handshake, the PM's meta-discoveries, the findings, the list of seam rows changed, the follow-up candidates and the impact sets
 
 *** Scenario: Integrate changes no code but an untrue sentence
 - *WHEN* integrate closes

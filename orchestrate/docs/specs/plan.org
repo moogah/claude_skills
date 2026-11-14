@@ -1,6 +1,6 @@
 #+TITLE: plan
 #+OPTIONS: ^:{} -:nil
-#+STATUS: draft 2026-11-13, extracted from the reference skill (=main= =e356da7=); at the hand-off review 2026-11-13: G1, G5, G6, G9 and G10 applied, the obsolete flag carried from =implementor=; the premise corrections filled (a free choice); the main-path rule filled; no gap open; accepted 2026-11-13 by the user at the hand-off review; amended 2026-11-14 after acceptance (an off-batch hardening finding is listed at once), from the evals' build-out (=research/skill-evals/overnight/plan.org= § Decided with the user, 2026-11-14 morning)
+#+STATUS: draft 2026-11-13, extracted from the reference skill (=main= =e356da7=); at the hand-off review 2026-11-13: G1, G5, G6, G9 and G10 applied, the obsolete flag carried from =implementor=; the premise corrections filled (a free choice); the main-path rule filled; no gap open; accepted 2026-11-13 by the user at the hand-off review; amended 2026-11-14 after acceptance (an off-batch hardening finding is listed at once), from the evals' build-out (=research/skill-evals/overnight/plan.org= § Decided with the user, 2026-11-14 morning); amended 2026-11-14 after acceptance (the PM digest retired into the handshake, =research/skill-evals/state-layer/plan.org= F4-1)
 
 * Purpose
 
@@ -418,13 +418,13 @@ default.
 :PROPERTIES:
 :GOAL:     none stated
 :END:
-When the prior integrate carried a goal-drift recommendation the user has not resolved, the plan
-phase SHALL not pass its gate until the user has answered the goal-drift ask with one of its
-options; a free-text answer SHALL be read back first. With no recommendation the step SHALL ask
-nothing.
+When the prior handshake carries a goal-drift recommendation of revise, split or abandon that the
+user has not resolved, the plan phase SHALL not pass its gate until the user has answered the
+goal-drift ask with one of its options; a free-text answer SHALL be read back first. With a
+recommendation of none or continue the step SHALL ask nothing.
 
 *** Scenario: An unresolved goal-drift recommendation holds the plan
-- *WHEN* the prior integrate's digest carried a goal-drift recommendation and the handshake holds no resolution of it
+- *WHEN* the prior handshake's goal-drift recommendation is =revise=, =split= or =abandon= and the handshake holds no resolution of it
 - *THEN* plan does not pass its gate
 - *AND* the plan phase agent hands back that it stopped, naming the goal-drift ask
 
@@ -438,7 +438,7 @@ nothing.
 - *AND* the goal drift does not count as signed off until the user confirms the readback
 
 *** Scenario: With no goal-drift recommendation, nothing is signed off
-- *WHEN* the prior integrate carried no goal-drift recommendation
+- *WHEN* the prior handshake's goal-drift recommendation is =none= or =continue=
 - *THEN* plan raises no goal-drift question and the sign-off does not hold its gate
 
 ** Requirement: Plan passes its gate, closes with one commit and hands back one line
