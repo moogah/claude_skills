@@ -1,6 +1,6 @@
 #+TITLE: dispatcher
 #+OPTIONS: ^:{} -:nil
-#+STATUS: draft 2026-11-13, extracted from the reference skill (=main= =e356da7=); at the hand-off review 2026-11-13: G4, G6 and G10 applied, the design round's asks no longer go to plan (G1, G5); the recommendation's form, the resume's order, the call's commit and the missing overlay filled
+#+STATUS: draft 2026-11-13, extracted from the reference skill (=main= =e356da7=); at the hand-off review 2026-11-13: G4, G6 and G10 applied, the design round's asks no longer go to plan (G1, G5); the recommendation's form, the resume's order, the call's commit, the missing overlay and the stopped change filled; no gap open
 
 * Purpose
 
@@ -100,6 +100,11 @@ one is open, and SHALL leave a waiting answer to the phase agent it spawns or re
 - *WHEN* the plan phase agent hands back =failed= naming the change's unfinished design round
 - *THEN* the dispatcher spawns the design round's phase agent for the change
 - *AND* no cycle has been opened
+
+*** Scenario: A stopped change is relayed and nothing more runs
+- *WHEN* the plan phase agent hands back that it did not start because the user answered stop on the MVP decision
+- *THEN* the dispatcher relays the line
+- *AND* spawns no further phase agent for the change
 
 *** Scenario: A rethink answer sends the change back to opening
 - *WHEN* the plan phase agent hands back that it did not start because the user answered rethink on the MVP decision
@@ -353,9 +358,5 @@ overlay with the user present, one question per call.
 
 * Gaps
 
-** Gap: What the dispatcher does when plan hands back that the change stopped
-:PROPERTIES:
-:REQUIREMENT: Invoked with no phase named, the dispatcher takes the change up where it stands
-:END:
-Plan hands back that it did not start because the user answered stop on the MVP decision; what the
-dispatcher then does (relay and stop, or more) is not stated.
+No gap open. The seven this draft had were filled 2026-11-13 at the hand-off review
+(=research/skill-evals/extraction/dispatcher.org= § Gap decisions).
