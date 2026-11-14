@@ -1,6 +1,6 @@
 #+TITLE: architect
 #+OPTIONS: ^:{} -:nil
-#+STATUS: draft 2026-11-13, extracted from the reference skill (=main= =e356da7=); nine gaps open; at the hand-off review 2026-11-13: G2, G5, G7, G8 and G11 applied, its role default added; the dropped property, what each run writes and the prior's cleanup filled; no gap open; accepted 2026-11-13 by the user at the hand-off review
+#+STATUS: draft 2026-11-13, extracted from the reference skill (=main= =e356da7=); nine gaps open; at the hand-off review 2026-11-13: G2, G5, G7, G8 and G11 applied, its role default added; the dropped property, what each run writes and the prior's cleanup filled; no gap open; accepted 2026-11-13 by the user at the hand-off review; amended 2026-11-14 after acceptance (what the design round writes besides the design; a design-round finding's id and trigger; the state's entries for the findings a run writes), from the evals' build-out (=research/skill-evals/overnight/plan.org= § Decided with the user, 2026-11-14 morning)
 
 * Purpose
 
@@ -44,6 +44,7 @@ scenarios it serves and its pending tests.
 *** Scenario: The design round writes only the design, the tests and the test properties
 - *WHEN* the design round hands back
 - *THEN* the only files it changed are the change's design, files of the test tree, and the spec files, where only scenarios' =:TEST:= properties changed
+- *AND* besides them it has written only a finding file for each defect it found (§ A defect found at the design round is a finding of the change, outside any cycle) and the thought file its brief names
 
 *** Scenario: A run for one seam leaves the rest of the design as it was
 - *WHEN* the design round is run again for one seam
@@ -308,6 +309,7 @@ line in the change's journal and not a finding. Style and preference SHALL not b
 *** Scenario: A defect found at the design round is a finding of the change, outside any cycle
 - *WHEN* at the design round the Architect finds a defect in code or text that exists
 - *THEN* one finding file for it is in the =findings/= directory of the change's directory, outside any cycle
+- *AND* its id is =arch-<change>-<n>= and its =trigger= is =design-round=
 - *AND* the design's Open Questions has no entry for it
 
 *** Scenario: A finding carries the class of the design checklist
@@ -388,12 +390,12 @@ names.
 *** Scenario: The premise check writes only its table, its findings and thought lines
 - *WHEN* the premise check hands back
 - *THEN* the files it has written or changed are =premise-check.md= and its finding files in the cycle's directory
-- *AND* besides them it has added only thought lines to the change's journal
+- *AND* besides them it has added only thought lines to the change's journal and the state's entry for each finding it wrote (=record= § A finding in a file of its own is indexed in the state)
 
 *** Scenario: Conformance writes only its findings, its design diff and the text it corrects
 - *WHEN* conformance hands back
 - *THEN* the files it has written or changed are its finding files and =design-diff.json= in the cycle's directory, and the seam rows and spec sentences it amended
-- *AND* besides them it has added only thought lines to the change's journal
+- *AND* besides them it has added only thought lines to the change's journal and the state's entry for each finding it wrote (=record= § A finding in a file of its own is indexed in the state)
 
 *** Scenario: No run commits, spawns an agent or writes a task
 - *WHEN* any run of the Architect hands back
