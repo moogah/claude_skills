@@ -1,6 +1,6 @@
 #+TITLE: opening
 #+OPTIONS: ^:{} -:nil
-#+STATUS: draft 2026-11-13, extracted from the reference skill (=main= =e356da7=); nine gaps opened; at the hand-off review 2026-11-13: G8 applied (the path's root, a revision's line); the unnamed repository filled
+#+STATUS: draft 2026-11-13, extracted from the reference skill (=main= =e356da7=); nine gaps opened; at the hand-off review 2026-11-13: G8 applied (the path's root, a revision's line); the unnamed repository and a taken name filled
 
 * Purpose
 
@@ -55,6 +55,16 @@ base.
 *** Scenario: A new change's name is new to its repository
 - *WHEN* a new change is opened
 - *THEN* =docs/changes/<change>/= did not exist in its repository before the opening
+
+*** Scenario: A name the agent chose that is taken is changed to an unused one
+- *WHEN* the change's name is the opening agent's own and =docs/changes/<change>/= already exists in the repository
+- *THEN* the change is given another name, not yet used
+- *AND* the hand-back names the change by the name it was given
+
+*** Scenario: A name the user gave that is taken fails the opening
+- *WHEN* the user named the change and =docs/changes/<change>/= already exists in the repository, and the change is not being revised in place
+- *THEN* opening hands back =open: failed, name taken: <change>=
+- *AND* it creates no branch and writes nothing
 
 *** Scenario: A home with one repository opens the change in it
 - *WHEN* the home holds one repository
@@ -298,11 +308,6 @@ On =split= it SHALL open a new change that names the one it came from.
 - *AND* the new intent's Why names the change it came from
 
 * Gaps
-
-** Gap: What opening does when the change's name is already used
-:PROPERTIES:
-:REQUIREMENT: A new change is named, placed in one repository and started from a written base
-:END:
 
 ** Gap: What a failed opening leaves behind
 :PROPERTIES:
