@@ -226,3 +226,30 @@ regression in it.
 - Example :: "A rework runs at the task's setting, never a stronger one"
 - Avoid :: retry, re-implementation (main's word in =state.md= for the status move), rejection (main's count of send-backs); for a fresh Implementor after a wrong premise, which main's =implementor-rework= role also covers
 - Specs :: execute
+
+* baseline
+The run of the project's test command on the integration branch, taken once per cycle before the
+cycle's first merge, that every later run in the cycle is compared against. "Green" when every test
+passed in it, "red" when some already failed.
+- Example :: "against the cycle's baseline"
+- Avoid :: baseline snapshot (main's fuller name), snapshot, the reference skill (the evals' word; its glossary entry already warns against "baseline" for it)
+- Specs :: execute
+
+* regression
+A test that passed in the cycle's baseline and fails in the run after a merge.
+- Example :: "a test that passed in the baseline and fails after a merge as a regression"
+- Avoid :: test failure (a red baseline already has failures that are not regressions), breakage
+- Specs :: execute
+
+* merge queue
+The landed tasks waiting their turn to merge, in the order their Implementors landed them.
+- Example :: "the task rejoins the merge queue"
+- Avoid :: backlog, pending merges
+- Specs :: execute
+
+* merge chain
+The one-at-a-time merging of queued tasks into the integration branch, each followed by its test
+run; serial because there is one integration branch, and stopped as a whole by a regression.
+- Example :: "The merge chain does not wait for a review"
+- Avoid :: merge pipeline, merge loop
+- Specs :: execute
