@@ -7,7 +7,7 @@
 The PM reads where a change stands once a cycle and writes the PM digest: the cycle's counts, the
 signals they fire, the questions they raise and a recommendation on goal drift, so that the user can
 see whether the change is converging on its goals. Every number in the digest comes from the change's
-record; the PM's own words only frame them. On a cascade it starts an Architect conformance run over
+record; the PM's own words only frame them. On a cascade it starts the Architect's conformance over
 the cluster. It writes no code, no task file and no ask file, and decides nothing: when the PM runs
 and what becomes of its digest are the integrate phase's, how a candidate question becomes an ask is
 the =asks= capability's, and how the counts are computed is the =record= capability's.
@@ -137,7 +137,7 @@ and SHALL read spend against quality in one line without proposing a change to a
 :END:
 The PM SHALL fire each signal when its condition holds against the project's threshold, or the
 default where the project sets none, and SHALL name with it what the signal recommends; on a cascade
-it SHALL start an Architect conformance run over the cluster instead of raising a question.
+it SHALL start the Architect's conformance over the cluster instead of raising a question.
 
 *** Scenario: A threshold the project does not set takes its default
 - *WHEN* the project's configuration sets no threshold for a signal
@@ -151,24 +151,24 @@ it SHALL start an Architect conformance run over the cluster instead of raising 
 - *WHEN* more tasks than the cascade threshold were discovered from one task
 - *THEN* the digest carries a ⚠ cascade signal naming that task and how many tasks were discovered from it
 
-*** Scenario: A cascade starts an Architect conformance run, not a question
+*** Scenario: A cascade starts the Architect's conformance, not a question
 - *WHEN* the cascade signal fires
-- *THEN* the PM spawns an Architect conformance run scoped to the cluster of the source task and the tasks discovered from it
+- *THEN* the PM spawns the Architect's conformance scoped to the cluster of the source task and the tasks discovered from it
 - *AND* no candidate question is raised for the cascade
 
-*** Scenario: The cascade run's brief names the cluster and its mission
-- *WHEN* the PM spawns a conformance run for a cascade
+*** Scenario: The cascade's conformance brief names the cluster and its mission
+- *WHEN* the PM spawns the Architect's conformance for a cascade
 - *THEN* its brief names the cluster, the source task, the tasks discovered from it, their discovered classes and the modules the diffs implicate
 - *AND* asks which seam rows the cluster's tasks cite, whether the merged code matches them, which rows need amending and whether a seam is missing
 - *AND* asks for every defect found as a finding with its kind and severity
 
-*** Scenario: The cascade run runs at the conformance setting and is recorded
-- *WHEN* the PM spawns a conformance run for a cascade
+*** Scenario: The cascade's conformance runs at its role default and is recorded
+- *WHEN* the PM spawns the Architect's conformance for a cascade
 - *THEN* the run is at the Architect's conformance role default
 - *AND* the change's record holds it as an Architect conformance agent
 
-*** Scenario: A cascade run is recorded as applied without asking
-- *WHEN* the PM has spawned a conformance run for a cascade
+*** Scenario: A cascade's conformance is recorded as applied without asking
+- *WHEN* the PM has spawned the Architect's conformance for a cascade
 - *THEN* a =confirmation= ask records the run as applied without asking
 
 *** Scenario: Review starvation fires when merged tasks wait on review
@@ -296,7 +296,7 @@ the intent with a one-line reason; the recommendation SHALL change nothing until
 :GOAL:     none stated
 :END:
 The PM SHALL change no code and no task's text, and SHALL spawn no Implementor or Reviewer; what it
-changes in the change is its digest and, on a cascade, the conformance run it starts.
+changes in the change is its digest and, on a cascade, the conformance it starts.
 
 *** Scenario: The PM changes no code and no task's text
 - *WHEN* the PM has run

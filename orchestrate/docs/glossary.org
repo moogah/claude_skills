@@ -904,3 +904,38 @@ correction.
 - Example :: "A design in question is a decision ask that holds the commit"
 - Avoid :: design drift (code that drifted from a right design), spec signal (the Reviewer's finding of it)
 - Specs :: inline-path, integrate
+
+* signal
+One line of the PM digest's Signals section: a condition on the counts that holds or not this cycle,
+marked ⚠ (actionable), ✓ (healthy) or ◦ (informational), with what it recommends.
+- Example :: "the digest carries a ⚠ throughput signal"
+- Avoid :: alert, warning; spec signal (a Reviewer's direction: a different thing)
+- Specs :: project-manager
+
+* history window
+The cycles before this one whose counts the digest shows and the signals read; five unless the
+project sets another.
+- Example :: "for this cycle and each cycle of the history window"
+- Avoid :: K in prose, lookback
+- Specs :: project-manager
+
+* drainage
+Tasks completed over tasks created in a cycle, created counting no task carried in; below one the
+change's queue grows.
+- Example :: "drainage below 1.0 for 3 consecutive cycles"
+- Avoid :: throughput (the table's name), velocity
+- Specs :: project-manager
+
+* cascade
+One task from which more tasks were discovered than the project's threshold, repeatedly; a sign of a
+design or contract gap around it. Its cluster is the task and the tasks discovered from it.
+- Example :: "A cascade starts the Architect's conformance, not a question"
+- Avoid :: follow-up cascade (main's heading), explosion
+- Specs :: project-manager
+
+* candidate question
+A question the PM proposes in its digest, from which the phase agent writes an ask file; never an ask
+until written.
+- Example :: "A task blocked on anything else is a candidate question"
+- Avoid :: candidate ask, ask (the file), follow-up candidate (a task proposed for plan)
+- Specs :: project-manager
