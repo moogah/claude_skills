@@ -1,6 +1,6 @@
 #+TITLE: opening
 #+OPTIONS: ^:{} -:nil
-#+STATUS: draft 2026-11-13, extracted from the reference skill (=main= =e356da7=); nine gaps opened; at the hand-off review 2026-11-13: G8 applied (the path's root, a revision's line); the unnamed repository, a taken name, a failed opening and the second change filled
+#+STATUS: draft 2026-11-13, extracted from the reference skill (=main= =e356da7=); nine gaps opened; at the hand-off review 2026-11-13: G8 applied (the path's root, a revision's line); the unnamed repository, a taken name, a failed opening, the second change and the research hand-off filled
 
 * Purpose
 
@@ -147,6 +147,11 @@ intent.
 - *WHEN* the user reports broken a behaviour that a spec already states rightly
 - *THEN* that spec's scenario is not edited
 - *AND* the intent's Capabilities names the scenario as =stated, not met=
+
+*** Scenario: A change from a research hand-off names the hand-off's scenarios
+- *WHEN* opening runs on a research hand-off, its change cut from the hand-off's workspace integration branch
+- *THEN* the intent's Capabilities names, one line each, every scenario the hand-off's spec edits added or changed for the change, as =stated, not met=
+- *AND* the intent carries no =#+APPROVED:= line until the user approves its goals
 
 *** Scenario: A removed behaviour is deleted and its reason given
 - *WHEN* the change removes a behaviour
@@ -318,14 +323,6 @@ On =split= it SHALL open a new change that names the one it came from.
 - *AND* the new intent's Why names the change it came from
 
 * Gaps
-
-** Gap: What the intent says for a change cut from a research hand-off
-:PROPERTIES:
-:REQUIREMENT: The intent states why the change exists and what it commits to
-:END:
-Opening starts such a change from the workspace integration branch, but the reference skill lists
-no research hand-off among what opening runs on, and the intent's form asks such a change to name
-every scenario the hand-off's spec edits added or changed.
 
 ** Gap: What becomes of the old change on a split
 :PROPERTIES:

@@ -6,6 +6,7 @@ The step that turns what the user asked for into a change the design round can t
 
 - The user asks in the session for a feature, a fix or a change of behaviour. The source is their words.
 - The user takes up `.tasks/` items, by naming them or by answering "open a new change" on a cluster ask (`externalisation.md` § Externalisation pressure). The source is the items.
+- The research skill hands off a change (`research` § Hand-off) with a workspace integration branch. The source is the hand-off; the change is cut from that branch, and its intent's Capabilities names every scenario the hand-off's spec edits added or changed for it, `stated, not met`, one line each.
 - The user answers `split` on a goal-drift ask (`templates/intent.md` § Lifecycle). The source is the old intent and the answer; the new intent's Why names the change it came from.
 - The user answers `rethink` on the MVP decision (`templates/hardening.md`) or `revise` on a goal-drift ask. The source is the intent and the answer, and the change is revised in place: the Goals, Non-goals and spec edits are rewritten from the answer, `#+BASE:` is kept, the prior Goals are quoted under `* Status` and the status line returns to `speculated`. The commit is `Revise: <change>`; the design round then re-runs for the seams the new goals move.
 
