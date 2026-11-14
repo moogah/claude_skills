@@ -710,3 +710,14 @@ def test_an_inline_fix_subject_is_the_specs_form(home):
     git(home.wt, "commit", "-q", "--allow-empty", "-m", "Inline fix (review a #1)")
     breaks = home.ok("conventions")["breaks"]
     assert [b["expected"] for b in breaks] == ["Inline fix after <merging|review of> task <task>: <what>"]
+
+
+def test_a_design_whose_seams_section_is_one_line_is_designed(home):
+    """design-round § A change no scenario needs a seam for skips the design with one line."""
+    home.intent()
+    home.record.mkdir(parents=True, exist_ok=True)
+    (home.record / "design.org").write_text("#+TITLE: chg: design\n\n* Seams\n\nNo scenario needs a seam: "
+                                            "the change edits the README only.\n\n* Open Questions\n")
+    assert home.ok("status")["stage"] == "designed, no cycle open"
+    (home.record / "design.org").write_text("#+TITLE: chg: design\n\n* Seams\n\n* Open Questions\n")
+    assert home.ok("status")["stage"] == "intent, no design"

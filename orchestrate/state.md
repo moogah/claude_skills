@@ -54,7 +54,7 @@ Git and worktree operations (branching, merging, removing a worktree) are the ag
 | `open, no intent` | no `docs/changes/<change>/intent.org` in the code root | write the intent (`flows/open.md`) |
 | `done` | `intent.org` `#+STATUS: done …` | nothing |
 | `MVP decision` | `#+STATUS: mvp <date> <commit> <ask-id>`, that ask unanswered | wait for the user's answer to `<ask-id>` |
-| `intent, no design` | `design.org` has no Seams row | the design round (`flows/design.md`) |
+| `intent, no design` | `design.org`'s Seams section has no row, nor (with no table) the one line saying no scenario needs a seam | the design round (`flows/design.md`) |
 | `cycle open` | the log's last `cycle-started` has no `integrate closed` commit and no `cycle-abandoned`; the phase is the first of plan, execute, integrate with no `Orchestrator: <cycle-id> <phase> closed` commit in the home | resume that phase; or, when its gate passes, close it and go on |
 | `main path ended` | no open task (`status` other than `done`, `externalised`) has `on_critical_path: true`, at least one has it, and no `mvp` or `done` status | integrate's MVP decision (`flows/integrate.md` § 9), not another plan |
 | `designed, no cycle open` | none of the above | start a plan: `state.py cycle start` (`flows/plan.md`) |

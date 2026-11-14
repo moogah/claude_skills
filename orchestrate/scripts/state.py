@@ -539,13 +539,18 @@ class Change:
                 "status": status.group(1).split() if status else []}
 
     def design_has_seams(self):
+        """The Seams section is a table with a row, or, with no table, one line at its top saying no
+        scenario needs a seam and why (flows/design.md; design-round spec)."""
         p = os.path.join(self.record_dir, "design.org") if self.record_dir else None
         if not p or not os.path.exists(p):
             return False
         m = re.search(r"^\* Seams[ \t]*\n(.*?)(?=^\* |\Z)", open(p, encoding="utf-8").read(), re.S | re.M)
         if not m:
             return False
-        table = [l.strip() for l in m.group(1).splitlines() if l.strip().startswith("|")]
+        lines = [l.strip() for l in m.group(1).splitlines() if l.strip()]
+        table = [l for l in lines if l.startswith("|")]
+        if not table:
+            return bool(lines) and not lines[0].startswith(("#", ":"))
         sep = next((i for i, l in enumerate(table) if re.match(r"^\|[-+|\s]+\|?$", l)), None)
         return sep is not None and any(not re.match(r"^\|[-+|\s]+\|?$", l) for l in table[sep + 1:])
 
