@@ -1,6 +1,6 @@
 #+TITLE: architect
 #+OPTIONS: ^:{} -:nil
-#+STATUS: draft 2026-11-13, extracted from the reference skill (=main= =e356da7=); nine gaps open; at the hand-off review 2026-11-13: G2, G5, G7, G8 and G11 applied, its role default added; the dropped property filled
+#+STATUS: draft 2026-11-13, extracted from the reference skill (=main= =e356da7=); nine gaps open; at the hand-off review 2026-11-13: G2, G5, G7, G8 and G11 applied, its role default added; the dropped property and what each run writes filled
 
 * Purpose
 
@@ -380,6 +380,16 @@ names.
 - *WHEN* conformance hands back
 - *THEN* its line ends =; <path>=, the path of the cycle's =design-diff.json= relative to the home, which every conformance run writes
 
+*** Scenario: The premise check writes only its table, its findings and thought lines
+- *WHEN* the premise check hands back
+- *THEN* the files it has written or changed are =premise-check.md= and its finding files in the cycle's directory
+- *AND* besides them it has added only thought lines to the change's journal
+
+*** Scenario: Conformance writes only its findings, its design diff and the text it corrects
+- *WHEN* conformance hands back
+- *THEN* the files it has written or changed are its finding files and =design-diff.json= in the cycle's directory, and the seam rows and spec sentences it amended
+- *AND* besides them it has added only thought lines to the change's journal
+
 *** Scenario: No run commits, spawns an agent or writes a task
 - *WHEN* any run of the Architect hands back
 - *THEN* it has made no commit, in the code root or in the home
@@ -403,14 +413,6 @@ Each run of the Architect SHALL be at its role default; a task override SHALL NO
 - *AND* at =medium= for the premise check
 
 * Gaps
-
-** Gap: What the premise check and conformance may write besides their outputs
-:PROPERTIES:
-:REQUIREMENT: Each run hands back one line and leaves the rest to its spawner
-:END:
-The reference skill limits the Architect to the design, the pending tests and the test properties,
-while the premise check and conformance write =premise-check.md=, finding files, =design-diff.json=
-and journal lines; nothing says what else those two runs may not change.
 
 ** Gap: What a cleanup becomes when a project prior asks for it
 :PROPERTIES:
