@@ -77,7 +77,10 @@ CLOSE_LIKE_RE = re.compile(r"^Orchestrator: (?P<cycle>cycle-[\w-]+) (?P<phase>pl
 # execute § An inline fix's commit names its task, its cause and its pin. The review finding it answers
 # is in the message, or linked by `fix-link`.
 INLINE_FIX_RE = re.compile(r"^Inline fix after (?:merging|review of) task (?P<task>\S+): \S.*$")
-NON_TASK_BRIEFS = re.compile(r"^(review-.*|.*-rework|premise-check|conformance)$")
+# A rework's brief and review are numbered, `<task>-rework-<n>` (execute § 8), so each is a file of its
+# own; the unnumbered `<task>-rework` of earlier records is read too.
+REWORK_SUFFIX = r"-rework(?:-\d+)?"
+NON_TASK_BRIEFS = re.compile(rf"^(review-.*|.*{REWORK_SUFFIX}|premise-check|conformance)$")
 
 
 class Refusal(Exception):
@@ -471,8 +474,8 @@ class Change:
 
     def reviews(self, task):
         """[(path, frontmatter)] of every review of the task, in any cycle."""
-        paths = glob.glob(os.path.join(self.dir, "cycles", "*", "reviews", f"{task}.md")) + \
-            glob.glob(os.path.join(self.dir, "cycles", "*", "reviews", f"{task}-rework.md"))
+        paths = [p for p in glob.glob(os.path.join(self.dir, "cycles", "*", "reviews", f"{task}*.md"))
+                 if re.fullmatch(rf"{re.escape(task)}({REWORK_SUFFIX})?", os.path.basename(p)[:-3])]
         return [(p, read_frontmatter(p)[0] or {}) for p in sorted(paths)]
 
     def findings(self):
@@ -574,7 +577,7 @@ def done_problems(ch, name):
     through = shas[shas.index(sha):] if sha in shas else [sha]
     named = [p for p, fm in ch.reviews(name) if any(_same_sha(fm.get("merge_commit"), c) for c in through)]
     if not named:
-        problems.append(f"no review file (cycles/*/reviews/{name}.md or {name}-rework.md) names its merge "
+        problems.append(f"no review file (cycles/*/reviews/{name}.md or {name}-rework-<n>.md) names its merge "
                         f"commit {sha[:12]} or a later commit through it")
     problems += test_problems(ch, name, sha)
     return problems, sha
@@ -855,14 +858,14 @@ def convention_breaks(ch):
                 brk(ch.rel(p), f"key {k}: {SECOND_COPIES['finding'][k]}", f"no {k} key")
     for p in sorted(glob.glob(os.path.join(ch.dir, "cycles", "*", "reviews", "*.md"))):
         n = os.path.basename(p)[:-3]
-        if n != "whole-change" and re.sub(r"-rework$", "", n) not in tasks:
-            brk(ch.rel(p), "review file names no task", "reviews/<task>.md or <task>-rework.md")
+        if n != "whole-change" and re.sub(rf"{REWORK_SUFFIX}$", "", n) not in tasks:
+            brk(ch.rel(p), "review file names no task", "reviews/<task>.md or <task>-rework-<n>.md")
     for p in sorted(glob.glob(os.path.join(ch.dir, "cycles", "*", "briefs", "*.md"))):
         n = os.path.basename(p)[:-3]
-        base = re.sub(r"-rework$", "", re.sub(r"^review-", "", n))
+        base = re.sub(rf"{REWORK_SUFFIX}$", "", re.sub(r"^review-", "", n))
         if n not in ("premise-check", "conformance", "review-whole-change") and base not in tasks:
             brk(ch.rel(p), "brief file names no task",
-                "briefs/<task>.md, <task>-rework.md, review-<task>.md, premise-check.md or conformance.md")
+                "briefs/<task>.md, <task>-rework-<n>.md, review-<task>.md, premise-check.md or conformance.md")
     return out
 
 

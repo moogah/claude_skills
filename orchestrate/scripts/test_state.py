@@ -721,3 +721,20 @@ def test_a_design_whose_seams_section_is_one_line_is_designed(home):
     assert home.ok("status")["stage"] == "designed, no cycle open"
     (home.record / "design.org").write_text("#+TITLE: chg: design\n\n* Seams\n\n* Open Questions\n")
     assert home.ok("status")["stage"] == "intent, no design"
+
+
+def test_rework_briefs_and_reviews_are_numbered(home):
+    """execute § A re-spawned Implementor's brief names its task and the scope of its fix: each
+    rework's brief is a file of its own, so a second does not overwrite the first."""
+    cycle = started(home)
+    home.task("a", status="needs_review")
+    for n in ("a", "a-rework-1", "a-rework-2", "review-a-rework-2"):
+        home.brief(cycle, n)
+    assert home.ok("conventions")["breaks"] == []
+    sha = home.merge("a", subject="Merge task a (rework)")
+    d = home.dir / "cycles" / cycle / "reviews"
+    d.mkdir(parents=True, exist_ok=True)
+    (d / "a-rework-2.md").write_text(f"---\ntask_name: a\nmerge_commit: {sha}\n---\n\n## Summary\nok\n")
+    home.ok("check", "done", "a")
+    assert home.ok("conventions")["breaks"] == []
+    assert state.Change(str(home.root), "chg").batch(cycle) == ["a"]  # rework briefs are not batch tasks

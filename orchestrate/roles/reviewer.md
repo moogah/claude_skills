@@ -97,7 +97,7 @@ Other agents share the machine (`roles/implementor.md` § A machine shared with 
 
 ## Output contract
 
-The Reviewer writes findings to `<change-dir>/cycles/<cycle-id>/reviews/<task-name>.md` (`<task-name>-rework.md` for the review of a rework). `merge_commit` is the commit reviewed, the one the brief named; `state.py check done` reads it, and a task is done only when its latest merge commit is named here:
+The Reviewer writes findings to `<change-dir>/cycles/<cycle-id>/reviews/<task-name>.md` (`<task-name>-rework-<n>.md` for the review of a rework, `<n>` its brief's). `merge_commit` is the commit reviewed, the one the brief named; `state.py check done` reads it, and a task is done only when its latest merge commit is named here:
 
 ```markdown
 ---

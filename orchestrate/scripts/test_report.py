@@ -109,8 +109,9 @@ def test_spend_by_role_reads_the_role_from_the_spawn_description(home, capsys):
 
 def test_quality_reads_rework_briefs_findings_and_follow_ups(home, capsys):
     d = home / CH
-    (d / "cycles" / "cycle-1" / "briefs" / "a-rework.md").write_text("rework\n")
-    (d / "cycles" / "cycle-1" / "briefs" / "review-a-rework.md").write_text("review\n")
+    (d / "cycles" / "cycle-1" / "briefs" / "a-rework-1.md").write_text("rework\n")   # two reworks of a,
+    (d / "cycles" / "cycle-1" / "briefs" / "a-rework-2.md").write_text("rework\n")   # numbered (execute § 8)
+    (d / "cycles" / "cycle-1" / "briefs" / "review-a-rework-1.md").write_text("review\n")
     f = d / "cycles" / "cycle-1" / "findings"
     f.mkdir()
     (f / "arch-1.md").write_text("---\nfinding_id: arch-1\ntrigger: conformance\nkind: issue\ndiscovered_from: b\n---\n")
@@ -128,7 +129,7 @@ def test_quality_reads_rework_briefs_findings_and_follow_ups(home, capsys):
     (d / "cycles" / "cycle-1" / "briefs" / "w.md").write_text("brief\n")
     _transcript(home, "i2", "implementor: b", [("r1", "claude-sonnet-5-5", "low", (1, 0, 0, 1), "2026-10-23T10:01:00Z")])
     q = run(home, capsys, "spend", "--cycle", "cycle-1")[1]["quality"]
-    assert q["rejections"] == 1 and q["rework_tasks"] == ["a"]
+    assert q["rejections"] == 2 and q["rework_tasks"] == ["a"]
     assert sorted((x["source"], x["against"]) for x in q["defects_after_done"]) == \
         [("arch-1", "b"), ("c", "b"), ("w", None)]
     assert q["by_implementor_setting"]["sonnet/low"]["defects_after_done"] == 2

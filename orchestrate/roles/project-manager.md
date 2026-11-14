@@ -48,7 +48,7 @@ Refactor or polish tasks consuming attention while main-path tasks sit blocked o
 
 ### Cycle anti-patterns
 
-The same kind of task fails in the same way, cycle after cycle: a Reviewer sends back the same class of task for the same reason (`<task>-rework` briefs), an Implementor loses context on tasks of one class. These are process bugs the orchestrator can't see because each cycle ends "successfully".
+The same kind of task fails in the same way, cycle after cycle: a Reviewer sends back the same class of task for the same reason (`<task>-rework-<n>` briefs), an Implementor loses context on tasks of one class. These are process bugs the orchestrator can't see because each cycle ends "successfully".
 
 **PM action**: a meta-discovery, and a candidate `process` question; the orchestrator writes the file (`templates/ask.md`). Process asks are not presented.
 

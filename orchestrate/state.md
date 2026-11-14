@@ -75,7 +75,7 @@ A task's status is its task file's `status:` (`templates/task-body.md`), and now
 | `blocked` | Waiting on another task, an ask, a blocking finding, a merge conflict or an external dependency; `state.py blocker` says which | |
 | `externalised` | Out of scope; moved to `.tasks/` (`externalisation.md`) | |
 
-`done`, `failed`, `blocked` and `externalised` are **stopped**: execute's gate passes when every task in the batch is stopped. A review that sends a task back is a `<task>-rework` brief and review file; there is no rejection counter. The task's times are its commits' times.
+`done`, `failed`, `blocked` and `externalised` are **stopped**: execute's gate passes when every task in the batch is stopped. A review that sends a task back is a `<task>-rework-<n>` brief and review file, numbered per rework; there is no rejection counter. The task's times are its commits' times.
 
 ## The event log
 
@@ -124,7 +124,7 @@ The record is readable only while agents keep these forms. `state.py conventions
 - **Phase-close commits in the home**: `Orchestrator: <cycle-id> <phase> closed`, exactly.
 - **Inline-fix commits**: `Inline fix after <merging|review of> task <task>: <what>` (`flows/execute.md` § 8); the review finding it answers is named in the message, and linked by `state.py fix-link`.
 - **Test runs**: `<change-dir>/after-<task>-<sha12>.status` and, against a red baseline, `.compare`, named for the merge commit, beside the output `.txt`; `baseline-<cycle-id>.status` beside `baseline-<cycle-id>.txt`. The exit codes are tracked and are the record; the outputs are not.
-- **Review and brief files**: `cycles/<cycle-id>/reviews/<task>.md`, `<task>-rework.md`, `whole-change.md`; `cycles/<cycle-id>/briefs/<task>.md`, `<task>-rework.md`, `review-<task>.md`, `premise-check.md`, `conformance.md`. A review file's frontmatter names the merge commit it reviewed: `merge_commit: <sha>`.
+- **Review and brief files**: `cycles/<cycle-id>/reviews/<task>.md`, `<task>-rework-<n>.md`, `whole-change.md`; `cycles/<cycle-id>/briefs/<task>.md`, `<task>-rework-<n>.md`, `review-<task>.md`, `premise-check.md`, `conformance.md`. A review file's frontmatter names the merge commit it reviewed: `merge_commit: <sha>`.
 - **Task-file frontmatter**: the keys `templates/task-body.md` names, `status` from § Task status, `task_name` the file's name. A key holding a fact whose source is elsewhere (`merge_commit`, the times) is a break that names that source; so is `decoration` or `resolution` in a finding file.
 
 ## Recovery
@@ -149,9 +149,9 @@ tasks/open/<name>.md      # task files (templates/task-body.md); tasks/closed/ a
 baseline-<cycle-id>.status # execute § 1: the baseline's exit code (its output, .txt, untracked)
 after-<task>-<sha12>.status # execute § 4, with .compare: the record that the tests pass at the merge (output .txt untracked)
 cycles/<cycle-id>/
-  briefs/<task>.md        # plan § 5: the batch, and what the Implementor sees; review-<task>.md, <task>-rework.md
+  briefs/<task>.md        # plan § 5: the batch, and what the Implementor sees; review-<task>.md, <task>-rework-<n>.md
   premise-check.md        # plan § 3
-  reviews/<task>.md       # and <task>-rework.md, whole-change.md (integrate § 9)
+  reviews/<task>.md       # and <task>-rework-<n>.md, whole-change.md (integrate § 9)
   reports/<task>.md       # the Implementor's structured report, orchestrator-only
   findings/<finding-id>.md
   asks/<ask-id>.org       # applied, declined and superseded asks

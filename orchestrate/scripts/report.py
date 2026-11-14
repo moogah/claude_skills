@@ -258,17 +258,17 @@ def spend_by_role(ch, agents, spend):
 # ---------------------------------------------------------------- quality, from the record
 
 def quality(ch, agents, spend, cycle=None):
-    """Reviewer rejections (a `<task>-rework` brief each), rework tasks, and defects found after
+    """Reviewer rejections (a `<task>-rework-<n>` brief each), rework tasks, and defects found after
     done: a conformance finding of kind `issue`, a task whose discovered_from begins
     `whole-change`, or a follow-up of a merged task that neither its Implementor nor its Reviewer
     raised. All by the setting each task's Implementor ran at (`unrecorded` without one)."""
     tasks = ch.tasks()
     scope = set(ch.batch(cycle)) if cycle else set(tasks)
     rejections = {}
-    for p in glob.glob(os.path.join(ch.dir, "cycles", cycle or "*", "briefs", "*-rework.md")):
-        n = os.path.basename(p)[:-len("-rework.md")]
-        if not n.startswith("review-"):
-            rejections[n] = rejections.get(n, 0) + 1
+    for p in glob.glob(os.path.join(ch.dir, "cycles", cycle or "*", "briefs", "*-rework*.md")):
+        m = re.fullmatch(r"(.+)-rework(?:-\d+)?", os.path.basename(p)[:-3])
+        if m and not m.group(1).startswith("review-"):
+            rejections[m.group(1)] = rejections.get(m.group(1), 0) + 1
     setting = {}
     for a in agents:
         s = spend.get(a["agent_id"])
