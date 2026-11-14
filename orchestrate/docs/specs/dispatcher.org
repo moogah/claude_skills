@@ -1,6 +1,6 @@
 #+TITLE: dispatcher
 #+OPTIONS: ^:{} -:nil
-#+STATUS: draft 2026-11-13, extracted from the reference skill (=main= =e356da7=); at the hand-off review 2026-11-13: G4, G6 and G10 applied, the design round's asks no longer go to plan (G1, G5); the recommendation's form filled
+#+STATUS: draft 2026-11-13, extracted from the reference skill (=main= =e356da7=); at the hand-off review 2026-11-13: G4, G6 and G10 applied, the design round's asks no longer go to plan (G1, G5); the recommendation's form and the resume's order filled
 
 * Purpose
 
@@ -229,6 +229,11 @@ or when it blocks plan; and SHALL write each answer back into the ask's file.
 - *THEN* the open =decision= asks are put one per call, the blocking ones first, as after any hand-back
 - *AND* none is printed as a list line
 
+*** Scenario: A stopped agent is resumed before the asks that block nothing are put
+- *WHEN* a phase agent stopped on asks that block its work, other =decision= asks that block nothing are open, and the user is present
+- *THEN* the dispatcher resumes the agent as soon as the blocking asks are answered
+- *AND* puts the others after the resume
+
 *** Scenario: Open decisions are never listed in chat while the user is present
 - *WHEN* the user is present and two or more =decision= asks are open
 - *THEN* no message the dispatcher writes lists them before they are put
@@ -333,14 +338,6 @@ overlay with the user present, one question per call.
 - *AND* the overlay is written from the answers, never copied from another home
 
 * Gaps
-
-** Gap: Whether the asks that block nothing are put before the stopped agent is resumed
-:PROPERTIES:
-:REQUIREMENT: Asks reach the user only through the dispatcher, one per call
-:END:
-When a phase agent stopped on asks that block work and other decisions are open, the agent is
-resumed once the blocking ones are answered, and the rest are put after them; whether they are put
-before the resume or after it is not stated.
 
 ** Gap: Whether an answer given in the call is committed
 :PROPERTIES:
