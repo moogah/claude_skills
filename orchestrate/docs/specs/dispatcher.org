@@ -1,0 +1,369 @@
+#+TITLE: dispatcher
+#+OPTIONS: ^:{} -:nil
+#+STATUS: draft 2026-11-13, extracted from the reference skill (=main= =e356da7=); not yet reviewed
+
+* Purpose
+
+The dispatcher is the session the user invokes the skill in. It takes a change up where it stands
+and spawns the phase agent the change calls for, with a fixed brief at that phase's role default; it
+receives each phase agent's one-line hand-back, relays it to the user and acts on its outcome; it
+is the only agent that puts an ask to the user, one per call, and writes the answer back into the
+ask's file; and it keeps its own context to pointers, asking a phase agent near its context limit
+to hand over. It does no phase's work: it reads no instructions of a phase or role, no artifact and
+no code, applies no answer and decides nothing the user decides. Its behaviour shows in its session
+(what it reads, the agents it spawns and their briefs, the calls it puts to the user and what it
+shows them) and in the ask files and the change's record it writes to.
+
+* Requirements
+
+** Requirement: The dispatcher's context holds pointers only
+:PROPERTIES:
+:GOAL:     G13
+:END:
+The dispatcher SHALL read only the skill's entry document, where the change stands, a running
+phase agent's context size, and an ask file at the moment it puts that ask to the user; it SHALL
+read no instructions of a phase or role, no artifact of the change and no code, and SHALL run every
+phase in a phase agent spawned from a fresh context.
+
+*** Scenario: The dispatcher reads no phase or role instructions, artifact or code
+- *WHEN* the dispatcher takes a change through any phase
+- *THEN* it reads none of the skill's instructions for a phase or a role
+- *AND* it reads no artifact of the change, other than an ask file it is putting to the user, and no code
+
+*** Scenario: An ask file is read once, when it is put
+- *WHEN* the dispatcher puts an open ask to the user
+- *THEN* it reads that ask's file once, at that moment
+- *AND* it never reads the inbox's files together
+
+*** Scenario: Every phase runs in a phase agent the dispatcher spawns
+- *WHEN* a phase is to run: opening, the design round, plan, execute, integrate or the inline path
+- *THEN* the dispatcher spawns a phase agent for it from a fresh context
+- *AND* does none of the phase's work itself
+
+** Requirement: Invoked with no phase named, the dispatcher takes the change up where it stands
+:PROPERTIES:
+:GOAL:     none stated
+:END:
+Invoked with no phase named, the dispatcher SHALL spawn the phase agent for the step the change
+stands at: opening, the design round, a first plan, the open phase, the next phase after a passed
+gate, the close of a cycle, or a plan for the next cycle; it SHALL never start a new cycle while
+one is open, and SHALL leave a waiting answer to the phase agent it spawns or resumes.
+
+*** Scenario: A change with no intent is opened
+- *WHEN* the dispatcher is invoked with no phase named for a change that has no intent
+- *THEN* it spawns the opening phase agent
+
+*** Scenario: An opening agent's brief carries the source as given
+- *WHEN* the dispatcher spawns the opening phase agent
+- *THEN* the brief carries the source: the user's words verbatim, the paths of the cross-change backlog's items taken up, or the split's ask and its change
+- *AND* the dispatcher reads nothing to write it
+
+*** Scenario: An opened change goes on to its design round
+- *WHEN* the opening phase agent hands back that the change is opened
+- *THEN* the dispatcher relays the line, which gives the user the intent's path
+- *AND* spawns the design round's phase agent for the change
+
+*** Scenario: A change with no seams yet goes to the design round
+- *WHEN* a change has its intent, no cycle has started, and its design has no Seams table or does not exist
+- *THEN* the dispatcher spawns the design round's phase agent
+
+*** Scenario: A designed change with no cycle starts a plan
+- *WHEN* a change has its intent and a design with its Seams table, and no cycle has started
+- *THEN* the dispatcher spawns the plan phase agent, which starts the first cycle
+
+*** Scenario: An open phase is taken up by a phase agent for it
+- *WHEN* a cycle is open and its current phase's gate has not passed
+- *THEN* the dispatcher spawns a phase agent for that phase
+
+*** Scenario: A passed gate is followed by the next phase
+- *WHEN* a phase's gate has passed and the next phase has not started
+- *THEN* the dispatcher spawns the next phase's agent
+
+*** Scenario: An integrate that passed its gate is closed by an integrate agent
+- *WHEN* integrate's gate has passed and the cycle is not closed
+- *THEN* the dispatcher spawns an integrate phase agent, which closes the cycle and makes its commit
+
+*** Scenario: A closed cycle is followed by a plan for the next
+- *WHEN* the change's last cycle is closed
+- *THEN* the dispatcher spawns the plan phase agent, which starts a new cycle
+
+*** Scenario: No new cycle while one is open
+- *WHEN* a cycle of the change is open
+- *THEN* the dispatcher starts no new cycle
+
+*** Scenario: A waiting answer is handled by the phase agent, not the dispatcher
+- *WHEN* the change shows an ask whose answer is waiting
+- *THEN* the dispatcher does not apply the answer
+- *AND* the phase agent it spawns or resumes next handles it
+
+*** Scenario: Open questions before the first cycle go to plan
+- *WHEN* the design round hands back that it stopped on open questions and no cycle exists
+- *THEN* the dispatcher spawns the plan phase agent, which starts the cycle and files the asks
+
+*** Scenario: A rethink answer sends the change back to opening
+- *WHEN* the plan phase agent hands back that it did not start because the user answered rethink on the MVP decision
+- *THEN* the dispatcher spawns the opening phase agent for the change, with the intent and the answer as its source
+
+** Requirement: A phase agent is spawned with the fixed brief, at its phase's role default
+:PROPERTIES:
+:GOAL:     none stated
+:END:
+The dispatcher SHALL give each phase agent the same short brief, naming its phase, change, cycle
+and home and carrying the phase agent's standing instructions, SHALL spawn it at its phase's role
+default, passing both model and effort, and SHALL record its setting in the change's record at its
+first hand-back.
+
+*** Scenario: The brief names the phase, the change, the cycle and the home
+- *WHEN* the dispatcher spawns a phase agent
+- *THEN* its brief names the phase, the change, the cycle (or, for the design round, the change alone) and the home
+- *AND* points the agent at its phase's instructions, to follow to the phase's gate and close commit
+
+*** Scenario: The brief carries the phase agent's standing instructions
+- *WHEN* the dispatcher spawns a phase agent
+- *THEN* its brief tells it to spawn every agent at the setting its phase names, passing model and effort, and to record each one
+- *AND* that it cannot ask the user: an ask is a file, and it hands back that it stopped, naming the ask, after finishing what does not wait on it
+- *AND* that it hands back once, in one line, never a report
+- *AND* that asked to hand over, it stops at a clean point and writes a handover
+- *AND* that what the user reads uses the terms of the product's glossary, when it has one
+
+*** Scenario: Each phase agent runs at its phase's role default
+- *WHEN* the dispatcher spawns a phase agent
+- *THEN* the spawn passes both a model and an effort
+- *AND* they are the phase's role default: opening =opus=, =medium=; design round =sonnet=, =medium=; plan =opus=, =medium=; execute =sonnet=, =high=; integrate =sonnet=, =high=; inline path =sonnet=, =medium=
+
+*** Scenario: The dispatcher records a phase agent's setting at its first hand-back
+- *WHEN* a phase agent hands back for the first time
+- *THEN* the change's record holds the agent, its phase and the setting it was spawned at
+- *AND* when that agent is resumed and hands back again, no second entry is made for it
+
+** Requirement: Each hand-back is relayed to the user and acted on by its outcome
+:PROPERTIES:
+:GOAL:     none stated
+:END:
+After each phase agent's hand-back the dispatcher SHALL show the user the line itself, then the
+open decisions, before the phase's results; it SHALL report a failure and stop, resume by message
+an agent that stopped on an ask or handed back while a worker ran, and spawn a fresh agent only for
+a phase that finished.
+
+*** Scenario: A hand-back is relayed line first, then the open decisions
+- *WHEN* a phase agent hands back
+- *THEN* the dispatcher shows the user the line itself
+- *AND* then the open decisions
+
+*** Scenario: Asks come before the phase's results
+- *WHEN* the dispatcher shows the user a phase's results and there are open decisions
+- *THEN* the decisions come first
+- *AND* the results follow, or go in a message of their own
+
+*** Scenario: A failed phase is reported and nothing further is spawned
+- *WHEN* a phase agent hands back that it failed
+- *THEN* the dispatcher tells the user what failed, as the line says
+- *AND* spawns no further phase agent
+
+*** Scenario: A hand-back that names a running worker is resumed
+- *WHEN* a phase agent's hand-back names a worker still running or a wait
+- *THEN* the dispatcher resumes that same agent by message
+- *AND* does not take the hand-back as the phase's end
+
+*** Scenario: A phase agent stopped on an ask is resumed, not replaced
+- *WHEN* a phase agent stopped on an ask and the dispatcher goes on with it
+- *THEN* the dispatcher resumes that same agent by message
+- *AND* spawns no new agent for the phase
+
+** Requirement: Asks reach the user only through the dispatcher, one per call
+:PROPERTIES:
+:GOAL:     G10 (the outcome list's link, the drafter's reading, not yet reviewed)
+:END:
+The dispatcher SHALL decide whether the user is present by the time of their last message; SHALL
+put an ask to a present user one per call, never as a list in chat, the asks that block work
+waiting now first, each call carrying the ask's recommendation; SHALL stop the change for an ask
+only when it is an =environment= ask, when it blocks work waiting now while the user is present,
+or when it blocks plan; and SHALL write each answer back into the ask's file.
+
+*** Scenario: A user who sent a message in the last 15 minutes is present
+- *WHEN* the user's last message in the session is less than 15 minutes old
+- *THEN* the user is present
+
+*** Scenario: A user silent for 15 minutes is absent
+- *WHEN* the session holds no message from the user in its last 15 minutes, or none at all
+- *THEN* the user is absent
+
+*** Scenario: Stopped on an ask, a present user is asked and the agent resumed
+- *WHEN* a phase agent hands back that it stopped on an ask and the user is present
+- *THEN* the dispatcher puts that ask to the user in a call holding it alone
+- *AND* writes the answer into the ask's file
+- *AND* resumes the same phase agent by message
+
+*** Scenario: Stopped on an ask, an absent user's phase agent is resumed with word of the absence
+- *WHEN* a phase agent hands back that it stopped on an ask that blocks work waiting now, the ask is neither an =environment= ask nor one that blocks plan, and the user is absent
+- *THEN* the dispatcher puts no call to the user
+- *AND* resumes the same phase agent by message, saying that the user is absent
+
+*** Scenario: The design round's asks are all put in one sitting
+- *WHEN* a phase agent hands back that it stopped on several asks that block plan, and the user is present
+- *THEN* the dispatcher puts every one of them, one per call, in one sitting
+- *AND* resumes the phase agent once all of them are answered
+
+*** Scenario: Asks that block plan wait for an absent user
+- *WHEN* a phase agent hands back that it stopped on asks that block plan, and the user is absent
+- *THEN* the dispatcher stops with one line pointing at the asks' files
+- *AND* the change waits: no phase agent is resumed or spawned for it
+
+*** Scenario: An environment ask is put at once, alone
+- *WHEN* a phase agent hands back that it stopped on an =environment= ask and the user is present
+- *THEN* the dispatcher puts it to the user at once, in a call holding it alone
+
+*** Scenario: An environment ask stops the dispatcher when the user is absent
+- *WHEN* a phase agent hands back that it stopped on an =environment= ask and the user is absent
+- *THEN* the dispatcher stops with one line pointing at the ask's file
+- *AND* resumes no phase agent
+
+*** Scenario: Open decisions are put one per call, the blocking ones first
+- *WHEN* a phase agent has handed back, the user is present and several =decision= asks are open
+- *THEN* each is put to the user in a call of its own
+- *AND* the asks that block work waiting now are put first, then the rest in the order the change lists them
+
+*** Scenario: Open decisions are never listed in chat while the user is present
+- *WHEN* the user is present and two or more =decision= asks are open
+- *THEN* no message the dispatcher writes lists them before they are put
+
+*** Scenario: Every call carries the ask's recommendation
+- *WHEN* the dispatcher puts an ask to the user
+- *THEN* the call carries the ask's recommendation
+
+*** Scenario: An ask that blocks no waiting work is put with a Not now option
+- *WHEN* the user is present and a =decision= ask blocks no work waiting now
+- *THEN* it is put after the asks that do, in a call of its own
+- *AND* the call offers =Not now=
+
+*** Scenario: Not now leaves the ask open
+- *WHEN* the user answers a call with =Not now=
+- *THEN* the ask stays open
+
+*** Scenario: An absent user gets each open decision in one line
+- *WHEN* a phase agent has handed back, the user is absent and =decision= asks are open
+- *THEN* the dispatcher relays each in one line: its id, its question and its file's path
+- *AND* puts no call
+
+*** Scenario: An ask that blocks nothing never stops the change
+- *WHEN* a phase agent hands back that its gate passed and the open asks block no work waiting now
+- *THEN* the dispatcher spawns the next phase's agent without waiting for their answers
+
+*** Scenario: An answer given in the call is written into the ask's file
+- *WHEN* the user answers a call with one of the ask's options
+- *THEN* the dispatcher writes that option's label into the ask's file as its answer
+
+*** Scenario: A free-text answer is written for the phase agent to read back
+- *WHEN* the user answers a call with words of their own rather than an option
+- *THEN* the dispatcher writes the words into the ask's file as given
+- *AND* leaves the readback to the phase agent
+
+*** Scenario: An answer given in chat is written into the file and committed
+- *WHEN* the user answers an ask in chat
+- *THEN* the dispatcher writes the answer into the ask's file
+- *AND* commits the file in the home
+
+*** Scenario: A readback is shown in chat and its confirmation written to the file
+- *WHEN* an ask's answer has a readback waiting for the user
+- *THEN* the dispatcher shows the readback to the user in chat
+- *AND* when the user confirms it in chat, writes the confirmation into the ask's file and commits it in the home
+
+** Requirement: A phase agent near its context limit hands over to a fresh one
+:PROPERTIES:
+:GOAL:     none stated
+:END:
+Before resuming a running phase agent, the dispatcher SHALL read the agent's context size against
+the home's limit (400,000 tokens unless the overlay sets another), never its transcript; over the
+limit, it SHALL ask the agent to hand over, and on a handover SHALL spawn a fresh agent for the same
+phase at the same setting, given the handover.
+
+*** Scenario: The dispatcher reads a phase agent's context before resuming it
+- *WHEN* a running phase agent hands back or ends a turn to wait, and the dispatcher is about to resume it
+- *THEN* the dispatcher first reads the agent's context in tokens against the home's limit, 400,000 unless the overlay sets another
+- *AND* never reads the agent's transcript itself
+
+*** Scenario: Over the limit, the message that resumes the agent asks it to hand over
+- *WHEN* a phase agent's context is over the limit
+- *THEN* the message that resumes it asks it to hand over
+
+*** Scenario: A handover is followed by a fresh agent for the same phase
+- *WHEN* a phase agent hands back that it stopped with a handover
+- *THEN* the dispatcher spawns a fresh agent for the same phase, at the setting of the agent it replaces
+- *AND* its brief is the phase's brief with one more instruction: continue from the handover, read after where the change stands, and redo nothing it lists as done
+
+** Requirement: The user is told when the overlay is missing or has drifted
+:PROPERTIES:
+:GOAL:     none stated
+:END:
+The dispatcher SHALL tell the user explicitly when no overlay is found for the home, SHALL relay
+an overlay's drift from the skill's form once and stop nothing for it, and SHALL set up a home's
+overlay with the user present, one question per call.
+
+*** Scenario: A missing overlay is announced to the user
+- *WHEN* the dispatcher finds no overlay for the home
+- *THEN* it tells the user explicitly that none was found
+
+*** Scenario: A drifted overlay is relayed once and stops nothing
+- *WHEN* the home's overlay has drifted from the skill's form: a removed key, a retired concept, a path that climbs to the home
+- *THEN* the dispatcher tells the user once in the session
+- *AND* the change goes on, the overlay left for the user to correct by hand
+
+*** Scenario: A home's overlay is set up with the user, one question per call
+- *WHEN* the dispatcher sets up a home's overlay
+- *THEN* it asks the user, one question per call in one sitting: the repositories and their checkouts, the test command and its parser, the worktree placement, the hooks and the pending-test style
+- *AND* the overlay is written from the answers, never copied from another home
+
+* Gaps
+
+** Gap: Whether a call for an ask that blocks waiting work offers Not now
+:PROPERTIES:
+:REQUIREMENT: Asks reach the user only through the dispatcher, one per call
+:END:
+The reference skill gives every call a =Not now= option in one place, attaches it to an ask that
+blocks nothing in another, and gives the design round's questions no default. Not stated for an ask
+that blocks plan, a merge or a task.
+
+** Gap: How a call shows which option is the recommendation
+:PROPERTIES:
+:REQUIREMENT: Asks reach the user only through the dispatcher, one per call
+:END:
+A call carries the ask's recommendation; whether it is an option marked as recommended, a sentence
+in the question, or both, is not stated.
+
+** Gap: What a present user sees of the open decisions after integrate
+:PROPERTIES:
+:REQUIREMENT: Asks reach the user only through the dispatcher, one per call
+:END:
+After a hand-back a present user is put the open decisions one per call, never as a list; after
+integrate, and for a new ask file, the user is shown one line per open decision. Which one a
+present user gets after integrate is not stated.
+
+** Gap: Whether the asks that block nothing are put before the stopped agent is resumed
+:PROPERTIES:
+:REQUIREMENT: Asks reach the user only through the dispatcher, one per call
+:END:
+When a phase agent stopped on asks that block work and other decisions are open, the agent is
+resumed once the blocking ones are answered, and the rest are put after them; whether they are put
+before the resume or after it is not stated.
+
+** Gap: Whether an answer given in the call is committed
+:PROPERTIES:
+:REQUIREMENT: Asks reach the user only through the dispatcher, one per call
+:END:
+An answer given in chat is committed with its file; for an answer given in the call no commit is
+stated, and the asks' commit rule lists none for an answer alone.
+
+** Gap: What follows when no overlay is found
+:PROPERTIES:
+:REQUIREMENT: The user is told when the overlay is missing or has drifted
+:END:
+After telling the user, the dispatcher falls back to defaults or sets the overlay up with the user;
+elsewhere a project with no overlay is set up first, and the home itself is found by its overlay.
+Which applies when is not stated.
+
+** Gap: What the dispatcher does when plan hands back that the change stopped
+:PROPERTIES:
+:REQUIREMENT: Invoked with no phase named, the dispatcher takes the change up where it stands
+:END:
+Plan hands back that it did not start because the user answered stop on the MVP decision; what the
+dispatcher then does (relay and stop, or more) is not stated.
