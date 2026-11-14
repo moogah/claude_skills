@@ -1,6 +1,6 @@
 #+TITLE: dispatcher
 #+OPTIONS: ^:{} -:nil
-#+STATUS: draft 2026-11-13, extracted from the reference skill (=main= =e356da7=); at the hand-off review 2026-11-13: G4, G6 and G10 applied, the design round's asks no longer go to plan (G1, G5)
+#+STATUS: draft 2026-11-13, extracted from the reference skill (=main= =e356da7=); at the hand-off review 2026-11-13: G4, G6 and G10 applied, the design round's asks no longer go to plan (G1, G5); the recommendation's form filled
 
 * Purpose
 
@@ -242,6 +242,11 @@ or when it blocks plan; and SHALL write each answer back into the ask's file.
 - *THEN* it is put after the asks that do, in a call of its own
 - *AND* the call offers =Not now=
 
+*** Scenario: The recommended option says so, with the file's reason
+- *WHEN* the dispatcher puts a =decision= ask that has a recommendation
+- *THEN* the call's option for the recommended choice has a label ending =(Recommended)=
+- *AND* its description gives the reason the ask's file gives
+
 *** Scenario: Every call offers Not now
 - *WHEN* the dispatcher puts any ask to the user
 - *THEN* the call offers =Not now=, whatever the ask blocks
@@ -328,13 +333,6 @@ overlay with the user present, one question per call.
 - *AND* the overlay is written from the answers, never copied from another home
 
 * Gaps
-
-** Gap: How a call shows which option is the recommendation
-:PROPERTIES:
-:REQUIREMENT: Asks reach the user only through the dispatcher, one per call
-:END:
-A call carries the ask's recommendation; whether it is an option marked as recommended, a sentence
-in the question, or both, is not stated.
 
 ** Gap: Whether the asks that block nothing are put before the stopped agent is resumed
 :PROPERTIES:
