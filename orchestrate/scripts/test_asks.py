@@ -244,3 +244,13 @@ def test_set_moves_a_settled_ask_to_the_cycle_given(run, repo):
     assert code == 0, err
     code, out, err = run("set", "ask-chg-1", "decision=Do it", "status=applied", "applied_via=x", "--cycle", "cycle-9")
     assert code == 0 and out["path"] == f"{CH}/cycles/cycle-9/asks/ask-chg-1.org"
+
+
+def test_a_design_round_ask_keeps_its_if_unanswered(run, repo):
+    """design-round § A design-round ask says the change waits if it is unanswered."""
+    (repo / CH / "events.jsonl").unlink()
+    wait = "The change waits: plan drafts nothing until it is answered."
+    code, out, err = run("add", json.dumps({**ASK, "blocks": ["plan"], "default_if_unanswered": wait}))
+    assert code == 0, err
+    doc = asks.AskDoc((repo / out["path"]).read_text())
+    assert doc.section_text("If unanswered").strip() == wait
