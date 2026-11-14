@@ -1,6 +1,6 @@
 #+TITLE: plan
 #+OPTIONS: ^:{} -:nil
-#+STATUS: draft 2026-11-13, extracted from the reference skill (=main= =e356da7=); at the hand-off review 2026-11-13: G1, G5, G6, G9 and G10 applied, the obsolete flag carried from =implementor=
+#+STATUS: draft 2026-11-13, extracted from the reference skill (=main= =e356da7=); at the hand-off review 2026-11-13: G1, G5, G6, G9 and G10 applied, the obsolete flag carried from =implementor=; the premise corrections filled (a free choice)
 
 * Purpose
 
@@ -274,6 +274,15 @@ record correction.
 - *THEN* before the batch is fixed the task's text no longer makes that claim
 - *AND* the correction is made in the text itself, not as an update stanza
 
+*** Scenario: Rewrite or split is the plan agent's free choice
+- *WHEN* the plan phase agent corrects a task for a wrong premise
+- *THEN* it may rewrite the task or split it, and either is a pass
+- *AND* the tasks it leaves make no wrong claim
+
+*** Scenario: A premise finding that blocks a batch task is fixed in the batch's work
+- *WHEN* a premise-check finding routed blocking blocks a task of the batch
+- *THEN* before the batch is fixed its fix is in the batch: a new task, or a rewrite of the task it blocks, the plan agent's free choice
+
 *** Scenario: An off-batch hardening finding goes on the hardening list at once
 - *WHEN* the premise check finds a defect outside every task's scope and it is routed to hardening
 - *THEN* it is an entry on the change's hardening list before plan closes
@@ -462,13 +471,6 @@ hand the dispatcher one line. It SHALL write no code and spawn no Implementor.
 - *THEN* no Implementor is spawned
 
 * Gaps
-
-** Gap: Which correction a wrong premise or a blocking premise finding takes
-:PROPERTIES:
-:REQUIREMENT: Tasks not drafted from the design are checked against HEAD before the batch is fixed
-:END:
-A task with a wrong premise is rewritten or split, and a blocking finding against a batch task
-is made a new task of the batch or folded into the task it blocks; no condition chooses between them.
 
 ** Gap: A main-path task in every batch, against a cycle after harden
 :PROPERTIES:
