@@ -167,8 +167,8 @@ The Reviewer never has to know which path was taken.
 
 The dispatcher asks a phase agent to hand over when its context passes the overlay's limit (`SKILL.md` § The dispatcher's loop). Every phase hands over this way; execute is where it happens most. The agent:
 
-1. Starts nothing new: no Implementor, Reviewer, Architect run or merge not already under way.
-2. Reaches a clean point: every worker it spawned has reported, the merge queue is empty (each landed task merged and tested, § 3-4, or held by an ask), and state says where each task is (`state.py task set`).
+1. Starts nothing new: no Implementor, Reviewer or Architect run not already under way.
+2. Reaches a clean point: every worker it spawned has reported, the merge queue is empty (each landed task merged and tested, § 3-4, or held by an ask: a task that has landed is merged now, not left for the fresh agent), and state says where each task is (`state.py task set`).
 3. Writes the handover, `<change-dir>/cycles/<cycle-id>/<phase>-handover.md` (the design round before any cycle: `<change-dir>/design-handover.md`), under three headings: **Merged** (each task and its merge commit, with its review done or not yet spawned), **Open** (each task not started, blocked or failed, and each ask it raised, by id), **Next** (the flow's steps left, in order, and anything the agent had decided that no file holds). Pointers, not prose: state, the reports and the reviews hold the detail.
 4. Commits it in the home with the phase's other artifacts so far, and hands back `<phase> <cycle-id>: stopped, handover <path>`.
 

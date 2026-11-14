@@ -1,6 +1,6 @@
 #+TITLE: execute
 #+OPTIONS: ^:{} -:nil
-#+STATUS: draft 2026-11-12, extracted from the reference skill (=main= =e356da7=); inferred statements reviewed 2026-11-12; seven gaps filled and the regression requirement revised 2026-11-12; the gap on the run after a fix filled 2026-11-13; four gaps opened and filled 2026-11-13 at the hand-off review; no gap open; accepted 2026-11-13 by the user at the hand-off review; one WHEN narrowed 2026-11-13 after acceptance (a blocked Implementor commits nothing), from the cross-spec map; an Implementor's discovery only the user can settle routed to an ask 2026-11-13 after acceptance, from =implementor='s review; amended 2026-11-14 after acceptance (a task's front matter kept in step with the record; a file the Reviewer's spawn names is its input; an Implementor's ask stops the phase only when it bears on dependent tasks), from the evals' build-out (=research/skill-evals/overnight/plan.org= § Decided with the user, 2026-11-14 morning)
+#+STATUS: draft 2026-11-12, extracted from the reference skill (=main= =e356da7=); inferred statements reviewed 2026-11-12; seven gaps filled and the regression requirement revised 2026-11-12; the gap on the run after a fix filled 2026-11-13; four gaps opened and filled 2026-11-13 at the hand-off review; no gap open; accepted 2026-11-13 by the user at the hand-off review; one WHEN narrowed 2026-11-13 after acceptance (a blocked Implementor commits nothing), from the cross-spec map; an Implementor's discovery only the user can settle routed to an ask 2026-11-13 after acceptance, from =implementor='s review; amended 2026-11-14 after acceptance (a task's front matter kept in step with the record; a file the Reviewer's spawn names is its input; an Implementor's ask stops the phase only when it bears on dependent tasks), from the evals' build-out (=research/skill-evals/overnight/plan.org= § Decided with the user, 2026-11-14 morning); amended 2026-11-14 after acceptance (asked to hand over, landed tasks are merged first), from the user's decisions on round 2 of the evals (=research/skill-evals/round-2/plan.org= § Log › Decisions needed)
 
 * Purpose
 
@@ -470,8 +470,8 @@ point and leave a handover a fresh agent can continue from.
 
 *** Scenario: Asked to hand over, the phase stops at a clean point
 - *WHEN* the phase agent is asked to hand over
-- *THEN* it starts no new Implementor, Reviewer or merge
-- *AND* it waits until every worker it spawned has reported and every landed task is merged and tested or held by an ask
+- *THEN* it starts no new Implementor or Reviewer
+- *AND* it waits until every worker it spawned has reported and every landed task is merged and tested or held by an ask, merging the tasks that have landed
 - *AND* it writes a handover with the tasks merged, the tasks and asks open, and the steps left
 - *AND* it commits the handover in the home and hands back that it stopped, naming the handover
 
