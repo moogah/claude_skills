@@ -650,3 +650,28 @@ it, or there is a demonstrated reason (it happened, a prior, the user asked, a m
 - Example :: "no option that fails the YAGNI check is recommended"
 - Avoid :: scope check, necessity test
 - Specs :: asks
+
+* seam objection
+A Discoveries entry in which an Implementor says that a seam row its task cites is wrong for the
+code, naming the row as its =affected_seam=; the work does what the code needs, the report lists the
+objection under =push_backs=, and integrate's conformance decides whether the row is amended.
+- Example :: "A seam row the work shows wrong gets a seam objection"
+- Avoid :: push-back (the agreed term for the phase agent's answer to a Reviewer's flag; main uses it for both), amendment (integrate's act on the row)
+- Specs :: implementor
+
+* pending test
+A test the design round writes for a scenario whose behaviour the code does not yet have, citing the
+scenario and marked in the project's pending style so the runner reports it as pending, never as
+failing; a task names the pending tests it promotes, and its Implementor removes the mark in the
+task's commit.
+- Example :: "The commit promotes the pending tests the task names"
+- Avoid :: failing test, skipped test, stub, test stub (main's retired quarantined stubs), xfail (one runner's mark)
+- Specs :: implementor, design-round, architect
+
+* deviation
+A departure an Implementor's work makes from what its task prescribes (scope beyond the task, a
+different approach, a test the task did not write changed to fit), declared in the report's
+=deviation_summary=, flagged =deviated= in the hand-back, and explained in the Observations.
+- Example :: "A deviation is flagged in the hand-back"
+- Avoid :: drift (integrate's word for code and design parting), scope creep; the journal kind =deviation= (a move off the flow, =record='s field value) is not this term
+- Specs :: implementor
