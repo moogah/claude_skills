@@ -1,6 +1,6 @@
 #+TITLE: asks
 #+OPTIONS: ^:{} -:nil
-#+STATUS: draft 2026-11-13, extracted from the reference skill (=main= =e356da7=); limited to the ask file: what makes a file an ask, where it lives, how it is committed; its one inferred scenario reviewed by the user 2026-11-13
+#+STATUS: draft 2026-11-13, extracted from the reference skill (=main= =e356da7=); first limited to the ask file (where it lives, how it is committed; its one inferred scenario reviewed by the user 2026-11-13); extended 2026-11-13 to the asks' full scope (the kinds, the blocking rule, the sections, answering and applying, the sync points, the index), two gaps open; not yet reviewed
 
 * Purpose
 
@@ -9,9 +9,12 @@ is never lost in a chat turn: the user answers in the file, git carries its hist
 session finds it. Other capabilities state that a question "is an ask file in the change's inbox";
 this spec states what such a file is and where it lives.
 
-This draft covers only the file. Not yet extracted: which kinds are put to the user and when (the
-inline rule), the answer protocol and the readback, the sync points, what each section must say so the
-user can decide without the code, and what a finding must carry for an ask to be written from it.
+It covers the file, its form and its place; the kinds, and which of them reach the user and when an
+ask stops the session; what each section must say so the user can decide without the code; what a
+finding must carry for an ask to be written from it; how an answer is given, read back and applied;
+the sync points at which answers are handled; the ask's entry in the change's state; and the commits
+that carry an ask's history. Putting an ask to the user, and knowing whether the user is present, is
+the dispatcher's (=dispatcher=); what a task blocked on an ask records is the record's (=record=).
 
 * Requirements
 
@@ -79,3 +82,347 @@ id, so the trail of every ask can be found in the home's history.
 - *WHEN* an ask file is created
 - *THEN* it is committed in the home
 - *AND* the commit's subject names the ask's id
+
+** Requirement: An ask's kind decides how it reaches the user
+:PROPERTIES:
+:GOAL:     G7
+:END:
+An ask's kind SHALL be chosen when its file is written, and SHALL decide how it reaches the user: a
+=decision= ask is put to the user as a question; an =environment= ask is put to them at once; a
+=confirmation= is written already applied and is never a question; a =process= ask is filed and never
+put to them. A stale sentence or design row beside right code SHALL be corrected and journaled,
+never asked about.
+
+*** Scenario: A decision ask is put to the user as a question
+- *WHEN* a =decision= ask is filed
+- *THEN* it is put to the user as a question
+
+*** Scenario: An environment ask reaches the user at once
+- *WHEN* an =environment= ask is filed
+- *THEN* it is put to the user at once, alone, whatever else is open
+
+*** Scenario: A confirmation is written applied and is never a question
+- *WHEN* a default is applied without asking, the project manager takes an action it may take alone, or a prior is recorded from the user's words
+- *THEN* a =confirmation= ask is written already applied, in the asks directory of its cycle
+- *AND* it has an About and a What happened section and no options
+- *AND* its Answer says what was applied without asking and that the user may object
+- *AND* it is never put to the user as a question
+
+*** Scenario: A process ask is filed and never put to the user
+- *WHEN* a question is about the orchestration itself: the design round, the change's record, the skill's text
+- *THEN* it is a =process= ask in the inbox, with no options
+- *AND* it is never put to the user
+
+*** Scenario: A stale document beside right code is corrected, never asked
+- *WHEN* the code is right and a sentence or a design row beside it is stale
+- *THEN* no ask file is written for it
+- *AND* the text is corrected in a commit whose subject names the row or the sentence
+- *AND* the change's journal records the correction in one line
+
+*** Scenario: A finding can give both a correction and a decision ask
+- *WHEN* a finding shows a stale sentence and the product question behind it
+- *THEN* the sentence is corrected and journaled at once
+- *AND* the product question is a =decision= ask of its own
+
+*** Scenario: The kind, not the role's routing, decides whether a finding is asked
+- *WHEN* a role routes a finding to the user
+- *THEN* the orchestrator chooses the ask's kind as it writes the file
+- *AND* the kind it chose, not the role's routing, decides whether the finding is put to the user
+
+** Requirement: An ask stops the session only for work waiting now
+:PROPERTIES:
+:GOAL:     G10 (inferred, O-XC-2)
+:END:
+An ask SHALL name the work that waits on it. The session SHALL wait for an ask's answer only when
+the ask blocks work waiting now and the user is present, and for the design round's questions and
+the MVP decision whether the user is present or not; any other ask SHALL hold only the tasks it
+names, and SHALL never stop the session for its answer. Whether the user is present is the
+dispatcher's to know (=dispatcher=), and the act of putting an ask is the dispatcher's.
+
+*** Scenario: An ask names the work that waits on it
+- *WHEN* an ask blocks work
+- *THEN* its =:BLOCKS:= names the tasks, the merges (=merge:<task>=), =plan=, =next-plan= or =done= that wait on it
+- *AND* an ask with no =:BLOCKS:= is one nothing waits on
+
+*** Scenario: An ask that blocks work waiting now is answered before that work goes on
+- *WHEN* the user is present and an ask's =:BLOCKS:= names work of the current phase (in execute a merge in the batch or a task not yet spawned, in plan a task of the batch, on the inline path its own commit)
+- *THEN* the session waits for the ask's answer before the work it blocks goes on
+
+*** Scenario: An ask that blocks nothing waiting never stops the session
+- *WHEN* an ask's =:BLOCKS:= is =next-plan=, =done= or absent
+- *THEN* the session never stops for its answer
+
+*** Scenario: With the user absent, an ask holds only the tasks it blocks
+- *WHEN* the user is absent and an ask, other than a design-round question or the MVP decision, blocks work waiting now
+- *THEN* each task it names is blocked on it (=record= § A task blocked on an ask names the ask)
+- *AND* the phase finishes everything that does not wait on it and passes its gate if it can
+- *AND* it stops, with a one-line pointer to the ask's file, only when its gate cannot pass
+
+*** Scenario: The design round's questions are all answered before plan
+- *WHEN* the design round files its open questions as asks
+- *THEN* plan starts only once every one of them is answered, whether the user is present or not
+- *AND* none of them has an If unanswered section
+
+*** Scenario: The change waits for the MVP decision
+- *WHEN* the MVP decision ask is open
+- *THEN* nothing more runs on the change until the user answers it, whether the user is present or not
+
+** Requirement: An ask file says what the user needs to decide without the code
+:PROPERTIES:
+:GOAL:     G10 (O-NS-8)
+:END:
+An ask file SHALL be written for the reader the project names (by default a technical product
+manager who has not watched the development), in product terms: a plain question, what the thing is
+for, what happened, two to four options each with what the user would notice, one recommendation,
+and what happens if it is left unanswered. The orchestrator SHALL write every section but the
+answer.
+
+*** Scenario: An ask is written for the project's reader
+- *WHEN* an ask is written
+- *THEN* it is written for the reader the project's configuration names
+- *AND* when it names none, for a technical product manager who has not watched the development and knows its internals only shallowly
+
+*** Scenario: A decision ask has its six sections
+- *WHEN* a =decision= ask is written
+- *THEN* it has the sections =* About=, =* What happened=, =* Options=, =* Recommendation=, =* If unanswered= and =* Answer=, the last left for the user
+
+*** Scenario: The title is one plain line a reader without the code can answer
+- *WHEN* an ask is written
+- *THEN* its title is one line of at most 600 characters
+- *AND* a reader who has not seen the code can answer it
+
+*** Scenario: About says what the thing is for, in product terms
+- *WHEN* a =decision= ask is written
+- *THEN* its About says what the thing it asks about is for, in product terms
+- *AND* it is written from the code and the documents, not copied from the finding
+
+*** Scenario: A term outside the product's glossary is glossed in About
+- *WHEN* the title, the About or the Options use a term the product's glossary lacks
+- *THEN* the About glosses it, even when the change's intent uses it
+- *AND* the ask glosses no more than three terms
+
+*** Scenario: What the user reads holds no process vocabulary
+- *WHEN* an ask is written
+- *THEN* its title, About and Options use no word of the orchestration (seam, speculated, reconciled, disposition) and no finding or discovery id
+- *AND* a seam row's id appears only in =:REF:= and =:APPLIED_VIA:=
+
+*** Scenario: What happened is one paragraph whose first sentence is the evidence
+- *WHEN* a =decision= ask is written
+- *THEN* its What happened is one paragraph saying what happened, or what the reasoning is, and what the user would notice
+- *AND* its first sentence is the evidence the ask rests on
+
+*** Scenario: An ask raised from an issue says it happened
+- *WHEN* the finding behind an ask is an issue
+- *THEN* the ask's =:HAPPENED:= is =yes=
+
+*** Scenario: An ask raised from a question or a thought says it did not happen
+- *WHEN* the finding behind an ask is a question or a thought
+- *THEN* the ask's =:HAPPENED:= is =no=
+
+*** Scenario: An ask names who raised it and what raised it
+- *WHEN* an ask is written
+- *THEN* its =:RAISED_BY:= is =architect=, =reviewer=, =implementor=, =pm= or =orchestrator=
+- *AND* its =:REF:= names the artifact that raised it: a finding, a discovery, a review file, the premise check or a signal
+
+*** Scenario: The options are two to four consequences, the last doing nothing
+- *WHEN* a =decision= ask's options are written
+- *THEN* there are two to four, each a label and its consequence, in what the user would notice rather than what the code would do
+- *AND* one option is to do nothing, and it is the last
+
+*** Scenario: An option whose work may not be on the main path says when it would be done
+- *WHEN* an option needs work in the change and the intent's goals do not settle whether that work is on the main path
+- *THEN* its consequence ends "before the MVP" or "after the MVP (hardening list)"
+
+*** Scenario: The recommendation is one option and why
+- *WHEN* a =decision= ask is written
+- *THEN* its Recommendation is one item: an option's label and why
+- *AND* the why says whether it rests on something observed
+
+*** Scenario: On a question of scope, no option that fails the YAGNI check is recommended
+- *WHEN* an ask is a question of scope: a feature, an option, a case nobody raised
+- *THEN* no option that fails the YAGNI check is recommended
+
+*** Scenario: On a defect that exists, doing nothing is not recommended by default
+- *WHEN* an ask is about a defect in code or text that exists
+- *THEN* the recommendation says how the defect is fixed, or why its fix can wait for the hardening list
+
+*** Scenario: If unanswered says what happens and when
+- *WHEN* a =decision= ask other than a design-round question is written
+- *THEN* its If unanswered says what happens if it is not answered, and at which point: this integrate, the next plan or the change's done
+
+*** Scenario: A default never makes work
+- *WHEN* an ask's If unanswered is written
+- *THEN* it creates no task and no backlog item
+- *AND* where what happens would need work, it is to do nothing
+
+*** Scenario: A discussion is kept in the file, turn by turn
+- *WHEN* the ask is discussed, in the file or in chat
+- *THEN* its =* Discussion= has one =** <date> <who>= heading per turn, those held in chat appended by the orchestrator
+- *AND* the discussion is kept as written
+
+** Requirement: A finding is asked only when it carries what the file needs
+:PROPERTIES:
+:GOAL:     G10 (O-NS-8)
+:END:
+A role that routes a finding to the user SHALL give in it what the thing is for, the finding's kind
+and evidence, and what it blocks. A finding without them SHALL NOT be asked as it stands: the
+orchestrator SHALL fill what reading can supply, and send back to the role what only redoing its
+analysis can.
+
+*** Scenario: A finding routed to the user carries what it is for, its kind and evidence, and what it blocks
+- *WHEN* a role routes a finding to the user
+- *THEN* the finding says what the feature, flag or rule is for, in a sentence
+- *AND* it gives its kind and its evidence
+- *AND* it says what it blocks: a task, a merge, the next plan, the change's done, or nothing
+
+*** Scenario: What reading can supply, the orchestrator fills
+- *WHEN* a finding routed to the user lacks something that reading supplies (a help text, the document it cites)
+- *THEN* the orchestrator fills it and writes the ask
+
+*** Scenario: What only analysis can supply goes back to the role
+- *WHEN* a finding routed to the user lacks something only redoing the analysis supplies
+- *THEN* the finding goes back to the role that raised it
+- *AND* no ask is written from it as it stands
+
+** Requirement: An answer is written in the file and applied as it says
+:PROPERTIES:
+:GOAL:     G10 (O-NS-8)
+:END:
+The user SHALL answer an ask in its file, under Answer, with an option's label or in their own words,
+and an answer given in chat SHALL be written there too. An answer that names an option's label SHALL
+be applied at the next sync point; any other SHALL be read back as a consequence and applied only once
+the user confirms it. Applying a decision SHALL do what the chosen option's consequence names and
+nothing more, and SHALL release the tasks the ask blocked.
+
+*** Scenario: An ask's status is one of six
+- *WHEN* an ask's status is set
+- *THEN* it is =open=, =answered=, =applied=, =deferred=, =declined= or =superseded=
+- *AND* an ask moves from =open= to =answered= to =applied=, or ends =deferred=, =declined= or =superseded=
+
+*** Scenario: An answer given in chat is written into the file
+- *WHEN* the user answers an ask in chat
+- *THEN* the answer is written under the ask's =* Answer=
+
+*** Scenario: An answer naming an option's label is applied without a readback
+- *WHEN* an ask's Answer names one of its options' labels, matched regardless of case, spacing and trailing punctuation
+- *THEN* it is applied at the next sync point with no readback
+- *AND* the ask's status becomes =applied=, with =:APPLIED_VIA:= naming the edit, task or commit that applied it
+- *AND* its file moves to the asks directory of its cycle
+
+*** Scenario: Any other answer is read back before it is applied
+- *WHEN* an ask's Answer is free text, close to a label but not one, written under another heading, or states a rule
+- *THEN* a =* Readback= restates it as a consequence, in at most 600 characters
+- *AND* the ask stays =open= until the user says yes, or corrects it, under the readback or in chat
+
+*** Scenario: A yes given in chat is written under the readback
+- *WHEN* the user confirms a readback in chat
+- *THEN* the yes is written under the ask's =* Readback=
+
+*** Scenario: An answer that states a rule becomes a prior
+- *WHEN* an answer states a general rule rather than a choice
+- *THEN* the rule is added, in the user's words, to the project's priors when it is read back
+- *AND* a =confirmation= ask is written, applied, that records it
+
+*** Scenario: Applying a decision does what its option names and nothing more
+- *WHEN* a =decision= ask's answer is applied
+- *THEN* what is done is what the chosen option's consequence names, and nothing more
+
+*** Scenario: An answer is never applied by editing the code directly
+- *WHEN* applying an answer changes code
+- *THEN* the orchestrator does not edit the code itself to apply it
+
+*** Scenario: Work off the main path that an answer asks for waits on the hardening list
+- *WHEN* applying a decision needs work off the change's main path
+- *THEN* the work is an entry on the change's hardening list, headed =decision (hardening)=
+
+*** Scenario: A spec statement a decision settles is edited in the commit that applies it
+- *WHEN* a decision settles or contradicts a requirement or a scenario of the specs
+- *THEN* the requirement or scenario is edited in place, in the code root's commit that applies the decision
+
+*** Scenario: A reversal is a new ask that supersedes the old one
+- *WHEN* the user reverses a decision
+- *THEN* a new ask is written whose =:REVISED_FROM:= names the old ask
+- *AND* the old ask becomes =superseded= and its file moves to the asks directory of its cycle, in the same step
+
+*** Scenario: A deferred or declined ask carries the user's words
+- *WHEN* an ask is =deferred= or =declined=
+- *THEN* its =* Answer= holds the user's words
+
+*** Scenario: An ask that blocks tasks has no task of its own
+- *WHEN* an ask blocks tasks
+- *THEN* no task is written to stand for it
+- *AND* each task it names is blocked on it (=record= § A task blocked on an ask names the ask)
+
+*** Scenario: Applying an ask releases the tasks it blocked
+- *WHEN* an ask that blocked tasks is applied
+- *THEN* each of those tasks is no longer blocked on it and is =ready= again
+
+** Requirement: An answered ask is handled first at each sync point
+:PROPERTIES:
+:GOAL:     none stated
+:END:
+The orchestrator SHALL read the inbox at fixed sync points and handle any answered ask there before
+any other work, through a phase agent, never the dispatcher. An ask not yet settled when its cycle
+closes SHALL stay in the inbox for the next cycle.
+
+*** Scenario: The inbox is read at the sync points
+- *WHEN* a session starts, a phase agent starts, a phase advances, a gate passes, a cycle starts, a scheduled wake-up fires, or the user writes their next prompt
+- *THEN* the inbox is read for answers
+
+*** Scenario: An answered ask is handled before other work, by a phase agent
+- *WHEN* a sync point is reached and an ask in the inbox has an answer
+- *THEN* the phase agent handles it before any other work: the readback when one is needed, applying it, setting its status, moving its file and committing
+- *AND* the dispatcher does not handle it
+
+*** Scenario: An unsettled ask stays in the inbox across cycles
+- *WHEN* a cycle closes with asks open, answered or deferred
+- *THEN* their files stay in the inbox
+- *AND* the next cycle's state indexes them
+
+** Requirement: The ask file is the record, and the state only indexes it
+:PROPERTIES:
+:GOAL:     none stated
+:END:
+The change's state SHALL hold, for each ask, only an entry naming its id, kind, status, what it
+blocks and its file's path; where the entry and the file disagree, the file SHALL win.
+
+*** Scenario: The state holds an ask's id, kind, status, blocks and path
+- *WHEN* an ask is filed in a cycle
+- *THEN* the state file's =asks_for_user= has one entry for it with its =id=, =kind=, =status=, =blocks= and =path=, and nothing of its prose
+
+*** Scenario: Where the entry and the file disagree, the file wins
+- *WHEN* an ask's file and its entry in the state disagree
+- *THEN* the entry is rewritten from the file
+
+** Requirement: An ask's answer and its application are committed in the home
+:PROPERTIES:
+:GOAL:     none stated
+:END:
+A readback SHALL be committed with the answer it restates, and an applied ask with the change that
+applies it, each commit's subject naming the ask's id.
+
+*** Scenario: A readback is committed with the answer it restates
+- *WHEN* a readback is written
+- *THEN* one commit in the home holds it with the user's answer it restates, its subject naming the ask's id
+- *AND* the commit holds any priors line and =confirmation= file the answer produced
+
+*** Scenario: An applied ask is committed with what applies it
+- *WHEN* an ask is applied
+- *THEN* its moved file and the edit or merge that applies it are in one commit
+- *AND* when the code root is a separate repository, there is one commit in each, with the same subject
+
+* Gaps
+
+** Gap: Whether an environment ask is a file when there is no state, or when the user is present
+:PROPERTIES:
+:REQUIREMENT: Every question for the user is a file of its own
+:END:
+The reference skill makes every question a file, yet writes an =environment= ask as a file only when
+the user is absent, and raises one before any state exists to index it.
+
+** Gap: What a confirmation or process ask says if unanswered
+:PROPERTIES:
+:REQUIREMENT: An ask file says what the user needs to decide without the code
+:END:
+The reference skill gives every ask an If unanswered section, and shapes a =confirmation= (no options,
+already applied) and a =process= ask (no options, never put) without saying whether they carry one.
