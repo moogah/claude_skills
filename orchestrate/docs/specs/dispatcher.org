@@ -1,6 +1,6 @@
 #+TITLE: dispatcher
 #+OPTIONS: ^:{} -:nil
-#+STATUS: draft 2026-11-13, extracted from the reference skill (=main= =e356da7=); at the hand-off review 2026-11-13: G4, G6 and G10 applied, the design round's asks no longer go to plan (G1, G5); the recommendation's form, the resume's order, the call's commit, the missing overlay and the stopped change filled; no gap open; accepted 2026-11-13 by the user at the hand-off review; amended 2026-11-13 after acceptance (a second opening for a change in a second repository; the old change's revision after a split), from =opening='s review; the inline brief's request, from =inline-path='s review
+#+STATUS: draft 2026-11-13, extracted from the reference skill (=main= =e356da7=); at the hand-off review 2026-11-13: G4, G6 and G10 applied, the design round's asks no longer go to plan (G1, G5); the recommendation's form, the resume's order, the call's commit, the missing overlay and the stopped change filled; no gap open; accepted 2026-11-13 by the user at the hand-off review; amended 2026-11-13 after acceptance (a second opening for a change in a second repository; the old change's revision after a split), from =opening='s review; the inline brief's request, from =inline-path='s review; amended 2026-11-14 after acceptance (a sitting may read the files of the asks it puts before its first call; a new cycle's plan brief; a research hand-off as an opening's source), from the evals' build-out (=research/skill-evals/overnight/plan.org= § Decided with the user, 2026-11-14 morning)
 
 * Purpose
 
@@ -21,7 +21,7 @@ shows them) and in the ask files and the change's record it writes to.
 :GOAL:     G13
 :END:
 The dispatcher SHALL read only the skill's entry document, where the change stands, a running
-phase agent's context size, and an ask file at the moment it puts that ask to the user; it SHALL
+phase agent's context size, and the file of each ask it puts to the user, in the sitting that puts it; it SHALL
 read no instructions of a phase or role, no artifact of the change and no code, and SHALL run every
 phase in a phase agent spawned from a fresh context.
 
@@ -32,8 +32,8 @@ phase in a phase agent spawned from a fresh context.
 
 *** Scenario: An ask file is read once, when it is put
 - *WHEN* the dispatcher puts an open ask to the user
-- *THEN* it reads that ask's file once, at that moment
-- *AND* it never reads the inbox's files together
+- *THEN* it reads that ask's file once, in the sitting that puts it: before the sitting's first call or as it puts that ask
+- *AND* it reads no ask file it does not put to the user in that sitting
 
 *** Scenario: Every phase runs in a phase agent the dispatcher spawns
 - *WHEN* a phase is to run: opening, the design round, plan, execute, integrate or the inline path
@@ -55,7 +55,7 @@ one is open, and SHALL leave a waiting answer to the phase agent it spawns or re
 
 *** Scenario: An opening agent's brief carries the source as given
 - *WHEN* the dispatcher spawns the opening phase agent
-- *THEN* the brief carries the source: the user's words verbatim, the paths of the cross-change backlog's items taken up, or the split's ask and its change
+- *THEN* the brief carries the source: the user's words verbatim, the paths of the cross-change backlog's items taken up, the split's ask and its change, or a research hand-off: the path of the research effort's brief, the workspace integration branch and the change's name as the hand-off gives them
 - *AND* the dispatcher reads nothing to write it
 
 *** Scenario: An inline agent's brief carries the user's request as given
@@ -135,7 +135,7 @@ first hand-back.
 
 *** Scenario: The brief names the phase, the change, the cycle and the home
 - *WHEN* the dispatcher spawns a phase agent
-- *THEN* its brief names the phase, the change, the cycle (or, for the design round, the change alone) and the home
+- *THEN* its brief names the phase, the change, the cycle (or, for the design round, the change alone; for a plan that starts a new cycle, that the cycle is new, since it has no id until plan opens it) and the home
 - *AND* points the agent at its phase's instructions, to follow to the phase's gate and close commit
 
 *** Scenario: The brief carries the phase agent's standing instructions
