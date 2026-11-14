@@ -1,6 +1,6 @@
 #+TITLE: project-manager
 #+OPTIONS: ^:{} -:nil
-#+STATUS: draft 2026-11-13, extracted from the reference skill (=main= =e356da7=); eight gaps opened; at the hand-off review 2026-11-13: G8 applied, its role default added
+#+STATUS: draft 2026-11-13, extracted from the reference skill (=main= =e356da7=); eight gaps opened; at the hand-off review 2026-11-13: G8 applied, its role default added; the sections' order filled
 
 * Purpose
 
@@ -57,6 +57,10 @@ check.
 - *WHEN* a PM digest is written
 - *THEN* its title names the change and the cycle
 - *AND* it states when it was produced and the history window it reads
+
+*** Scenario: The digest's sections come in the form's order
+- *WHEN* a digest is written
+- *THEN* its sections are, in order: Throughput, Critical path, Agents, Signals, Asks for the user, Trends to watch, Meta-discoveries and Goal-drift check
 
 *** Scenario: The digest's Signals section is never empty
 - *WHEN* a PM digest is written
@@ -295,13 +299,6 @@ The PM's agent pass SHALL run at its role default.
 - *THEN* it runs at =sonnet=, =medium=
 
 * Gaps
-
-** Gap: Where the asks table stands in the digest
-:PROPERTIES:
-:REQUIREMENT: The digest is one file per cycle, in a fixed form
-:END:
-The reference skill says the digest ends with the asks table, and its form puts the trends to watch,
-the meta-discoveries and the goal-drift check after it.
 
 ** Gap: Which counts the throughput table shows
 :PROPERTIES:

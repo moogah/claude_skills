@@ -1,6 +1,6 @@
 # PM digest template
 
-The PM digest is **scannable**, **action-oriented**, and **ends with the asks triage table** (which may be empty). Three buckets: *facts* (counts), *signals* (interpretation), *asks* (the questions the cycle raised, per `templates/ask.md`).
+The PM digest is **scannable**, **action-oriented**, and carries the asks triage table (which may be empty) after its signals, in the order of the form below. Three buckets: *facts* (counts), *signals* (interpretation), *asks* (the questions the cycle raised, per `templates/ask.md`).
 
 The structure is fixed; the contents are derived. Every count traces to a state-file field; counts never come from the LLM. Only the prose framing the signals and asks is agent-generated.
 
