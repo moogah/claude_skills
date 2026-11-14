@@ -1,6 +1,6 @@
 #+TITLE: integrate
 #+OPTIONS: ^:{} -:nil
-#+STATUS: draft 2026-11-13, extracted from the reference skill (=main= =e356da7=); at the hand-off review 2026-11-13: G4 and G7 applied, the hardening list's form and a prior's thought carried in, "conformance check" reworded "conformance"; the unpinned disagreement the take-in regression and the MVP's review filled; no gap open; accepted 2026-11-13 by the user at the hand-off review
+#+STATUS: draft 2026-11-13, extracted from the reference skill (=main= =e356da7=); at the hand-off review 2026-11-13: G4 and G7 applied, the hardening list's form and a prior's thought carried in, "conformance check" reworded "conformance"; the unpinned disagreement the take-in regression and the MVP's review filled; no gap open; accepted 2026-11-13 by the user at the hand-off review; amended 2026-11-14 after acceptance (an untrue sentence the whole-change review finds is a record correction), from the evals' build-out (=research/skill-evals/overnight/plan.org= § Decided with the user, 2026-11-14 morning)
 
 * Purpose
 
@@ -200,7 +200,7 @@ that review is open.
 
 *** Scenario: An untrue sentence the whole-change review finds is corrected at once
 - *WHEN* the whole-change review finds an untrue sentence in prose
-- *THEN* the sentence is corrected at integrate
+- *THEN* the sentence is corrected at integrate, as a record correction with its journal line, its commit saying so (§ A record correction's commit says so and names the pin)
 - *AND* it holds nothing back
 
 *** Scenario: Any other whole-change defect goes on the hardening list
