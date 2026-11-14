@@ -1,6 +1,6 @@
 #+TITLE: plan
 #+OPTIONS: ^:{} -:nil
-#+STATUS: draft 2026-11-13, extracted from the reference skill (=main= =e356da7=); at the hand-off review 2026-11-13: G1, G5, G6, G9 and G10 applied, the obsolete flag carried from =implementor=; the premise corrections filled (a free choice); the main-path rule filled; no gap open
+#+STATUS: draft 2026-11-13, extracted from the reference skill (=main= =e356da7=); at the hand-off review 2026-11-13: G1, G5, G6, G9 and G10 applied, the obsolete flag carried from =implementor=; the premise corrections filled (a free choice); the main-path rule filled; no gap open; accepted 2026-11-13 by the user at the hand-off review
 
 * Purpose
 
