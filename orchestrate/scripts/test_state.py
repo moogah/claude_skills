@@ -147,8 +147,9 @@ class Home:
     def finding(self, cycle, fid, **extra):
         d = self.dir / "cycles" / cycle / "findings"
         d.mkdir(parents=True, exist_ok=True)
-        body = [f"finding_id: {fid}", "trigger: conformance", "kind: issue", "severity: high",
-                *[f"{k}: {v}" for k, v in extra.items()]]
+        fields = {"finding_id": fid, "trigger": "conformance", "kind": "issue", "severity": "high",
+                  "evidence": "the run", **extra}
+        body = [f"{k}: {v}" for k, v in fields.items() if v is not None]
         (d / f"{fid}.md").write_text("---\n" + "\n".join(body) + "\n---\n\n## Locations\n")
 
     def ask(self, ask_id, kind="decision", status="open", blocks=(), options=("yes", "no"), answer=None,
@@ -381,9 +382,9 @@ def test_an_asserted_check_shows_as_asserted(home):
     cycle = started(home)
     home.task("a")
     home.brief(cycle, "a")
-    home.ok("assert", "batch_composed", "--by", "phase-plan")
+    home.ok("assert", "batch_composed", "--by", "orchestrator")
     c = check(home.gate("plan"), "batch_composed")
-    assert c["kind"] == "asserted" and c["by"] == "phase-plan" and c["at"]
+    assert c["kind"] == "asserted" and c["by"] == "orchestrator" and c["at"]
     assert c in home.ok("status")["gate"]["checks"]
 
 
@@ -658,7 +659,7 @@ def test_a_finding_from_the_design_round_is_routed_by_the_first_cycle(home):
     d = home.dir / "findings"
     d.mkdir(parents=True)
     (d / "arch-chg-1.md").write_text("---\nfinding_id: arch-chg-1\ntrigger: design-round\nkind: issue\n"
-                                     "severity: high\n---\n\n## Locations\n")
+                                     "severity: high\nevidence: the run\n---\n\n## Locations\n")
     started(home)
     out = home.ok("route", "arch-chg-1", "--decoration", "hardening", "--resolution", "hardening-list")
     assert out["finding"] == "arch-chg-1"
@@ -738,3 +739,41 @@ def test_rework_briefs_and_reviews_are_numbered(home):
     home.ok("check", "done", "a")
     assert home.ok("conventions")["breaks"] == []
     assert state.Change(str(home.root), "chg").batch(cycle) == ["a"]  # rework briefs are not batch tasks
+
+
+# ---------------------------------------------------------------- ported guarantees (record, 2026-11-14)
+
+def test_no_cycle_starts_in_a_home_whose_git_ignores_the_record(home):
+    home.designed()
+    (home.root / ".gitignore").write_text(".orchestrator\n")
+    code, _, err = home.run("cycle", "start")
+    assert code == 1 and err["error"] == "orchestrator_ignored"
+    assert not home.ok("log")["entries"]
+
+
+def test_no_cycle_starts_while_the_code_root_holds_a_record_of_its_own(home):
+    home.designed()
+    (home.wt / ".orchestrator").mkdir()
+    code, _, err = home.run("cycle", "start")
+    assert code == 1 and err["error"] == "misplaced_artifacts"
+
+
+def test_a_finding_with_no_kind_or_no_evidence_is_a_break(home):
+    cycle = started(home)
+    home.finding(cycle, "arch-1", kind=None)
+    home.finding(cycle, "arch-2", evidence=None)
+    home.finding(cycle, "arch-3", kind="thought")
+    home.finding(cycle, "arch-4")
+    probs = {(b["where"].split("/")[-1], b["problem"].split(" ")[0]) for b in home.ok("conventions")["breaks"]}
+    assert ("arch-1.md", "kind") in probs and ("arch-2.md", "evidence") in probs and ("arch-3.md", "kind") in probs
+    assert not any(w == "arch-4.md" for w, _ in probs)
+
+
+def test_a_journal_entry_names_who_wrote_it_from_the_closed_set(home):
+    started(home)
+    code, _, err = home.run("note", "note", "x", "--by", "someone")
+    assert code == 1 and err["error"] == "bad_by"
+    home.ok("note", "note", "x", "--by", "reviewer")
+    code, _, err = home.run("assert", "batch_composed", "--by", "someone")
+    assert code == 1 and err["error"] == "bad_by"
+    home.ok("assert", "batch_composed", "--by", "orchestrator")

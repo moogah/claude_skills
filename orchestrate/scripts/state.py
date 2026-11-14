@@ -58,8 +58,11 @@ CANDIDATE_PLACEMENTS = ["in-change", ".tasks"]
 DESIGN_DIFF_CHANGES = ["added", "amended", "retired"]
 GOAL_DRIFT_OPTIONS = {"revise", "split", "abandon", "continue"}
 DECORATIONS = ["blocking", "hardening"]
+FINDING_KINDS = ["issue", "question"]
 RESOLUTIONS = ["pending", "inline-fixed", "design-amended", "reverted", "accepted-with-note", "hardening-list"]
 RESOLUTION_PREFIXES = ("candidate-task-", "followup-task-")
+# record § A journal entry names who wrote it: the orchestrator (the phase agent) or a role.
+BY_ROLES = ["orchestrator", "implementor", "reviewer", "architect", "pm"]
 NOTE_KINDS = ["discovery", "decision", "inline-fix", "deviation", "push-back", "note"]
 TEXT_CAP = 280
 LOG_NAME = "events.jsonl"
@@ -853,6 +856,12 @@ def convention_breaks(ch):
                 brk(where, f"unknown key {k}", "the keys templates/task-body.md names")
     for fid, p in ch.findings().items():
         fm, _ = read_frontmatter(p)
+        # record § A finding with no kind or no evidence is refused: a finding is a file, so the
+        # refusal is a break here (templates/architect-finding.md § kind).
+        if (fm or {}).get("kind") not in FINDING_KINDS:
+            brk(ch.rel(p), f"kind {(fm or {}).get('kind')!r} is not a finding's kind", " | ".join(FINDING_KINDS))
+        if not str((fm or {}).get("evidence") or "").strip():
+            brk(ch.rel(p), "evidence is missing", "evidence: the line, the run, the output or the reasoning")
         for k in fm or {}:
             if k in SECOND_COPIES["finding"]:
                 brk(ch.rel(p), f"key {k}: {SECOND_COPIES['finding'][k]}", f"no {k} key")
@@ -953,6 +962,18 @@ def _require_open_cycle(ch):
     return cycle, phase
 
 
+def _by(by, required=False):
+    if by is None and not required:
+        return None
+    if by not in BY_ROLES:
+        raise Refusal("bad_by", f"--by {by!r}: one of {', '.join(BY_ROLES)} (the phase agent is orchestrator)")
+    return by
+
+
+def _git_ignores(repo, rel):
+    return subprocess.run(["git", "-C", repo, "check-ignore", "-q", "--", rel], capture_output=True).returncode == 0
+
+
 def _cap(text, what="text"):
     if len(text) > TEXT_CAP:
         raise Refusal("too_long", f"{what} is {len(text)} characters; the cap is {TEXT_CAP}: "
@@ -1004,6 +1025,15 @@ def verb_cycle_start(ch, args):
     cycle, _ = ch.open_cycle()
     if cycle:
         raise Refusal("cycle_open", f"{cycle} is open; close it or `state.py cycle abandon --why`")
+    # record § No cycle starts in a home whose git ignores the record; § No cycle starts while the
+    # code root holds a record of its own.
+    if _git_ignores(ch.home, ".orchestrator"):
+        raise Refusal("orchestrator_ignored", ".orchestrator/ is ignored by the home's .gitignore; the record "
+                                              "is tracked. Delete that line and start again (an environment ask)")
+    if ch.worktree and os.path.realpath(ch.worktree) != os.path.realpath(ch.home) \
+            and os.path.exists(os.path.join(ch.worktree, ".orchestrator")):
+        raise Refusal("misplaced_artifacts", f".orchestrator/ found in the code root {ch.worktree}; the record "
+                                             f"lives in the home {ch.home}. Move it there (an environment ask)")
     stage = where(ch)
     if stage["stage"] == "main path ended":
         raise Refusal("mvp_decision_due", "the main path has ended: integrate's MVP decision "
@@ -1046,7 +1076,7 @@ def verb_assert(ch, args):
                                        + ", ".join(c for cs in ASSERTED.values() for c in cs))
     if owner != phase:
         raise Refusal("wrong_phase", f"{args.check} is {owner}'s; {cycle} is in {phase}")
-    return append_event(ch, "asserted", cycle, phase=owner, check=args.check, by=args.by)
+    return append_event(ch, "asserted", cycle, phase=owner, check=args.check, by=_by(args.by, required=True))
 
 
 def verb_route(ch, args):
@@ -1069,7 +1099,7 @@ def verb_blocker(ch, args):
 
 def verb_note(ch, args):
     return append_event(ch, "note", ch.open_cycle()[0], note_kind=args.kind, text=_cap(args.text),
-                        ref=args.ref, by=args.by, path=args.path)
+                        ref=args.ref, by=_by(args.by), path=args.path)
 
 
 def verb_fix_link(ch, args):

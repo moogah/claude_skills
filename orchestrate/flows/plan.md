@@ -71,7 +71,7 @@ Select which candidates this cycle will run. The batch composer balances:
 - Dependencies: `blocked_by` names the tasks a candidate must follow; execute spawns a task when its `blocked_by` tasks have merged.
 - Total batch size: the plan's judgment (no overlay key); default 3–7 tasks, or fewer when the design has fewer seams left to implement.
 
-Each task file in the batch passes `state.py check new <name>` (a follow-up names its source; the status is in the set); its `cites_seams`, `relations.blocked_by`, `on_critical_path` and `discovered_*` are in its frontmatter (`templates/task-body.md`). The batch is the briefs § 5 writes. Then `state.py assert batch_composed --by phase-plan`.
+Each task file in the batch passes `state.py check new <name>` (a follow-up names its source; the status is in the set); its `cites_seams`, `relations.blocked_by`, `on_critical_path` and `discovered_*` are in its frontmatter (`templates/task-body.md`). The batch is the briefs § 5 writes. Then `state.py assert batch_composed --by orchestrator`.
 
 ### 5. Implementor brief assembly
 
@@ -124,7 +124,7 @@ The cycle does not enter execute until:
 | Check | Condition |
 |---|---|
 | `prior_handshake_complete` | The prior handshake has every required field; none on a first cycle (computed) |
-| `batch_composed` | Batch task list explicit and frozen (asserted: `state.py assert batch_composed --by phase-plan`) |
+| `batch_composed` | Batch task list explicit and frozen (asserted: `state.py assert batch_composed --by orchestrator`) |
 | `batch_cites_seams` | The batch (the task briefs § 5 wrote) is not empty, each brief has its task file, and each task cites at least one seam (computed; it checks that a citation exists, not that the id is in `design.org`) |
 | `follow_ups_name_their_source` | Every follow-up in the batch has `discovered_from` and `discovered_by` (computed) |
 | `goal_drift_signed_off` | No goal-drift ask in the inbox is unanswered or answered with anything but revise / split / abandon / continue (computed) |
