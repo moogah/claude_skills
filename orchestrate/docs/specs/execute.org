@@ -30,9 +30,9 @@ close only when every task of the batch is done or explicitly stopped.
 - *THEN* each is reviewed by a separate Reviewer agent
 - *AND* neither review is made by the execute phase agent itself
 
-*** Scenario: A reviewed task has its findings file
+*** Scenario: A reviewed task has its review file
 - *WHEN* execute closes
-- *THEN* every task that was reviewed has its Reviewer's findings file
+- *THEN* every task that was reviewed has its Reviewer's review file
 
 *** Scenario: An Implementor that commits nothing fails its task
 - *WHEN* an Implementor hands back and no commit has landed on its task's branch
@@ -243,9 +243,9 @@ as a journal line alone.
 - *WHEN* an Implementor's discovery is off the change's main path and is not an untrue sentence
 - *THEN* it is one entry on the change's hardening list
 
-*** Scenario: An untrue sentence in prose is corrected inline
+*** Scenario: An untrue sentence in prose is corrected at once
 - *WHEN* a discovery is a sentence in prose that is untrue
-- *THEN* the phase agent corrects the text inline
+- *THEN* the phase agent corrects the text at once
 
 *** Scenario: An Observation that names a defect is routed like a discovery
 - *WHEN* an Implementor's Observations name a defect in code or text that exists
@@ -285,7 +285,7 @@ other diff in flight.
 - *THEN* its input holds the diff from the merge base to the merge commit
 - *AND* the task's text, read from the home
 - *AND* the seam rows the task cites, verbatim, and each scenario it cites with that scenario's coverage
-- *AND* the project's reviewer standards and priors, when the project has them
+- *AND* the project's review standards and priors, when the project has them
 
 *** Scenario: The Reviewer never sees the Implementor's account
 - *WHEN* a Reviewer is spawned
@@ -369,7 +369,7 @@ list.
 
 *** Scenario: A fix for a defect shown on a real surface is pinned on that surface
 - *WHEN* a finding's evidence is a probe of a real process, daemon, client, =git= or file system
-- *THEN* the regression test for its fix drives that same surface, failing before the fix and passing after it
+- *THEN* the test that pins its fix drives that same surface, failing before the fix and passing after it
 - *AND* a test against a fake of the surface is not taken as the pin
 - *AND* where the tests cannot drive the surface, the fix commit and the task's Observations say so
 

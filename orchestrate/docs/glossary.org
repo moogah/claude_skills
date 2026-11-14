@@ -384,3 +384,189 @@ before the phase counts as passed and the next phase may start.
 - Example :: "*WHEN* execute passes its gate"
 - Avoid :: checkpoint, milestone, exit criteria
 - Specs :: execute
+
+* task
+One unit of a change's work: what to build, which seam rows and scenarios it implements and which
+pending tests it promotes, done by one Implementor and reviewed by one Reviewer.
+- Example :: "Each task is implemented by an Implementor in a worktree of its own"
+- Avoid :: ticket, story, step (the evals' word for one agent's piece of work)
+- Specs :: execute
+
+* task file
+The document in the home that states one task, which its Implementor reads and appends its
+Observations and Discoveries to; only plan writes one.
+- Example :: "It writes no task file"
+- Avoid :: task body (main's name for the same text), task brief (main's =reviewer_input= field for it), brief (the Implementor's assembled input), ticket
+- Specs :: execute
+
+* seam
+A contract between two parts of the code: who produces a thing, who consumes it, and what must hold
+at the boundary; the design records each one as a seam row.
+- Example :: "touches no seam's code"
+- Avoid :: interface, boundary alone, API
+- Specs :: execute
+
+* scenario
+One case of a requirement in a capability's spec, stated When/Then; tests cite it by its capability
+and title, and its coverage is computed from them.
+- Example :: "the seam rows and scenarios the task cites"
+- Avoid :: test case, use case, acceptance criterion
+- Specs :: execute
+
+* intent
+The change's document of why it exists: its goals and non-goals, the capabilities it touches, and its
+status line; the goals decide the main path.
+- Example :: "when the intent's goals do not settle what the code should do"
+- Avoid :: proposal, spec (the requirements), design
+- Specs :: execute
+
+* spec
+A capability's living statement of its requirements and scenarios, edited in place by each change.
+- Example :: "a spec scenario the fix would change"
+- Avoid :: delta, design, intent
+- Specs :: execute
+
+* brief
+The input a spawned agent is given; in the spec, an Implementor's brief, assembled by the phase agent
+from the task and saved in the cycle's directory so the review and the audit trail can see what the
+Implementor saw.
+- Example :: "the brief it was given is saved in the cycle's directory"
+- Avoid :: prompt, instructions, task file (the task is one part of the brief)
+- Specs :: execute
+
+* report
+An Implementor's structured account of its task, written to a file for the phase agent only and never
+shown to the Reviewer.
+- Example :: "never the Implementor's report, notes or identity"
+- Avoid :: hand-back (the one line), findings file, summary
+- Specs :: execute
+
+* review file
+The file in which a Reviewer writes its findings, thoughts and probe output for one task.
+- Example :: "every task that was reviewed has its Reviewer's review file"
+- Avoid :: findings file (main's other name for it), review, report
+- Specs :: execute
+
+* inbox
+The place in the change's directory where open asks wait for their answer.
+- Example :: "it is an ask file in the change's inbox"
+- Avoid :: queue, mailbox, asks list
+- Specs :: execute
+
+* issue, question, thought
+A finding's three kinds, by the reporter's confidence: an issue is a defect that can be pointed at
+in code or text that exists; a question is a suspected one, with the reproduction that would settle
+it; a thought is a speculative need that would arise only after some future change, never a task by
+itself.
+- Example :: "it is routed as an issue, with one journal line"
+- Avoid :: kind for blocking/hardening/spec-signal (see finding), comment, nit
+- Specs :: execute
+
+* untrue sentence
+A sentence in prose that exists (a README, a help text, a comment, a spec, the design, an agent's
+instructions) and states something false; a kind of issue, routed blocking and fixed by correcting
+the text alone.
+- Example :: "An untrue sentence in prose is corrected at once"
+- Avoid :: doc bug, stale doc, typo
+- Specs :: execute
+
+* reproduction
+The test or probe that fails on a defect before its fix and passes after; the first step of every fix
+on the main path.
+- Example :: "its first step is the reproduction"
+- Avoid :: repro, failing test alone (a probe can be the reproduction), pin (see that entry)
+- Specs :: execute
+
+* pin
+The regression test that holds a fix in place: it fails before the fix and passes after it, and
+drives the same real surface the defect was shown on.
+- Example :: "a test against a fake of the surface is not taken as the pin"
+- Avoid :: regression test alone (main's word for it, but "regression" means a broken baseline test in execute), guard
+- Specs :: execute
+
+* probe
+A script or command a Reviewer runs read-only against the merge's checkout, in its own scratch
+directory, to drive the real code and show a defect.
+- Example :: "a test or probe that fails on the defect"
+- Avoid :: experiment, spike, manual test
+- Specs :: execute
+
+* premise
+A claim a task or its cited seam rows make about the code as it stands (a symbol exists, a path is
+reachable, the behaviour is not already there); a wrong premise that changes what the task should do
+stops the task.
+- Example :: "A wrong premise blocks its task without an ask"
+- Avoid :: assumption, precondition
+- Specs :: execute
+
+* priors
+The user's standing rules for the project, one line each in the user's own words, given to every
+agent's brief.
+- Example :: "the project's review standards and priors"
+- Avoid :: preferences, rules alone (the evals' glossary retired "rule"), conventions
+- Specs :: execute
+
+* review standards
+The project's own additions to the Reviewer's role, kept in the project's overlay.
+- Example :: "the project's review standards and priors, when the project has them"
+- Avoid :: reviewer standards, review checklist, style guide
+- Specs :: execute
+
+* scratch directory
+A working directory outside the home and the code root, named in an agent's brief, for its drafts and
+probes; never a fixed name shared with other agents, and gone when its work ends.
+- Example :: "it writes it in the scratch directory its brief names"
+- Avoid :: tmp, scratchpad (the session's own, which holds the agents' scratch directories)
+- Specs :: execute
+
+* worker
+An Implementor or Reviewer the phase agent spawned and that is still its responsibility until it
+hands back.
+- Example :: "never while a worker it spawned is still running"
+- Avoid :: subagent, role agent (main's word, which includes the Architect and PM)
+- Specs :: execute
+
+* phase
+One stage of a cycle, run by its own phase agent to its own gate: plan, execute and integrate (and,
+outside the cycle, opening, the design round and the inline path).
+- Example :: "those belong to plan and integrate"
+- Avoid :: step (the evals' word for one agent's piece of work), stage
+- Specs :: execute
+
+* done
+The end state of a task whose merge passed its tests, was reviewed by its own Reviewer, and had every
+blocking finding fixed.
+- Example :: "A task is done only after its merge is reviewed"
+- Avoid :: merged, executed (main's word in the opening of =flows/execute.md=), closed, complete (=completed= is an earlier status in main)
+- Specs :: execute
+
+* stopped (failed, blocked, externalised)
+The three ends of a task other than done: failed (its Implementor committed nothing, or its rework
+failed), blocked (held by an ask, a merge conflict or a wrong premise), externalised (moved to the
+cross-change backlog). A stopped task lets the phase close.
+- Example :: "every task of the batch is done, failed, blocked or externalised"
+- Avoid :: abandoned, cancelled, skipped
+- Specs :: execute
+
+* coverage
+A scenario's status as computed from the tests that cite it and their last run (failed, pending,
+passing, not test-worthy, uncited); never written by hand.
+- Example :: "each scenario it cites with that scenario's coverage"
+- Avoid :: test coverage (line coverage), traceability
+- Specs :: execute
+
+* push-back
+The phase agent's answer to a Reviewer's flag on a choice the Implementor made for a sound but
+unwritten reason: the reason is written down in the code, a test or a seam row, and the flag is not
+acted on.
+- Example :: "the change's journal records that the flag was pushed back"
+- Avoid :: rejection, override, productive tension (main's heading for the situation)
+- Specs :: execute
+
+* clean point
+The moment a phase agent asked to hand over may write its handover: every worker it spawned has
+reported, every landed task is merged and tested or held by an ask, and the state says where each
+task is.
+- Example :: "it SHALL stop at a clean point"
+- Avoid :: checkpoint, safe point, quiescence
+- Specs :: execute
