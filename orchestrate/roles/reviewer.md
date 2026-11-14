@@ -19,7 +19,7 @@ The Reviewer's input is **strictly limited** to:
 3. The cited seam rows, verbatim from `design.org`, and the cited scenarios' text from `docs/specs/` with their `coverage.py` rows.
 4. Project standards (overlay extensions) and the project priors (`priors.md`, the user's standing rules).
 
-The **whole-change review** (`flows/integrate.md` § 9) is the same contract at change scale: the diff from the change's base to HEAD (its spec edits included), `intent.org`, the whole Seams table and `coverage.py --intent docs/changes/<change>/intent.org` in place of items 1-3. It looks for what no per-task review could see: interactions between tasks, a bypassed review, a scenario whose test passes while the user's surface does not.
+The **whole-change review** (`flows/integrate.md` § 9) is the same contract at change scale: the diff from the change's base to HEAD (its spec edits included), `intent.org`, the whole Seams table and `coverage.py --intent docs/changes/<change>/intent.org` in place of items 1-3. It looks for what no per-task review could see: interactions between tasks, a bypassed review, a scenario whose test passes while the user's surface does not. Its file's `task_name` is `whole-change` and its `merge_commit` the change's HEAD it reviewed; it hands back `reviewed whole-change issues=<n> questions=<n> spec-signal=<n> thoughts=<n>`.
 
 The Reviewer **never sees**:
 - The Implementor's structured report.
@@ -125,12 +125,12 @@ clean_review: false      # true if no findings
   <One paragraph. Concrete. For an issue: the line, the run or the probe
   output, and what goes wrong for whom. For a question: the reasoning and
   the reproduction that would settle it.>
+- blocks: <task <name> | merge | next-plan | done | nothing>   # what waits on it; every finding
 - recommended_action:
   kind: inline-fix | follow-up-task | re-implement | route-to-user
   detail: <one-line — what specifically should happen>
   # Required when kind is route-to-user (templates/ask.md § What a finding must carry):
   about: <one sentence — what the feature, flag or rule is for, in product terms>
-  blocks: <task | merge | next-plan | done | nothing>
   # Required on a spec-signal whose kind is issue (§ Routing of a finding):
   stopgap: <the smallest change that makes the defect fail loudly under every option the ask would offer | none: <why no change holds under every option>>
 

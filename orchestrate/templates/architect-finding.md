@@ -22,6 +22,7 @@ discovered_by: architect
 discovered_at: <iso-ts>
 seam: <seam/<name> this finding is about, if any>
 evidence: <the line, the run, the output or the shipped sentence; for a question, the reasoning and the reproduction to try>
+blocks: <task <name> | merge | next-plan | done | nothing>   # what waits on it; the premise check settles before batch_composed one that names a batch task
 decoration: blocking | hardening            # written by the orchestrator's routing (§ Routing), not by the Architect
 ---
 

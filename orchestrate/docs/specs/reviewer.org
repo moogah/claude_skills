@@ -1,6 +1,6 @@
 #+TITLE: reviewer
 #+OPTIONS: ^:{} -:nil
-#+STATUS: draft 2026-11-13, extracted from the reference skill (=main= =e356da7=); not yet reviewed
+#+STATUS: draft 2026-11-13, extracted from the reference skill (=main= =e356da7=); not yet reviewed; at the hand-off review 2026-11-13: G8 and G11 applied, its role default added
 
 * Purpose
 
@@ -121,6 +121,10 @@ carry a stopgap. The reporter SHALL NOT route its own finding.
 - *AND* its evidence
 - *AND* a recommended action: a kind, and one line saying what should happen
 
+*** Scenario: Every finding says what it blocks
+- *WHEN* a finding is written, in a review file or in a file of its own
+- *THEN* it carries =blocks=: the task, a merge, the next plan or the change's done that waits on it, or =nothing=
+
 *** Scenario: A finding about the change's work names the direction it looks in
 - *WHEN* a finding is about the diff's own code, its drift from the change's design, or a spec or design the work shows may be wrong
 - *THEN* its =direction= is =sub-par-code=, =design-drift= or =spec-signal= respectively
@@ -229,6 +233,11 @@ report what no task's review could see, and hand back one line.
 - *THEN* its review file is =.orchestrator/changes/<change>/cycles/<cycle-id>/reviews/whole-change.md= in the home, in the form of a task's review file
 - *AND* the Reviewer hands back one line
 
+*** Scenario: The whole-change review names the whole change in place of a task
+- *WHEN* the whole-change review file is written
+- *THEN* its =task_name= is =whole-change= and its =merge_commit= the change's HEAD it reviewed
+- *AND* its hand-back line is =reviewed whole-change issues=<n> questions=<n> spec-signal=<n> thoughts=<n>=
+
 *** Scenario: The whole-change review reports what no task's review could see
 - *WHEN* tasks of the change interact wrongly, or a change bypassed review, or a scenario's test passes while the surface the user would use does not
 - *THEN* the whole-change review file has a finding for it
@@ -263,15 +272,18 @@ thought SHALL never be a finding file.
 - *WHEN* the Architect has a thought
 - *THEN* no finding file is written for it
 
-* Gaps
-
-** Gap: What the whole-change review names in place of the task and the merge commit
+** Requirement: The Reviewer's role default
 :PROPERTIES:
-:REQUIREMENT: The whole-change review is written in the same form
+:GOAL:     none stated
 :END:
-The review file's front matter names one task and one merge commit, and the hand-back line names the
-task; the whole-change review has neither, and the reference skill says only "in the Reviewer's
-format, one hand-back line".
+The Reviewer SHALL run at its role default unless a task override raises it.
+
+*** Scenario: The Reviewer's role default is opus, high for a task and xhigh for the whole change
+- *WHEN* a Reviewer is spawned at its role default
+- *THEN* a task's Reviewer runs at =opus=, =high=
+- *AND* the whole-change Reviewer at =opus=, =xhigh=
+
+* Gaps
 
 ** Gap: Which recommended actions a finding may name
 :PROPERTIES:
