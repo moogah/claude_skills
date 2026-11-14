@@ -1,6 +1,6 @@
 #+TITLE: dispatcher
 #+OPTIONS: ^:{} -:nil
-#+STATUS: draft 2026-11-13, extracted from the reference skill (=main= =e356da7=); at the hand-off review 2026-11-13: G4, G6 and G10 applied, the design round's asks no longer go to plan (G1, G5); the recommendation's form, the resume's order, the call's commit, the missing overlay and the stopped change filled; no gap open; accepted 2026-11-13 by the user at the hand-off review; amended 2026-11-13 after acceptance (a second opening for a change in a second repository), from =opening='s review
+#+STATUS: draft 2026-11-13, extracted from the reference skill (=main= =e356da7=); at the hand-off review 2026-11-13: G4, G6 and G10 applied, the design round's asks no longer go to plan (G1, G5); the recommendation's form, the resume's order, the call's commit, the missing overlay and the stopped change filled; no gap open; accepted 2026-11-13 by the user at the hand-off review; amended 2026-11-13 after acceptance (a second opening for a change in a second repository; the old change's revision after a split), from =opening='s review
 
 * Purpose
 
@@ -67,6 +67,10 @@ one is open, and SHALL leave a waiting answer to the phase agent it spawns or re
 - *WHEN* the opening phase agent hands back a line naming a second change and its repository
 - *THEN* the dispatcher spawns the opening phase agent again for the second change, its source the same words and the first change's name
 - *AND* spawns the first change's design round after it
+
+*** Scenario: A split's opening is followed by the old change's revision
+- *WHEN* the opening phase agent hands back a line naming an old change to revise
+- *THEN* the dispatcher spawns the opening phase agent to revise that change in place, its source the old intent, the split answer and the new change's name
 
 *** Scenario: A change with no seams yet goes to the design round
 - *WHEN* a change has its intent, no cycle has started, and its design has no Seams section or does not exist

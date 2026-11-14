@@ -1,6 +1,6 @@
 #+TITLE: opening
 #+OPTIONS: ^:{} -:nil
-#+STATUS: draft 2026-11-13, extracted from the reference skill (=main= =e356da7=); nine gaps opened; at the hand-off review 2026-11-13: G8 applied (the path's root, a revision's line); the unnamed repository, a taken name, a failed opening, the second change and the research hand-off filled
+#+STATUS: draft 2026-11-13, extracted from the reference skill (=main= =e356da7=); nine gaps opened; at the hand-off review 2026-11-13: G8 applied (the path's root, a revision's line); the unnamed repository, a taken name, a failed opening, the second change, the research hand-off and the split's old change filled
 
 * Purpose
 
@@ -322,12 +322,12 @@ On =split= it SHALL open a new change that names the one it came from.
 - *THEN* a new change is opened from the old intent and the answer
 - *AND* the new intent's Why names the change it came from
 
-* Gaps
+*** Scenario: A split's opening names the old change for revision
+- *WHEN* opening opens a new change on a =split= answer
+- *THEN* it leaves the old change's intent as it was
+- *AND* its hand-back line ends =; revise: <old change>=
 
-** Gap: What becomes of the old change on a split
-:PROPERTIES:
-:REQUIREMENT: A change is revised in place, or split, from the user's answer
-:END:
+* Gaps
 
 ** Gap: Whether a revision's new goals need the user's approval again
 :PROPERTIES:
