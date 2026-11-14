@@ -1,6 +1,6 @@
 #+TITLE: opening
 #+OPTIONS: ^:{} -:nil
-#+STATUS: draft 2026-11-13, extracted from the reference skill (=main= =e356da7=); nine gaps opened; at the hand-off review 2026-11-13: G8 applied (the path's root, a revision's line)
+#+STATUS: draft 2026-11-13, extracted from the reference skill (=main= =e356da7=); nine gaps opened; at the hand-off review 2026-11-13: G8 applied (the path's root, a revision's line); the unnamed repository filled
 
 * Purpose
 
@@ -63,6 +63,11 @@ base.
 *** Scenario: The repository the user names takes the change
 - *WHEN* the user's words name one of the home's repositories
 - *THEN* the change belongs to that repository
+
+*** Scenario: With several repositories and none named, opening asks which
+- *WHEN* the home holds several repositories and the user's words name none of them
+- *THEN* opening hands back =open: failed, which repository: <the repositories>=
+- *AND* it creates no branch and writes nothing
 
 *** Scenario: Work that needs two repositories is two changes
 - *WHEN* what the user asks for needs two repositories
@@ -293,11 +298,6 @@ On =split= it SHALL open a new change that names the one it came from.
 - *AND* the new intent's Why names the change it came from
 
 * Gaps
-
-** Gap: Which repository takes a change when the home has several and the user names none
-:PROPERTIES:
-:REQUIREMENT: A new change is named, placed in one repository and started from a written base
-:END:
 
 ** Gap: What opening does when the change's name is already used
 :PROPERTIES:
