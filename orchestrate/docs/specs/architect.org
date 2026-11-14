@@ -1,6 +1,6 @@
 #+TITLE: architect
 #+OPTIONS: ^:{} -:nil
-#+STATUS: draft 2026-11-13, extracted from the reference skill (=main= =e356da7=); nine gaps open; at the hand-off review 2026-11-13: G2, G5, G7, G8 and G11 applied, its role default added; the dropped property and what each run writes filled
+#+STATUS: draft 2026-11-13, extracted from the reference skill (=main= =e356da7=); nine gaps open; at the hand-off review 2026-11-13: G2, G5, G7, G8 and G11 applied, its role default added; the dropped property, what each run writes and the prior's cleanup filled; no gap open
 
 * Purpose
 
@@ -339,6 +339,11 @@ line in the change's journal and not a finding. Style and preference SHALL not b
 - *THEN* it writes one thought line for it in the file of its scratch directory that its brief names
 - *AND* its hand-back stays one line
 
+*** Scenario: A cleanup a project prior asks for is a thought line naming the prior
+- *WHEN* the Architect notices a cleanup that changes no behaviour today, and one of the project's priors asks for that kind of work
+- *THEN* the change's journal gains one thought line for it that names the prior
+- *AND* no finding file is written for it
+
 *** Scenario: The Architect writes no route for a finding
 - *WHEN* the Architect writes a finding
 - *THEN* the finding carries no decoration, neither blocking nor hardening
@@ -414,10 +419,5 @@ Each run of the Architect SHALL be at its role default; a task override SHALL NO
 
 * Gaps
 
-** Gap: What a cleanup becomes when a project prior asks for it
-:PROPERTIES:
-:REQUIREMENT: Every defect the Architect finds is a finding, and it routes none
-:END:
-A cleanup that changes no behaviour is a thought line, except when one of the project's priors asks
-for such work; the reference skill does not say what the Architect writes then: a finding, or a
-thought the phase agent turns into a task.
+No gap open. The nine this draft had were filled 2026-11-13 at the hand-off review
+(=research/skill-evals/extraction/architect.org= § Gap decisions).
