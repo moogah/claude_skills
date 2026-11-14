@@ -67,7 +67,7 @@ The record shows why this step exists: the plan-time review of the batch against
 
 Select which candidates this cycle will run. The batch composer balances:
 
-- Critical-path coverage: ≥1 task on the critical path per cycle, unless the prior integrate explicitly deferred.
+- Critical-path coverage: ≥1 task on the critical path per cycle while one is ready, until the change's MVP decision; after `harden` a batch may hold none.
 - Dependencies: `blocked_by` names the tasks a candidate must follow; execute spawns a task when its `blocked_by` tasks have merged.
 - Total batch size: the plan's judgment (no overlay key); default 3–7 tasks, or fewer when the design has fewer seams left to implement.
 

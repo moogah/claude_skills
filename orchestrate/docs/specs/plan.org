@@ -1,6 +1,6 @@
 #+TITLE: plan
 #+OPTIONS: ^:{} -:nil
-#+STATUS: draft 2026-11-13, extracted from the reference skill (=main= =e356da7=); at the hand-off review 2026-11-13: G1, G5, G6, G9 and G10 applied, the obsolete flag carried from =implementor=; the premise corrections filled (a free choice)
+#+STATUS: draft 2026-11-13, extracted from the reference skill (=main= =e356da7=); at the hand-off review 2026-11-13: G1, G5, G6, G9 and G10 applied, the obsolete flag carried from =implementor=; the premise corrections filled (a free choice); the main-path rule filled; no gap open
 
 * Purpose
 
@@ -322,12 +322,16 @@ record correction.
 :GOAL:     none stated
 :END:
 The plan phase SHALL put at least one task on the main path in each batch while such a task is
-ready, unless the prior integrate deferred it, and SHALL write in each task file the tasks of the
+ready, until the change's MVP decision, and SHALL write in each task file the tasks of the
 batch it must follow.
 
 *** Scenario: A batch holds a main-path task when one is ready
-- *WHEN* a task on the main path is ready for the batch and the prior integrate deferred none
+- *WHEN* a task on the main path is ready for the batch, and the change has not reached its MVP decision
 - *THEN* the batch holds at least one task on the main path
+
+*** Scenario: After harden, a batch needs no main-path task
+- *WHEN* plan drafts a batch after the user answered harden on the MVP decision
+- *THEN* the batch may hold no task on the main path
 
 *** Scenario: A task that must follow others names them
 - *WHEN* a task of the batch must follow other tasks of the batch
@@ -472,10 +476,5 @@ hand the dispatcher one line. It SHALL write no code and spawn no Implementor.
 
 * Gaps
 
-** Gap: A main-path task in every batch, against a cycle after harden
-:PROPERTIES:
-:REQUIREMENT: The batch holds a main-path task and keeps each task's dependencies
-:END:
-Every batch needs a task on the main path unless the prior integrate deferred, yet every task
-drafted after =harden= is off the main path, and nothing says where integrate records a deferral.
-
+No gap open. The seven this draft had were filled 2026-11-13 at the hand-off review
+(=research/skill-evals/extraction/plan.org= § Gap decisions).
