@@ -570,3 +570,52 @@ task is.
 - Example :: "it SHALL stop at a clean point"
 - Avoid :: checkpoint, safe point, quiescence
 - Specs :: execute
+
+* handshake
+The file integrate leaves in the change's directory when a cycle closes, which the next cycle's plan
+reads before it drafts: the seam rows that moved, the PM digest's path, the meta-discoveries
+(patterns across tasks), the user's goal-drift answers, the asks open and settled, each open task's
+impact set, the follow-up candidates and the cycle's journal. No cycle after the first starts
+without it.
+- Example :: "Integrate SHALL leave in the change's directory a handshake for its cycle"
+- Avoid :: handover, hand-back (agreed terms for other things), handshake artifact and integrate→plan handshake artifact (main's full name, in prose), hand-off, contract, loop-closure artifact
+- Specs :: record, plan, integrate
+
+* counts
+The numbers of a cycle computed from the change's state: the tasks created, carried, started,
+completed, reviewed, sent back, fixed inline, externalised, blocked, failed and done, and the four
+ratios between them; never stored in the state and never written by an agent.
+- Example :: "A cycle's counts SHALL be computed from the change's state"
+- Avoid :: metrics, stats, signals (the PM digest's word for what it reads from them)
+- Specs :: record
+
+* PM digest
+The PM's one file per cycle, written at integrate in the cycle's directory: the counts and the
+signals they fire, the asks for the user, the trends to watch, the meta-discoveries and the
+goal-drift check; integrate's gate checks that its Signals section is not empty.
+- Example :: "the cycle's PM digest exists with a non-empty Signals section"
+- Avoid :: report (the Implementor's file), status report, summary, the digest alone where the reader may not know whose, =pm-signals.json= (the computed output it is written from)
+- Specs :: record, integrate, project-manager
+
+* goal drift
+A sign, read by the PM from the counts across cycles, that the change is moving away from the goals
+its intent states (the main path's completion flat or falling while other work completes); integrate
+puts it to the user as a =decision= ask with four options (revise, split, abandon, continue), and the
+next plan waits for the answer.
+- Example :: "every goal-drift recommendation the prior integrate carried has the user's answer"
+- Avoid :: scope creep, divergence alone (=divergent= is the intent's status once the ask is raised)
+- Specs :: record, plan, integrate, project-manager
+
+* send-back
+A task's return from review to an Implementor, its status moving from =needs_review= or =reviewed=
+back to =in_progress=; counted on the task and in the cycle's counts as rejected.
+- Example :: "A send-back is counted on the task"
+- Avoid :: rejection (main's field name, which suggests the work is thrown away), bounce, rework (the re-spawned Implementor's run itself)
+- Specs :: record
+
+* task override
+Plan's change to one task's agent setting, written in its task file with a one-line reason the
+task's text bears out; it may raise or lower the Implementor and only raise the Reviewer.
+- Example :: "*WHEN* an agent runs at a task override"
+- Avoid :: override alone, custom setting, agent block (its form in the task file), tier change
+- Specs :: record, plan, execute
