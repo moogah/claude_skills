@@ -1,6 +1,6 @@
 #+TITLE: reviewer
 #+OPTIONS: ^:{} -:nil
-#+STATUS: draft 2026-11-13, extracted from the reference skill (=main= =e356da7=); not yet reviewed; at the hand-off review 2026-11-13: G8 and G11 applied, its role default added; the recommended actions and the direction of a defect outside the work filled
+#+STATUS: draft 2026-11-13, extracted from the reference skill (=main= =e356da7=); not yet reviewed; at the hand-off review 2026-11-13: G8 and G11 applied, its role default added; the recommended actions and the direction of a defect outside the work and read-only filled; no gap open
 
 * Purpose
 
@@ -201,6 +201,11 @@ other agents on the machine share.
 - *THEN* the probe runs in the scratch directory its brief names, against the merge's checkout
 - *AND* that directory is gone when the Reviewer hands back
 
+*** Scenario: A test run leaves the checkout as git sees it
+- *WHEN* the Reviewer has run the project's tests or its probes against the merge's checkout
+- *THEN* no tracked file in the checkout has changed
+- *AND* nothing new is in it that the repository does not ignore
+
 *** Scenario: Every run ends before the hand-back
 - *WHEN* the Reviewer runs the project's tests or a probe
 - *THEN* the run is in the foreground and has ended before the Reviewer hands back
@@ -293,10 +298,5 @@ The Reviewer SHALL run at its role default unless a task override raises it.
 
 * Gaps
 
-** Gap: What read-only allows when the tests write in the checkout
-:PROPERTIES:
-:REQUIREMENT: The Reviewer changes nothing it reviews
-:END:
-The Reviewer may run the project's tests against the merge's checkout, and nothing a probe writes may
-enter the repository; the reference skill does not say whether files a test run leaves in the
-checkout (caches, build output) break the read-only contract.
+No gap open. The four this draft had were filled 2026-11-13 at the hand-off review
+(=research/skill-evals/extraction/reviewer.org= § Gap decisions).
