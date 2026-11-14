@@ -698,3 +698,96 @@ orders the hardening list and never routes.
 - Example :: "Severity is the harm when the defect triggers"
 - Avoid :: priority, blocking (a route), impact
 - Specs :: reviewer
+
+* Architect
+The role agent that writes the change's design and keeps it true to the code: it runs at the design
+round, at each plan's premise check, at each integrate's conformance and at a PM cascade, reports
+every defect it finds as a finding, and commits nothing.
+- Example :: "The round's phase agent spawns the Architect"
+- Avoid :: designer, architect agent; role agent alone (main's word, which also covers the Implementor and Reviewer)
+- Specs :: architect, design-round, integrate, project-manager
+
+* design
+The change's document of how the code will meet its scenarios, =docs/changes/<change>/design.org= in
+the code root beside the intent: Context, Decisions, the Seams section and, while any are open, Open
+Questions; written by the design round, read by plan, briefs and reviews, changed only by conformance
+and plan's one-row corrections. Its full form is "the change's design".
+- Example :: "The design round writes the change's design beside its intent"
+- Avoid :: design doc, =design.org= in prose, catalogue (the retired project-wide interface list), the record (the change's documents are not the change's record)
+- Specs :: architect, design-round
+
+* Decision
+One entry of the design's Decisions: what must hold and why, naming by id the seam it concerns;
+never a guard, an error string, an encoding or a helper. An answered open question becomes one.
+- Example :: "An answer is written into the design's Decisions and the spec it settles"
+- Avoid :: decision alone where the ask kind is meant (a =decision= ask), design decision, ADR, rationale
+- Specs :: architect, design-round
+
+* design round
+The step, once per change after its intent and spec edits and before its first cycle, in which a
+phase agent has the Architect write the change's design and pending tests, commits them, and has the
+user answer every question they raise in one sitting; run again for one seam when an answer or a
+spec change alters it.
+- Example :: "The design round writes the change's design beside its intent"
+- Avoid :: round alone, design phase, design cycle (it is not a cycle), design review
+- Specs :: architect, design-round
+
+* premise check
+The Architect's run at plan, before the batch is fixed, that checks each premise of the tasks it is
+given against the code at the code root's HEAD and marks each Holds or Wrong.
+- Example :: "The premise check writes a table of premises per task"
+- Avoid :: plan-time review, batch review, claim check, verification (a task file's section)
+- Specs :: architect, plan
+
+* conformance
+The Architect's run at each integrate, or on a PM cascade, that checks the merged code against the
+seam rows the cycle's tasks cite, scans the merged diffs for replaced code still live, and amends a
+row the code has rightly outgrown.
+- Example :: "A clean conformance says so in the journal"
+- Avoid :: audit (the retired full structural audit; an evals term), design review, drift check, conformance check and conformance run as other names for it
+- Specs :: architect, integrate, project-manager
+
+* open question
+An entry of the design's Open Questions, or the intent's: a question only the user can settle, with
+two to four options, a recommendation and the seam rows and pending tests that depend on it; it
+reaches the user as a =decision= ask and becomes a Decision once answered.
+- Example :: "An open question is an entry in the design's Open Questions"
+- Avoid :: ask (the file that carries it), question alone (also a finding's kind), TBD, provisional decision
+- Specs :: architect, design-round, opening
+
+* design diff
+The list, in the cycle's directory, of every seam row the cycle added, amended or retired, each with
+the finding or ask behind it; empty when no row changed.
+- Example :: "Conformance's hand-back names its design diff"
+- Avoid :: design delta, changelog
+- Specs :: architect
+
+* class
+The label of an Architect finding naming which question of the design checklist it answers no to:
+=shape-fragmentation=, =vocabulary-mismatch=, =responsibility-leakage=, =dead-branch=,
+=interface-drift=, =mutation=, =invariant-gap= or =duplication=.
+- Example :: "A finding carries the class of the design checklist"
+- Avoid :: kind (the reporter's confidence), category, type
+- Specs :: architect
+
+* sitting
+A run of calls the dispatcher puts to the user one after another, with no other work between them;
+the design round's questions are all put in one.
+- Example :: "The round's questions are put in one sitting, one per call"
+- Avoid :: session (the dispatcher's whole run), meeting, batch (the plan's set of tasks), round (the design round)
+- Specs :: design-round, dispatcher
+
+* base
+The commit a change starts from, named in its intent; the change's spec edits are its specs' diff
+from it.
+- Example :: "the change's base"
+- Avoid :: =#+BASE:= in prose, baseline (the cycle's test run before its first merge), merge base
+- Specs :: design-round
+
+* workspace integration branch
+The branch several changes of one repository share when one hand-off produced them: each is opened
+from it, takes it in before its design round and its whole-change review, and merges into it when
+done; its merge to main is the user's.
+- Example :: "A moved workspace integration branch is merged in before the Architect runs"
+- Avoid :: integration branch alone, main, trunk
+- Specs :: design-round, opening, integrate
