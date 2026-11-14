@@ -39,7 +39,7 @@ Git and worktree operations (branching, merging, removing a worktree) are the ag
 | `route <finding-id> [--decoration blocking\|hardening] [--resolution <r>]` | Records a finding's routing and how it ended (`finding-routed`); the latest value of each field counts. The finding's file is in a cycle's `findings/`, or the change's own `findings/` for one made before any cycle (the design round's); refuses `no_finding` otherwise. Resolutions: `templates/architect-finding.md` § Resolution states. |
 | `blocker <task> "<note>"` | A blocked task's note (`blocker-note`): the ask id, the finding id, `merge-conflict`, or an external dependency. Read only while the task's file says `blocked`. |
 | `note <kind> "<text>" [--ref <id>] [--by <role>] [--path <file>]` | One journal line, at most 280 characters (`note`). Kinds: `discovery`, `decision`, `inline-fix`, `deviation`, `push-back`, `note`. The long form goes in a file and `--path` points at it. |
-| `fix-link <commit> --task <t> --review <n>` | Links an inline-fix commit to the review finding it answers, when its subject does not say so (`inline-fix-link`). |
+| `fix-link <commit> --task <t> --review <n>` | Links an inline-fix commit to the review finding it answers (`inline-fix-link`); the subject names the task, not the finding. |
 | `correct <seq> --why "<reason>"` | A correction naming an entry of the log (`correction`); every reader leaves the corrected entry out. |
 | `log [--cycle <id>] [--kind <kind>]` | Read-only. The log with corrections applied. |
 | `asks [--all \| --cycle <id>]` | Read-only. The inbox's ask files (with `--all`, every cycle's `asks/` too) with the fields the handshake's ask lists carry (`templates/handshake.md`). With `--cycle`, `open` (every open file) and `resolved` (every other ask file the home's git touched since that cycle's `cycle-started` or that is changed and not yet committed, and every `answered` or `deferred` file still in the inbox, carried until it is applied): the handshake's two lists. |
@@ -122,7 +122,7 @@ The record is readable only while agents keep these forms. `state.py conventions
 
 - **Merge commits on the change branch**: `Merge task <name>`, and `Merge task <name> (rework)` for a rework; a `: <one line>` may follow.
 - **Phase-close commits in the home**: `Orchestrator: <cycle-id> <phase> closed`, exactly.
-- **Inline-fix commits**: `Inline fix (review <task> #<n>)`; a `: <one line>` may follow. When a commit cannot carry it, `state.py fix-link`.
+- **Inline-fix commits**: `Inline fix after <merging|review of> task <task>: <what>` (`flows/execute.md` § 8); the review finding it answers is named in the message, and linked by `state.py fix-link`.
 - **Test runs**: `<change-dir>/after-<task>-<sha12>.status` and, against a red baseline, `.compare`, named for the merge commit, beside the output `.txt`; `baseline-<cycle-id>.status` beside `baseline-<cycle-id>.txt`. The exit codes are tracked and are the record; the outputs are not.
 - **Review and brief files**: `cycles/<cycle-id>/reviews/<task>.md`, `<task>-rework.md`, `whole-change.md`; `cycles/<cycle-id>/briefs/<task>.md`, `<task>-rework.md`, `review-<task>.md`, `premise-check.md`, `conformance.md`. A review file's frontmatter names the merge commit it reviewed: `merge_commit: <sha>`.
 - **Task-file frontmatter**: the keys `templates/task-body.md` names, `status` from § Task status, `task_name` the file's name. A key holding a fact whose source is elsewhere (`merge_commit`, the times) is a break that names that source; so is `decoration` or `resolution` in a finding file.

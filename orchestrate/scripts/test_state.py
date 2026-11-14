@@ -699,3 +699,14 @@ def test_a_review_naming_a_commit_before_the_merge_does_not_count(home):
     home.review(cycle, "a", before)
     code, _, err = home.run("check", "done", "a")
     assert code == 1 and "review" in err["message"]
+
+
+def test_an_inline_fix_subject_is_the_specs_form(home):
+    """execute § An inline fix's commit names its task, its cause and its pin."""
+    started(home)
+    for s in ("Inline fix after merging task a: the clash", "Inline fix after review of task b: an off-by-one"):
+        git(home.wt, "commit", "-q", "--allow-empty", "-m", s)
+    assert home.ok("conventions")["breaks"] == []
+    git(home.wt, "commit", "-q", "--allow-empty", "-m", "Inline fix (review a #1)")
+    breaks = home.ok("conventions")["breaks"]
+    assert [b["expected"] for b in breaks] == ["Inline fix after <merging|review of> task <task>: <what>"]

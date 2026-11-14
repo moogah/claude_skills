@@ -74,7 +74,9 @@ MERGE_RE = re.compile(r"^Merge task (?P<name>[A-Za-z0-9._-]+?)(?P<rework> \(rewo
 TASK_BRANCH_RE = re.compile(r"\btask-(?P<name>[A-Za-z0-9._-]+?)-\d{6,}\b")
 CLOSE_RE = re.compile(r"^Orchestrator: (?P<cycle>cycle-[\w-]+) (?P<phase>plan|execute|integrate) closed$")
 CLOSE_LIKE_RE = re.compile(r"^Orchestrator: (?P<cycle>cycle-[\w-]+) (?P<phase>plan|execute|integrate)\b")
-INLINE_FIX_RE = re.compile(r"^Inline fix \(review (?P<task>\S+) #(?P<n>\d+)\)(?::\s.*)?$")
+# execute § An inline fix's commit names its task, its cause and its pin. The review finding it answers
+# is in the message, or linked by `fix-link`.
+INLINE_FIX_RE = re.compile(r"^Inline fix after (?:merging|review of) task (?P<task>\S+): \S.*$")
 NON_TASK_BRIEFS = re.compile(r"^(review-.*|.*-rework|premise-check|conformance)$")
 
 
@@ -819,7 +821,7 @@ def convention_breaks(ch):
         brk(sha, f"merge subject {subject!r}", f"Merge task {task}")
     for sha, n, s in ch.first_parent():
         if s.startswith("Inline fix") and not INLINE_FIX_RE.match(s):
-            brk(sha, f"inline-fix subject {s!r}", "Inline fix (review <task> #<n>)")
+            brk(sha, f"inline-fix subject {s!r}", "Inline fix after <merging|review of> task <task>: <what>")
     cycles = set(ch.cycles())
     for sha, s in ch.home_subjects():
         m = CLOSE_LIKE_RE.match(s)
