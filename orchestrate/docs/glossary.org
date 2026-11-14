@@ -333,3 +333,54 @@ never an ask.
 - Example :: "the change's journal records the statement for integrate as a record correction"
 - Avoid :: doc-correction (main's retired ask kind for the same thing), text correction (prose outside the design and specs), amendment
 - Specs :: execute
+
+* ask
+A question the orchestrator needs the user to settle, written as one file in the change's inbox the
+moment it arises and answered there. Main has five kinds: decision (only the user can choose, and the
+choice changes the product), environment (a licence, a permission, a wedged runner, an unreadable
+state file), confirmation (a default already applied, recorded without asking), process (about the
+orchestration itself, never put to the user), and the retired doc-correction, now a record correction.
+- Example :: "a =decision= ask is filed that names the choice"
+- Avoid :: question alone (also a finding kind), escalation, prompt, user query
+- Specs :: execute
+
+* journal
+The change's one-line notes for what has no other home: the phase agent's discoveries and their
+routes, decisions such as a conflict resolution, inline fixes, push-backs and deviations.
+- Example :: "the change's journal records the cause against the task"
+- Avoid :: log, notes, the record
+- Specs :: execute
+
+* the change's record
+The change's process kept in the home: its directory, its state and its journal.
+- Example :: "the change's record shows the regression against the task"
+- Avoid :: the cycle's record (the same record), state file or =state.json= in prose; "record" for the change's documents in the code root (call those the change's documents)
+- Specs :: execute, record
+
+* handover
+The file a phase agent writes when asked to hand over: the tasks merged, the tasks and asks still
+open, and the steps left, so that a fresh agent for the same phase can go on from it.
+- Example :: "leave a handover a fresh agent can continue from"
+- Avoid :: hand-back (the one line), handoff (the research skill's word, and the evals' glossary avoids it for interface artifacts), checkpoint, swap
+- Specs :: execute
+
+* hand-back
+The one line, at most 200 characters, an agent returns to the agent that spawned it when it ends or
+stops; its detail is in a file.
+- Example :: "the dispatcher receives one line of at most 200 characters"
+- Avoid :: report (a file of the Implementor's), summary, handover, return message
+- Specs :: execute
+
+* seam row
+One row of the Seams table in the change's design: one seam, its id, the statement of what must hold
+at the boundary, its owning symbols, the scenarios it serves and the tests that pin it.
+- Example :: "the seam rows the task cites, verbatim"
+- Avoid :: design row, interface, contract alone
+- Specs :: execute
+
+* gate
+A phase's exit gate: the checks, mostly computed from state and the files on disk, that must all hold
+before the phase counts as passed and the next phase may start.
+- Example :: "*WHEN* execute passes its gate"
+- Avoid :: checkpoint, milestone, exit criteria
+- Specs :: execute

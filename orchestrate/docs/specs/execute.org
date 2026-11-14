@@ -128,7 +128,7 @@ task; all work other than merging SHALL go on. The phase agent SHALL find the re
 and route it as a blocking defect, fixed in the change, and the task's review SHALL follow the
 fix. The user SHALL be asked only when the intent's goals do not settle what the code should do:
 which of two clashing tasks is right, or what a spec scenario the fix would change should say.
-When the goals settle it, a spec scenario or design row that says otherwise SHALL be left for
+When the goals settle it, a spec scenario or seam row that says otherwise SHALL be left for
 integrate as a record correction.
 
 *** Scenario: A regression after a merge stops further merges
@@ -176,7 +176,7 @@ integrate as a record correction.
 - *AND* the next queued task merges once a run after the revert shows no regression
 
 *** Scenario: A spec statement the goals overrule is left for integrate
-- *WHEN* the fix the goals settle contradicts what a spec scenario or a design row says
+- *WHEN* the fix the goals settle contradicts what a spec scenario or a seam row says
 - *THEN* the execute phase changes neither the spec nor the design
 - *AND* the change's journal records the statement for integrate as a record correction
 
@@ -523,17 +523,17 @@ task names, and SHALL record the setting it used.
 *** Scenario: An Implementor runs at its task's setting
 - *WHEN* an Implementor is spawned
 - *THEN* it runs at the task's own setting when the plan wrote one, and at the Implementor's role default otherwise
-- *AND* the cycle's record holds the agent and its setting
+- *AND* the change's record holds the agent and its setting
 
 *** Scenario: A Reviewer runs at its role default or the task's raised setting
 - *WHEN* a Reviewer is spawned for a task
 - *THEN* it runs at the Reviewer's role default, or at the task's Reviewer setting when the plan raised it
-- *AND* the cycle's record holds the agent, its setting and the task it reviews
+- *AND* the change's record holds the agent, its setting and the task it reviews
 
 *** Scenario: A rework runs at the task's setting, never a stronger one
 - *WHEN* an Implementor is spawned again to fix a blocking finding
 - *THEN* it runs at the setting the task's first Implementor ran at, never a stronger one
-- *AND* the cycle's record holds it as a rework
+- *AND* the change's record holds it as a rework
 
 * Gaps
 
