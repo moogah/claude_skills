@@ -1,6 +1,6 @@
 #+TITLE: record
 #+OPTIONS: ^:{} -:nil
-#+STATUS: draft 2026-11-13, extracted from the reference skill (=main= =e356da7=); the boundary gap filled 2026-11-13 (the state file's shape); one gap set aside (whether test runs are tracked); extended 2026-11-13 to the record's full scope (the gates, the handshake, the counts, the cycle's directory at close, the agents, recovery), two gaps opened; under hand-off review 2026-11-13: both gaps filled
+#+STATUS: draft 2026-11-13, extracted from the reference skill (=main= =e356da7=); the boundary gap filled 2026-11-13 (the state file's shape); one gap set aside (whether test runs are tracked); extended 2026-11-13 to the record's full scope (the gates, the handshake, the counts, the cycle's directory at close, the agents, recovery), two gaps opened; under hand-off review 2026-11-13: both gaps filled; the finding's entry added from a boundary note
 
 * Purpose
 
@@ -185,6 +185,29 @@ and, for a task whose source is another task, where it came from.
 *** Scenario: A task whose source is another task names where it came from
 - *WHEN* a task's source is another task
 - *THEN* its entry's =discovered_from=, =discovered_by= and =discovered_class= are set
+
+** Requirement: A finding in a file of its own is indexed in the state
+:PROPERTIES:
+:GOAL:     none stated
+:END:
+Each finding written in a file of its own SHALL have one entry in the change's state that indexes
+it: its id, its file's path, its routing and its resolution. The file carries the rest; its fields
+are the =reviewer= spec's.
+
+*** Scenario: A finding's entry names its file, its routing and its resolution
+- *WHEN* a finding in a file of its own is recorded
+- *THEN* the change's state has one entry for it, with its =finding_id= and the =path= of its file
+- *AND* its routing, =decoration=, is empty until it is routed, then =blocking= or =hardening=
+- *AND* its =resolution= is =pending= until it is resolved
+
+*** Scenario: A finding's resolution is one of a fixed list
+- *WHEN* a finding is resolved
+- *THEN* its =resolution= is one of =inline-fixed=, =design-amended=, =candidate-task-<name>=, =followup-task-<task-name>=, =reverted=, =accepted-with-note= or =hardening-list=
+
+*** Scenario: A finding with no kind or no evidence is refused
+- *WHEN* a finding is recorded without a kind of =issue= or =question=, or with no evidence
+- *THEN* the record refuses it
+- *AND* no entry is written
 
 ** Requirement: Each phase passes its gate before the next phase starts
 :PROPERTIES:
