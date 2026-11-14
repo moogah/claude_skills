@@ -1,6 +1,6 @@
 #+TITLE: opening
 #+OPTIONS: ^:{} -:nil
-#+STATUS: draft 2026-11-13, extracted from the reference skill (=main= =e356da7=); nine gaps opened; at the hand-off review 2026-11-13: G8 applied (the path's root, a revision's line); the unnamed repository, a taken name, a failed opening, the second change, the research hand-off and the split's old change filled
+#+STATUS: draft 2026-11-13, extracted from the reference skill (=main= =e356da7=); nine gaps opened; at the hand-off review 2026-11-13: G8 applied (the path's root, a revision's line); the unnamed repository, a taken name, a failed opening, the second change, the research hand-off, the split's old change and the revision's approval filled; no gap open
 
 * Purpose
 
@@ -313,6 +313,10 @@ On =split= it SHALL open a new change that names the one it came from.
 - *THEN* the prior Goals are quoted under the intent's =* Status=
 - *AND* the status line is =speculated= again
 
+*** Scenario: A revision removes the goals' approval
+- *WHEN* a change is revised on the user's answer
+- *THEN* the intent has no =#+APPROVED:= line, so the design round's sitting asks the user to approve the rewritten goals
+
 *** Scenario: A revision is one commit Revise
 - *WHEN* a revision completes
 - *THEN* the change's code root has a commit with subject =Revise: <change>=
@@ -329,9 +333,5 @@ On =split= it SHALL open a new change that names the one it came from.
 
 * Gaps
 
-** Gap: Whether a revision's new goals need the user's approval again
-:PROPERTIES:
-:REQUIREMENT: A change is revised in place, or split, from the user's answer
-:END:
-The revision rewrites the Goals the =#+APPROVED:= line approved; whether the line is kept, removed or
-re-dated is not stated.
+No gap open. The nine this draft had were filled 2026-11-13 at the hand-off review
+(=research/skill-evals/extraction/opening.org= § Gap decisions).
