@@ -41,16 +41,16 @@ Two failure modes prevented by construction:
 
 The Reviewer may flag a choice the Implementor had a good but invisible reason for. That's a signal — the orchestrator (which holds both the report and the findings) resolves whether the reasoning was wrong (act on the flag) or load-bearing-but-undocumented (codify it as a comment, a test, or a seam row's statement so the next reviewer doesn't flag it again). **The Reviewer never has to know.**
 
-### Substrate-level enforcement
+### How the constraint is kept
 
-The author-blind constraint is enforced at the harness level by `flows/execute.md`'s reviewer-spawn helper:
+The orchestrator keeps the author-blind constraint when it builds the Reviewer's input (`flows/execute.md` § 7, Reviewer input contract). It is prose the phase agent follows; no code checks it:
 
 - The Reviewer's worktree is a **clean checkout of the merge candidate** — no scratch files, no debug output, no abandoned attempts.
 - The Reviewer prompt is **implementor-agnostic** — no "agent X just finished task Y", just "this diff is up for review on task Y."
-- The Implementor's structured report routes to **the orchestrator only**. The harness has no path that exposes it to a Reviewer agent.
+- The Implementor's structured report routes to **the orchestrator only**, which never passes it to a Reviewer agent.
 - In-code "why I did this" comments are **not part of the review surface**. Per the codebase's commenting rules (which the project overlay reinforces), rationale belongs in PR descriptions and rots in code; the Reviewer evaluates the code as a maintainer would receive it.
 
-These are spec'd in `flows/execute.md`. The orchestrator's reviewer-spawn helper must not be modified to violate them by accident.
+These are spec'd in `flows/execute.md`; an input built from anything else is a process bug.
 
 ## Reviewer mindset
 
@@ -97,7 +97,7 @@ Other agents share the machine (`roles/implementor.md` § A machine shared with 
 
 ## Output contract
 
-The Reviewer writes findings to `<change-dir>/cycles/<cycle-id>/reviews/<task-name>.md`:
+The Reviewer writes findings to `<change-dir>/cycles/<cycle-id>/reviews/<task-name>.md` (`<task-name>-rework.md` for the review of a rework). `merge_commit` is the commit reviewed, the one the brief named; `state.py check done` reads it, and a task is done only when its latest merge commit is named here:
 
 ```markdown
 ---

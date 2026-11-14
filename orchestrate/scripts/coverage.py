@@ -35,7 +35,7 @@ edits lie before its base gets its own. A `--scenario` or intent name that match
 listed, never dropped silently.
 
 Run from a home above the code root (no `docs/specs` at the git root and no --root), the code
-root is the resolved change's, from `state.py where`.
+root is the resolved change's, from `home.py where`.
 
 Usage:
   coverage.py [--root CODE_ROOT] [--specs DIR] [--tests DIR ...] [--output RUN_OUTPUT]
@@ -761,9 +761,9 @@ def _git_root(start):
 
 
 def _where_code_root():
-    """The resolved change's code root by `state.py where` from here (a home above it), or None."""
-    state = os.path.join(os.path.dirname(os.path.abspath(__file__)), "state.py")
-    r = subprocess.run([sys.executable, state, "where"], capture_output=True, text=True)
+    """The resolved change's code root by `home.py where` from here (a home above it), or None."""
+    home = os.path.join(os.path.dirname(os.path.abspath(__file__)), "home.py")
+    r = subprocess.run([sys.executable, home, "where"], capture_output=True, text=True)
     try:
         return json.loads(r.stdout).get("code_root")
     except (ValueError, AttributeError):
@@ -798,7 +798,7 @@ def main(argv=None):
     try:
         if not os.path.isdir(specs):
             hint = "" if args.root or args.specs or from_where else \
-                "; from a home, `state.py where` resolves no change (set ORCH_CHANGE or pass --root \"$CODE_ROOT\")"
+                "; from a home, `home.py where` resolves no change (set ORCH_CHANGE or pass --root \"$CODE_ROOT\")"
             raise Refusal(f"no specs directory at {specs}{hint}")
         if verb:
             return adopt_rows(args.design, root, specs, tests, args.write)

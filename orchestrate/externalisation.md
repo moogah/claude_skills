@@ -31,25 +31,23 @@ If the task is a follow-up to an in-change task that just merged, with the same 
 | Architect (shape-fragmentation, vocabulary-mismatch on touched code) | In-change |
 | Architect (responsibility-leakage on adjacent code) | Externalised — this is the *consolidation round* the Architect exists to make unnecessary; if the adjacent code is in scope, in-change |
 | Architect (interface-drift against a stale seam row or design sentence) | Code right, record stale: a record correction, fixed and journaled, no file; a design in question: a `decision` file in the inbox |
-| PM (cascade cluster) | Spawns a conformance run scoped to the cluster; resulting tasks follow Architect rules |
+| PM (a cluster in its meta-discoveries) | A meta-discovery in the handshake; the next plan weighs it, and a `.tasks/` cluster becomes the ask of § Externalisation pressure; the PM files no task |
 | Orchestrator (manual conflict-resolution) | In-change |
 | User (ad-hoc) | User chooses |
 
 ## Externalised task structure
 
-Externalised tasks at `<home>/.tasks/<task-name>.md` use the standard task-body template (`templates/task-body.md`) with `status: externalised`. They MUST carry full provenance fields (`discovered_from`, `discovered_by`, `discovered_class`) — without them the PM's externalisation-pressure signal can't cluster.
+Externalised tasks at `<home>/.tasks/<task-name>.md` use the standard task-body template (`templates/task-body.md`) with `status: externalised`. They MUST carry full provenance fields (`discovered_from`, `discovered_by`, `discovered_class`) — without them the PM cannot cluster them (§ Externalisation pressure).
 
 Externalised tasks **may** still cite seams (`cites_seams`); this is what enables PM's cluster-coherence check ("is this cluster ready to be promoted into a change?").
 
-## Externalisation pressure (PM's job)
+## Externalisation pressure
 
-PM monitors `.tasks/` growth:
-- **Monotonic growth over ≥3 cycles** → externalisation-pressure signal in digest.
-- **A coherent cluster** (≥3 tasks with overlapping modules and discovered_class) → an ask file of kind `decision` (`templates/ask.md`): "promote cluster X into the active change?"
+The PM reads `.tasks/` at integrate (`roles/project-manager.md`). **A coherent cluster** (≥3 tasks with overlapping modules and `discovered_class`) is a meta-discovery in the handshake, and the orchestrator writes an ask file of kind `decision` (`templates/ask.md`): "promote cluster X into the active change?"
 
 The user dispositions: promote, leave externalised, or open a new change for the cluster. Default if unanswered: leave externalised.
 
-Promotion is the user's decision on that ask, which the PM proposes; no role promotes on its own. Other roles can only externalise.
+Promotion is the user's decision on that ask; no role promotes on its own. Other roles can only externalise.
 
 ## Does the orchestrator pull from `.tasks/`?
 
@@ -78,15 +76,15 @@ This is the brainstorm's "where do worker observations belong" answer: in the me
 
 ## Who writes a task file
 
-Only the plan phase agent writes task files, at plan § 2, by one procedure: `templates/task-body.md`, `state.py task add` with the provenance fields, and the placement rule above. It drafts the batch from the design, writes each of the handshake's `candidate_tasks`, applies each open task's impact set (`task_refinements`) to its body, and drafts from the hardening list after the user chooses to harden; it is the one point where open tasks are *refined*. Execute (§ 5, § 8) and integrate (§ 7) route: a follow-up or an answered ask that needs a new task is a candidate in `cycles/<cycle-id>/candidate-tasks.json`, with its source quoted and its placement decided, and an open task's update is its impact set. They run at a routing setting, and task text is where most wrong premises in the record began (`SKILL.md` § Agent settings). The Implementor, Reviewer, Architect and PM report a candidate task in their findings or discoveries; none of them files one.
+Only the plan phase agent writes task files, at plan § 2, by one procedure: `templates/task-body.md` with the provenance fields, `state.py check new <task>` on the file written, and the placement rule above. It drafts the batch from the design, writes each of the handshake's `candidate_tasks`, applies each open task's impact set (`task_refinements`) to its body, and drafts from the hardening list after the user chooses to harden; it is the one point where open tasks are *refined*. Execute (§ 5, § 8) and integrate (§ 7) route: a follow-up or an answered ask that needs a new task is a candidate in `cycles/<cycle-id>/candidate-tasks.json`, with its source quoted and its placement decided, and an open task's update is its impact set. They run at a routing setting, and task text is where most wrong premises in the record began (`SKILL.md` § Agent settings). The Implementor, Reviewer, Architect and PM report a candidate task in their findings or discoveries; none of them files one.
 
 ## Provenance is mandatory on externalised tasks
 
 `discovered_from`, `discovered_by`, `discovered_class` are **mandatory** on externalised tasks. Without them:
 
-- PM's cascade detection can't see the originating cluster.
-- PM's externalisation-pressure signal can't cluster by class.
+- The PM can't see the originating cluster, nor cluster `.tasks/` by class.
+- `report.py spend` can't tell a defect found after done from new work.
 - The curation cycle (v2) can't index by source.
 - The meta-discovery loop has nothing structural to learn from.
 
-The orchestrator refuses to externalise a task whose provenance fields are unset.
+`state.py check new` refuses a follow-up without `discovered_from` and `discovered_by`, and the orchestrator does not externalise a task whose provenance fields are unset.

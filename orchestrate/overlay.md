@@ -1,6 +1,6 @@
 # Overlay convention
 
-The core skill is project-agnostic. Each project carries its own overlay at `<home>/.claude/orchestrator/`, where the home is a workspace directory holding worktrees of the project's repositories, or a repository's own root. The overlay names the repositories and supplies each one's test command and build hooks, the worktree placement, role-prompt extensions, threshold tuning, and task taxonomy.
+The core skill is project-agnostic. Each project carries its own overlay at `<home>/.claude/orchestrator/`, where the home is a workspace directory holding worktrees of the project's repositories, or a repository's own root. The overlay names the repositories and supplies each one's test command and build hooks, the worktree placement, role-prompt extensions, the phase agents' context threshold, and task taxonomy.
 
 ## Layout
 
@@ -19,7 +19,7 @@ The core skill is project-agnostic. Each project carries its own overlay at `<ho
     worktree-init.sh       # OPTIONAL — submodules, runtime setup
 ```
 
-The directory is **flat under `.claude/`** — not nested under `.claude/skills/` — to signal that this is config the central skill consumes, not a self-contained skill. It is created by `state.py home init` (§ Bootstrap) and checked by `state.py where` (§ Drift).
+The directory is **flat under `.claude/`** — not nested under `.claude/skills/` — to signal that this is config the central skill consumes, not a self-contained skill. It is created by `home.py init` (§ Bootstrap) and checked by `home.py where` (§ Drift).
 
 ## config.yaml schema
 
@@ -83,16 +83,9 @@ taxonomy:
   - tangle           # project-specific: literate-org tangling
   - load-test        # project-specific
 
-# OPTIONAL: PM threshold tuning
+# OPTIONAL: thresholds
 thresholds:
-  history-window: 5                        # K
-  drainage-trigger-ratio: 1.0
-  drainage-trigger-consecutive-cycles: 3
-  cascade-trigger-followup-count: 3
-  stale-task-cycles: 3
-  review-starvation-ratio: 1.5
-  phase-agent-context: 400000             # the dispatcher's: a phase agent past it hands over (SKILL.md)
-  externalisation-pressure-growth: monotonic-3-cycles
+  phase-agent-context: 400000             # the dispatcher's: a phase agent past it hands over (SKILL.md; report.py context)
 
 # OPTIONAL: critical-path declaration
 critical-path:
@@ -130,11 +123,11 @@ Three shapes of home, one model: a home has one or more **repositories**, and a 
 | **Workspace, one repository** | `code-root: <dir>` | That checkout, named after its directory | A workspace holding one repository's checkout |
 | **Repository root** | neither | The home itself, named after its directory | A repository whose root carries the overlay, no workspace above it |
 
-The same flows run in all three. `state.py where` prints the shape, the repositories and every open change (its repository, branch, worktree and phase); `state.py change open <name> [--repo <name>] [--from <ref>]` creates the change's worktree from a ref of the repository (default: the checkout's HEAD; the hand-off's workspace integration branch when there is one) and writes `<home>/.orchestrator/changes/<name>/change.json`; `--worktree <path>` adopts a checkout the user made by hand. A change's state, cycles, inbox, handshakes and test outputs live in that directory, so changes run cycles independently; the task files were always there.
+The same flows run in all three. `home.py where` prints the shape, the repositories and every open change (its repository, branch, worktree and base); `home.py open <name> [--repo <name>] [--from <ref>]` creates the change's worktree from a ref of the repository (default: the checkout's HEAD; the hand-off's workspace integration branch when there is one) and writes `<home>/.orchestrator/changes/<name>/change.json`; `--worktree <path>` adopts a checkout the user made by hand. A change's event log, cycles, inbox, handshakes, task files and test outputs live in that directory, so changes run cycles independently; `state.py --change <name> status` says where each stands.
 
 ## Worktrees
 
-Worktrees are placed **from the home**, by `worktrees.parent` (relative to the home) and `worktrees.pattern` (the path under it for a branch, with `<repo>` and `<branch>` placeholders): a change's worktree is the pattern applied to its branch; a task's worktree (`flows/execute.md` § 1) is the pattern applied to the task branch, so it lands beside the change's, never inside it. The pattern must contain `<branch>`, and `<repo>` when the home has several repositories, since two of them may both have a `main`. The workspace's own tooling owns the convention; the overlay states it and the skill follows it (`state.py worktree <branch>` prints the path). The home's `.gitignore` ignores the parent, and any repository checkout nested in the home (`where` warns).
+Worktrees are placed **from the home**, by `worktrees.parent` (relative to the home) and `worktrees.pattern` (the path under it for a branch, with `<repo>` and `<branch>` placeholders): a change's worktree is the pattern applied to its branch; a task's worktree (`flows/execute.md` § 1) is the pattern applied to the task branch, so it lands beside the change's, never inside it. The pattern must contain `<branch>`, and `<repo>` when the home has several repositories, since two of them may both have a `main`. The workspace's own tooling owns the convention; the overlay states it and the skill follows it (`home.py worktree <branch>` prints the path). The home's `.gitignore` ignores the parent, and any repository checkout nested in the home (`home.py where` warns).
 
 ## Resolution rule
 
@@ -165,7 +158,7 @@ If no overlay is found, the orchestrator warns explicitly and falls back to:
 | `artifacts.design-pattern`: `docs/changes/<change>/design.org` (code root) |
 | `test.pending-style`: `xfail-strict` (pytest) or `xit` (buttercup), else error when the design round needs it |
 | `taxonomy`: `[feature, test, doc, refactor, bug, contract, infrastructure]` |
-| `thresholds`: see `templates/pm-digest.md` defaults |
+| `thresholds.phase-agent-context`: 400000 tokens |
 | `asks.reader`: "technical product manager who has not watched development and has a shallow view of the internals" |
 | `priors`: none appended |
 
@@ -224,24 +217,24 @@ Hooks are bash scripts run by the orchestrator at fixed lifecycle points:
 | `test.command` | After every merge to the change integration branch, and as the final implementor verification step | inside the code root or worktree (depending on phase) | Non-zero status indicates regression; baseline-vs-after comparison runs |
 | `test.compare` | At a red baseline, after each merge (`flows/execute.md` § 4) | inside the code root | Non-zero: a test fails after that did not before |
 
-Hooks must be idempotent. The orchestrator may re-run them on retry. Every hook sees `ORCH_HOME`, `ORCH_CHANGE`, `ORCH_CHANGE_DIR`, `ORCH_REPO`, `ORCH_WORKTREES` and `CODE_ROOT` (what `state.py where --sh` exports), so a script that needs the home writes `$ORCH_HOME/…`.
+Hooks must be idempotent. The orchestrator may re-run them on retry. Every hook sees `ORCH_HOME`, `ORCH_CHANGE`, `ORCH_CHANGE_DIR`, `ORCH_REPO`, `ORCH_WORKTREES` and `CODE_ROOT` (what `home.py where --sh` exports), so a script that needs the home writes `$ORCH_HOME/…`.
 
 ## Bootstrap
 
-A home is made by `state.py home init`, never by copying another home's overlay: a copy carries the other project's knowledge and whatever the skill has since retired (the record: one overlay copied on 2026-10-15 brought an interfaces register, a `scaffolding.md` and a `roles-overlay` key the skill no longer had). The verb writes `config.yaml` from this schema, with `overlay-version`, the required keys filled and the optional blocks as comments, and an empty `roles/`; it refuses when a config exists.
+A home is made by `home.py init`, never by copying another home's overlay: a copy carries the other project's knowledge and whatever the skill has since retired (the record: one overlay copied on 2026-10-15 brought an interfaces register, a `scaffolding.md` and a `roles-overlay` key the skill no longer had). The verb writes `config.yaml` from this schema, with `overlay-version`, the required keys filled and the optional blocks as comments, and an empty `roles/`; it refuses when a config exists.
 
 ```bash
-state.py --home <dir> home init --repo <name>=<path> [--repo …] [--test-command <cmd>] [--parser <p>] [--worktrees-pattern <p>]   # a workspace
-state.py --home <dir> home init --code-root <path> …      # a workspace holding one repository
-state.py --home <dir> home init …                        # a repository root as its own home
+home.py --home <dir> init --repo <name>=<path> [--repo …] [--test-command <cmd>] [--parser <p>] [--worktrees-pattern <p>]   # a workspace
+home.py --home <dir> init --code-root <path> …      # a workspace holding one repository
+home.py --home <dir> init …                        # a repository root as its own home
 ```
 
-The dispatcher runs it with the user present, in one sitting, one question per call (`templates/ask.md` § The inline rule applies to the session, not to a file: there is no change yet): the repositories and their checkouts; the test command and its parser; the worktree placement when the workspace has a convention (§ Worktrees); the pre-commit and worktree-init hooks; the pending-test style. Then the optional blocks the user wants, from what they know of the project: taxonomy, drift hot spots, reviewer checks, the asks' reader, priors. The result's `add_to_home_gitignore` lists what the home's `.gitignore` must ignore. Role overlays are written by hand, against the current `roles/*.md`, with only what this project adds. The home is done when `state.py where` reports no problems and no warnings; the first change follows with `state.py change open`.
+The dispatcher runs it with the user present, in one sitting, one question per call (`templates/ask.md` § The inline rule applies to the session, not to a file: there is no change yet): the repositories and their checkouts; the test command and its parser; the worktree placement when the workspace has a convention (§ Worktrees); the pre-commit and worktree-init hooks; the pending-test style. Then the optional blocks the user wants, from what they know of the project: taxonomy, drift hot spots, reviewer checks, the asks' reader, priors. The result's `add_to_home_gitignore` lists what the home's `.gitignore` must ignore. Role overlays are written by hand, against the current `roles/*.md`, with only what this project adds. The home is done when `home.py where` reports no problems and no warnings; the first change follows with `home.py open`.
 
 ## Drift
 
-The overlay is the project's; the schema is the skill's, and the skill moves. `config.yaml` carries `overlay-version: 1`, and `state.py where` warns when the version is missing or differs, when a key is not in this schema or names a retired concept (`scaffolding`, `artifacts.register`, `architect.interfaces-document`, `architect.severity-overrides`, `roles-overlay`, `worktree.parent`, each with what replaced it), when a hook or `test.compare` climbs to the home with `../` (hooks see `$ORCH_HOME`), and when a role overlay or `priors.md` names a retired concept (the interfaces register, scaffolding, load-bearing entries). A warning is a review item for the user, not a refusal: the home keeps running, and the overlay is corrected by hand. The version is bumped when a key changes meaning, not when one is added.
+The overlay is the project's; the schema is the skill's, and the skill moves. `config.yaml` carries `overlay-version: 1`, and `home.py where` warns when the version is missing or differs, when a key is not in this schema or names a retired concept (`scaffolding`, `artifacts.register`, `architect.interfaces-document`, `architect.severity-overrides`, `roles-overlay`, `worktree.parent`, each with what replaced it), when a hook or `test.compare` climbs to the home with `../` (hooks see `$ORCH_HOME`), and when a role overlay or `priors.md` names a retired concept (the interfaces register, scaffolding, load-bearing entries). A warning is a review item for the user, not a refusal: the home keeps running, and the overlay is corrected by hand. The version is bumped when a key changes meaning, not when one is added.
 
 ## Validation
 
-`state.py where` is the one check of the overlay: its warnings (§ Drift) are relayed to the user once per session and stop nothing. No tool checks that a hook is executable, that `taxonomy` matches the tasks in flight or that `thresholds` are positive; a hook that cannot run fails where it runs, with its own error. The orchestrator does not invent missing config.
+`home.py where` is the one check of the overlay: its warnings (§ Drift) are relayed to the user once per session and stop nothing. No tool checks that a hook is executable, that `taxonomy` matches the tasks in flight or that `thresholds.phase-agent-context` is positive; a hook that cannot run fails where it runs, with its own error. The orchestrator does not invent missing config.

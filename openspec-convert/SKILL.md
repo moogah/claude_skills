@@ -1,6 +1,6 @@
 ---
 name: openspec-convert
-description: "Convert a repository or orchestrator home from the OpenSpec layout (openspec/specs/, openspec/changes/ with delta specs, proposal.md and design.md) to the orchestrate skill's living org record (docs/specs/<capability>.org, docs/changes/<change>/{intent,design}.org). Use when a project still has an openspec/ directory, when `state.py where` warns that openspec/specs/ is still in the home, or when the user asks to migrate off OpenSpec. One-time migration; the orchestrate skill does not read the old layout."
+description: "Convert a repository or orchestrator home from the OpenSpec layout (openspec/specs/, openspec/changes/ with delta specs, proposal.md and design.md) to the orchestrate skill's living org record (docs/specs/<capability>.org, docs/changes/<change>/{intent,design}.org). Use when a project still has an openspec/ directory, when `home.py where` warns that openspec/specs/ is still in the home, or when the user asks to migrate off OpenSpec. One-time migration; the orchestrate skill does not read the old layout."
 ---
 
 # openspec-convert
@@ -18,7 +18,7 @@ The OpenSpec CLI and the `/opsx-*` skills are not needed and are not used.
 | `docs/` goes to | the repository | the code root (`code-root` in `.claude/orchestrator/config.yaml`) |
 | Commits | one | one in the code root (the record), one in the home (removals, overlay, tasks) |
 
-`state.py where` (`~/.claude/skills/orchestrate/scripts/state.py`) prints the home and the code root. Below, `$HOME_DIR` is the directory holding `openspec/`, `$CODE_ROOT` where `docs/` goes; they are the same directory in the first layout.
+`home.py where` (`~/.claude/skills/orchestrate/scripts/home.py`) prints the home and the code root. Below, `$HOME_DIR` is the directory holding `openspec/`, `$CODE_ROOT` where `docs/` goes; they are the same directory in the first layout.
 
 ## The converter
 
@@ -70,7 +70,7 @@ For each active change `<c>`:
 - `project.md`: compare it with the project's `CLAUDE.md`. Move what only it says into `CLAUDE.md` or `docs/`; it is not kept.
 - `research/` and similar notes: move to `$CODE_ROOT/docs/research/` and fix the links that point at the old path (`git grep 'openspec/research'`).
 - `config.yaml` (the OpenSpec CLI's) and `openspec/changes/archive/`: deleted. Git history keeps the archived changes; they are not converted.
-- Then `git rm -r openspec/`. Ignored files (`__pycache__/`, editor backups) survive it: check that what is left on disk is only ignored files, then `rm -rf openspec`. A leftover `openspec/specs/` keeps `state.py where` warning.
+- Then `git rm -r openspec/`. Ignored files (`__pycache__/`, editor backups) survive it: check that what is left on disk is only ignored files, then `rm -rf openspec`. A leftover `openspec/specs/` keeps `home.py where` warning.
 
 ### 4. Live references
 
@@ -84,7 +84,7 @@ For each active change `<c>`:
   - permissions in `.claude/settings*.json` for the `openspec` CLI;
   - open `.tasks/` items (any status that means work remains: `ready`, `externalised`, `blocked`) that cite spec paths.
 - **Leave:**
-  - `.orchestrator/cycles/` (the cycle archives), handshakes, and a closed cycle's `state.json` (the next `init` replaces it);
+  - `.orchestrator/cycles/` (the cycle archives), handshakes, and the change's event log `events.jsonl`;
   - `.tasks/` items whose work is finished (`done`, `resolved`, `promoted`, `superseded`, `declined`) and every `source:` provenance line;
   - the retired register (`interfaces.org` / `interfaces.md`) and provenance comments in code and tests (`promoted-from: openspec/changes/…`);
   - data files that merely contain the word.
@@ -92,7 +92,7 @@ For each active change `<c>`:
 ### 5. Check and commit
 
 - `python3 ~/.claude/skills/orchestrate/scripts/coverage.py --root "$CODE_ROOT"` runs. The citations that resolve to no scenario are listed. Each is either a capability that existed only in archived changes (fine), or a title the conversion changed (a bug: fix it before committing). `coverage.py` reads Emacs Lisp tests only; for another language every scenario shows `uncited` and this check sees nothing, so rely on `tree`'s `titles identical: True`.
-- `state.py where` gives no `openspec/specs/` warning.
+- `home.py where` gives no `openspec/specs/` warning.
 - The grep of step 4 finds only history.
 - Commit the record in the code root (`Record: the specs move into docs/specs/ as org`, with the step 1 totals in the message). Commit the removals, the overlay, the task moves and the reference fixes in the home when it is a separate repository (`Record moved to docs/ in the code root`).
 
