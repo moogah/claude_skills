@@ -998,7 +998,12 @@ def verb_cycle_start(ch, args):
     new = args.cycle or f"cycle-{int(time.time())}"
     if new in ch.cycles():
         raise Refusal("cycle_exists", f"{new} was started before")
-    return append_event(ch, "cycle-started", new, prior_handshake=ch.rel(prior) if prior else None)
+    entry = append_event(ch, "cycle-started", new, prior_handshake=ch.rel(prior) if prior else None)
+    # An ask settled while no cycle was open waited in the inbox; it moves to this cycle's asks/ now
+    # (asks § An ask settled before any cycle waits in the inbox for the first). The one file move the
+    # state layer makes, done by the ask tool's own mover.
+    import asks as ask_tool  # noqa: E402  imported here: asks.py imports this module
+    return {**entry, "asks_moved": ask_tool.move_settled_into(ch, new)}
 
 
 def verb_cycle_abandon(ch, args):

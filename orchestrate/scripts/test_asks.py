@@ -92,12 +92,31 @@ def test_add_terminal_lands_in_cycle_dir_and_seq_skips_files(run, repo):
     assert code == 1 and err["error"] == "duplicate_id"
 
 
-def test_add_needs_a_cycle(run, repo):
+def test_add_with_no_cycle_names_the_change(run, repo):
+    """asks § An ask raised with no open cycle is named for its change."""
     (repo / CH / "events.jsonl").unlink()
-    code, _, err = run("add", json.dumps(ASK))
-    assert code == 1 and err["error"] == "no_cycle"
+    code, out, err = run("add", json.dumps(ASK))
+    assert code == 0, err
+    assert out["id"] == "ask-chg-1" and out["path"] == f"{CH}/inbox/ask-chg-1.org"
     code, out, err = run("add", json.dumps(ASK), "--cycle", "cycle-9")
     assert code == 0 and out["id"] == "ask-cycle-9-1"
+
+
+def test_a_settled_ask_with_no_cycle_waits_in_the_inbox(run, repo):
+    """asks § An ask settled before any cycle waits in the inbox for the first."""
+    (repo / CH / "events.jsonl").unlink()
+    run("add", json.dumps(ASK))
+    code, out, err = run("set", "ask-chg-1", "decision=Do it", "status=applied", "applied_via=design.org D3")
+    assert code == 0, err
+    assert out["path"] == f"{CH}/inbox/ask-chg-1.org" and out["status"] == "applied" and "moved_via" not in out
+    assert ":STATUS: applied" in (repo / out["path"]).read_text()
+    assert run("inbox")[1]["problems"] == []
+
+
+def test_a_change_named_ask_settled_in_a_cycle_moves_to_it(run, repo):
+    run("add", json.dumps({**ASK, "id": "ask-chg-1"}))
+    code, out, err = run("set", "ask-chg-1", "decision=Do it", "status=applied", "applied_via=x")
+    assert code == 0 and out["path"] == f"{CH}/cycles/cycle-1/asks/ask-chg-1.org"
 
 
 def test_set_updates_drawer_and_moves(run, repo):
@@ -219,12 +238,9 @@ def test_state_layer_reads_what_asks_writes(run, repo):
     assert (a.id, a.kind, a.status, a.blocks, a.answer_label()) == ("ask-cycle-1-1", "decision", "open", ["t1"], "Do it")
 
 
-def test_set_refuses_a_terminal_move_with_no_cycle_to_name(run, repo):
+def test_set_moves_a_settled_ask_to_the_cycle_given(run, repo):
     (repo / CH / "events.jsonl").unlink()
-    code, out, err = run("add", json.dumps({**ASK, "id": "ask-goal-drift-1"}), "--cycle", "cycle-9")
+    code, out, err = run("add", json.dumps({**ASK, "id": "ask-chg-1"}))
     assert code == 0, err
-    code, _, err = run("set", "ask-goal-drift-1", "decision=Do it", "status=applied", "applied_via=x")
-    assert code == 1 and err["error"] == "no_cycle"
-    assert (repo / CH / "inbox" / "ask-goal-drift-1.org").exists()
-    code, out, err = run("set", "ask-goal-drift-1", "decision=Do it", "status=applied", "applied_via=x", "--cycle", "cycle-9")
-    assert code == 0 and out["path"] == f"{CH}/cycles/cycle-9/asks/ask-goal-drift-1.org"
+    code, out, err = run("set", "ask-chg-1", "decision=Do it", "status=applied", "applied_via=x", "--cycle", "cycle-9")
+    assert code == 0 and out["path"] == f"{CH}/cycles/cycle-9/asks/ask-chg-1.org"

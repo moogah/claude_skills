@@ -507,11 +507,36 @@ def _ask_aliases(rec):
 # ---------------------------------------------------------------- files
 
 def ask_rel(ch, ask_id, status, fallback_cycle):
-    """Relative to the home; a pure function of id and status."""
+    """Relative to the home. A settled ask goes to the asks/ of the cycle its id names, else of the
+    cycle given; with neither (settled while no cycle is open) it waits in the inbox for the first
+    cycle, which `state.py cycle start` moves it to (asks spec)."""
     pre = os.path.relpath(ch.dir, ch.home)
-    if status in ASK_TERMINAL:
-        return f"{pre}/cycles/{_cycle_of(ask_id, fallback_cycle)}/asks/{ask_id}.org"
+    cycle = _cycle_of(ask_id, fallback_cycle)
+    if status in ASK_TERMINAL and cycle:
+        return f"{pre}/cycles/{cycle}/asks/{ask_id}.org"
     return f"{pre}/inbox/{ask_id}.org"
+
+
+def settled_waiting(ch):
+    """[(id, path relative to the home)] of settled asks in the inbox that name no cycle: those settled
+    while no cycle was open, waiting for the next cycle to start."""
+    out = []
+    for p in sorted(glob.glob(os.path.join(ch.dir, "inbox", "*.org"))):
+        _doc, rec = read_ask_file(ch, os.path.relpath(p, ch.home))
+        ask_id = os.path.basename(p)[:-4]
+        if rec["status"] in ASK_TERMINAL and _cycle_of(ask_id, None) is None:
+            out.append((ask_id, os.path.relpath(p, ch.home)))
+    return out
+
+
+def move_settled_into(ch, cycle):
+    """Moves every settled ask waiting in the inbox into `cycle`'s asks/; [new paths]."""
+    moved = []
+    for ask_id, rel in settled_waiting(ch):
+        new_rel = ask_rel(ch, ask_id, "applied", cycle)
+        _move_ask_file(ch.home, rel, new_rel)
+        moved.append(new_rel)
+    return moved
 
 
 def ask_files(ch):
@@ -558,12 +583,10 @@ def _ask_input(raw, home=None):
 
 
 def _cycle(ch, explicit):
-    """The open cycle, else --cycle; an ask id names the cycle it was raised in."""
+    """The open cycle, else --cycle, else None: an ask raised with no cycle open is named for its
+    change (asks spec)."""
     open_cycle, _ = ch.open_cycle()
-    cycle = open_cycle or explicit
-    if not cycle:
-        raise Refusal("no_cycle", f"{ch.name} has no open cycle; pass --cycle <cycle-id>")
-    return cycle
+    return open_cycle or explicit
 
 
 def _supersede(ch, files, old_id, cycle):
@@ -585,7 +608,7 @@ def verb_add(ch, args):
     files = ask_files(ch)
     rec = {**ASK_DEFAULTS, **ASK_FILE_DEFAULTS, **{k: v for k, v in rec_in.items() if k != "path"}}
     if not rec.get("id"):
-        prefix = f"ask-{cycle}-"
+        prefix = f"ask-{cycle or ch.name}-"
         rec["id"] = prefix + str(next_seq(list(files), prefix))
     errors = []
     validate_ask_full(rec, "ask", errors)
@@ -682,13 +705,9 @@ def verb_set(ch, args):
         if not any(_norm(l) in ("yes", "confirmed", "ok") for l in rb.splitlines()):
             doc.set_section("Readback", rb.rstrip() + "\n\nyes")
         updates["readback"] = "confirmed"
-    _atomic_write(os.path.join(ch.home, rel), doc.text())
     final = ask_from_org(doc, args.id)
-    fallback = ch.open_cycle()[0] or args.cycle
-    if final["status"] in ASK_TERMINAL and _cycle_of(args.id, None) is None and not fallback:
-        raise Refusal("no_cycle", f"{args.id} names no cycle and none is open: pass --cycle <cycle-id> for "
-                                  "the cycles/<cycle-id>/asks/ it moves to")
-    new_rel = ask_rel(ch, args.id, final["status"], fallback)
+    new_rel = ask_rel(ch, args.id, final["status"], ch.open_cycle()[0] or args.cycle)
+    _atomic_write(os.path.join(ch.home, rel), doc.text())
     moved = _move_ask_file(ch.home, rel, new_rel) if new_rel != rel else None
     out = {"ok": True, "id": args.id, "changed": sorted(updates), "status": final["status"], "path": new_rel}
     if moved:
@@ -703,7 +722,8 @@ def verb_inbox(ch, args):
     for ask_id, rel in ask_files(ch).items():
         doc, rec = read_ask_file(ch, rel)
         in_inbox = f"/inbox/{ask_id}.org" in "/" + rel
-        if in_inbox == (rec["status"] in ASK_TERMINAL):
+        waiting = in_inbox and _cycle_of(ask_id, None) is None and ch.open_cycle()[0] is None
+        if in_inbox == (rec["status"] in ASK_TERMINAL) and not waiting:
             problems.append(f"{rel}: status {rec['status']} belongs in "
                             f"{'cycles/<id>/asks/' if in_inbox else 'the inbox'}")
         if not in_inbox:

@@ -636,3 +636,17 @@ def test_a_deferred_ask_is_carried_though_untouched(home):
     cycle = started(home)
     out = home.ok("asks", "--cycle", cycle)
     assert [a["id"] for a in out["resolved"]] == ["ask-cycle-0-1"] and out["open"] == []
+
+
+# ---------------------------------------------------------------- Asks with no open cycle (asks spec)
+
+def test_the_first_cycle_takes_in_the_asks_settled_before_it(home):
+    """asks § An ask settled before any cycle waits in the inbox for the first."""
+    home.designed()
+    home.ask("ask-chg-1", status="applied")
+    home.ask("ask-chg-2")
+    out = home.ok("cycle", "start", "--cycle", "cycle-1")
+    assert out["asks_moved"] == [".orchestrator/changes/chg/cycles/cycle-1/asks/ask-chg-1.org"]
+    assert (home.dir / "cycles" / "cycle-1" / "asks" / "ask-chg-1.org").exists()
+    assert not (home.dir / "inbox" / "ask-chg-1.org").exists()
+    assert (home.dir / "inbox" / "ask-chg-2.org").exists()  # open: it stays and is carried
