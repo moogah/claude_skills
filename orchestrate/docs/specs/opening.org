@@ -1,6 +1,6 @@
 #+TITLE: opening
 #+OPTIONS: ^:{} -:nil
-#+STATUS: draft 2026-11-13, extracted from the reference skill (=main= =e356da7=); nine gaps opened; at the hand-off review 2026-11-13: G8 applied (the path's root, a revision's line); the unnamed repository and a taken name filled
+#+STATUS: draft 2026-11-13, extracted from the reference skill (=main= =e356da7=); nine gaps opened; at the hand-off review 2026-11-13: G8 applied (the path's root, a revision's line); the unnamed repository, a taken name and a failed opening filled
 
 * Purpose
 
@@ -276,6 +276,11 @@ design and no task, and hand the dispatcher one line.
 - *WHEN* opening cannot complete
 - *THEN* the dispatcher receives the line =open: failed, <why>=
 
+*** Scenario: A failed opening leaves nothing behind
+- *WHEN* opening hands back =open: failed=
+- *THEN* the repository has no branch or worktree the opening made
+- *AND* no change of that name exists in the home, and nothing the opening wrote is left uncommitted or committed
+
 ** Requirement: A change is revised in place, or split, from the user's answer
 :PROPERTIES:
 :GOAL:     G2 (from O-NS-2)
@@ -308,12 +313,6 @@ On =split= it SHALL open a new change that names the one it came from.
 - *AND* the new intent's Why names the change it came from
 
 * Gaps
-
-** Gap: What a failed opening leaves behind
-:PROPERTIES:
-:REQUIREMENT: Opening ends in one commit in the code root and one line
-:END:
-Whether a branch, a code root or uncommitted files remain when opening hands back =open: failed=.
 
 ** Gap: When the second of two changes is opened
 :PROPERTIES:
