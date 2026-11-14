@@ -16179,7 +16179,7 @@ window.SPEC_PAGE = {
   "evals_head": "589177f",
   "spec": "orchestrate/docs/specs/execute.org",
   "spec_dirty": false,
-  "worktree_head": "8f6d316"
+  "worktree_head": "bde2c0e"
  },
  "spec": {
   "gaps": "None open.",

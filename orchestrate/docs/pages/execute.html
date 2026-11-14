@@ -75,6 +75,8 @@ h3 { font-size: 13px; letter-spacing: .06em; text-transform: uppercase; color: v
 .checks { background: var(--panel); border: 1px solid var(--line); border-radius: 6px; margin-top: 8px; }
 .crow { display: grid; grid-template-columns: 90px minmax(0, 1fr) 150px 150px; gap: 10px; padding: 8px 12px; border-bottom: 1px solid var(--line); font-size: 13px; }
 .crow.head { font-size: 11px; letter-spacing: .05em; text-transform: uppercase; color: var(--muted); font-weight: 600; }
+.found { padding: 4px 12px 10px 112px; border-bottom: 1px solid var(--line); font-size: 13px; overflow-wrap: anywhere; }
+.found > div { margin-bottom: 4px; }
 .crow.weak b { font-weight: 600; color: var(--muted); }
 .suspect { font-size: 12px; color: var(--mixed); margin-top: 3px; }
 .row > div { padding: 7px 10px; font-size: 13px; }
@@ -98,6 +100,7 @@ footer { max-width: 1280px; margin: 0 auto; padding: 0 24px 40px; color: var(--f
   nav { position: static; max-height: 46vh; border-bottom: 1px solid var(--line); padding-bottom: 8px; }
   .cards { grid-template-columns: 1fr; }
   .crow { grid-template-columns: 70px minmax(0, 1fr); }
+  .found { padding-left: 12px; }
   footer { padding: 0 16px 32px; }
 }
 </style>
@@ -106,7 +109,7 @@ footer { max-width: 1280px; margin: 0 auto; padding: 0 24px 40px; color: var(--f
 <header id="top"></header>
 <main><nav id="nav"></nav><section id="detail"></section></main>
 <footer id="foot"></footer>
-<script src="execute.data.js?v=2a85c7174d"></script>
+<script src="execute.data.js?v=d7c14cb969"></script>
 <script>
 (function () {
 const D = window.SPEC_PAGE, cap = D.capability;
@@ -256,13 +259,16 @@ function proof(s, c) {
   if (rc.checks.length) {
     h += `<div class="checks"><div class="crow head"><div>check</div><div>what it computes</div><div>trials</div><div>where it looks</div></div>`;
     rc.checks.forEach((id) => {
-      const any = run.trials.map((t) => t.checks[id]).find((x) => x) || {}, rs = rowsOf(id);
+      const any = run.trials.map((t) => t.checks[id]).find((x) => x) || {}, rs = rowsOf(id), kf = `f${c.id}|${tree}|${id}`;
       const sus = run.trials.filter((t) => t.checks[id] && t.checks[id].audit && t.checks[id].audit.verdict === "suspect").map((t) => "t" + t.trial);
       h += `<div class="crow ${any.kind === "decide" ? "" : "weak"}"><div><b>${esc(id)}</b><div class="tag" title="${esc(KIND[any.kind] || "")}">${esc(KSHORT[any.kind] || any.kind || "")}</div></div>
         <div>${esc(any.desc)}</div>
         <div><div class="marks">${run.trials.map((t) => `<span class="tm">t${t.trial} ${t.checks[id] ? MARK[t.checks[id].pass] : MARK.null}</span>`).join("")}</div>
           ${sus.length ? `<div class="suspect">eval agent doubts it in ${sus.join(", ")}</div>` : ""}</div>
-        <div>${rs.length ? `walkthrough row${rs.length > 1 ? "s" : ""} ${rs.join(", ")}` : `the end state, not one event`}</div></div>`;
+        <div>${rs.length ? `walkthrough row${rs.length > 1 ? "s" : ""} ${rs.join(", ")}` : `<button class="link" data-o="${kf}">the end state</button>, not one event`}</div></div>`;
+      // an end-state check has no event to show in the walkthrough: what it found is its proof
+      if (!rs.length && open[kf]) h += `<div class="found">${run.trials.map((t) => { const x = t.checks[id] || {};
+        return `<div><b>t${t.trial}</b> ${MARK[x.pass == null ? null : x.pass]} <span class="tag">found:</span> ${esc(x.detail || "(nothing recorded)")}</div>`; }).join("")}</div>`;
     });
     h += `</div>`;
   }
