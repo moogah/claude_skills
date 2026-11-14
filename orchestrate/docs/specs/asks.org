@@ -1,6 +1,6 @@
 #+TITLE: asks
 #+OPTIONS: ^:{} -:nil
-#+STATUS: draft 2026-11-13, extracted from the reference skill (=main= =e356da7=); first limited to the ask file (where it lives, how it is committed; its one inferred scenario reviewed by the user 2026-11-13); extended 2026-11-13 to the asks' full scope (the kinds, the blocking rule, the sections, answering and applying, the sync points, the index), two gaps open; not yet reviewed
+#+STATUS: draft 2026-11-13, extracted from the reference skill (=main= =e356da7=); first limited to the ask file (where it lives, how it is committed; its one inferred scenario reviewed by the user 2026-11-13); extended 2026-11-13 to the asks' full scope (the kinds, the blocking rule, the sections, answering and applying, the sync points, the index), two gaps opened; at the hand-off review 2026-11-13: both filled by the cross-spec decisions G1 and G3, and G11 applied
 
 * Purpose
 
@@ -45,9 +45,15 @@ the file's name. Its kind SHALL be one of a closed set.
 - *AND* its title is the question: one plain sentence, ending in a question mark
 
 *** Scenario: An ask's id names its cycle and is the file's name
-- *WHEN* an ask is given its id
+- *WHEN* an ask raised while a cycle of its change is open is given its id
 - *THEN* the id is =ask-<cycle-id>-<n>=, the cycle it was raised in and a sequence number
 - *AND* the file is named =<id>.org=
+
+*** Scenario: An ask raised with no open cycle is named for its change
+- *WHEN* an ask is raised while no cycle of its change is open (before the first cycle, between cycles, or with no state to hold it)
+- *THEN* its id is =ask-<change>-<n>=, the change's name and a sequence number
+- *AND* it is a file in the change's inbox, committed in the home like any other ask
+- *AND* the next state opened for the change indexes it
 
 *** Scenario: An ask's kind is one of a closed set
 - *WHEN* an ask file is written
@@ -250,6 +256,14 @@ answer.
 - *WHEN* a =decision= ask other than a design-round question is written
 - *THEN* its If unanswered says what happens if it is not answered, and at which point: this integrate, the next plan or the change's done
 
+*** Scenario: A design-round question's If unanswered says the change waits
+- *WHEN* a design-round question is written as a =decision= ask
+- *THEN* its If unanswered says the change waits: plan drafts nothing until it is answered
+
+*** Scenario: A confirmation or process ask has no If unanswered
+- *WHEN* a =confirmation= or a =process= ask is written
+- *THEN* it has no If unanswered section
+
 *** Scenario: A default never makes work
 - *WHEN* an ask's If unanswered is written
 - *THEN* it creates no task and no backlog item
@@ -273,7 +287,7 @@ analysis can.
 - *WHEN* a role routes a finding to the user
 - *THEN* the finding says what the feature, flag or rule is for, in a sentence
 - *AND* it gives its kind and its evidence
-- *AND* it says what it blocks: a task, a merge, the next plan, the change's done, or nothing
+- *AND* it says what it blocks, in the =blocks= field of the finding's form (the =reviewer= spec's): a task, a merge, the next plan, the change's done, or nothing
 
 *** Scenario: What reading can supply, the orchestrator fills
 - *WHEN* a finding routed to the user lacks something that reading supplies (a help text, the document it cites)
@@ -413,16 +427,5 @@ applies it, each commit's subject naming the ask's id.
 
 * Gaps
 
-** Gap: Whether an environment ask is a file when there is no state, or when the user is present
-:PROPERTIES:
-:REQUIREMENT: Every question for the user is a file of its own
-:END:
-The reference skill makes every question a file, yet writes an =environment= ask as a file only when
-the user is absent, and raises one before any state exists to index it.
-
-** Gap: What a confirmation or process ask says if unanswered
-:PROPERTIES:
-:REQUIREMENT: An ask file says what the user needs to decide without the code
-:END:
-The reference skill gives every ask an If unanswered section, and shapes a =confirmation= (no options,
-already applied) and a =process= ask (no options, never put) without saying whether they carry one.
+No gap open. The two this draft had were filled 2026-11-13 by the user's decisions on the
+cross-spec map (G1, G3).
