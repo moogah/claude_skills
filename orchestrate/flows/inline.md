@@ -21,7 +21,7 @@ The triage criteria (lifted from older emacs skill §4 and promoted to core):
 
 When in doubt, take the standard path. The cost of running a small task as a worktree is small; the cost of taking an inline path on something that turns out to be larger is the bailout (see below).
 
-A request the triage refuses is a bailout with nothing to revert: the task file stays open in `tasks/open/` with the triage's reason, and the line is `inline <task>: bailed out, <why>; <task file>`.
+A request the triage refuses is a bailout with nothing to revert: the task file stays open in `tasks/open/` with the triage's reason, and the line is `inline <task>: bailed out, <why>; <task file>`. The triage comes first: a request it refuses bails out even when it also puts the change's design or a spec in question, and no ask is filed; the reason in the task file names the question, so the next plan's Architect sees it with the whole design. A request for a task already in a cycle's batch (§ When NOT to use inline even if technically eligible) writes no task file and no note of its own: the line names the batch task's file.
 
 ## Collapsed cycle
 
@@ -40,7 +40,7 @@ The integrate question is **not skipped** — that's what catches the case where
 2. **Run the verification command** in the code root (overlay's `test.command`, or a narrower command if obviously sufficient), its output kept as `<change-dir>/after-<task>-<ts>.txt` (the after-file § Why preserve the integrate question greps); the commit message names the command.
 3. **Check the seam rows**: does this edit change a seam row in the change's `design.org` (its statement or owning symbols)? If yes, bail out (§ Bailout rule): a record correction is integrate's. A design in question is a `decision` file in the inbox, presented only under the inline rule (`templates/ask.md` § The inline rule: the phase agent hands back `stopped`, the dispatcher asks).
 4. **Update the task file** at the home: one line saying what was checked for what the edit exposed and what was found ("nothing" included); its `status` to `done` directly (skipping `needs_review` / `reviewed`). Inline path skips formal review because the orchestrator IS the reviewer. If a cycle is open, the task is in state too: `state.py task add <name> …` if it was not, then `state.py task set <name> done`; between cycles the task file is the record.
-5. **Commit** with the subject `Inline task <task>: <description>`: the code in the code root, the task file and any ask file in the home (one commit when they are the same repo). Hand back `inline <task>: done <sha>; <task file>`, or, stopped on a design in question, `inline <task>: stopped, ask <id> blocks commit; <ask file>`.
+5. **Commit** with the subject `Inline task <task>: <description>`: the code in the code root, the task file and any ask file in the home (one commit when the home is the code root, one working tree; otherwise one commit in each, as when the change's worktree is apart from the home's checkout). Hand back `inline <task>: done <sha>; <task file>`, or, stopped on a design in question, `inline <task>: stopped, ask <id> blocks commit; <ask file>`.
 
 ## Bailout rule
 
