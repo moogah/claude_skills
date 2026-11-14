@@ -474,10 +474,13 @@ class Change:
         return [(p, read_frontmatter(p)[0] or {}) for p in sorted(paths)]
 
     def findings(self):
-        """{finding id: path}."""
+        """{finding id: path}: every cycle's findings/, and the change's own findings/ for those made
+        before any cycle (the design round's)."""
         def read():
             out = {}
-            for p in sorted(glob.glob(os.path.join(self.dir, "cycles", "*", "findings", "*.md"))):
+            paths = glob.glob(os.path.join(self.dir, "findings", "*.md"))
+            paths += glob.glob(os.path.join(self.dir, "cycles", "*", "findings", "*.md"))
+            for p in sorted(paths):
                 fm, _ = read_frontmatter(p)
                 out[(fm or {}).get("finding_id") or os.path.basename(p)[:-3]] = p
             return out
@@ -1027,7 +1030,7 @@ def verb_assert(ch, args):
 
 def verb_route(ch, args):
     if args.finding not in ch.findings():
-        raise Refusal("no_finding", f"no finding file for {args.finding} under cycles/*/findings/")
+        raise Refusal("no_finding", f"no finding file for {args.finding} under findings/ or cycles/*/findings/")
     if not (args.decoration or args.resolution):
         raise Refusal("bad_entry", "route needs --decoration, --resolution or both")
     r = args.resolution

@@ -650,3 +650,16 @@ def test_the_first_cycle_takes_in_the_asks_settled_before_it(home):
     assert (home.dir / "cycles" / "cycle-1" / "asks" / "ask-chg-1.org").exists()
     assert not (home.dir / "inbox" / "ask-chg-1.org").exists()
     assert (home.dir / "inbox" / "ask-chg-2.org").exists()  # open: it stays and is carried
+
+
+def test_a_finding_from_the_design_round_is_routed_by_the_first_cycle(home):
+    """architect § Where a defect found at the design round is reported: a finding file in the change's
+    findings/, made before any cycle, routed by the first plan or integrate."""
+    d = home.dir / "findings"
+    d.mkdir(parents=True)
+    (d / "arch-chg-1.md").write_text("---\nfinding_id: arch-chg-1\ntrigger: design-round\nkind: issue\n"
+                                     "severity: high\n---\n\n## Locations\n")
+    started(home)
+    out = home.ok("route", "arch-chg-1", "--decoration", "hardening", "--resolution", "hardening-list")
+    assert out["finding"] == "arch-chg-1"
+    assert home.ok("conventions")["ok"] is True
