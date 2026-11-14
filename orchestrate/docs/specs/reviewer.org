@@ -1,0 +1,297 @@
+#+TITLE: reviewer
+#+OPTIONS: ^:{} -:nil
+#+STATUS: draft 2026-11-13, extracted from the reference skill (=main= =e356da7=); not yet reviewed
+
+* Purpose
+
+A Reviewer reads one merged task, or at integrate the whole change, and writes what it found to a
+review file, then hands back one line. This spec states what that file must carry, what makes a
+finding (its kind, severity, direction, locations, evidence and recommended action, whoever writes
+it, the Architect included), what a Reviewer may and may not touch while it probes the merge, and the
+form of its hand-back line. It does not state what a Reviewer is given, when it is spawned, at which
+agent setting, or what becomes of its findings: =execute= states those for a task's review and
+=integrate= for the whole-change review.
+
+* Requirements
+
+** Requirement: The Reviewer writes one review file per review
+:PROPERTIES:
+:GOAL:     none stated
+:END:
+The Reviewer SHALL write its review of a task as one review file, at the path its brief names in the
+cycle's directory, opening with what it reviewed and how many findings it wrote, followed by a
+summary, the findings numbered in order, and its thoughts when it has any.
+
+*** Scenario: The review file is at the path its brief names
+- *WHEN* a Reviewer reviews a task
+- *THEN* it writes its review file at =.orchestrator/changes/<change>/cycles/<cycle-id>/reviews/<task>.md= in the home, the path its brief names
+
+*** Scenario: The review file opens with what was reviewed and what was found
+- *WHEN* a review file is written
+- *THEN* it opens with front matter holding =task_name=, =merge_commit=, =reviewed_at=, =finding_count= and =clean_review=
+- *AND* =merge_commit= is the commit the Reviewer reviewed
+
+*** Scenario: The finding count and the clean mark agree with the findings
+- *WHEN* a review file is written
+- *THEN* its =finding_count= is the number of findings in it
+- *AND* its =clean_review= is true when it has no finding and false otherwise
+
+*** Scenario: The review file holds a summary, the numbered findings and the thoughts
+- *WHEN* a review file is written
+- *THEN* it has a =## Summary= of one paragraph: what the Reviewer looked at, what it ruled out and what it found
+- *AND* a =## Findings= section, each finding under its own heading =### Finding <n>: <one line>=, numbered from 1
+- *AND* a =## Thoughts= section at the end only when the Reviewer has a thought
+
+** Requirement: Every defect the Reviewer finds is a finding, whatever its size, likelihood or place
+:PROPERTIES:
+:GOAL:     none stated (=north-star.org= * Disposition states it; no goal does)
+:END:
+The Reviewer SHALL write every defect it finds in code or text that exists as a finding: an =issue=
+when it can point at it, a =question= when it suspects it and cannot settle it. It SHALL report a
+defect whatever it judges of its likelihood, its size or its place, leaving the weighing to the
+routing; it SHALL report no matter of style or preference; and a review with no finding SHALL say
+what was looked for.
+
+*** Scenario: A defect the Reviewer can point at is an issue
+- *WHEN* the Reviewer finds a defect it can point at in code or text that exists
+- *THEN* the review file has a finding of kind =issue= for it, with a severity and its evidence
+
+*** Scenario: A defect in code the diff does not change is still reported
+- *WHEN* the Reviewer finds a defect in code the diff calls or is called by, or in the tests, and the diff does not change that code
+- *THEN* it is a finding of kind =issue=
+- *AND* it is reported though the Reviewer judges it unlikely, small, or off the change's main path
+
+*** Scenario: A present defect is never only a thought
+- *WHEN* a line the Reviewer would write names a defect present at the reviewed merge commit
+- *THEN* it is a finding of kind =issue=, whatever its severity
+- *AND* it is not a line among the thoughts
+
+*** Scenario: A defect the file names anywhere is among its findings
+- *WHEN* the review file's summary, its thoughts or what it ruled out names a defect in code or text that exists
+- *THEN* that defect is also a finding of kind =issue= or =question= in the file's findings
+
+*** Scenario: A document the diff makes untrue is a finding
+- *WHEN* the diff makes a sentence untrue in a document (a README, a help text, a comment, a cited seam row or scenario), whether or not the diff touches the document
+- *THEN* the sentence is a finding of kind =issue=
+
+*** Scenario: A suspected defect the Reviewer cannot settle is a question
+- *WHEN* the Reviewer suspects a defect and cannot settle whether it exists
+- *THEN* it is a finding of kind =question=
+- *AND* its evidence gives the reasoning, and the reproduction that would settle it
+
+*** Scenario: A probe that shows a suspected defect makes it an issue
+- *WHEN* the Reviewer settles a suspected defect with a probe and the probe shows the defect
+- *THEN* it is a finding of kind =issue=
+- *AND* the probe's output is in its evidence
+
+*** Scenario: A probe that shows the code right leaves no finding
+- *WHEN* the Reviewer settles a suspected defect with a probe and the probe shows the code right
+- *THEN* the review file has no finding for it
+
+*** Scenario: Style and preference are not findings
+- *WHEN* what the Reviewer would say is a matter of naming taste, formatting, a structure it would have written differently to the same effect, or a decision already settled
+- *THEN* the review file has no finding for it
+
+*** Scenario: A review with no finding says what was looked for
+- *WHEN* the Reviewer finds nothing
+- *THEN* the review file says what the Reviewer looked for and why it ruled each thing out
+
+*** Scenario: A pending marker left, a cited scenario's test untouched or an edit under docs is a finding
+- *WHEN* the diff leaves a test it promotes still marked pending, or does not touch the test of a scenario the task cites, or edits the change's documents under =docs/=
+- *THEN* each of these is a finding
+
+*** Scenario: A wrong task scope is a spec signal, not a change of scope
+- *WHEN* the Reviewer judges that the scope the task states is wrong
+- *THEN* it writes a finding whose direction is =spec-signal=
+
+** Requirement: A finding carries its labels, its place, its evidence and a recommended action
+:PROPERTIES:
+:GOAL:     none stated (=north-star.org= * Disposition states it; no goal does)
+:END:
+Each finding SHALL carry its kind, its severity, its locations, its evidence and a recommended action,
+and a Reviewer's finding SHALL name the direction it looks in. A finding the user must settle SHALL
+say what the thing in question is for and what it blocks, and a spec signal of kind =issue= SHALL
+carry a stopgap. The reporter SHALL NOT route its own finding.
+
+*** Scenario: Each finding carries a kind, a severity, its locations, its evidence and a recommended action
+- *WHEN* a finding is written in a review file
+- *THEN* it carries a =kind=, =issue= or =question=
+- *AND* a =severity=, =high=, =medium= or =low=
+- *AND* at least one location, a file and a line
+- *AND* its evidence
+- *AND* a recommended action: a kind, and one line saying what should happen
+
+*** Scenario: A finding about the change's work names the direction it looks in
+- *WHEN* a finding is about the diff's own code, its drift from the change's design, or a spec or design the work shows may be wrong
+- *THEN* its =direction= is =sub-par-code=, =design-drift= or =spec-signal= respectively
+
+*** Scenario: Severity is the harm when the defect triggers
+- *WHEN* a finding's severity is set
+- *THEN* it is =high= for wrong or lost data, a breach of security or isolation, or a failure on a use the change exists for
+- *AND* =medium= for a wrong result or a misleading message that has a workaround
+- *AND* =low= for a minor wrong output or an untrue comment
+
+*** Scenario: An issue's evidence shows the defect and who it harms
+- *WHEN* a finding is of kind =issue=
+- *THEN* its evidence names the line, the run or the probe's output, and what goes wrong for whom
+
+*** Scenario: A finding for the user says what the thing is for and what it blocks
+- *WHEN* a finding recommends taking it to the user
+- *THEN* it says in one sentence, in product terms, what the feature, flag or rule in question is for
+- *AND* what it blocks: a task, a merge, the next plan, the change's done, or nothing
+
+*** Scenario: A spec signal says what the thing is for and what it blocks
+- *WHEN* a finding's direction is =spec-signal=
+- *THEN* it says what the feature, flag or rule in question is for, and what it blocks
+
+*** Scenario: A spec signal of kind issue carries a stopgap
+- *WHEN* a finding with the =spec-signal= direction is of kind =issue=
+- *THEN* it carries a stopgap: the least change that turns the defect's wrong success into a loud failure, whichever option the ask would offer
+- *AND* when no change holds under every option, the stopgap is =none= with the reason
+
+*** Scenario: The reporter leaves the route to the routing
+- *WHEN* a Reviewer writes a finding
+- *THEN* the finding names no route, neither blocking nor hardening
+- *AND* its recommended action says what should be done were the defect fixed now
+
+** Requirement: A thought is one line at the end of the review file
+:PROPERTIES:
+:GOAL:     none stated
+:END:
+The Reviewer SHALL write a speculative need, or cleanup that changes no behaviour today, as one line
+labelled =thought= at the end of the review file, never as a finding.
+
+*** Scenario: A speculative need or a cleanup is one thought line
+- *WHEN* the Reviewer sees a need that would arise only after some future change, or cleanup that changes no behaviour today
+- *THEN* it is one line labelled =thought= under the file's =## Thoughts=
+- *AND* it is not a finding
+
+** Requirement: The Reviewer changes nothing it reviews
+:PROPERTIES:
+:GOAL:     none stated
+:END:
+The Reviewer SHALL be read-only: it SHALL apply no fix, commit nothing and leave the task file as it
+found it. It SHALL run its probes and the project's tests in the foreground, in the scratch
+directory its brief names, against the merge's checkout, leave nothing behind, and leave alone what
+other agents on the machine share.
+
+*** Scenario: The Reviewer applies no fix and moves no ref
+- *WHEN* a Reviewer hands back
+- *THEN* no branch or other ref of the repository or of the home has moved
+- *AND* the merge's checkout is clean at the reviewed merge commit
+
+*** Scenario: The Reviewer leaves the task file alone
+- *WHEN* a Reviewer hands back
+- *THEN* the task file is as it was when the Reviewer was spawned
+
+*** Scenario: Probes run in the scratch directory the brief names, which is gone afterwards
+- *WHEN* the Reviewer runs a probe
+- *THEN* the probe runs in the scratch directory its brief names, against the merge's checkout
+- *AND* that directory is gone when the Reviewer hands back
+
+*** Scenario: Every run ends before the hand-back
+- *WHEN* the Reviewer runs the project's tests or a probe
+- *THEN* the run is in the foreground and has ended before the Reviewer hands back
+- *AND* the Reviewer hands back once
+
+*** Scenario: The Reviewer leaves what other agents share alone
+- *WHEN* the Reviewer probes on a machine other agents share
+- *THEN* it uses no =git stash=, and prunes, collects or removes no worktree it did not create
+- *AND* any server or container it starts carries the name of the review's checkout, not a fixed one
+- *AND* it starts no GUI or interactive program and stops no process it did not start
+
+** Requirement: The Reviewer hands back one line of counts
+:PROPERTIES:
+:GOAL:     none stated
+:END:
+The Reviewer SHALL hand back one line of at most 200 characters, naming the task and counting its
+findings by kind and its spec signals and thoughts, with no path and nothing else.
+
+*** Scenario: The hand-back line counts the findings
+- *WHEN* the Reviewer has written its review file
+- *THEN* it hands back one line, =reviewed <task> issues=<n> questions=<n> spec-signal=<n> thoughts=<n>=, of at most 200 characters
+- *AND* =issues= and =questions= count the file's findings of each kind, and =spec-signal= those among them whose direction is =spec-signal=
+
+*** Scenario: The hand-back carries no path and no summary
+- *WHEN* the Reviewer hands back
+- *THEN* the line names no path
+- *AND* the hand-back holds nothing but that line
+
+** Requirement: The whole-change review is written in the same form
+:PROPERTIES:
+:GOAL:     G11
+:END:
+The Reviewer of the whole change SHALL write one review file for the cycle in the form of a task's,
+report what no task's review could see, and hand back one line.
+
+*** Scenario: The whole-change review is one review file of its cycle
+- *WHEN* the whole-change review runs
+- *THEN* its review file is =.orchestrator/changes/<change>/cycles/<cycle-id>/reviews/whole-change.md= in the home, in the form of a task's review file
+- *AND* the Reviewer hands back one line
+
+*** Scenario: The whole-change review reports what no task's review could see
+- *WHEN* tasks of the change interact wrongly, or a change bypassed review, or a scenario's test passes while the surface the user would use does not
+- *THEN* the whole-change review file has a finding for it
+
+** Requirement: An Architect's finding is a file of its own, with the same labels
+:PROPERTIES:
+:GOAL:     none stated (=north-star.org= * Disposition states it; no goal does)
+:END:
+Each finding the Architect reports SHALL be one file in its cycle's directory, carrying the kind and
+severity every finding carries, its class and trigger, where it was found and what it is about, why
+the tests missed it and a recommended resolution; the Architect SHALL write no decoration, and a
+thought SHALL never be a finding file.
+
+*** Scenario: An Architect's finding is one file in its cycle's directory
+- *WHEN* the Architect reports a finding
+- *THEN* it is one file, =.orchestrator/changes/<change>/cycles/<cycle-id>/findings/<finding-id>.md= in the home
+- *AND* its id is =arch-<cycle-id>-<n>=
+
+*** Scenario: An Architect's finding carries its labels in its front matter
+- *WHEN* an Architect's finding file is written
+- *THEN* its front matter holds =finding_id=, =trigger= (=premise-check= or =conformance=), =kind=, =severity=, =class=, a =title= of at most 80 characters, =discovered_from=, =discovered_by: architect=, =discovered_at=, the =seam= it is about when there is one, and =evidence=
+- *AND* its =class= is one of =shape-fragmentation=, =vocabulary-mismatch=, =responsibility-leakage=, =dead-branch=, =interface-drift=, =mutation=, =invariant-gap= or =duplication=
+- *AND* the Architect writes no =decoration=
+
+*** Scenario: An Architect's finding says where, why the tests missed it and what to do
+- *WHEN* an Architect's finding file is written
+- *THEN* it has a =## Locations= section, each a file and line with its context
+- *AND* a =## Why tests missed it= section of one sentence
+- *AND* a =## Recommended resolution= section of one paragraph that names files and functions, and names the seam row amended and how when the code is right and the row was stale
+
+*** Scenario: An Architect's thought is never a finding file
+- *WHEN* the Architect has a thought
+- *THEN* no finding file is written for it
+
+* Gaps
+
+** Gap: What the whole-change review names in place of the task and the merge commit
+:PROPERTIES:
+:REQUIREMENT: The whole-change review is written in the same form
+:END:
+The review file's front matter names one task and one merge commit, and the hand-back line names the
+task; the whole-change review has neither, and the reference skill says only "in the Reviewer's
+format, one hand-back line".
+
+** Gap: Which recommended actions a finding may name
+:PROPERTIES:
+:REQUIREMENT: A finding carries its labels, its place, its evidence and a recommended action
+:END:
+The reference skill's set (=inline-fix=, =follow-up-task=, =re-implement=, =route-to-user=) predates
+=execute='s accepted routes, under which a blocking finding is never a follow-up candidate and a
+fix may be a rework or a revert.
+
+** Gap: Which direction a defect outside the change's work takes
+:PROPERTIES:
+:REQUIREMENT: A finding carries its labels, its place, its evidence and a recommended action
+:END:
+Every Reviewer finding carries one of three directions, each about the change's own work; a defect
+that was there before the change, in code the diff calls, fits none of them.
+
+** Gap: What read-only allows when the tests write in the checkout
+:PROPERTIES:
+:REQUIREMENT: The Reviewer changes nothing it reviews
+:END:
+The Reviewer may run the project's tests against the merge's checkout, and nothing a probe writes may
+enter the repository; the reference skill does not say whether files a test run leaves in the
+checkout (caches, build output) break the read-only contract.
