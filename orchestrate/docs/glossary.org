@@ -675,3 +675,26 @@ different approach, a test the task did not write changed to fit), declared in t
 - Example :: "A deviation is flagged in the hand-back"
 - Avoid :: drift (integrate's word for code and design parting), scope creep; the journal kind =deviation= (a move off the flow, =record='s field value) is not this term
 - Specs :: implementor
+
+* whole-change review
+The review, by one Reviewer of its own at each integrate whose cycle merged code, of the whole
+change's diff since its base, looking for what no task's review could see; written as one review file
+of the cycle.
+- Example :: "The whole-change review is one review file of its cycle"
+- Avoid :: final review, change review, review alone, =/code-review= (a separate tool)
+- Specs :: reviewer, integrate
+
+* direction
+The one of three places a Reviewer's finding looks: =sub-par-code= (the diff's code, and code or
+tests that exist which it calls or is called by), =design-drift=, =spec-signal=; only =spec-signal=
+changes how a finding is routed.
+- Example :: "A finding about the change's work names the direction it looks in"
+- Avoid :: kind (a finding's =issue= / =question=), category, class (the Architect's field)
+- Specs :: reviewer
+
+* severity
+The reporter's estimate of how bad a defect is when it triggers: =high=, =medium= or =low=; it
+orders the hardening list and never routes.
+- Example :: "Severity is the harm when the defect triggers"
+- Avoid :: priority, blocking (a route), impact
+- Specs :: reviewer
