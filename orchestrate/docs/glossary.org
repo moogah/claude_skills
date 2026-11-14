@@ -395,10 +395,10 @@ pending tests it promotes, done by one Implementor and reviewed by one Reviewer.
 
 * task file
 The document in the home that states one task, which its Implementor reads and appends its
-Observations and Discoveries to; only plan writes one.
+Observations and Discoveries to; plan writes it, or the inline path for its own task.
 - Example :: "It writes no task file"
 - Avoid :: task body (main's name for the same text), task brief (main's =reviewer_input= field for it), brief (the Implementor's assembled input), ticket
-- Specs :: execute
+- Specs :: execute, inline-path, plan
 
 * seam
 A contract between two parts of the code: who produces a thing, who consumes it, and what must hold

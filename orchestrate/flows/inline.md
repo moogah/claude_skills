@@ -33,6 +33,7 @@ The integrate question is **not skipped** — that's what catches the case where
 
 ## Inline operations
 
+0. **Write the task file** in the change's `tasks/open/` at the home, from the request the brief carries (`templates/task-body.md`); a bailout leaves it there.
 1. **Make the edit** in the code root, the change's worktree (no task worktree).
 2. **Run the verification command** in the code root (overlay's `test.command`, or a narrower command if obviously sufficient), its output kept as `<change-dir>/after-<task>-<ts>.txt` (the after-file § Why preserve the integrate question greps); the commit message names the command.
 3. **Check the seam rows**: does this edit change a seam row in the change's `design.org` (its statement or owning symbols)? If yes, bail out (§ Bailout rule): a record correction is integrate's. A design in question is a `decision` file in the inbox, presented only under the inline rule (`templates/ask.md` § The inline rule: the phase agent hands back `stopped`, the dispatcher asks).

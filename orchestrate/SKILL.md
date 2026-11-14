@@ -76,7 +76,7 @@ Each phase has its own flow doc and exit gate. **A later phase refuses to start 
 
 State-file shape, the state tool's verbs and the exit gates: **[state.md](state.md)**.
 
-If the work is trivially small (one-line edit, single-file doc fix, config tweak), use the inline path: **[flows/inline.md](flows/inline.md)**, run by a phase agent like any phase. Bailout to standard cycle if it grows.
+If the work is trivially small (one-line edit, single-file doc fix, config tweak), use the inline path: **[flows/inline.md](flows/inline.md)**, run by a phase agent like any phase. Its brief carries the user's request verbatim, and its phase agent writes the task file from it. Bailout to standard cycle if it grows.
 
 The curation cycle (slower-tempo corpus grooming) is **deferred to v2**: see **[flows/curation.md](flows/curation.md)** for the placeholder and reasons.
 

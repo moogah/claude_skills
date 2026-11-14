@@ -1,6 +1,6 @@
 #+TITLE: dispatcher
 #+OPTIONS: ^:{} -:nil
-#+STATUS: draft 2026-11-13, extracted from the reference skill (=main= =e356da7=); at the hand-off review 2026-11-13: G4, G6 and G10 applied, the design round's asks no longer go to plan (G1, G5); the recommendation's form, the resume's order, the call's commit, the missing overlay and the stopped change filled; no gap open; accepted 2026-11-13 by the user at the hand-off review; amended 2026-11-13 after acceptance (a second opening for a change in a second repository; the old change's revision after a split), from =opening='s review
+#+STATUS: draft 2026-11-13, extracted from the reference skill (=main= =e356da7=); at the hand-off review 2026-11-13: G4, G6 and G10 applied, the design round's asks no longer go to plan (G1, G5); the recommendation's form, the resume's order, the call's commit, the missing overlay and the stopped change filled; no gap open; accepted 2026-11-13 by the user at the hand-off review; amended 2026-11-13 after acceptance (a second opening for a change in a second repository; the old change's revision after a split), from =opening='s review; the inline brief's request, from =inline-path='s review
 
 * Purpose
 
@@ -56,6 +56,11 @@ one is open, and SHALL leave a waiting answer to the phase agent it spawns or re
 *** Scenario: An opening agent's brief carries the source as given
 - *WHEN* the dispatcher spawns the opening phase agent
 - *THEN* the brief carries the source: the user's words verbatim, the paths of the cross-change backlog's items taken up, or the split's ask and its change
+- *AND* the dispatcher reads nothing to write it
+
+*** Scenario: An inline agent's brief carries the user's request as given
+- *WHEN* the dispatcher spawns the inline path's phase agent
+- *THEN* the brief carries the user's request verbatim
 - *AND* the dispatcher reads nothing to write it
 
 *** Scenario: An opened change goes on to its design round

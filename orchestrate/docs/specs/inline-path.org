@@ -1,6 +1,6 @@
 #+TITLE: inline-path
 #+OPTIONS: ^:{} -:nil
-#+STATUS: draft 2026-11-13, extracted from the reference skill (=main= =e356da7=); at the hand-off review 2026-11-13: G7, G8 and G9 applied
+#+STATUS: draft 2026-11-13, extracted from the reference skill (=main= =e356da7=); at the hand-off review 2026-11-13: G7, G8 and G9 applied; the task file's source filled
 
 * Purpose
 
@@ -23,6 +23,11 @@ this path's triage. The inline path writes no new task and runs no plan, execute
 The inline path SHALL make its edit in the code root, with no task worktree, and SHALL spawn no
 Implementor and no Reviewer: its phase agent reviews its own edit. The task SHALL go from open to
 done with no review step between, and the code and the task file SHALL be committed together.
+
+*** Scenario: The inline path writes its own task file from the request
+- *WHEN* the inline path runs on the user's request
+- *THEN* its phase agent writes the task's file in the change's open tasks from the request its brief carries
+- *AND* the task file is committed with the edit, or kept open on a bailout
 
 *** Scenario: The edit is made in the code root, with no worktree
 - *WHEN* the inline path makes its edit
@@ -203,14 +208,6 @@ SHALL hand back that it stopped, naming the ask; it SHALL never put the question
 - *THEN* its line is =inline <task>: stopped, ask <id> blocks commit; <ask file>=, the path relative to the home
 
 * Gaps
-
-** Gap: Where the inline path's task and its request come from
-:PROPERTIES:
-:REQUIREMENT: A small change is made by one phase agent, without a worktree, an Implementor or a Reviewer
-:END:
-The path updates and commits "the task file", but nothing says who writes it for a request the user
-makes between cycles, or what carries the request to the phase agent; elsewhere only plan writes a
-task file.
 
 ** Gap: Whether the inline path runs while a cycle is open
 :PROPERTIES:
