@@ -20,14 +20,17 @@ Agreed with the user on 2026-11-13. Use them as written; a new term goes to the 
 
 ## Where pages live
 
-In the product's `docs/pages/`, beside the `docs/specs/` they document, committed with the code:
+In the product's `docs/pages/`, beside the `docs/specs/` they document:
 
 | File | Kind |
 |---|---|
 | `build.py` | written once per project, adapted from `references/example-execute/`; reads the sources, never writes them |
 | `spec.template.html` | the page: layout, styles, script; no data |
+| `index.template.html` | the index: every page with its spec's coverage line |
 | `<capability>.data.js` | generated: `window.SPEC_PAGE = {…}`, deterministic |
-| `<capability>.html` | generated from the template, loading its data file |
+| `<capability>.html`, `index.html` | generated from the templates, loading their data files |
+
+The build and the templates are committed with the code. The generated files are committed too when the sources they read are in the same repository, so a page at a commit can be rebuilt from it. When the results live elsewhere (the example's evals are their own repository), the generated files are gitignored and a `publish.sh` builds them and replaces a `gh-pages` branch with one commit naming the commits it read; no history is kept there, so the repository does not grow with each publish (decided 2026-11-14; the example's 13 pages were 7.8MB of data). Publishing is the user's call, and a GitHub Pages site is public even when the results' repository is private.
 
 When another session owns the specs or the tests, the pages directory is this skill's alone and the other session never edits it; the build only reads. Pages are not map material: a workspace's objective maps stay where they are.
 
@@ -53,7 +56,7 @@ An uncited scenario says so, and shows the spec's `:TEST: none:` reason when it 
 ## Rules
 
 1. **Computed only, first.** The first page of a project has no authored text. An authored part is added only after the user has read the computed page and asked for it, with checks designed for that part. The record: an authored "what the proof says" went stale without being flagged once its source was fixed (the outcome pages, `maps/outcomes/friction.org`, O-NS-12).
-2. **Key on spec scenarios, and open on the list.** Not on test cases or test ids: the reader asks what the system does, and a test answers it.
+2. **Key on spec scenarios, and open on the list.** Not on test cases or test ids: the reader asks what the system does, and a test answers it. A page takes every test that cites one of its scenarios, whatever capability the test is filed under, and keeps of it only the items and checks that cite this spec (in the example, 83 cases cite `record`'s scenarios, 12 are filed under it; one scenario has 50). Each case's proof opens with its title, so stacked cases read apart.
 3. **Every mark says what it means, on the page,** unless the user has read it and found it obvious. A colour, highlight or count with no stated meaning is a defect. The record: the first page highlighted the walkthrough rows a scenario's checks read, and the user could not tell what the highlight meant or what had confirmed the scenario; it was replaced by named check badges and the How it was checked section. A highlight marks only text the build matched on (the text that tied an event to its call); the caption saying so was dropped once the user found it obvious (2026-11-14).
 4. **Show each layer of the proof apart.** A verdict and the checks under it can disagree, and the disagreement is the finding: in the example, every check of "A regression is fixed in the change like a blocking defect" passed in all three trials while the eval agent failed one, because the journal named the wrong goals. The item's verdict and its reasons, each check's result, and an audit that suspects a check are shown apart, each on its own line.
 5. **Milestones come from the end state, linked to the calls that made them.** Not from the commands alone: one shell call holds several commands and reports one error, tools hide behind shell variables, and quoted text reads as a command (the effort's probe `milestones-from-transcripts`, no). Commits, record entries, asks and spawns come from the end state the test kept; each links to the call whose input carries its text, or for a commit whose subject was built from variables, the call that first printed its sha. Test runs come from the calls that ran the tests, as the test's own collector names them where it does, else the calls that returned a summary; kept output files are not a record of the runs (one trial overwrote its failing run; probe `milestones-from-end-state`). Order rows by the mean call number across trials, and say the order is approximate.
