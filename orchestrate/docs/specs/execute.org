@@ -1,6 +1,6 @@
 #+TITLE: execute
 #+OPTIONS: ^:{} -:nil
-#+STATUS: draft 2026-11-12, extracted from the reference skill (=main= =e356da7=); inferred statements reviewed 2026-11-12; seven gaps filled and the regression requirement revised 2026-11-12; the gap on the run after a fix filled 2026-11-13; four gaps opened and filled 2026-11-13 at the hand-off review; no gap open; accepted 2026-11-13 by the user at the hand-off review; one WHEN narrowed 2026-11-13 after acceptance (a blocked Implementor commits nothing), from the cross-spec map
+#+STATUS: draft 2026-11-12, extracted from the reference skill (=main= =e356da7=); inferred statements reviewed 2026-11-12; seven gaps filled and the regression requirement revised 2026-11-12; the gap on the run after a fix filled 2026-11-13; four gaps opened and filled 2026-11-13 at the hand-off review; no gap open; accepted 2026-11-13 by the user at the hand-off review; one WHEN narrowed 2026-11-13 after acceptance (a blocked Implementor commits nothing), from the cross-spec map; an Implementor's discovery only the user can settle routed to an ask 2026-11-13 after acceptance, from =implementor='s review
 
 * Purpose
 
@@ -224,7 +224,7 @@ prose SHALL be corrected, and any other SHALL go on the change's hardening list.
 as a journal line alone.
 
 *** Scenario: A discovery on the main path is fixed in the change
-- *WHEN* an Implementor's report lists a discovery on the change's main path
+- *WHEN* an Implementor's report lists a discovery on the change's main path, other than one only the user can settle
 - *THEN* it is fixed in this change, as an inline fix or as a follow-up candidate for the next plan
 
 *** Scenario: A simple fix is made inline, reproduced first
@@ -240,8 +240,13 @@ as a journal line alone.
 - *AND* no task file is written in execute
 
 *** Scenario: A discovery off the main path goes on the hardening list
-- *WHEN* an Implementor's discovery is off the change's main path and is not an untrue sentence
+- *WHEN* an Implementor's discovery is off the change's main path, is not an untrue sentence, and is not one only the user can settle
 - *THEN* it is one entry on the change's hardening list
+
+*** Scenario: An Implementor's discovery only the user can settle becomes an ask
+- *WHEN* an Implementor's report lists a =spec-signal= or =scope-question= discovery that only the user can settle
+- *THEN* the phase agent writes a =decision= ask from it as it reads the report, naming the task and the discovery
+- *AND* the task is not held by it
 
 *** Scenario: An untrue sentence in prose is corrected at once
 - *WHEN* a discovery is a sentence in prose that is untrue
