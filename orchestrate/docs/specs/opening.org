@@ -5,7 +5,7 @@
 * Purpose
 
 Opening turns what the user asked for into a change the design round can take: the change's
-intent and its edits to the specs, written from the user's words (or from =.tasks/= items, or from
+intent and its edits to the specs, written from the user's words (or from items of the cross-change backlog, or from
 a goal-drift answer) and committed in the change's code root, on an integration branch of its own.
 It also revises a change in place when the user's answer calls for new goals. It reads no code and
 writes no design and no task, and it asks the user nothing: its open questions and its new terms
@@ -256,8 +256,8 @@ design and no task, and hand the dispatcher one line.
 - *WHEN* opening completes
 - *THEN* the home has no commit made by the opening
 
-*** Scenario: A .tasks/ item taken up is named, and left as it is
-- *WHEN* a change is opened from =.tasks/= items
+*** Scenario: An item of the cross-change backlog taken up is named, and left as it is
+- *WHEN* a change is opened from items of the cross-change backlog
 - *THEN* the intent's Why names each item by its path
 - *AND* each item's file is unchanged
 

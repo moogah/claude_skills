@@ -858,3 +858,17 @@ hardening entries worked and left, the open tasks left, and the corrections made
 - Example :: "with the closing summary under its =* Status="
 - Avoid :: final report, release notes, summary alone
 - Specs :: integrate
+
+* goal-drift ask
+The =decision= ask integrate raises when the PM reads goal drift, offering the user revise, split,
+abandon or continue; plan waits for its answer.
+- Example :: "or =revise= on a goal-drift ask"
+- Avoid :: goal-drift signal (the PM's evidence that raises it), divergence
+- Specs :: opening, integrate, plan
+
+* cross-change backlog
+The home's =.tasks/= store of work noticed in one change and left outside it, each file one item,
+kept with its provenance until a later change takes it up.
+- Example :: "A task outside the change is placed in the cross-change backlog"
+- Avoid :: =.tasks/= in prose, backlog alone, ticket, externalised store
+- Specs :: opening, plan, project-manager
