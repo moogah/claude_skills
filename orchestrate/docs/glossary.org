@@ -177,3 +177,52 @@ archived state.
 - Example :: "saved in the cycle's directory in the home"
 - Avoid :: cycle archive (main's heading for it, which suggests it is written only at close), =cycles/<id>/=
 - Specs :: execute
+
+* dispatcher
+The session the user invokes the skill in: it spawns each phase agent, receives its one-line
+hand-back, and is the only agent that puts questions to the user.
+- Example :: "Whether the user is present is the dispatcher's to know"
+- Avoid :: orchestrator (main's flow docs use it for the phase agent), main thread, session
+- Specs :: execute
+
+* phase agent
+The agent, spawned fresh by the dispatcher, that runs one phase of one cycle by its flow: it spawns
+the role agents the flow names, runs the gate, makes the close commit and hands back one line.
+- Example :: "neither review is made by the execute phase agent itself"
+- Avoid :: orchestrator (see Note), coordinator, main agent
+- Specs :: execute
+
+* Implementor
+The role agent that does one task in the task's own worktree, against a brief, and hands back its
+commit; it also appends its Observations and Discoveries to the task file and writes a report for
+the phase agent.
+- Example :: "Each task is implemented by an Implementor in a worktree of its own"
+- Avoid :: worker (covers Reviewers too), implementer, coder, author (the Reviewer is "author-blind" to it, which is fine as a description, not a name)
+- Specs :: execute
+
+* Reviewer
+The role agent that reviews one merged task, author-blind: it reads the merge's diff against the
+seam rows and scenarios the task cites, may probe the merge read-only, and writes its findings to a
+file.
+- Example :: "reviewed author-blind by a Reviewer of its own"
+- Avoid :: reviewer agent, code reviewer, =/code-review= (a separate tool main cites as finding what reviews missed)
+- Specs :: execute
+
+* agent setting
+The model and effort an agent is spawned at, taken as a pair.
+- Example :: "at the agent setting its role or its task names"
+- Avoid :: model alone, effort alone, config, tier
+- Specs :: execute
+
+* role default
+The agent setting every agent of a role gets unless the plan sets another for a task.
+- Example :: "at the Implementor's role default otherwise"
+- Avoid :: default model, base setting
+- Specs :: execute
+
+* rework
+The run of a re-spawned Implementor on a task already merged, to fix a blocking finding or a
+regression in it.
+- Example :: "A rework runs at the task's setting, never a stronger one"
+- Avoid :: retry, re-implementation (main's word in =state.md= for the status move), rejection (main's count of send-backs); for a fresh Implementor after a wrong premise, which main's =implementor-rework= role also covers
+- Specs :: execute
