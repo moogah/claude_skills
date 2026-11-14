@@ -142,6 +142,10 @@ lines.
 - *WHEN* the round's output is committed
 - *THEN* one commit in the code root, subject =Design round: <change>=, holds the design, the not-test-worthy marks on the spec's scenarios and the tests
 
+*** Scenario: A property a Decision drops is copied into the intent's Removals
+- *WHEN* a Decision of the round marks a property of a replaced mechanism as dropped
+- *THEN* the round's commit adds a sentence for it to the intent's Removals
+
 *** Scenario: The round's commit message carries the coverage summary
 - *WHEN* the round commits
 - *THEN* the commit message holds the summary line of the change's scenarios' coverage

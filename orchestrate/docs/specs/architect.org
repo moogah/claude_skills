@@ -1,6 +1,6 @@
 #+TITLE: architect
 #+OPTIONS: ^:{} -:nil
-#+STATUS: draft 2026-11-13, extracted from the reference skill (=main= =e356da7=); nine gaps open; at the hand-off review 2026-11-13: G2, G5, G7, G8 and G11 applied, its role default added
+#+STATUS: draft 2026-11-13, extracted from the reference skill (=main= =e356da7=); nine gaps open; at the hand-off review 2026-11-13: G2, G5, G7, G8 and G11 applied, its role default added; the dropped property filled
 
 * Purpose
 
@@ -115,6 +115,11 @@ replaces a mechanism SHALL name each property the old one provided and whether t
 - *WHEN* a Decision replaces a mechanism
 - *THEN* it names each property the old mechanism provided and whether the new one keeps it
 - *AND* each property kept is a seam row a Reviewer can cite
+
+*** Scenario: A property dropped on purpose is marked dropped in its Decision
+- *WHEN* a Decision replaces a mechanism and drops one of its properties on purpose
+- *THEN* the Decision names that property as dropped
+- *AND* the Architect does not write the intent
 
 ** Requirement: Every scenario of the change is cited by a test or says why it has none
 :PROPERTIES:
@@ -398,13 +403,6 @@ Each run of the Architect SHALL be at its role default; a task override SHALL NO
 - *AND* at =medium= for the premise check
 
 * Gaps
-
-** Gap: Where a property a Decision drops on purpose is written
-:PROPERTIES:
-:REQUIREMENT: A Decision states what must hold and why
-:END:
-A property the replaced mechanism provided and the new one drops goes in the intent's Removals, a
-file the design round does not write.
 
 ** Gap: What the premise check and conformance may write besides their outputs
 :PROPERTIES:
