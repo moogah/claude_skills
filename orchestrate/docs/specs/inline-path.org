@@ -1,6 +1,6 @@
 #+TITLE: inline-path
 #+OPTIONS: ^:{} -:nil
-#+STATUS: draft 2026-11-13, extracted from the reference skill (=main= =e356da7=); at the hand-off review 2026-11-13: G7, G8 and G9 applied; the task file's source filled
+#+STATUS: draft 2026-11-13, extracted from the reference skill (=main= =e356da7=); at the hand-off review 2026-11-13: G7, G8 and G9 applied; the task file's source and the open cycle filled
 
 * Purpose
 
@@ -43,6 +43,11 @@ done with no review step between, and the code and the task file SHALL be commit
 - *WHEN* the inline path commits its edit while no cycle is open
 - *THEN* the task file shows the task done
 - *AND* the task passed through no state of waiting for a review or of being reviewed
+
+*** Scenario: While a cycle is open, the inline task is recorded in it as done
+- *WHEN* the inline path commits its edit while a cycle of the change is open
+- *THEN* the cycle's record holds the task as done, outside the cycle's batch, and the cycle's counts include it
+- *AND* the edit was made while no run after a merge was running in the code root
 
 *** Scenario: The code and the task file are committed together
 - *WHEN* the inline path commits
@@ -208,13 +213,6 @@ SHALL hand back that it stopped, naming the ask; it SHALL never put the question
 - *THEN* its line is =inline <task>: stopped, ask <id> blocks commit; <ask file>=, the path relative to the home
 
 * Gaps
-
-** Gap: Whether the inline path runs while a cycle is open
-:PROPERTIES:
-:REQUIREMENT: The triage keeps the inline path to one-file edits asked for between cycles
-:END:
-The path is for edits asked for between cycles, yet it also says what to record "if a cycle is
-open"; whether it runs then, and how its task then appears in the change's record, is not settled.
 
 ** Gap: What the inline path's commit subject is
 :PROPERTIES:
