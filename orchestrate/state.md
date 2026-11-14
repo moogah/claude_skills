@@ -1,6 +1,6 @@
 # The state layer
 
-The state layer answers two questions about a change and refuses what would make the answers false (`docs/specs/state-layer.org`, the normative text; this file is how to use it):
+The state layer answers two questions about a change and refuses what would make the answers false (`docs/specs/record.org`, the normative text; this file is how to use it):
 
 1. **Where does this change stand, and what comes next?** At every stage: open, design round, MVP decision, plan, execute, integrate, done. Any fresh session, the dispatcher included, gets the same answer from `state.py status`.
 2. **Is this really done?** A task, gate or phase passes only on computed checks. An asserted check is recorded as asserted, never as computed.

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """orchestrate home tool: the home, its repositories and the changes open in it.
 
-Outside the state layer (docs/specs/state-layer.org § Integration Points): it writes the home's
+Outside the state layer (docs/specs/record.org § The record's files, commits and event log are its boundary): it writes the home's
 config.yaml, a change's worktree and change.json, and .orchestrator/.gitignore, and says where
 things are. It reads no cycle and checks no gate; `state.py status` does that.
 

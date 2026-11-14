@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """orchestrate report: spend and quality by role, on demand; and a running agent's context.
 
-Outside the state layer (docs/specs/state-layer.org § Integration Points): run by the user or
+Outside the state layer (docs/specs/record.org § The record's files, commits and event log are its boundary): run by the user or
 /process-improvement when reviewing cycles, never by a cycle. It writes nothing.
 
 `spend` reads every subagent transcript under the home's project directories

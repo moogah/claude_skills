@@ -44,12 +44,14 @@ the exit codes of the test runs SHALL be tracked.
 :END:
 A change's state SHALL be read from the files the roles write and from git, each fact from one source.
 There SHALL be no state file. The state layer SHALL write one file, the change's event log, and only
-through its commands.
+through its commands; the only files it moves are the asks settled before the first cycle, into that
+cycle's asks when it starts.
 
 *** Scenario: No state file is written
 - *WHEN* a cycle runs from plan to close
 - *THEN* no =state.json= exists in the change's directory
 - *AND* the only file the state layer wrote is the event log, =events.jsonl= in the change's directory
+- *AND* the only files it moved are asks settled before the first cycle, moved when that cycle started
 
 *** Scenario: A fact has no second copy
 - *WHEN* a task has merged and a finding has been routed

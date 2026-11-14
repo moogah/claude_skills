@@ -1,6 +1,6 @@
 # Spend and quality report
 
-`scripts/report.py` is the on-demand report on what the agents cost and how well their work held: run by the user, or by `/process-improvement` when it reads the cycles a home has run. Nothing runs it each cycle, no gate needs it, and its numbers go in no handshake (`docs/specs/state-layer.org` § Integration Points). It writes nothing.
+`scripts/report.py` is the on-demand report on what the agents cost and how well their work held: run by the user, or by `/process-improvement` when it reads the cycles a home has run. Nothing runs it each cycle, no gate needs it, and its numbers go in no handshake (`docs/specs/record.org` § Integration Points). It writes nothing.
 
 ```
 python3 ~/.claude/skills/orchestrate/scripts/report.py --change <change> spend [--cycle <cycle-id>]

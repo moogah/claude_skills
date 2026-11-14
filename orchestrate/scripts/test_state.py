@@ -1,4 +1,4 @@
-"""pytest suite for state.py, one test per scenario of docs/specs/state-layer.org, plus the
+"""pytest suite for state.py, one test per scenario of docs/specs/record.org, plus the
 check verbs and the event log's writers. Run: python3 -m pytest test_state.py (from this directory).
 
 Each test builds a home in a temporary directory: a git home holding the overlay and the

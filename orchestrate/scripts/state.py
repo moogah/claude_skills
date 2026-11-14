@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""orchestrate state layer (docs/specs/state-layer.org).
+"""orchestrate state layer (docs/specs/record.org).
 
 Answers two questions about a change from its files and git history, and refuses what
 would make the answers false:

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """orchestrate ask tool: writes and moves the ask files (templates/ask.md) and reads the inbox.
 
-Outside the state layer (docs/specs/state-layer.org § Integration Points): the ask files are
+Outside the state layer (docs/specs/record.org § The record's files, commits and event log are its boundary): the ask files are
 the record, with no index beside them. `state.py` reads their kind, status, blocks and answer;
 this tool writes a new file, changes one (the drawer and sections), moves it when its status
 crosses into or out of applied / declined / superseded, and reports every inbox file with its

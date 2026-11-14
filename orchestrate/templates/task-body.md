@@ -45,7 +45,7 @@ discovered_class: shape-fragmentation | vocabulary-mismatch | responsibility-lea
 ---
 ```
 
-Nothing else goes in the frontmatter; `state.py conventions` reports any other key. In particular the task's merge commit is its `Merge task <name>` commit on the change branch, its review is `cycles/<cycle-id>/reviews/<name>.md`, and its times are those commits' times: each fact has one source, and a copy here would be a second one (`docs/specs/state-layer.org` § The record).
+Nothing else goes in the frontmatter; `state.py conventions` reports any other key. In particular the task's merge commit is its `Merge task <name>` commit on the change branch, its review is `cycles/<cycle-id>/reviews/<name>.md`, and its times are those commits' times: each fact has one source, and a copy here would be a second one (`docs/specs/record.org` § The record).
 
 ## Body sections
 
