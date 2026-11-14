@@ -1,6 +1,6 @@
 #+TITLE: execute
 #+OPTIONS: ^:{} -:nil
-#+STATUS: draft 2026-11-12, extracted from the reference skill (=main= =e356da7=); inferred statements reviewed 2026-11-12; seven gaps filled and the regression requirement revised 2026-11-12; the gap on the run after a fix filled 2026-11-13; four gaps opened and filled 2026-11-13 at the hand-off review; no gap open; accepted 2026-11-13 by the user at the hand-off review; one WHEN narrowed 2026-11-13 after acceptance (a blocked Implementor commits nothing), from the cross-spec map; an Implementor's discovery only the user can settle routed to an ask 2026-11-13 after acceptance, from =implementor='s review; amended 2026-11-14 after acceptance (a task's front matter kept in step with the record; a file the Reviewer's spawn names is its input; an Implementor's ask stops the phase only when it bears on dependent tasks), from the evals' build-out (=research/skill-evals/overnight/plan.org= § Decided with the user, 2026-11-14 morning); amended 2026-11-14 after acceptance (asked to hand over, landed tasks are merged first), from the user's decisions on round 2 of the evals (=research/skill-evals/round-2/plan.org= § Log › Decisions needed)
+#+STATUS: draft 2026-11-12, extracted from the reference skill (=main= =e356da7=); inferred statements reviewed 2026-11-12; seven gaps filled and the regression requirement revised 2026-11-12; the gap on the run after a fix filled 2026-11-13; four gaps opened and filled 2026-11-13 at the hand-off review; no gap open; accepted 2026-11-13 by the user at the hand-off review; one WHEN narrowed 2026-11-13 after acceptance (a blocked Implementor commits nothing), from the cross-spec map; an Implementor's discovery only the user can settle routed to an ask 2026-11-13 after acceptance, from =implementor='s review; amended 2026-11-14 after acceptance (a task's front matter kept in step with the record; a file the Reviewer's spawn names is its input; an Implementor's ask stops the phase only when it bears on dependent tasks), from the evals' build-out (=research/skill-evals/overnight/plan.org= § Decided with the user, 2026-11-14 morning); amended 2026-11-14 after acceptance (asked to hand over, landed tasks are merged first), from the user's decisions on round 2 of the evals (=research/skill-evals/round-2/plan.org= § Log › Decisions needed); amended 2026-11-14 after acceptance (F1-3, F2-4: adopted from the state layer, =research/skill-evals/state-layer/plan.org=)
 
 * Purpose
 
@@ -61,7 +61,7 @@ meant without dropping code or a test, and SHALL send any other conflict back to
 
 *** Scenario: Each task arrives as a merge commit of its own
 - *WHEN* a task merges
-- *THEN* the integration branch gains one merge commit whose subject is =Merge task <task>: <description>=
+- *THEN* the integration branch gains one merge commit whose subject is =Merge task <task>: <description>=, or =Merge task <task> (rework): <description>= for a rework's merge
 
 *** Scenario: The merge chain does not wait for a review
 - *WHEN* a task merges and passes its tests while another task is queued
@@ -526,22 +526,22 @@ tasks' contents to the phases that own them; it MAY keep a task file's front mat
 :GOAL:     none stated
 :END:
 The execute phase SHALL spawn each Implementor and Reviewer at the agent setting its role or its
-task names, and SHALL record the setting it used.
+task names, and SHALL name each spawn's role and task in its description.
 
 *** Scenario: An Implementor runs at its task's setting
 - *WHEN* an Implementor is spawned
 - *THEN* it runs at the task's own setting when the plan wrote one, and at the Implementor's role default otherwise
-- *AND* the change's record holds the agent and its setting
+- *AND* its spawn's description names the Implementor's role and the task
 
 *** Scenario: A Reviewer runs at its role default or the task's raised setting
 - *WHEN* a Reviewer is spawned for a task
 - *THEN* it runs at the Reviewer's role default, or at the task's Reviewer setting when the plan raised it
-- *AND* the change's record holds the agent, its setting and the task it reviews
+- *AND* its spawn's description names the Reviewer's role and the task it reviews
 
 *** Scenario: A rework runs at the task's setting, never a stronger one
 - *WHEN* an Implementor is spawned again to fix a blocking finding
 - *THEN* it runs at the setting the task's first Implementor ran at, never a stronger one
-- *AND* the change's record holds it as a rework
+- *AND* its spawn's description names it a rework of the task
 
 * Gaps
 

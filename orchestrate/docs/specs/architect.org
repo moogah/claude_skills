@@ -1,6 +1,6 @@
 #+TITLE: architect
 #+OPTIONS: ^:{} -:nil
-#+STATUS: draft 2026-11-13, extracted from the reference skill (=main= =e356da7=); nine gaps open; at the hand-off review 2026-11-13: G2, G5, G7, G8 and G11 applied, its role default added; the dropped property, what each run writes and the prior's cleanup filled; no gap open; accepted 2026-11-13 by the user at the hand-off review; amended 2026-11-14 after acceptance (what the design round writes besides the design; a design-round finding's id and trigger; the state's entries for the findings a run writes), from the evals' build-out (=research/skill-evals/overnight/plan.org= § Decided with the user, 2026-11-14 morning)
+#+STATUS: draft 2026-11-13, extracted from the reference skill (=main= =e356da7=); nine gaps open; at the hand-off review 2026-11-13: G2, G5, G7, G8 and G11 applied, its role default added; the dropped property, what each run writes and the prior's cleanup filled; no gap open; accepted 2026-11-13 by the user at the hand-off review; amended 2026-11-14 after acceptance (what the design round writes besides the design; a design-round finding's id and trigger; the state's entries for the findings a run writes), from the evals' build-out (=research/skill-evals/overnight/plan.org= § Decided with the user, 2026-11-14 morning); amended 2026-11-14 after acceptance (F2-6: adopted from the state layer, =research/skill-evals/state-layer/plan.org=)
 
 * Purpose
 
@@ -390,12 +390,12 @@ names.
 *** Scenario: The premise check writes only its table, its findings and thought lines
 - *WHEN* the premise check hands back
 - *THEN* the files it has written or changed are =premise-check.md= and its finding files in the cycle's directory
-- *AND* besides them it has added only thought lines to the change's journal and the state's entry for each finding it wrote (=record= § A finding in a file of its own is indexed in the state)
+- *AND* besides them it has added only thought lines to the change's journal
 
 *** Scenario: Conformance writes only its findings, its design diff and the text it corrects
 - *WHEN* conformance hands back
 - *THEN* the files it has written or changed are its finding files and =design-diff.json= in the cycle's directory, and the seam rows and spec sentences it amended
-- *AND* besides them it has added only thought lines to the change's journal and the state's entry for each finding it wrote (=record= § A finding in a file of its own is indexed in the state)
+- *AND* besides them it has added only thought lines to the change's journal
 
 *** Scenario: No run commits, spawns an agent or writes a task
 - *WHEN* any run of the Architect hands back

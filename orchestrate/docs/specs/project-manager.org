@@ -1,6 +1,6 @@
 #+TITLE: project-manager
 #+OPTIONS: ^:{} -:nil
-#+STATUS: draft 2026-11-13, extracted from the reference skill (=main= =e356da7=); eight gaps opened; at the hand-off review 2026-11-13: G8 applied, its role default added; the sections' order, the throughput rows the recommendation's values, goal drift's drainage, the queue, the candidates' rows and the failed prose pass filled; no gap open; accepted 2026-11-13 by the user at the hand-off review; amended 2026-11-14 after acceptance (a process ask is counted, not listed; every marked line is a signal), from the evals' build-out (=research/skill-evals/overnight/plan.org= § Decided with the user, 2026-11-14 morning); amended 2026-11-14 after acceptance (the PM digest retired into the handshake, =research/skill-evals/state-layer/plan.org= F4-1)
+#+STATUS: draft 2026-11-13, extracted from the reference skill (=main= =e356da7=); eight gaps opened; at the hand-off review 2026-11-13: G8 applied, its role default added; the sections' order, the throughput rows the recommendation's values, goal drift's drainage, the queue, the candidates' rows and the failed prose pass filled; no gap open; accepted 2026-11-13 by the user at the hand-off review; amended 2026-11-14 after acceptance (a process ask is counted, not listed; every marked line is a signal), from the evals' build-out (=research/skill-evals/overnight/plan.org= § Decided with the user, 2026-11-14 morning); amended 2026-11-14 after acceptance (the PM digest retired into the handshake, =research/skill-evals/state-layer/plan.org= F4-1); amended 2026-11-14 after acceptance (F1-3: adopted from the state layer, =research/skill-evals/state-layer/plan.org=)
 
 * Purpose
 
@@ -101,7 +101,7 @@ SHALL start the Architect's conformance over the cluster instead of raising a qu
 *** Scenario: The cascade's conformance runs at its role default and is recorded
 - *WHEN* the PM spawns the Architect's conformance for a cascade
 - *THEN* the run is at the Architect's conformance role default
-- *AND* the change's record holds it as an Architect conformance agent
+- *AND* its spawn's description names an Architect conformance run and the cycle
 
 *** Scenario: A cascade's conformance is recorded as applied without asking
 - *WHEN* the PM has spawned the Architect's conformance for a cascade
@@ -196,7 +196,7 @@ writes in the change is its meta-discoveries file and, on a cascade, the conform
 
 *** Scenario: The PM spawns no Implementor or Reviewer
 - *WHEN* the PM has run
-- *THEN* the change's record holds no Implementor or Reviewer it spawned
+- *THEN* no spawn the PM made is an Implementor or a Reviewer
 
 ** Requirement: The PM's role default
 :PROPERTIES:
