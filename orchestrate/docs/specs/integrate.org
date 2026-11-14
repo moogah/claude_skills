@@ -1,6 +1,6 @@
 #+TITLE: integrate
 #+OPTIONS: ^:{} -:nil
-#+STATUS: draft 2026-11-13, extracted from the reference skill (=main= =e356da7=); at the hand-off review 2026-11-13: G4 and G7 applied, the hardening list's form and a prior's thought carried in, "conformance check" reworded "conformance"; the unpinned disagreement and the take-in regression filled
+#+STATUS: draft 2026-11-13, extracted from the reference skill (=main= =e356da7=); at the hand-off review 2026-11-13: G4 and G7 applied, the hardening list's form and a prior's thought carried in, "conformance check" reworded "conformance"; the unpinned disagreement the take-in regression and the MVP's review filled; no gap open
 
 * Purpose
 
@@ -149,8 +149,13 @@ that review is open.
 - *AND* the change's record holds the agent and its setting
 
 *** Scenario: A cycle that merged only record text gets no whole-change review
-- *WHEN* the cycle merged nothing but changes to the change's documents
+- *WHEN* the cycle merged nothing but changes to the change's documents, and it would not file the MVP decision
 - *THEN* no whole-change review is spawned
+
+*** Scenario: A cycle that would file the MVP decision runs the review whatever it merged
+- *WHEN* a cycle would file the MVP decision
+- *THEN* a whole-change review runs in that cycle, whatever the cycle merged
+- *AND* the MVP decision is filed only when that review leaves no blocking finding
 
 *** Scenario: The whole-change review reads the change from its base
 - *WHEN* the whole-change Reviewer is spawned
@@ -480,10 +485,5 @@ each agent at its role default, and SHALL hand the dispatcher one line.
 
 * Gaps
 
-** Gap: The MVP decision in a cycle with no whole-change review
-:PROPERTIES:
-:REQUIREMENT: When the main path works end to end, the change stops for the MVP decision
-:END:
-The MVP decision is taken when "the review leaves no blocking finding", and a cycle that merged only
-changes to the change's documents runs no whole-change review. Whether such a cycle may file the MVP
-decision on an earlier cycle's review, or must wait for one, is not stated.
+No gap open. The six this draft had were filled 2026-11-13 at the hand-off review
+(=research/skill-evals/extraction/integrate.org= § Gap decisions).
