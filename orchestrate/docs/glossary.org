@@ -827,3 +827,19 @@ now it has the result the user's absence has.
 - Example :: "the call offers =Not now="
 - Avoid :: skip, later, defer (=deferred= is an ask status the user writes in the file)
 - Specs :: dispatcher
+
+* impact set
+For one task still open in a change, what the cycle did that touches it (a seam row it cites that
+moved, a pattern that names it, a user's answer, an inline fix in its files, a wrong premise), given
+per open task in the handshake and empty when nothing touched it; plan applies it to the task file
+before the batch is fixed.
+- Example :: "plan changes an open task's file to absorb its impact set"
+- Avoid :: task refinement (main's field name), update (the stanza is one way an impact is absorbed), delta
+- Specs :: plan, integrate
+
+* harden, rethink, stop
+The three answers to the MVP decision: work the hardening list and the open tasks off the main path;
+rewrite the goals and run to a new MVP; or end the change as it is.
+- Example :: "on =stop= or =rethink= it SHALL open no cycle"
+- Avoid :: continue, abandon (goal-drift options); this stop is a change's, not the task state stopped
+- Specs :: plan
