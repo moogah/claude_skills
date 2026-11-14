@@ -1,6 +1,6 @@
 #+TITLE: dispatcher
 #+OPTIONS: ^:{} -:nil
-#+STATUS: draft 2026-11-13, extracted from the reference skill (=main= =e356da7=); at the hand-off review 2026-11-13: G4, G6 and G10 applied, the design round's asks no longer go to plan (G1, G5); the recommendation's form, the resume's order and the call's commit filled
+#+STATUS: draft 2026-11-13, extracted from the reference skill (=main= =e356da7=); at the hand-off review 2026-11-13: G4, G6 and G10 applied, the design round's asks no longer go to plan (G1, G5); the recommendation's form, the resume's order, the call's commit and the missing overlay filled
 
 * Purpose
 
@@ -332,6 +332,15 @@ overlay with the user present, one question per call.
 - *WHEN* the dispatcher finds no overlay for the home
 - *THEN* it tells the user explicitly that none was found
 
+*** Scenario: With no overlay, a present user sets one up before any change runs
+- *WHEN* the dispatcher finds no overlay for the home and the user is present
+- *THEN* it sets up the home's overlay with the user before it spawns any phase agent
+
+*** Scenario: With no overlay and the user absent, the dispatcher stops
+- *WHEN* the dispatcher finds no overlay for the home and the user is absent
+- *THEN* it stops after the warning
+- *AND* spawns no phase agent
+
 *** Scenario: A drifted overlay is relayed once and stops nothing
 - *WHEN* the home's overlay has drifted from the skill's form: a removed key, a retired concept, a path that climbs to the home
 - *THEN* the dispatcher tells the user once in the session
@@ -343,14 +352,6 @@ overlay with the user present, one question per call.
 - *AND* the overlay is written from the answers, never copied from another home
 
 * Gaps
-
-** Gap: What follows when no overlay is found
-:PROPERTIES:
-:REQUIREMENT: The user is told when the overlay is missing or has drifted
-:END:
-After telling the user, the dispatcher falls back to defaults or sets the overlay up with the user;
-elsewhere a project with no overlay is set up first, and the home itself is found by its overlay.
-Which applies when is not stated.
 
 ** Gap: What the dispatcher does when plan hands back that the change stopped
 :PROPERTIES:
