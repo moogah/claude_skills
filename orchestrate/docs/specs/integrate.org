@@ -1,6 +1,6 @@
 #+TITLE: integrate
 #+OPTIONS: ^:{} -:nil
-#+STATUS: draft 2026-11-13, extracted from the reference skill (=main= =e356da7=); not yet reviewed
+#+STATUS: draft 2026-11-13, extracted from the reference skill (=main= =e356da7=); at the hand-off review 2026-11-13: G4 and G7 applied, the hardening list's form and a prior's thought carried in, "conformance check" reworded "conformance"
 
 * Purpose
 
@@ -23,23 +23,23 @@ The integrate phase SHALL have an Architect check the code merged in the cycle a
 and scenarios the cycle's tasks cite, and scan every diff merged in the cycle for replaced code still
 in use and code no longer reached; the phase agent SHALL route each finding of that check.
 
-*** Scenario: The conformance check is an Architect's, at every integrate
+*** Scenario: Conformance is the Architect's, at every integrate
 - *WHEN* integrate runs
-- *THEN* an Architect is spawned for the conformance check
+- *THEN* an Architect is spawned for conformance
 - *AND* the check is not made by the integrate phase agent itself
 - *AND* the change's record holds the agent and its setting
 
-*** Scenario: The conformance check covers what the cycle's tasks cited and every diff it merged
-- *WHEN* the Architect is spawned for the conformance check
+*** Scenario: Conformance covers what the cycle's tasks cited and every diff it merged
+- *WHEN* the Architect is spawned for conformance
 - *THEN* its input names the seam rows and the scenarios the cycle's tasks cite
 - *AND* every diff merged in the cycle, for the scan for replaced code still on a live path and code no longer reached
 
-*** Scenario: A conformance check that finds nothing says so in the journal
-- *WHEN* the conformance check finds nothing
+*** Scenario: Conformance that finds nothing says so in the journal
+- *WHEN* conformance finds nothing
 - *THEN* the change's journal has one line saying the check found zero findings
 
 *** Scenario: Every conformance finding is routed from its file
-- *WHEN* the conformance check reports findings
+- *WHEN* conformance reports findings
 - *THEN* the phase agent routes each from the finding's file, not from the Architect's hand-back
 - *AND* the change's record shows each finding's route: a record correction, a =decision= ask, a follow-up candidate or an entry on the hardening list
 
@@ -73,6 +73,15 @@ the code does not keep it; such a promise SHALL stay in the design and be report
 - *THEN* its subject contains =record correction=
 - *AND* when it corrects a scenario in a spec, its body has one line =Pinned by: <test>= for each scenario it corrects
 
+*** Scenario: A record correction execute journaled is made by conformance
+- *WHEN* execute journaled a statement for integrate as a record correction
+- *THEN* the conformance Architect's input names it
+- *AND* it is corrected by the same test rule as a seam row conformance finds, its commit naming the pin
+
+*** Scenario: Each corrected row or scenario has a commit of its own
+- *WHEN* integrate makes more than one record correction
+- *THEN* each corrected seam row, with the scenario that states the same thing, is in a commit of its own, its subject naming the row
+
 *** Scenario: A promise the code does not keep stays in the design
 - *WHEN* the design promises something the merged code does not do
 - *THEN* the design still states the promise after integrate
@@ -87,7 +96,7 @@ the code does not keep it; such a promise SHALL stay in the design and be report
 :PROPERTIES:
 :GOAL:     none stated (O-NS-13 states it for the whole change)
 :END:
-The integrate phase SHALL route every finding it receives, the conformance check's and the
+The integrate phase SHALL route every finding it receives, conformance's and the
 whole-change review's: one on the main path SHALL become a follow-up candidate for the next plan, an
 untrue sentence SHALL be corrected, any other defect SHALL go on the hardening list. It SHALL file
 no ask for what the user's own words already answer.
@@ -369,9 +378,46 @@ asks, every open task's impact set and the follow-up candidates. It SHALL write 
 - *WHEN* the PM finds a cluster of externalised tasks coherent enough to be a sub-change
 - *THEN* a =decision= ask is filed on whether to promote it into the change, whose default if unanswered is to leave it externalised
 
+*** Scenario: A thought that names a project prior becomes a candidate
+- *WHEN* the Architect's thought line names a project prior that asks for the work
+- *THEN* the handshake carries a follow-up candidate for it, off the main path, quoting the thought
+
 *** Scenario: Integrate writes no task text
 - *WHEN* integrate closes
 - *THEN* no task file has been written or edited by it
+
+** Requirement: The hardening list holds the change's reasoned defects off the main path
+:PROPERTIES:
+:GOAL:     none stated
+:END:
+The change's hardening list SHALL be one file in the change's directory, to which the phase agent
+appends one entry for each finding it routes =hardening= and each user's decision whose work is off
+the main path; each entry SHALL carry its source, its severity and its locations, and SHALL say what
+goes wrong in product terms. =plan= and =execute= cite this form.
+
+*** Scenario: A finding routed hardening is one entry, appended by the phase agent
+- *WHEN* a phase agent routes a finding =hardening=
+- *THEN* =hardening.org= in the change's directory gains one entry for it, after the others
+- *AND* no other agent writes the file
+
+*** Scenario: A hardening entry gives its kind, its source, its severity and its places
+- *WHEN* a hardening entry is written for a finding
+- *THEN* its heading is the finding's kind with =(hardening)= and one line in product terms
+- *AND* its =:REF:= is the finding's id, its review file and number, or its discovery's id; its =:SEVERITY:= the reporter's; its =:FILES:= the locations
+- *AND* its body is one paragraph: what goes wrong, on which input, and what the user would notice
+
+*** Scenario: A decision off the main path is a hardening entry with its ask
+- *WHEN* a user's decision's work is off the main path
+- *THEN* the hardening list gains an entry headed =decision (hardening):= and the decision in product terms, its =:REF:= the ask's id, with no severity
+
+*** Scenario: An entry a harden answer takes names its task, and one it leaves says so
+- *WHEN* a harden answer is applied
+- *THEN* each entry drafted into a task gains =:TASK: <task-name>=
+- *AND* each entry a partial answer leaves gains =:LEFT: <ask-id>=
+
+*** Scenario: The hardening list holds no untrue sentence, thought or style
+- *WHEN* the hardening list is read
+- *THEN* it holds no untrue sentence in a shipped document, no thought and no matter of style
 
 ** Requirement: Integrate leaves its work in the home and the change's documents in the code root
 :PROPERTIES:
@@ -427,22 +473,6 @@ The reference skill sends a disagreement between a row and the code with no pinn
 code, asked about only when the user's words conflict with it. Where one ends and the other begins is
 not stated.
 
-** Gap: How integrate takes up a record correction execute left in the journal
-:PROPERTIES:
-:REQUIREMENT: Which of the design and the code is right is decided by a test
-:END:
-The =execute= spec leaves a spec scenario or seam row its goals overrule in the change's journal for
-integrate as a record correction. The reference skill's integrate makes record corrections only from
-the conformance check's findings, scoped to the cycle's cited seams, and counts journaled corrections
-without saying who applies them.
-
-** Gap: One commit per corrected row, or one per cycle
-:PROPERTIES:
-:REQUIREMENT: Which of the design and the code is right is decided by a test
-:END:
-The reference skill commits each corrected row with a subject naming the row, and also commits the
-amended design and spec text once per cycle under =Integrate <cycle-id>: record corrections=.
-
 ** Gap: A regression when the workspace integration branch is taken in
 :PROPERTIES:
 :REQUIREMENT: A cycle that merged code ends with a review of the whole change
@@ -459,12 +489,3 @@ for execute only. What integrate does with one is open.
 The MVP decision is taken when "the review leaves no blocking finding", and a cycle that merged only
 changes to the change's documents runs no whole-change review. Whether such a cycle may file the MVP
 decision on an earlier cycle's review, or must wait for one, is not stated.
-
-** Gap: How the user is shown the open decisions after integrate
-:PROPERTIES:
-:REQUIREMENT: Integrate leaves its work in the home and the change's documents in the code root
-:END:
-Integrate's flow has the dispatcher print one line per open decision, blocking ones first, before the
-cycle's results; the dispatcher's own loop puts them one per call while the user is present and
-relays them one line each only when the user is absent. Which the user sees after integrate, and who
-says in one line that a cycle has no decision, is not stated (O-IN-4).
