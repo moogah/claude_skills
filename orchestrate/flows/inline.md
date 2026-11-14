@@ -21,6 +21,8 @@ The triage criteria (lifted from older emacs skill §4 and promoted to core):
 
 When in doubt, take the standard path. The cost of running a small task as a worktree is small; the cost of taking an inline path on something that turns out to be larger is the bailout (see below).
 
+A request the triage refuses is a bailout with nothing to revert: the task file stays open in `tasks/open/` with the triage's reason, and the line is `inline <task>: bailed out, <why>; <task file>`.
+
 ## Collapsed cycle
 
 In the inline path, plan / execute / integrate collapse into the orchestrator's own context:
