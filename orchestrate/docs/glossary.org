@@ -1,7 +1,7 @@
 #+TITLE: Glossary
 #+OPTIONS: ^:{} -:nil
 
-The orchestrate skill's agreed terms. The eleven below were agreed during the research effort =~/emacs-workspaces/claude-skills/research/skill-evals/= (2026-11-11). The =state-layer= branch adds this file too, with its own terms; when the two meet, the file holds both sets.
+The orchestrate skill's agreed terms. The eleven below were agreed during the research effort =~/emacs-workspaces/claude-skills/research/skill-evals/= (2026-11-11); five on cost (working time to attention cost) in =~/emacs-workspaces/claude-skills/research/skill-cost/= (2026-11-14). The =state-layer= branch adds this file too, with its own terms; when the two meet, the file holds both sets.
 
 The orchestrate terms below the evals' were drafted from the reference skill (=main= =e356da7=) and agreed with the user at the hand-off review of the =execute= spec, 2026-11-13; the draft, with each entry's source in =main=, is =research/skill-evals/glossary-draft.org=.
 
@@ -89,6 +89,36 @@ An eval agent's reading of one check in one trial, given the scenario it rests o
 A person's reading of one trial of a case, in full, against each of its checks, items and audits, recorded with the commit it was made at (the case's =:VALIDATED:=). The case's trials count only while what runs of it is unchanged since that commit. Agreed 2026-11-13, in place of "hand reading".
 - Example :: "the phrase “Hand reading” is strange, can we name this better?"
 - Avoid :: hand reading, review (a role of the skill), calibration (suggests tuning), sign-off
+- Specs :: skill-evals
+
+* working time
+A trial's or a run's wall time less the time it sat waiting on the user to answer. Agreed 2026-11-14 in the research effort =research/skill-cost/=.
+- Example :: a probe trial with three questions, each answered after 10 s: 58.1 s of wall time, 28.1 s of working time.
+- Avoid :: active time (Claude Code's own measure, which counts the waits), duration
+- Specs :: skill-evals
+
+* response
+One moment the user must answer for a run to go on: a question answered, a permission granted or refused, a message the run waits for. Agreed 2026-11-14 in =research/skill-cost/=.
+- Example :: the three answers a dispatcher's step asked for in one trial.
+- Avoid :: ask (the skill's question file to the user, one way a response is asked for), prompt, interaction
+- Specs :: skill-evals
+
+* handed reading
+Text a run gives the user to read with no response asked: its final message, a digest, a file it names for the user to read. Agreed 2026-11-14 in =research/skill-cost/=.
+- Example :: a PM digest.
+- Avoid :: output, report
+- Specs :: skill-evals
+
+* avoidability
+Whether a step could have got a response's answer itself, from the conversation, its tools or the record, rated by the eval agent. Agreed 2026-11-14 in =research/skill-cost/=.
+- Example :: a question whose answer was in the change's intent is avoidable.
+- Avoid :: value (the prior art's word, which runs the other way), necessity
+- Specs :: skill-evals
+
+* attention cost
+The user's cost of a run as a number: each response weighted by the reading time of what the user read to give it and, in the evals, by its avoidability, plus the reading time of the handed reading. The process-improvement skill's /user's cost/ is the currency; attention cost is its measure. Agreed 2026-11-14 in =research/skill-cost/=.
+- Example :: "a one line question with a reccomendation is a different attention cost from a 4 paragraph text block."
+- Avoid :: attention (alone), budget
 - Specs :: skill-evals
 
 * reference skill

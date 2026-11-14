@@ -9,7 +9,7 @@ They do this by running one step of the skill at a time, on a constructed interf
 
 They do not own: proposing changes to the skill (the user and =process-improvement= do that; the results are kept in a form a program can read so that a proposer can be added later); evals for any skill but =orchestrate=; runs on other vendors' tools or models; the whole-cycle replay's tools (=findings/tools/replay-*= in the skills workspace), which they use and do not replace.
 
-Research: =~/emacs-workspaces/claude-skills/research/skill-evals/brief.org= (goals R1-R11, decided 2026-11-11; evidence E1-E9). Read and approved by the user as written, 2026-11-11. Revised 2026-11-12 by the review of how the evals work (=research/skill-evals/evals-review.org=, directions D1-D9) and by the spec form (=research/skill-evals/spec-form.org=, points 3 and 5). Revised 2026-11-13: a case's checks are listed under the items of its expected result (* Decided, D10); a check rests only on what a spec fixes, and a scenario whose evidence no spec fixes is a gap in that spec (* Decided, D11). Revised 2026-11-13: what a word match is for, and what decides an item no check observes (* Decided, D12); how an item is promoted left as a gap; /validation/ named in place of "hand reading". Revised 2026-11-13: the evidence given whole, and /cannot tell/ (* Decided, D13). Revised 2026-11-13: a scenario with alternatives is split, and a case cites one whose WHEN its fixture decides (* Decided, D14). Revised 2026-11-13: a stopped trial records its cost and does not run the call it stopped at (* Decided, D15); a trial has only its case's tools, under a permission mode the evals state (* Decided, D16). Revised 2026-11-13: the evals are a repository of their own, whose history is not rewritten (* Decided, D17).
+Research: =~/emacs-workspaces/claude-skills/research/skill-evals/brief.org= (goals R1-R11, decided 2026-11-11; evidence E1-E9). Read and approved by the user as written, 2026-11-11. Revised 2026-11-12 by the review of how the evals work (=research/skill-evals/evals-review.org=, directions D1-D9) and by the spec form (=research/skill-evals/spec-form.org=, points 3 and 5). Revised 2026-11-13: a case's checks are listed under the items of its expected result (* Decided, D10); a check rests only on what a spec fixes, and a scenario whose evidence no spec fixes is a gap in that spec (* Decided, D11). Revised 2026-11-13: what a word match is for, and what decides an item no check observes (* Decided, D12); how an item is promoted left as a gap; /validation/ named in place of "hand reading". Revised 2026-11-13: the evidence given whole, and /cannot tell/ (* Decided, D13). Revised 2026-11-13: a scenario with alternatives is split, and a case cites one whose WHEN its fixture decides (* Decided, D14). Revised 2026-11-13: a stopped trial records its cost and does not run the call it stopped at (* Decided, D15); a trial has only its case's tools, under a permission mode the evals state (* Decided, D16). Revised 2026-11-13: the evals are a repository of their own, whose history is not rewritten (* Decided, D17). Revised 2026-11-14: a result carries its /working time/, its cost split by agent and its /attention cost/, and the comparison shows them (research =~/emacs-workspaces/claude-skills/research/skill-cost/brief.org=, decided 2026-11-14).
 
 * Key Concepts
 
@@ -234,7 +234,7 @@ When a step receives its first case, the change to the skill that makes the step
 - *AND* the routing and the fix are evaluated as separate items
 
 ** Requirement: Every result is kept, with what it ran on and what it cost
-Each trial's result SHALL be recorded in a form a program can read, and kept. The tracked record SHALL carry what comparison and promotion read: the case and its version, the scenarios or outcome, the versions it ran on, the wall time and the tokens, each check's verdict and audit, and each item's evaluation. The details behind them SHALL be kept locally for as long as a rule says.
+Each trial's result SHALL be recorded in a form a program can read, and kept. The tracked record SHALL carry what comparison and promotion read: the case and its version, the scenarios or outcome, the versions it ran on, the wall time, the working time, the tokens and the cost in dollars with their split by agent, the attention cost with its parts, each check's verdict and audit, and each item's evaluation. The details behind them SHALL be kept locally for as long as a rule says.
 
 *** Scenario: A result names the version of everything it ran on
 - *WHEN* a trial ends
@@ -244,8 +244,30 @@ Each trial's result SHALL be recorded in a form a program can read, and kept. Th
 
 *** Scenario: A result carries its cost
 - *WHEN* a trial ends
-- *THEN* its result records the wall time, the tokens used and the cost in dollars
+- *THEN* its result records the wall time, the working time, the tokens used and the cost in dollars
 - *AND* tokens are counted once per message
+
+*** Scenario: Working time leaves out the waits on the user
+- *WHEN* a trial's session waits for its host to answer a call put to the user
+- *THEN* its working time is its wall time less the time each such call waited for its answer
+- *AND* the wall time is recorded beside it
+
+*** Scenario: A result's cost is split by agent
+- *WHEN* a trial's session spawns an agent that runs
+- *THEN* its result records the tokens and the cost of the main thread and of each spawned agent apart, each spawned agent named by the call that started it
+- *AND* the parts add up to the session's cost
+
+*** Scenario: A result carries its attention cost
+- *WHEN* a trial ends
+- *THEN* its result records each /response/ the step asked of the user, with the reading time of what the user had to read to give it
+- *AND* the reading time of the /handed reading/ the step left the user
+- *AND* the attention cost computed from them, by a formula and a reading rate the evals state
+- *AND* the parts are kept, so the attention cost can be computed again when the formula changes
+
+*** Scenario: Each response is rated for avoidability
+- *WHEN* a trial's step asked the user for a response
+- *THEN* the eval agent rates the response's /avoidability/, whether the step could have got the answer from the conversation, its tools or the record, with its reason
+- *AND* the rating enters the attention cost and decides nothing
 
 *** Scenario: A trial stopped at its case's point records its cost, and the call it stopped at does not run
 - *WHEN* a trial reaches the point its case names to stop at
@@ -253,7 +275,7 @@ Each trial's result SHALL be recorded in a form a program can read, and kept. Th
 - *AND* the call it stopped at does not run
 
 *** Scenario: Cost never blocks an install
-- *WHEN* a case's wall time or tokens rise between two versions of the skill
+- *WHEN* a case's working time, cost or attention cost rise between two versions of the skill
 - *THEN* the rise is shown in the comparison
 - *AND* the install is not blocked by it
 
@@ -311,7 +333,7 @@ The same cases SHALL be run on two trees of the skill and their results set side
 *** Scenario: Old and new are run on the same cases
 - *WHEN* a skill change is compared with the installed skill
 - *THEN* each case is run on both trees from the same input
-- *AND* the comparison shows, per case, each tree's check verdicts and audits, item evaluations, wall time and tokens
+- *AND* the comparison shows, per case, each tree's check verdicts and audits, item evaluations, working time, cost and attention cost
 
 *** Scenario: Only results of one version of a case are set together
 - *WHEN* results are set side by side or summed
