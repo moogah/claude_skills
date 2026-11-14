@@ -1,6 +1,6 @@
 #+TITLE: opening
 #+OPTIONS: ^:{} -:nil
-#+STATUS: draft 2026-11-13, extracted from the reference skill (=main= =e356da7=); nine gaps opened; at the hand-off review 2026-11-13: G8 applied (the path's root, a revision's line); the unnamed repository, a taken name and a failed opening filled
+#+STATUS: draft 2026-11-13, extracted from the reference skill (=main= =e356da7=); nine gaps opened; at the hand-off review 2026-11-13: G8 applied (the path's root, a revision's line); the unnamed repository, a taken name, a failed opening and the second change filled
 
 * Purpose
 
@@ -83,6 +83,11 @@ base.
 - *WHEN* what the user asks for needs two repositories
 - *THEN* two changes are opened, one in each repository
 - *AND* the second change's intent names the first in its Why
+
+*** Scenario: Each opening opens one change, and names the second when there is one
+- *WHEN* what the user asks for needs two repositories
+- *THEN* the opening opens the first change only
+- *AND* its hand-back line ends =; second change: <repository>=
 
 *** Scenario: The integration branch starts from the repository's current commit
 - *WHEN* a change is opened and no ref is given to start it from
@@ -313,12 +318,6 @@ On =split= it SHALL open a new change that names the one it came from.
 - *AND* the new intent's Why names the change it came from
 
 * Gaps
-
-** Gap: When the second of two changes is opened
-:PROPERTIES:
-:REQUIREMENT: A new change is named, placed in one repository and started from a written base
-:END:
-"The second opened after the first": in the same opening, or once the first is done.
 
 ** Gap: What the intent says for a change cut from a research hand-off
 :PROPERTIES:
