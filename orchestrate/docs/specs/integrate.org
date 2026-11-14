@@ -1,6 +1,6 @@
 #+TITLE: integrate
 #+OPTIONS: ^:{} -:nil
-#+STATUS: draft 2026-11-13, extracted from the reference skill (=main= =e356da7=); at the hand-off review 2026-11-13: G4 and G7 applied, the hardening list's form and a prior's thought carried in, "conformance check" reworded "conformance"; the unpinned disagreement the take-in regression and the MVP's review filled; no gap open; accepted 2026-11-13 by the user at the hand-off review; amended 2026-11-14 after acceptance (an untrue sentence the whole-change review finds is a record correction), from the evals' build-out (=research/skill-evals/overnight/plan.org= § Decided with the user, 2026-11-14 morning); amended 2026-11-14 after acceptance (the PM digest retired into the handshake, =research/skill-evals/state-layer/plan.org= F4-1); amended 2026-11-14 after acceptance (F1-3: adopted from the state layer, =research/skill-evals/state-layer/plan.org=)
+#+STATUS: draft 2026-11-13, extracted from the reference skill (=main= =e356da7=); at the hand-off review 2026-11-13: G4 and G7 applied, the hardening list's form and a prior's thought carried in, "conformance check" reworded "conformance"; the unpinned disagreement the take-in regression and the MVP's review filled; no gap open; accepted 2026-11-13 by the user at the hand-off review; amended 2026-11-14 after acceptance (an untrue sentence the whole-change review finds is a record correction), from the evals' build-out (=research/skill-evals/overnight/plan.org= § Decided with the user, 2026-11-14 morning); amended 2026-11-14 after acceptance (the PM digest retired into the handshake, =research/skill-evals/state-layer/plan.org= F4-1); amended 2026-11-14 after acceptance (F1-3: adopted from the state layer, =research/skill-evals/state-layer/plan.org=); amended 2026-11-14 after acceptance (the close commit names no archived state, =research/skill-evals/state-layer/plan.org=)
 
 * Purpose
 
@@ -472,7 +472,7 @@ each agent at its role default, and SHALL hand the dispatcher one line.
 
 *** Scenario: Integrate closes with one commit in the home
 - *WHEN* integrate closes
-- *THEN* one commit in the home, subject =Orchestrator: <cycle-id> integrate closed=, holds the cycle's archived state and handshake, the PM's meta-discoveries, the findings, the list of seam rows changed, the follow-up candidates and the impact sets
+- *THEN* one commit in the home, subject =Orchestrator: <cycle-id> integrate closed=, holds the cycle's handshake, the PM's meta-discoveries, the findings, the list of seam rows changed, the follow-up candidates and the impact sets
 
 *** Scenario: Integrate changes no code but an untrue sentence
 - *WHEN* integrate closes
