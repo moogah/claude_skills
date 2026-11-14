@@ -1,0 +1,339 @@
+#+TITLE: project-manager
+#+OPTIONS: ^:{} -:nil
+#+STATUS: draft 2026-11-13, extracted from the reference skill (=main= =e356da7=); not yet reviewed; eight gaps open
+
+* Purpose
+
+The PM reads where a change stands once a cycle and writes the PM digest: the cycle's counts, the
+signals they fire, the questions they raise and a recommendation on goal drift, so that the user can
+see whether the change is converging on its goals. Every number in the digest comes from the change's
+record; the PM's own words only frame them. On a cascade it starts an Architect conformance run over
+the cluster. It writes no code, no task file and no ask file, and decides nothing: when the PM runs
+and what becomes of its digest are the integrate phase's, how a candidate question becomes an ask is
+the =asks= capability's, and how the counts are computed is the =record= capability's.
+
+* Requirements
+
+** Requirement: Every number in the digest comes from the change's record
+:PROPERTIES:
+:GOAL:     none stated
+:END:
+The PM SHALL take every number its digest shows from the counts computed over the change's record for
+the cycle, and SHALL write only the words around them: the framing of each signal, the candidate
+questions, the goal-drift recommendation, the trends to watch and the meta-discoveries.
+
+*** Scenario: Every number in the digest is one the record's counts give
+- *WHEN* a PM digest is written
+- *THEN* every number in its tables, its main-path readout and its asks table's columns other than the question is one the counts computed over the change's record give for the cycle
+- *AND* the PM's own words are only the framing of each signal, the candidate questions, the goal-drift recommendation, the trends to watch and the meta-discoveries
+
+*** Scenario: The computed counts outlast a failed prose pass
+- *WHEN* the PM's prose pass fails
+- *THEN* the counts and the signals computed for the cycle are still in the cycle's directory in the home
+
+*** Scenario: A zero rejection rate beside inline fixes is not read as a clean batch
+- *WHEN* the cycle's counts show no rejection and several inline fixes
+- *THEN* the digest does not call the batch clean
+
+** Requirement: The digest is one file per cycle, in a fixed form
+:PROPERTIES:
+:GOAL:     none stated
+:END:
+The PM SHALL write one digest per cycle, as a file in the cycle's directory, in a fixed form: a header
+naming the change, the cycle, the time and the history window; the throughput, main-path and agents
+readouts; a Signals section that is never empty, each line marked actionable, healthy or
+informational; the asks for the user; the trends to watch; the meta-discoveries; and the goal-drift
+check.
+
+*** Scenario: The digest is one file in the cycle's directory
+- *WHEN* the PM produces a cycle's digest
+- *THEN* it is the file =pm-digest.md= in the cycle's directory in the home
+
+*** Scenario: The digest opens with its change, cycle, time and history window
+- *WHEN* a PM digest is written
+- *THEN* its title names the change and the cycle
+- *AND* it states when it was produced and the history window it reads
+
+*** Scenario: The digest's Signals section is never empty
+- *WHEN* a PM digest is written
+- *THEN* it has a =Signals= section holding at least one signal line
+
+*** Scenario: Each signal line is marked actionable, healthy or informational
+- *WHEN* the digest shows a signal
+- *THEN* its line is marked ⚠ when it is actionable, ✓ when the dimension is healthy, or ◦ when it is a trend to watch and not yet actionable
+
+*** Scenario: A healthy tracked dimension is shown, not left out
+- *WHEN* a dimension the digest tracks is healthy this cycle
+- *THEN* the digest shows it with a ✓ line
+
+*** Scenario: The digest carries trends to watch, meta-discoveries and a goal-drift check
+- *WHEN* a PM digest is written
+- *THEN* it has a section of trends to watch, a section of the cycle's meta-discoveries and a goal-drift check
+
+** Requirement: The digest shows the cycle's throughput, its main path and its agents
+:PROPERTIES:
+:GOAL:     none stated
+:END:
+The digest SHALL show the throughput of this cycle and of each cycle in the history window, the state
+of the change's main path, and each role's agents with their spend beside the quality of the work,
+and SHALL read spend against quality in one line without proposing a change to any agent setting.
+
+*** Scenario: The throughput table covers the history window
+- *WHEN* a PM digest is written
+- *THEN* it shows, for this cycle and each cycle of the history window, the tasks created, carried, completed, reviewed and rejected, the inline fixes, the tasks externalised, and the drainage
+
+*** Scenario: The main-path readout counts active, blocked and complete tasks on the main path
+- *WHEN* a PM digest is written
+- *THEN* it shows the main path's active tasks against all active tasks
+- *AND* the main path's blocked tasks, with what blocks them
+- *AND* the main path's complete tasks against all its tasks, a total that counts the main path's task files no batch holds yet
+
+*** Scenario: The digest shows spend by role beside quality by the Implementor's setting
+- *WHEN* a PM digest is written
+- *THEN* its agents section shows, for each role, its agents, the agent settings they ran at and their spend
+- *AND* for each Implementor setting, its tasks, the rejections, the rework tasks and the defects found after done
+
+*** Scenario: Spend is read against quality in one line
+- *WHEN* a PM digest is written
+- *THEN* its agents section has one agent-settings line reading the spend against the history beside the quality counts
+
+*** Scenario: Spend that fell while quality fell is flagged
+- *WHEN* a quality count rose for a role or setting whose spend fell
+- *THEN* the agent-settings line is marked ⚠
+
+*** Scenario: An agent that ran at another setting than it was spawned at is flagged
+- *WHEN* the change's record shows an agent that ran at another agent setting than the one it was spawned at
+- *THEN* the agent-settings line is marked ⚠ and names it
+
+*** Scenario: The PM proposes no change to an agent setting
+- *WHEN* a PM digest is written
+- *THEN* it proposes no change to any agent setting
+
+*** Scenario: The digest counts the whole-change review's findings
+- *WHEN* the whole-change review ran in the cycle
+- *THEN* the digest's counts of findings and corrections include that review's
+
+** Requirement: Each signal fires on its threshold and names what it recommends
+:PROPERTIES:
+:GOAL:     none stated
+:END:
+The PM SHALL fire each signal when its condition holds against the project's threshold, or the
+default where the project sets none, and SHALL name with it what the signal recommends; on a cascade
+it SHALL start an Architect conformance run over the cluster instead of raising a question.
+
+*** Scenario: A threshold the project does not set takes its default
+- *WHEN* the project's configuration sets no threshold for a signal
+- *THEN* the signal reads its default: a history window of 5 cycles; drainage below 1.0 for 3 consecutive cycles; more than 3 tasks discovered from one task; a task stale after 3 cycles; tasks awaiting review more than 1.5 times those being implemented; the cross-change backlog growing over 3 cycles
+
+*** Scenario: Throughput inversion fires on falling drainage
+- *WHEN* tasks completed over tasks created stays below the drainage threshold for the threshold's number of consecutive cycles, created counting no carried task and a cycle that created none left out of the series
+- *THEN* the digest carries a ⚠ throughput signal
+
+*** Scenario: A cascade fires when one task has too many tasks discovered from it
+- *WHEN* more tasks than the cascade threshold were discovered from one task
+- *THEN* the digest carries a ⚠ cascade signal naming that task and how many tasks were discovered from it
+
+*** Scenario: A cascade starts an Architect conformance run, not a question
+- *WHEN* the cascade signal fires
+- *THEN* the PM spawns an Architect conformance run scoped to the cluster of the source task and the tasks discovered from it
+- *AND* no candidate question is raised for the cascade
+
+*** Scenario: The cascade run's brief names the cluster and its mission
+- *WHEN* the PM spawns a conformance run for a cascade
+- *THEN* its brief names the cluster, the source task, the tasks discovered from it, their discovered classes and the modules the diffs implicate
+- *AND* asks which seam rows the cluster's tasks cite, whether the merged code matches them, which rows need amending and whether a seam is missing
+- *AND* asks for every defect found as a finding with its kind and severity
+
+*** Scenario: The cascade run runs at the conformance setting and is recorded
+- *WHEN* the PM spawns a conformance run for a cascade
+- *THEN* the run is at the Architect's conformance role default
+- *AND* the change's record holds it as an Architect conformance agent
+
+*** Scenario: A cascade run is recorded as applied without asking
+- *WHEN* the PM has spawned a conformance run for a cascade
+- *THEN* a =confirmation= ask records the run as applied without asking
+
+*** Scenario: Review starvation fires when merged tasks wait on review
+- *WHEN* the tasks merged and awaiting review, over the tasks being implemented, exceed the review-starvation threshold
+- *THEN* the digest carries a ⚠ review-starvation signal
+- *AND* it recommends slowing the Implementors' cadence or running more Reviewers in parallel
+
+*** Scenario: Externalisation pressure fires on a growing cross-change backlog
+- *WHEN* the cross-change backlog has grown in every cycle over the threshold's number of cycles
+- *THEN* the digest carries an externalisation-pressure signal
+
+*** Scenario: A coherent externalised cluster is proposed for promotion
+- *WHEN* three or more externalised tasks share modules and a discovered class
+- *THEN* the digest carries a candidate question whether to promote that cluster into the active change
+- *AND* the PM does not promote it
+
+*** Scenario: Priority inversion fires when little active work is on the main path
+- *WHEN* fewer than three in ten of the active tasks are on the main path
+- *THEN* the digest carries a ⚠ priority-inversion signal
+- *AND* it recommends returning to the main path
+
+*** Scenario: A task not done for too long is a stale signal
+- *WHEN* a task has been in a state other than done for more cycles than the stale threshold
+- *THEN* the digest carries a stale signal
+
+*** Scenario: A task blocked for too long is a blocked-path signal
+- *WHEN* a task has been blocked for the stale threshold's number of cycles or more
+- *THEN* the digest carries a blocked-path stagnation signal
+
+*** Scenario: A class completing at half the average rate is a cycle anti-pattern
+- *WHEN* the completion rate of one task class is below half the rate across all tasks
+- *THEN* the digest carries a cycle anti-pattern signal naming the class
+
+*** Scenario: Recurring rejection reasons are a process signal and a candidate process ask
+- *WHEN* three or more rejections share a reason within one Implementor's tasks or one task class
+- *THEN* the digest carries a process signal naming the class
+- *AND* it names the class as a candidate =process= ask
+
+*** Scenario: A pause is recommended when the design looks wrong
+- *WHEN* a cascade, throughput inversion and priority inversion all fire in the same cycle
+- *THEN* the digest recommends pausing the change
+- *AND* the PM does not pause it
+
+** Requirement: Blocked work and open asks reach the digest's asks
+:PROPERTIES:
+:GOAL:     none stated
+:END:
+The digest SHALL list every open ask with its file, SHALL name the open ask a blocked task already
+waits on instead of raising another, and SHALL turn every other blocker into a candidate question
+the user can read without the code; the PM SHALL write no ask file. The digest SHALL count what was
+settled without the user and what was recorded rather than asked.
+
+*** Scenario: Every open ask is listed with its file
+- *WHEN* an ask of the change is open
+- *THEN* the digest's asks table has a row for it with its question, what it blocks, a recommendation and its file's path relative to the home
+
+*** Scenario: A task blocked on an ask re-surfaces that ask
+- *WHEN* a task is blocked on an open ask
+- *THEN* the digest names that ask for the task
+- *AND* no new candidate question is raised for it
+
+*** Scenario: A task blocked on anything else is a candidate question
+- *WHEN* a task is blocked on something other than an ask
+- *THEN* the digest carries a candidate question for it
+
+*** Scenario: A candidate question is plain, says what it blocks and recommends
+- *WHEN* the digest carries a candidate question
+- *THEN* it is a plain question for the reader the project's configuration names
+- *AND* it says what it blocks and gives a recommendation
+
+*** Scenario: The PM writes no ask file
+- *WHEN* the PM writes its digest
+- *THEN* it writes no ask file; its candidate questions are in the digest only
+
+*** Scenario: The digest counts the asks applied without asking and the process notes
+- *WHEN* a PM digest is written
+- *THEN* it states how many asks of the cycle were applied without asking and how many process asks are in the inbox
+- *AND* no process ask is put in it as a question
+
+*** Scenario: The digest counts the findings by kind and the hardening list
+- *WHEN* a PM digest is written
+- *THEN* it states the findings by kind and how many entries are on the change's hardening list, naming the list's file
+
+*** Scenario: The digest counts the record corrections
+- *WHEN* the cycle made record corrections
+- *THEN* the digest states how many
+
+*** Scenario: A digest with nothing to ask has an empty asks table
+- *WHEN* no ask is open and no candidate question is raised
+- *THEN* the digest's asks table is empty and the digest is complete
+
+** Requirement: On goal drift the PM recommends and the user decides
+:PROPERTIES:
+:GOAL:     G2 (O-NS-2)
+:END:
+The digest SHALL show the main path's completion over the history window, SHALL fire a goal-drift
+signal when the main path stalls while other work goes on, and SHALL then carry a recommendation for
+the intent with a one-line reason; the recommendation SHALL change nothing until the user decides.
+
+*** Scenario: The goal-drift check shows the main path's completion
+- *WHEN* a PM digest is written
+- *THEN* its goal-drift check states the main path's completion ratio and how it has moved over the history window
+
+*** Scenario: Goal drift fires when the main path stalls while other work completes
+- *WHEN* the main path's completion ratio is flat or falling over the history window, tasks off the main path keep completing, and drainage stays positive
+- *THEN* the digest carries a ⚠ goal-drift signal
+- *AND* its goal-drift check recommends a course for the intent, with a one-line reason
+
+*** Scenario: The goal-drift recommendation changes nothing
+- *WHEN* the digest recommends a course on goal drift
+- *THEN* the PM changes neither the intent's goals nor its status line
+- *AND* the course is the user's to decide
+
+** Requirement: The PM acts only through its digest and the cascade run
+:PROPERTIES:
+:GOAL:     none stated
+:END:
+The PM SHALL change no code and no task's text, and SHALL spawn no Implementor or Reviewer; what it
+changes in the change is its digest and, on a cascade, the conformance run it starts.
+
+*** Scenario: The PM changes no code and no task's text
+- *WHEN* the PM has run
+- *THEN* the code root has no change of its making
+- *AND* no task file's text has changed
+
+*** Scenario: The PM spawns no Implementor or Reviewer
+- *WHEN* the PM has run
+- *THEN* the change's record holds no Implementor or Reviewer it spawned
+
+* Gaps
+
+** Gap: Where the asks table stands in the digest
+:PROPERTIES:
+:REQUIREMENT: The digest is one file per cycle, in a fixed form
+:END:
+The reference skill says the digest ends with the asks table, and its form puts the trends to watch,
+the meta-discoveries and the goal-drift check after it.
+
+** Gap: Which counts the throughput table shows
+:PROPERTIES:
+:REQUIREMENT: The digest shows the cycle's throughput, its main path and its agents
+:END:
+The PM's role names eleven counts for the throughput table (with started, blocked, failed and done);
+the digest's form shows seven of them and the drainage.
+
+** Gap: Which values the goal-drift recommendation takes
+:PROPERTIES:
+:REQUIREMENT: On goal drift the PM recommends and the user decides
+:END:
+The role and the integrate phase give revise, split, abandon or continue; the digest's form gives
+none, revise, split or abandon.
+
+** Gap: Whether goal drift needs drainage to stay positive
+:PROPERTIES:
+:REQUIREMENT: On goal drift the PM recommends and the user decides
+:END:
+The integrate phase's statement of the query adds that drainage stays positive; the role's does not,
+so a stalled main path while the queue grows fires goal drift by one and not by the other.
+
+** Gap: What, if anything, the PM writes to the queue
+:PROPERTIES:
+:REQUIREMENT: The PM acts only through its digest and the cascade run
+:END:
+The role lets the PM label tasks' classes, re-rank priority and set blocker notes, and also says a
+re-prioritisation is applied at the user's nod; the ask kinds call a re-rank a PM action it may take
+alone; the record has no priority, and a task's class is set when plan adds it.
+
+** Gap: Whether the asks table holds candidate questions, and with what file
+:PROPERTIES:
+:REQUIREMENT: Blocked work and open asks reach the digest's asks
+:END:
+The asks table's question column is the PM's candidate questions and its file column is rendered from
+the open asks; a candidate question has no file yet when the digest is written.
+
+** Gap: What the PM hands back
+:PROPERTIES:
+:REQUIREMENT: The digest is one file per cycle, in a fixed form
+:END:
+Every spawned agent hands back one line, and the reference skill gives no line for the PM.
+
+** Gap: Whether a digest is written when the prose pass fails
+:PROPERTIES:
+:REQUIREMENT: Every number in the digest comes from the change's record
+:END:
+The role says the digest is useful with the computed part alone; the digest file is the prose pass's
+output, and the integrate gate needs it with a non-empty Signals section.
