@@ -1,6 +1,6 @@
 #+TITLE: dispatcher
 #+OPTIONS: ^:{} -:nil
-#+STATUS: draft 2026-11-13, extracted from the reference skill (=main= =e356da7=); at the hand-off review 2026-11-13: G4, G6 and G10 applied, the design round's asks no longer go to plan (G1, G5); the recommendation's form and the resume's order filled
+#+STATUS: draft 2026-11-13, extracted from the reference skill (=main= =e356da7=); at the hand-off review 2026-11-13: G4, G6 and G10 applied, the design round's asks no longer go to plan (G1, G5); the recommendation's form, the resume's order and the call's commit filled
 
 * Purpose
 
@@ -277,6 +277,11 @@ or when it blocks plan; and SHALL write each answer back into the ask's file.
 - *WHEN* the user answers a call with one of the ask's options
 - *THEN* the dispatcher writes that option's label into the ask's file as its answer
 
+*** Scenario: An answer given in a call is committed with the ask's id
+- *WHEN* the dispatcher writes an answer given in a call into the ask's file
+- *THEN* it commits the file in the home, the subject naming the ask's id
+- *AND* before it resumes or spawns the phase agent that applies it
+
 *** Scenario: A free-text answer is written for the phase agent to read back
 - *WHEN* the user answers a call with words of their own rather than an option
 - *THEN* the dispatcher writes the words into the ask's file as given
@@ -338,13 +343,6 @@ overlay with the user present, one question per call.
 - *AND* the overlay is written from the answers, never copied from another home
 
 * Gaps
-
-** Gap: Whether an answer given in the call is committed
-:PROPERTIES:
-:REQUIREMENT: Asks reach the user only through the dispatcher, one per call
-:END:
-An answer given in chat is committed with its file; for an answer given in the call no commit is
-stated, and the asks' commit rule lists none for an answer alone.
 
 ** Gap: What follows when no overlay is found
 :PROPERTIES:

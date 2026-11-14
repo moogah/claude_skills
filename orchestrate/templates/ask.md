@@ -120,6 +120,7 @@ For every phase; this is the one statement of when a question blocks the session
 `.orchestrator/` is tracked by the home repo. `state.py init` writes `.orchestrator/.gitignore` (the test outputs `baseline-*.txt` and `after-*.txt`, `*.tmp`, the lock file, the migration backups) when absent and refuses to start when the home repo ignores the directory (an `environment` ask: delete the line). The orchestrator commits, in the home:
 
 - an ask file when it is created (`git add .orchestrator/changes/<change>/inbox/<id>.org`; the subject names the id, so `git log --grep=ask-` finds the trail);
+- an answer the dispatcher writes, given in a call or in chat, when it is written (the subject naming the id);
 - a readback when it is written, together with the user's answer it restates (one commit, the subject naming the id), and with it any `priors.md` line and `confirmation` file the answer produced;
 - an applied ask alongside the change that applies it (the moved file and the edit or merge in one commit, as the `--download-video` reversal was; one commit per repository with the same subject when the change is in a separate code root; a spec or `design.org` edit is in the code root, since the record lives under `docs/` there);
 - everything else, `state.json` included, at phase close (`Orchestrator: <cycle-id> <phase> closed`). Between those commits the index at HEAD may lag the files; the files are the record.
