@@ -1,6 +1,6 @@
 #+TITLE: inline-path
 #+OPTIONS: ^:{} -:nil
-#+STATUS: draft 2026-11-13, extracted from the reference skill (=main= =e356da7=); at the hand-off review 2026-11-13: G7, G8 and G9 applied; the task file's source, the open cycle and the commit subject filled
+#+STATUS: draft 2026-11-13, extracted from the reference skill (=main= =e356da7=); at the hand-off review 2026-11-13: G7, G8 and G9 applied; the task file's source, the open cycle, the commit subject and the triage's refusal filled; no gap open
 
 * Purpose
 
@@ -123,6 +123,11 @@ out: leave the code root as it was before the edit, keeping history when a commi
 put the task back, open, with the reason and its evidence in its task file; and hand the dispatcher
 one line naming the task and why.
 
+*** Scenario: A request the triage refuses is a bailout with nothing to revert
+- *WHEN* the triage refuses the request before any edit is made
+- *THEN* the task file is left open for the next plan, with the triage's reason in it
+- *AND* the inline path hands back =inline <task>: bailed out, <why>; <task file>=
+
 *** Scenario: An edit that reaches a second file bails out
 - *WHEN* the edit turns out to touch a second file
 - *THEN* the inline path bails out
@@ -218,9 +223,5 @@ SHALL hand back that it stopped, naming the ask; it SHALL never put the question
 
 * Gaps
 
-** Gap: What becomes of an edit the triage refuses before any edit
-:PROPERTIES:
-:REQUIREMENT: The triage keeps the inline path to one-file edits asked for between cycles
-:END:
-The bailout says what happens to an edit that grows; for one the triage refuses at the start, nothing
-says whether a task is left open for the next plan, or what the phase agent hands back.
+No gap open. The eight this draft had were filled 2026-11-13 at the hand-off review
+(=research/skill-evals/extraction/inline-path.org= § Gap decisions).
