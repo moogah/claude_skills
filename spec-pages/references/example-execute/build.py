@@ -119,8 +119,9 @@ def history():
     return [json.loads(l) for l in open(p) if l.strip()] if os.path.exists(p) else []
 
 
-def latest_counting(rows, case):
-    """{tree: [rows of the latest counting run on that tree, by trial]}."""
+def latest_counting(rows, case, validated=""):
+    """{tree: [rows of the latest counting run on that tree, by trial]}. A tree with no counting run shows the
+    validation trial the case's :VALIDATED: names, its rows marked (a validation does not count)."""
     by_tree = {}
     for r in rows:
         if r.get("case") == case and r.get("counts"):
@@ -128,7 +129,12 @@ def latest_counting(rows, case):
             if t not in by_tree or r["run_id"] > by_tree[t][0]["run_id"]:
                 by_tree[t] = [x for x in rows if x.get("case") == case and x.get("counts")
                               and x["run_id"] == r["run_id"] and x["tree"]["label"] == t]
-    return {t: sorted(by_tree[t], key=lambda x: x["trial"]) for t in TREES if t in by_tree}
+    v = re.match(r"(\S+)\s+(\S+)\s+t(\d+)\s+\((.*?)\)", validated)
+    if v and v.group(4) not in by_tree:
+        _, run, n, t = v.groups()
+        by_tree[t] = [dict(x, validation=True) for x in rows if x.get("case") == case and x["run_id"] == run
+                      and x["trial"] == int(n) and x["tree"]["label"] == t]
+    return {t: sorted(by_tree[t], key=lambda x: x["trial"]) for t in TREES if by_tree.get(t)}
 
 
 def sections(path):
@@ -183,29 +189,74 @@ def task_of(text, tasks):
     return next((t for t in tasks if t in text), None)
 
 
-def milestones(art, calls, tasks):
-    s = sections(art)
-    ms = []
-    for l in sect(s, "The change's branch"):
-        m = re.match(r"^([0-9a-f]{7,}) (.*)", l)
-        if not m:
-            continue
-        sha, subj = m.groups()
-        mt = re.match(r"Merge task ([\w-]+)", subj)
-        fx = re.match(r"Inline fix after merging task ([\w-]+)", subj)
-        sig = f"merge {mt.group(1)}" if mt else f"inline fix after {fx.group(1)}" if fx else "commit"
-        ms.append({"lane": "git", "sig": sig, "label": subj, "keys": [sha[:7], subj[:40]], "how": "text", "find": subj[:40]})
+def home_files(s):
+    """The home's added or changed files, from the section that gives each in full: {path: [lines]}."""
+    out, cur = {}, None
+    for l in sect(s, "Files added or changed in the home"):
+        m = re.match(r"^--- (\S+) ---$", l)
+        if m:
+            cur = m.group(1)
+            out[cur] = []
+        elif cur:
+            out[cur].append(l)
+    return out
+
+
+def journal(s, files, since):
+    """Journal entries: the state file's journal (since 2026-11-14), else the older artifacts' own section. The
+    state file is given in full, so entries the fixture planted are left out by date: only those at or after the
+    run's day."""
+    st = next((v for k, v in files.items() if k.endswith("/state.json")), None)
+    if st is not None:
+        try:
+            return [j for j in json.loads("\n".join(st)).get("journal") or [] if str(j.get("at", ""))[:10] >= since]
+        except ValueError:
+            return []
+    out = []
     for l in sect(s, "The change's journal"):
         if l.startswith("{"):
             try:
-                j = json.loads(l)
+                out.append(json.loads(l))
             except ValueError:
-                continue
-            ms.append({"lane": "record", "sig": f"journal {j.get('kind')} on {j.get('ref')}",
-                       "label": f"journal, {j.get('kind')}: {j.get('text', '')}", "keys": [j.get("text", "")[:40]],
-                       "how": "journal", "find": j.get("text", "")[:20]})
+                pass
+    return out
+
+
+def commit_sig(subj):
+    for pat, sig in ((r"Merge task ([\w-]+)", "merge {}"), (r"Inline fix after merging task ([\w-]+)", "inline fix after {}"),
+                     (r'Revert "Merge task ([\w-]+)', "revert merge of {}")):
+        m = re.match(pat, subj)
+        if m:
+            return sig.format(m.group(1))
+    return "commit: " + (subj if len(subj) <= 60 else subj[:60] + "…")
+
+
+def milestones(art, calls, tasks, since):
+    s = sections(art)
+    files = home_files(s)
+    ms = []
+    prev = ""  # the log gives each commit's subject, then its body: a commit starts after a blank line
+    for l in sect(s, "The change's branch"):
+        m = re.match(r"^([0-9a-f]{7,40}) (.*)", l)
+        if m and not prev.strip():
+            sha, subj = m.groups()
+            ms.append({"lane": "git", "sig": commit_sig(subj), "label": subj, "keys": [sha[:7], subj[:40]],
+                       "how": "text", "find": subj[:40]})
+        prev = l
+    for j in journal(s, files, since):
+        ms.append({"lane": "record", "sig": f"journal {j.get('kind')} on {j.get('ref')}",
+                   "label": f"journal, {j.get('kind')}: {j.get('text', '')}", "keys": [j.get("text", "")[:40]],
+                   "how": "journal", "find": j.get("text", "")[:20]})
+    for path, lines in sorted(files.items()):  # asks: files in the change's inbox
+        if re.search(r"/inbox/ask-[\w-]+\.org$", path):
+            name = path.split("/")[-1]
+            kind = next((l.split()[-1] for l in lines if l.startswith(":KIND:")), None)
+            title = next((l[8:].strip() for l in lines if l.startswith("#+TITLE:")), "")
+            ms.append({"lane": "record", "sig": f"ask, {kind}" if kind else "ask",
+                       "label": f"ask {name}{f' ({kind})' if kind else ''}{': ' + title if title else ''}",
+                       "keys": [name[:-4], name], "how": "file", "find": name})
     cur = None
-    for l in sect(s, "Ask files"):
+    for l in sect(s, "Ask files"):  # the artifacts before 2026-11-14
         m = re.match(r"^(\S+\.org):$", l)
         if m:
             cur = {"lane": "record", "sig": "ask", "label": "ask filed: " + m.group(1).split("/")[-1],
@@ -220,8 +271,9 @@ def milestones(art, calls, tasks):
         m = re.match(r'^\{"description": "([^"]+)"', l)
         if m:
             t = task_of(m.group(1), tasks)
-            role = "Reviewer" if "eview" in m.group(1) else "Implementor" if "mplement" in m.group(1) else "agent"
-            ms.append({"lane": "spawn", "sig": f"spawn {role} {t}", "label": f"spawn: {m.group(1)} (refused at the stop)",
+            role = ("Reviewer" if "eview" in m.group(1) else "Implementor" if "mplement" in m.group(1)
+                    else "Implementor (rework)" if "ework" in m.group(1) else "agent")
+            ms.append({"lane": "spawn", "sig": f"spawn {role} {t}", "label": f"spawn: {m.group(1)}",
                        "keys": [m.group(1), f"{role} spawn(s) for {t}"], "how": "agent", "find": m.group(1)})
     # link each end-state milestone to its call
     for m in ms:
@@ -236,19 +288,36 @@ def milestones(art, calls, tasks):
             if ok:
                 hits.append(c["n"])
         m["linked_by"] = "its text in the call" if hits else None
+        m["match"] = m["find"] if hits else None
         if not hits and m["lane"] == "git":  # a subject built from shell variables: the call that first printed the sha
             sha = m["keys"][0]
             hits = [c["n"] for c in calls if sha in c["result"]][:1]
             m["linked_by"] = "its sha in the call's output" if hits else None
+            m["match"] = None
         m["call"] = (hits[-1] if m["lane"] == "git" else hits[0]) if hits else None
         m["candidates"] = hits
-    # test runs from the calls that ran the tests and returned a unittest summary
-    for c in calls:
+    # test runs: the calls the collector names as having run the tests, one per unittest summary in its result;
+    # the artifacts before 2026-11-14 have no such section, and the calls that returned a summary stand in
+    ran = sect(s, "What the calls that ran the tests")
+    n = None
+    for i, l in enumerate(ran):
+        m = re.match(r"^call (\d+):$", l)
+        if m:
+            n = int(m.group(1))
+        elif n is not None and re.match(r"^Ran \d+ tests?", l):
+            verdict = next((x for x in ran[i + 1:i + 4] if re.match(r"^(OK|FAILED)\b", x)), "")
+            red = verdict.startswith("FAILED")
+            ms.append({"lane": "tests", "sig": None, "red": red, "label": f"test run: {'fails' if red else 'passes'} ({verdict or 'no verdict'})",
+                       "keys": [], "call": n, "candidates": [n], "linked_by": "the collector names the call", "match": None,
+                       "result": "\n".join([l, verdict]) if verdict else l})
+    for c in calls if not ran else []:
         if c["tool"] == "Bash" and re.search(r"python3? -m unittest", c["raw"]) and re.search(r"^Ran \d+ tests?", c["result"], re.M):
             red = bool(re.search(r"^FAILED \(", c["result"], re.M))
             files = re.findall(r"(after-[\w.$-]+\.txt)", c["input"].get("command", ""))
+            summ = re.findall(r"^(Ran \d+ tests?.*|OK\b.*|FAILED \(.*)$", c["result"], re.M)
             ms.append({"lane": "tests", "sig": None, "red": red, "label": f"test run: {'fails' if red else 'passes'}",
-                       "keys": files, "call": c["n"], "candidates": [c["n"]], "linked_by": "the call ran the tests"})
+                       "keys": files, "call": c["n"], "candidates": [c["n"]], "linked_by": "the call ran the tests",
+                       "match": None, "result": "\n".join(summ[-2:])})
     ms.sort(key=lambda m: (m["call"] if m["call"] is not None else 10 ** 6))
     last = "the handover"
     for m in ms:  # a test run is named by what it follows
@@ -264,8 +333,11 @@ def link_checks(ms, row, details):
     dets = {c["id"].split()[0]: str(c.get("detail") or "") for c in details.get("checks", [])}
     cites = row.get("cites") or {}
     for m in ms:
-        ids = sorted({cid for cid, d in dets.items() for k in m["keys"] if k and len(k) >= 7 and k in d})
+        hits = {cid: sorted({k for k in m["keys"] if k and len(k) >= 7 and k in d}) for cid, d in dets.items()}
+        hits = {cid: ks for cid, ks in hits.items() if ks}
+        ids = sorted(hits)
         m["checks"] = ids
+        m["hits"] = hits
         m["scenarios"] = sorted({s for cid in ids for s in cites.get(cid, [])})
 
 
@@ -283,7 +355,8 @@ def run_data(case, rows_by_tree, tasks):
             calls = []
             if art and os.path.exists(art) and os.path.exists(tr):
                 calls = transcript_calls(tr)
-                ms = milestones(art, calls, tasks)
+                rid = r["run_id"]
+                ms = milestones(art, calls, tasks, f"{rid[:4]}-{rid[4:6]}-{rid[6:8]}")
                 link_checks(ms, r, det)
             items = {i["item"]: i["verdict"] for i in r.get("rubric") or []}
             # each check as the run defined it: its words from the details (the check's id is followed by what it
@@ -301,7 +374,7 @@ def run_data(case, rows_by_tree, tasks):
             judge = {i["item"]: {"reasons": i.get("reasons", []), "quotes": [cut(q, 300) for q in i.get("quotes", [])]}
                      for i in det.get("rubric", []) if i.get("item")}
             trials.append({"trial": r["trial"], "items": items, "checks": checks, "judge": judge,
-                           "milestones": [{k: m[k] for k in ("lane", "sig", "label", "call", "candidates", "linked_by", "checks", "scenarios")}
+                           "milestones": [{k: m[k] for k in ("lane", "sig", "label", "call", "candidates", "linked_by", "checks", "scenarios", "match", "hits", "result") if m.get(k) is not None}
                                           for m in ms],
                            "calls": {str(c["n"]): {"tool": c["tool"], "text": show_call(c), "error": c["error"]}
                                      for c in calls if any(c["n"] in m["candidates"] for m in ms)},
@@ -309,8 +382,11 @@ def run_data(case, rows_by_tree, tasks):
         r0 = rows[0]
         v = r0.get("versions") or {}
         old = sh("git", "show", f"{v['case_commit']}:cases/{case['id']}/expected.org", cwd=EVALS) if v.get("case_commit") else ""
-        trees[tree] = {"run": r0["run_id"], "commit": r0["tree"]["commit"][:7], "case_commit": (v.get("case_commit") or "")[:7],
-                       "items_then": parse_items(old) if old else [], "cites": r0.get("cites") or {}, "trials": trials}
+        trees[tree] = {"run": r0["run_id"], "validation": bool(r0.get("validation")), "commit": r0["tree"]["commit"][:7], "case_commit": (v.get("case_commit") or "")[:7],
+                       "items_then": parse_items(old) if old else [], "cites": r0.get("cites") or {}, "trials": trials,
+                       # the checks under each rubric item: since 2026-11-14 a check cites no scenario of its own,
+                       # and reaches one through the item it sits under
+                       "item_checks": {i["item"]: sorted(i.get("checks") or []) for i in r0.get("rubric") or [] if i.get("item")}}
     return trees
 
 
@@ -326,7 +402,7 @@ def build(capability):
     cases = []
     for c in load_cases(capability):
         tasks = sorted(set(re.findall(r"=([a-z]+-[a-z]+(?:-[a-z]+)?)=", open(f"{EVALS}/cases/{c['id']}/case.org").read())))
-        c["runs"] = run_data(c, latest_counting(rows, c["id"]), tasks)
+        c["runs"] = run_data(c, latest_counting(rows, c["id"], c["validated"]), tasks)
         cases.append(c)
     titles = {f"{capability} § {s['title']}" for r in spec["requirements"] for s in r["scenarios"]}
     unknown = sorted({s for c in cases for it in c["items"] for s in it["cites"]
