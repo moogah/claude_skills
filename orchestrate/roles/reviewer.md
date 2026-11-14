@@ -69,7 +69,7 @@ If you find nothing, say what you looked for and why you ruled it out: silence i
 
 ## Three directions to look
 
-1. **Sub-par code from the implementing work.** Real issues, not style:
+1. **Sub-par code from the implementing work**, and in code or tests that exist which the diff calls or is called by, whoever wrote them (`direction: sub-par-code` either way). Real issues, not style:
    - Copy-paste, over-broad error handling, dead branches, implicit coupling.
    - Tests that re-state the implementation instead of verifying behaviour.
    - Shortcuts that cheat the verification step.

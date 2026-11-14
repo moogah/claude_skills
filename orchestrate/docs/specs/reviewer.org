@@ -1,6 +1,6 @@
 #+TITLE: reviewer
 #+OPTIONS: ^:{} -:nil
-#+STATUS: draft 2026-11-13, extracted from the reference skill (=main= =e356da7=); not yet reviewed; at the hand-off review 2026-11-13: G8 and G11 applied, its role default added; the recommended actions filled
+#+STATUS: draft 2026-11-13, extracted from the reference skill (=main= =e356da7=); not yet reviewed; at the hand-off review 2026-11-13: G8 and G11 applied, its role default added; the recommended actions and the direction of a defect outside the work filled
 
 * Purpose
 
@@ -132,6 +132,10 @@ carry a stopgap. The reporter SHALL NOT route its own finding.
 *** Scenario: A finding about the change's work names the direction it looks in
 - *WHEN* a finding is about the diff's own code, its drift from the change's design, or a spec or design the work shows may be wrong
 - *THEN* its =direction= is =sub-par-code=, =design-drift= or =spec-signal= respectively
+
+*** Scenario: A defect in code the change did not write is sub-par code
+- *WHEN* a finding is about code or tests that exist and that the diff does not change
+- *THEN* its =direction= is =sub-par-code=
 
 *** Scenario: Severity is the harm when the defect triggers
 - *WHEN* a finding's severity is set
@@ -288,13 +292,6 @@ The Reviewer SHALL run at its role default unless a task override raises it.
 - *AND* the whole-change Reviewer at =opus=, =xhigh=
 
 * Gaps
-
-** Gap: Which direction a defect outside the change's work takes
-:PROPERTIES:
-:REQUIREMENT: A finding carries its labels, its place, its evidence and a recommended action
-:END:
-Every Reviewer finding carries one of three directions, each about the change's own work; a defect
-that was there before the change, in code the diff calls, fits none of them.
 
 ** Gap: What read-only allows when the tests write in the checkout
 :PROPERTIES:
