@@ -1,6 +1,6 @@
 #+TITLE: plan
 #+OPTIONS: ^:{} -:nil
-#+STATUS: draft 2026-11-13, extracted from the reference skill (=main= =e356da7=); not yet reviewed
+#+STATUS: draft 2026-11-13, extracted from the reference skill (=main= =e356da7=); at the hand-off review 2026-11-13: G1, G5, G6, G9 and G10 applied, the obsolete flag carried from =implementor=
 
 * Purpose
 
@@ -39,6 +39,11 @@ had no cycle. Without that handshake it SHALL start no cycle and SHALL hand back
 - *THEN* no cycle is started and no task file is written
 - *AND* the plan phase agent hands back that it stopped
 
+*** Scenario: A missing handshake is an environment ask filed in the inbox
+- *WHEN* plan starts no cycle because the prior handshake is missing or lacks a field
+- *THEN* an =environment= ask in the change's inbox, its id naming the change, asks the user to close the prior cycle properly or abandon it
+- *AND* the hand-back names the ask
+
 *** Scenario: An empty field is not a missing one
 - *WHEN* the prior handshake holds every required field and some of them are empty lists
 - *THEN* plan starts the cycle from it
@@ -68,6 +73,10 @@ of the batch every task an open ask blocks.
 - *WHEN* the handshake flags an open task as possibly obsolete
 - *THEN* the task file gains a stanza saying so that names the ask the user decides it by
 
+*** Scenario: A task flagged obsolete is not batched while its ask is open
+- *WHEN* an open task's file carries an obsolescence stanza whose ask is unanswered
+- *THEN* the task is not in the batch
+
 *** Scenario: Each refined task leaves one journal line
 - *WHEN* plan changes an open task's file to absorb its impact set
 - *THEN* the change's journal has one line against the task, saying whether the change was made in place or appended
@@ -77,6 +86,10 @@ of the batch every task an open ask blocks.
 - *THEN* a task file named as the candidate names it is drafted from the candidate's quoted words and evidence, where the candidate's placement puts it
 - *AND* the task file carries the candidate's provenance: its source, who found it and its class
 - *AND* it is marked on the main path when the candidate is marked critical
+
+*** Scenario: A task drafted from a meta-discovery names its label
+- *WHEN* plan drafts a task from one of the handshake's meta-discoveries
+- *THEN* the task file's provenance names the meta-discovery's label
 
 *** Scenario: A follow-up's task starts with the reproduction
 - *WHEN* plan drafts a task from a follow-up candidate of a defect
@@ -164,25 +177,15 @@ from the hardening list before the user chooses to harden.
 :PROPERTIES:
 :GOAL:     none stated
 :END:
-The plan phase SHALL draft no task while an entry of the design's open questions has no decision,
-and SHALL put each such entry to the user as a =decision= ask blocking plan. It SHALL draft the
+The plan phase SHALL open no cycle and draft no task while the change's design round has not
+finished, and SHALL write no answer into the design; it SHALL hand back =failed= naming the round. It SHALL draft the
 change's pending scenarios into tasks one seam at a time, and each task SHALL cite the seams it
 implements, the scenarios it makes pass and the pending tests it promotes.
 
-*** Scenario: Open questions in the design hold the plan
-- *WHEN* the design's open questions have an entry with no decision
-- *THEN* no task is drafted
-- *AND* each such entry is a =decision= ask that blocks plan and refers to the design's open questions, all of them written in one commit in the home
-- *AND* the plan phase agent hands back that it stopped, naming the asks, that they block plan, and the change's inbox
-
-*** Scenario: An open question with an ask file is not written twice
-- *WHEN* an open question of the design already has an open ask file
-- *THEN* plan writes no second ask for it
-
-*** Scenario: Answers to the design's questions are written before drafting
-- *WHEN* plan is resumed with the answers to the design's open questions
-- *THEN* each answer is written in place into the design's decisions and into the spec it settles, and its ask is applied
-- *AND* only then is any task drafted
+*** Scenario: Plan on an unfinished design round opens no cycle
+- *WHEN* plan runs and the change's design has no Seams section, a scenario of the change is uncited, or an open question has no Decision
+- *THEN* plan opens no cycle, drafts no task and writes no answer into the design
+- *AND* it hands back =failed=, naming the change's unfinished design round
 
 *** Scenario: Pending scenarios are drafted one task per seam
 - *WHEN* plan drafts tasks from the change's pending scenarios
@@ -288,6 +291,16 @@ record correction.
 - *WHEN* a finding of the premise check blocks a task of the batch and raises a decision only the user can make
 - *THEN* a =decision= ask file is written for it
 - *AND* the task it blocks is not in the batch while the ask is open
+
+*** Scenario: A decision ask that blocks a batch task stops plan after the rest is drafted
+- *WHEN* an ask raised during plan blocks a task of this batch and is unanswered
+- *THEN* plan finishes the rest of the batch
+- *AND* hands back that it stopped, naming the ask
+
+*** Scenario: Resumed with the user absent, plan leaves the blocked task out and passes its gate
+- *WHEN* plan is resumed with word that the user is absent, its batch task still blocked by the ask
+- *THEN* the task stays out of the batch, blocked on the ask
+- *AND* plan passes its gate without the answer
 
 *** Scenario: A stale seam row is a record correction, not an ask
 - *WHEN* the premise check finds a seam row stale while the code or the test tree is right
@@ -450,27 +463,12 @@ hand the dispatcher one line. It SHALL write no code and spawn no Implementor.
 
 * Gaps
 
-** Gap: How the question about a missing handshake reaches the user
-:PROPERTIES:
-:REQUIREMENT: A cycle starts only from the prior cycle's handshake
-:END:
-The reference skill calls it an =environment= ask, asked at once through the hand-back since there
-is no state to hold it; the =asks= spec makes every question a file. Which form it takes is not
-settled.
-
 ** Gap: Which correction a wrong premise or a blocking premise finding takes
 :PROPERTIES:
 :REQUIREMENT: Tasks not drafted from the design are checked against HEAD before the batch is fixed
 :END:
 A task with a wrong premise is rewritten or split, and a blocking finding against a batch task
 is made a new task of the batch or folded into the task it blocks; no condition chooses between them.
-
-** Gap: Whether plan stops on a decision ask that blocks a batch task
-:PROPERTIES:
-:REQUIREMENT: Tasks not drafted from the design are checked against HEAD before the batch is fixed
-:END:
-The reference skill stops plan for such an ask only when the user is present; =execute= leaves
-presence to the dispatcher. What plan does is not settled.
 
 ** Gap: A main-path task in every batch, against a cycle after harden
 :PROPERTIES:
@@ -479,22 +477,3 @@ presence to the dispatcher. What plan does is not settled.
 Every batch needs a task on the main path unless the prior integrate deferred, yet every task
 drafted after =harden= is off the main path, and nothing says where integrate records a deferral.
 
-** Gap: What plan does when the design round has not finished
-:PROPERTIES:
-:REQUIREMENT: The batch is drafted from a design whose round has finished
-:END:
-With no Seams table, or an uncited scenario of the change, the round is to run before the cycle;
-what plan does then, and whether it has already started the cycle, is not stated.
-
-** Gap: What shows that plan read the handshake's design diff, meta-discoveries and journal
-:PROPERTIES:
-:REQUIREMENT: What the prior cycle learned is in the batch's task files
-:END:
-Plan is to weigh these when it drafts the batch; no evidence of that reading is fixed.
-
-** Gap: Whether plan edits the design beyond a record correction
-:PROPERTIES:
-:REQUIREMENT: The batch is drafted from a design whose round has finished
-:END:
-Plan's one edit to the design is said to be a record correction, yet plan writes the answers to the
-design's open questions into its decisions.
