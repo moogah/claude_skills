@@ -1,6 +1,6 @@
 #+TITLE: record
 #+OPTIONS: ^:{} -:nil
-#+STATUS: draft 2026-11-13, extracted from the reference skill (=main= =e356da7=); the boundary gap filled 2026-11-13 (the state file's shape); one gap set aside (whether test runs are tracked); extended 2026-11-13 to the record's full scope (the gates, the handshake, the counts, the cycle's directory at close, the agents, recovery), two gaps opened; at the hand-off review 2026-11-13: both gaps filled; the finding's entry added from a boundary note; accepted 2026-11-13 by the user at the hand-off review; amended 2026-11-13 after acceptance (a journal entry's writer; what the design round leaves in the change's directory), from the architect and design-round review
+#+STATUS: draft 2026-11-13, extracted from the reference skill (=main= =e356da7=); the boundary gap filled 2026-11-13 (the state file's shape); one gap set aside (whether test runs are tracked); extended 2026-11-13 to the record's full scope (the gates, the handshake, the counts, the cycle's directory at close, the agents, recovery), two gaps opened; at the hand-off review 2026-11-13: both gaps filled; the finding's entry added from a boundary note; accepted 2026-11-13 by the user at the hand-off review; amended 2026-11-13 after acceptance (a journal entry's writer; what the design round leaves in the change's directory), from the architect and design-round review; amended 2026-11-14 after acceptance (the merge commit a task under review names; a finding routed to an ask stays pending; a re-run's brief name; two scenarios marked not test-worthy), from the evals' build-out (=research/skill-evals/overnight/plan.org= § Decided with the user, 2026-11-14 morning)
 
 * Purpose
 
@@ -166,7 +166,7 @@ and, for a task whose source is another task, where it came from.
 
 *** Scenario: A task awaits review only with its merge commit recorded
 - *WHEN* a task's status is =needs_review=
-- *THEN* its entry's =merge_commit= names the merge commit of the task
+- *THEN* its entry's =merge_commit= names the commit the Reviewer reads: the merge commit of the task, or, when a regression it caused was fixed, the code root's commit after the fix
 
 *** Scenario: A send-back is counted on the task
 - *WHEN* a task is sent back from =needs_review= or =reviewed= to =in_progress=
@@ -203,12 +203,16 @@ are the =reviewer= spec's.
 - *THEN* the change's state has one entry for it, with its =finding_id= and the =path= of its file
 - *AND* its routing, =decoration=, is empty until it is routed, then =blocking= or =hardening=
 - *AND* its =resolution= is =pending= until it is resolved
+- *AND* a finding routed to a =decision= ask stays =pending= until the ask is applied, the ask's =:REF:= naming the finding
 
 *** Scenario: A finding's resolution is one of a fixed list
 - *WHEN* a finding is resolved
 - *THEN* its =resolution= is one of =inline-fixed=, =design-amended=, =candidate-task-<name>=, =followup-task-<task-name>=, =reverted=, =accepted-with-note= or =hardening-list=
 
 *** Scenario: A finding with no kind or no evidence is refused
+:PROPERTIES:
+:TEST: none: no step of a role writes a finding without a kind or evidence on its own, so no fixture makes the WHEN happen; the state tool's refusal is its own test
+:END:
 - *WHEN* a finding is recorded without a kind of =issue= or =question=, or with no evidence
 - *THEN* the record refuses it
 - *AND* no entry is written
@@ -399,7 +403,7 @@ every artifact the cycle's steps wrote there under the names this requirement gi
 
 *** Scenario: The change's directory holds what the design round leaves before any cycle
 - *WHEN* the design round has run
-- *THEN* the change's directory holds the Architect's brief, =briefs/design-round.md=, and for each re-run =briefs/design-round-<seam-id>.md=
+- *THEN* the change's directory holds the Architect's brief, =briefs/design-round.md=, and for each re-run =briefs/design-round-<seam-id>.md=, the seam id's slash written as a dash (=briefs/design-round-seam-options.md= for =seam/options=)
 - *AND* each finding the round reported, =findings/<finding-id>.md=, outside any cycle
 
 ** Requirement: The record is committed in the home at each phase's close
@@ -450,6 +454,9 @@ the next cycle starts, under the cycle it worked in.
 - *AND* the next cycle's state takes it in
 
 *** Scenario: A read-only helper is not recorded
+:PROPERTIES:
+:TEST: none: no fixture makes an agent spawn a read-only helper; whether one is spawned is the agent's own choice
+:END:
 - *WHEN* a read-only helper, such as a web fetch, is spawned
 - *THEN* the state gains no entry for it
 
