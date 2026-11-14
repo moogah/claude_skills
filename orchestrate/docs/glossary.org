@@ -314,11 +314,12 @@ A fix the phase agent makes and commits itself in the code root, without an Impl
 - Specs :: execute
 
 * follow-up candidate
-A task the phase agent proposes, but does not write, for the next plan: a fix that is not simple,
-recorded with the source's own words for the plan agent to turn into a task file.
+A task the phase agent proposes, but does not write, for the next plan: a fix that is not simple, the
+work an answer on the main path needs, or concrete work a pattern or a prior names; recorded with the
+source's own words for the plan agent to turn into a task file.
 - Example :: "a follow-up candidate is written for the next plan, marked critical"
 - Avoid :: follow-up task (main uses it for both the candidate and the task the plan writes from it), candidate task, task file
-- Specs :: execute
+- Specs :: execute, integrate, plan
 
 * hardening list
 The change's one list of reasoned defects and robustness work off the main path, shown to the user
@@ -843,3 +844,17 @@ rewrite the goals and run to a new MVP; or end the change as it is.
 - Example :: "on =stop= or =rethink= it SHALL open no cycle"
 - Avoid :: continue, abandon (goal-drift options); this stop is a change's, not the task state stopped
 - Specs :: plan
+
+* PM
+The project manager: the role agent that, at each integrate, reads the cycle's counts and signals and
+writes the PM digest; it reads no code, recommends, and decides nothing.
+- Example :: "*WHEN* the PM's goal-drift query fires"
+- Avoid :: project manager agent, manager, PM agent pass (main's name for one of its halves); project manager in full only once
+- Specs :: integrate, project-manager
+
+* closing summary
+The =* Status= entry written with a change's =done= status line: what the change does per goal, the
+hardening entries worked and left, the open tasks left, and the corrections made to specs and prose.
+- Example :: "with the closing summary under its =* Status="
+- Avoid :: final report, release notes, summary alone
+- Specs :: integrate
