@@ -1,6 +1,6 @@
 #+TITLE: asks
 #+OPTIONS: ^:{} -:nil
-#+STATUS: draft 2026-11-13, extracted from the reference skill (=main= =e356da7=); first limited to the ask file (where it lives, how it is committed; its one inferred scenario reviewed by the user 2026-11-13); extended 2026-11-13 to the asks' full scope (the kinds, the blocking rule, the sections, answering and applying, the sync points, the index), two gaps opened; at the hand-off review 2026-11-13: both filled by the cross-spec decisions G1 and G3, and G11 applied; accepted 2026-11-13 by the user at the hand-off review; amended 2026-11-14 after acceptance (a design-round question's If unanswered; a decision settled in execute left for integrate; an ask's status once answered; an ask settled with no cycle open), from the evals' build-out (=research/skill-evals/overnight/plan.org= § Decided with the user, 2026-11-14 morning)
+#+STATUS: draft 2026-11-13, extracted from the reference skill (=main= =e356da7=); first limited to the ask file (where it lives, how it is committed; its one inferred scenario reviewed by the user 2026-11-13); extended 2026-11-13 to the asks' full scope (the kinds, the blocking rule, the sections, answering and applying, the sync points, the index), two gaps opened; at the hand-off review 2026-11-13: both filled by the cross-spec decisions G1 and G3, and G11 applied; accepted 2026-11-13 by the user at the hand-off review; amended 2026-11-14 after acceptance (a design-round question's If unanswered; a decision settled in execute left for integrate; an ask's status once answered; an ask settled with no cycle open), from the evals' build-out (=research/skill-evals/overnight/plan.org= § Decided with the user, 2026-11-14 morning); amended 2026-11-14 after acceptance (a label with words that narrow it is read back), from the user's decisions on round 2 of the evals (=research/skill-evals/round-2/plan.org= § Log › Decisions needed)
 
 * Purpose
 
@@ -329,13 +329,13 @@ nothing more, and SHALL release the tasks the ask blocked.
 - *AND* a sync point that finds such an answer under an ask still marked =open= handles it as answered
 
 *** Scenario: An answer naming an option's label is applied without a readback
-- *WHEN* an ask's Answer names one of its options' labels, matched regardless of case, spacing and trailing punctuation
+- *WHEN* an ask's Answer names one of its options' labels and nothing more, matched regardless of case, spacing and trailing punctuation
 - *THEN* it is applied at the next sync point with no readback
 - *AND* the ask's status becomes =applied=, with =:APPLIED_VIA:= naming the edit, task or commit that applied it
 - *AND* its file moves to the asks directory of its cycle
 
 *** Scenario: Any other answer is read back before it is applied
-- *WHEN* an ask's Answer is free text, close to a label but not one, written under another heading, or states a rule
+- *WHEN* an ask's Answer is free text, close to a label but not one, a label with words that narrow or add to it (a =harden= answer naming which entries), written under another heading, or states a rule
 - *THEN* a =* Readback= restates it as a consequence, in at most 600 characters
 - *AND* the ask stays =open= until the user says yes, or corrects it, under the readback or in chat
 
