@@ -1,6 +1,6 @@
 #+TITLE: inline-path
 #+OPTIONS: ^:{} -:nil
-#+STATUS: draft 2026-11-13, extracted from the reference skill (=main= =e356da7=); at the hand-off review 2026-11-13: G7, G8 and G9 applied; the task file's source and the open cycle filled
+#+STATUS: draft 2026-11-13, extracted from the reference skill (=main= =e356da7=); at the hand-off review 2026-11-13: G7, G8 and G9 applied; the task file's source, the open cycle and the commit subject filled
 
 * Purpose
 
@@ -66,6 +66,10 @@ done with no review step between, and the code and the task file SHALL be commit
 *** Scenario: A finished inline path hands back done with its commit
 - *WHEN* the inline path commits its edit
 - *THEN* the dispatcher receives one line of at most 200 characters, =inline <task>: done <sha>; <task file>=, the path relative to the home
+
+*** Scenario: The inline path's commit has a subject of its own
+- *WHEN* the inline path commits its edit
+- *THEN* the commit's subject is =Inline task <task>: <description>=
 
 *** Scenario: A task from a discovery keeps where it came from
 - *WHEN* the inline path's task came from a discovery
@@ -213,13 +217,6 @@ SHALL hand back that it stopped, naming the ask; it SHALL never put the question
 - *THEN* its line is =inline <task>: stopped, ask <id> blocks commit; <ask file>=, the path relative to the home
 
 * Gaps
-
-** Gap: What the inline path's commit subject is
-:PROPERTIES:
-:REQUIREMENT: A small change is made by one phase agent, without a worktree, an Implementor or a Reviewer
-:END:
-The commit takes "the standard task-name commit message", which no part of the reference skill
-defines.
 
 ** Gap: What becomes of an edit the triage refuses before any edit
 :PROPERTIES:
