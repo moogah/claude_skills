@@ -1,6 +1,6 @@
 #+TITLE: inline-path
 #+OPTIONS: ^:{} -:nil
-#+STATUS: draft 2026-11-13, extracted from the reference skill (=main= =e356da7=); at the hand-off review 2026-11-13: G7, G8 and G9 applied; the task file's source, the open cycle, the commit subject and the triage's refusal filled; no gap open; accepted 2026-11-13 by the user at the hand-off review; amended 2026-11-14 after acceptance (one commit when the home is the code root; a batch task the triage refuses; a refused request that also questions the design; three scenarios marked not test-worthy), from the evals' build-out (=research/skill-evals/overnight/plan.org= § Decided with the user, 2026-11-14 morning); amended 2026-11-14 after acceptance (a defect the design already plans is not exposed), from the user's decisions on round 2 of the evals (=research/skill-evals/round-2/plan.org= § Log › Decisions needed)
+#+STATUS: draft 2026-11-13, extracted from the reference skill (=main= =e356da7=); at the hand-off review 2026-11-13: G7, G8 and G9 applied; the task file's source, the open cycle, the commit subject and the triage's refusal filled; no gap open; accepted 2026-11-13 by the user at the hand-off review; amended 2026-11-14 after acceptance (one commit when the home is the code root; a batch task the triage refuses; a refused request that also questions the design; three scenarios marked not test-worthy), from the evals' build-out (=research/skill-evals/overnight/plan.org= § Decided with the user, 2026-11-14 morning); amended 2026-11-14 after acceptance (a defect the design already plans is not exposed), from the user's decisions on round 2 of the evals (=research/skill-evals/round-2/plan.org= § Log › Decisions needed); amended 2026-11-14 after acceptance (F2-7: adopted from the state layer, =research/skill-evals/state-layer/plan.org=)
 
 * Purpose
 
@@ -46,7 +46,7 @@ done with no review step between, and the code and the task file SHALL be commit
 
 *** Scenario: While a cycle is open, the inline task is recorded in it as done
 - *WHEN* the inline path commits its edit while a cycle of the change is open
-- *THEN* the cycle's record holds the task as done, outside the cycle's batch, and the cycle's counts include it
+- *THEN* the task's file says it is done, and the cycle's status shows it done, outside the cycle's batch
 - *AND* the edit was made while no run after a merge was running in the code root
 
 *** Scenario: The code and the task file are committed together

@@ -1,6 +1,6 @@
 #+TITLE: plan
 #+OPTIONS: ^:{} -:nil
-#+STATUS: draft 2026-11-13, extracted from the reference skill (=main= =e356da7=); at the hand-off review 2026-11-13: G1, G5, G6, G9 and G10 applied, the obsolete flag carried from =implementor=; the premise corrections filled (a free choice); the main-path rule filled; no gap open; accepted 2026-11-13 by the user at the hand-off review; amended 2026-11-14 after acceptance (an off-batch hardening finding is listed at once), from the evals' build-out (=research/skill-evals/overnight/plan.org= § Decided with the user, 2026-11-14 morning); amended 2026-11-14 after acceptance (the PM digest retired into the handshake, =research/skill-evals/state-layer/plan.org= F4-1)
+#+STATUS: draft 2026-11-13, extracted from the reference skill (=main= =e356da7=); at the hand-off review 2026-11-13: G1, G5, G6, G9 and G10 applied, the obsolete flag carried from =implementor=; the premise corrections filled (a free choice); the main-path rule filled; no gap open; accepted 2026-11-13 by the user at the hand-off review; amended 2026-11-14 after acceptance (an off-batch hardening finding is listed at once), from the evals' build-out (=research/skill-evals/overnight/plan.org= § Decided with the user, 2026-11-14 morning); amended 2026-11-14 after acceptance (the PM digest retired into the handshake, =research/skill-evals/state-layer/plan.org= F4-1); amended 2026-11-14 after acceptance (F1-3, F3-8: adopted from the state layer, =research/skill-evals/state-layer/plan.org=)
 
 * Purpose
 
@@ -115,12 +115,18 @@ of the batch every task an open ask blocks.
 The plan phase SHALL start no cycle while the change's MVP decision is open, and SHALL apply an
 answer waiting in it before it opens a cycle: on =stop= or =rethink= it SHALL open no cycle; on
 =harden= it SHALL start the cycle and draft tasks from the hardening list. No task SHALL be drafted
-from the hardening list before the user chooses to harden.
+from the hardening list before the user chooses to harden. Once the main path has ended and the intent
+is not yet at =mvp= or =done=, plan SHALL start no cycle: integrate's MVP decision comes first.
 
 *** Scenario: An open MVP decision starts no cycle
 - *WHEN* plan runs while the change's MVP decision ask is open
 - *THEN* no cycle is started and no task file is written
 - *AND* the plan phase agent hands back that it stopped, naming the ask, that it blocks plan, and the ask file's path
+
+*** Scenario: A main path that has ended starts no cycle before the MVP decision
+- *WHEN* plan runs when the change has a task on its main path, none of them is open, and the intent's status line says neither =mvp= nor =done=
+- *THEN* no cycle is started and no task file is written
+- *AND* the plan phase agent hands back that it stopped, naming integrate's MVP decision as what comes next
 
 *** Scenario: An MVP answer is applied before a cycle is opened
 - *WHEN* the change's MVP decision has an answer that integrate did not apply
@@ -412,7 +418,7 @@ default.
 *** Scenario: The premise check runs at the Architect's role default
 - *WHEN* plan spawns the Architect for the premise check
 - *THEN* it runs at the Architect's role default for the premise check
-- *AND* the change's record holds the agent, its setting and that it ran the premise check
+- *AND* its spawn's description names the premise check's role and the cycle
 
 ** Requirement: A goal-drift recommendation is signed off before plan passes
 :PROPERTIES:

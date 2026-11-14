@@ -1,6 +1,6 @@
 #+TITLE: dispatcher
 #+OPTIONS: ^:{} -:nil
-#+STATUS: draft 2026-11-13, extracted from the reference skill (=main= =e356da7=); at the hand-off review 2026-11-13: G4, G6 and G10 applied, the design round's asks no longer go to plan (G1, G5); the recommendation's form, the resume's order, the call's commit, the missing overlay and the stopped change filled; no gap open; accepted 2026-11-13 by the user at the hand-off review; amended 2026-11-13 after acceptance (a second opening for a change in a second repository; the old change's revision after a split), from =opening='s review; the inline brief's request, from =inline-path='s review; amended 2026-11-14 after acceptance (a sitting may read the files of the asks it puts before its first call; a new cycle's plan brief; a research hand-off as an opening's source), from the evals' build-out (=research/skill-evals/overnight/plan.org= § Decided with the user, 2026-11-14 morning)
+#+STATUS: draft 2026-11-13, extracted from the reference skill (=main= =e356da7=); at the hand-off review 2026-11-13: G4, G6 and G10 applied, the design round's asks no longer go to plan (G1, G5); the recommendation's form, the resume's order, the call's commit, the missing overlay and the stopped change filled; no gap open; accepted 2026-11-13 by the user at the hand-off review; amended 2026-11-13 after acceptance (a second opening for a change in a second repository; the old change's revision after a split), from =opening='s review; the inline brief's request, from =inline-path='s review; amended 2026-11-14 after acceptance (a sitting may read the files of the asks it puts before its first call; a new cycle's plan brief; a research hand-off as an opening's source), from the evals' build-out (=research/skill-evals/overnight/plan.org= § Decided with the user, 2026-11-14 morning); amended 2026-11-14 after acceptance (F1-3: adopted from the state layer, =research/skill-evals/state-layer/plan.org=)
 
 * Purpose
 
@@ -130,8 +130,8 @@ one is open, and SHALL leave a waiting answer to the phase agent it spawns or re
 :END:
 The dispatcher SHALL give each phase agent the same short brief, naming its phase, change, cycle
 and home and carrying the phase agent's standing instructions, SHALL spawn it at its phase's role
-default, passing both model and effort, and SHALL record its setting in the change's record at its
-first hand-back.
+default, passing both model and effort, and SHALL name its role and its cycle, or its change before
+any cycle, in the spawn's description; the spawn is the record of the agent and its setting.
 
 *** Scenario: The brief names the phase, the change, the cycle and the home
 - *WHEN* the dispatcher spawns a phase agent
@@ -140,7 +140,7 @@ first hand-back.
 
 *** Scenario: The brief carries the phase agent's standing instructions
 - *WHEN* the dispatcher spawns a phase agent
-- *THEN* its brief tells it to spawn every agent at the setting its phase names, passing model and effort, and to record each one
+- *THEN* its brief tells it to spawn every agent at the setting its phase names, passing model and effort, and to name each spawn's role and its task or cycle in its description
 - *AND* that it cannot ask the user: an ask is a file, and it hands back that it stopped, naming the ask, after finishing what does not wait on it
 - *AND* that it hands back once, in one line, never a report
 - *AND* that asked to hand over, it stops at a clean point and writes a handover
@@ -153,8 +153,8 @@ first hand-back.
 
 *** Scenario: The dispatcher records a phase agent's setting at its first hand-back
 - *WHEN* a phase agent hands back for the first time
-- *THEN* the change's record holds the agent, its phase and the setting it was spawned at
-- *AND* when that agent is resumed and hands back again, no second entry is made for it
+- *THEN* its spawn's description named its phase and its cycle, or its change before any cycle, and the spawn passed the setting it runs at
+- *AND* nothing more is written for it in the change's record, at its first hand-back or when it is resumed and hands back again
 
 ** Requirement: Each hand-back is relayed to the user and acted on by its outcome
 :PROPERTIES:
