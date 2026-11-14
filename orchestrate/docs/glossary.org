@@ -872,3 +872,34 @@ kept with its provenance until a later change takes it up.
 - Example :: "A task outside the change is placed in the cross-change backlog"
 - Avoid :: =.tasks/= in prose, backlog alone, ticket, externalised store
 - Specs :: opening, plan, project-manager
+
+* inline path
+The phase, outside any cycle's batch (between cycles or while one is open), in which one phase agent
+writes a task file from the user's request, makes the small change in the code root, verifies and
+reviews it itself and commits it, with no worktree, Implementor or Reviewer, bailing out when it grows.
+- Example :: "No Implementor or Reviewer is spawned"
+- Avoid :: inline fix (execute's), inline rule, inline task, trivial path, fast path
+- Specs :: inline-path
+
+* triage
+The inline path's test of whether an edit is small enough for it: one file, no seam's code, no tests
+that need state set up, and a verification whose output is predictable; in doubt, the edit goes to a
+batch. Execute's simple fix uses the same test.
+- Example :: "A request the triage refuses is a bailout with nothing to revert"
+- Avoid :: eligibility, sizing
+- Specs :: inline-path, execute
+
+* bailout
+The inline path's stop when the triage refuses the edit or the edit outgrows it: the code root put
+back as it was, the task file left open with the reason, and one line handed back.
+- Example :: "A bailout leaves the code root as it was"
+- Avoid :: abort, fallback, escalation, revert alone
+- Specs :: inline-path
+
+* design in question
+A seam row the merged code or an edit contradicts by doing something else, with no test pinning the
+code, so that only the user's choice settles it; it becomes a =decision= ask, never a record
+correction.
+- Example :: "A design in question is a decision ask that holds the commit"
+- Avoid :: design drift (code that drifted from a right design), spec signal (the Reviewer's finding of it)
+- Specs :: inline-path, integrate
