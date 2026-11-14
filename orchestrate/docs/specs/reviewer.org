@@ -1,6 +1,6 @@
 #+TITLE: reviewer
 #+OPTIONS: ^:{} -:nil
-#+STATUS: draft 2026-11-13, extracted from the reference skill (=main= =e356da7=); not yet reviewed; at the hand-off review 2026-11-13: G8 and G11 applied, its role default added
+#+STATUS: draft 2026-11-13, extracted from the reference skill (=main= =e356da7=); not yet reviewed; at the hand-off review 2026-11-13: G8 and G11 applied, its role default added; the recommended actions filled
 
 * Purpose
 
@@ -120,6 +120,10 @@ carry a stopgap. The reporter SHALL NOT route its own finding.
 - *AND* at least one location, a file and a line
 - *AND* its evidence
 - *AND* a recommended action: a kind, and one line saying what should happen
+
+*** Scenario: A recommended action is an inline fix, a rework or the user's
+- *WHEN* a finding's recommended action is written
+- *THEN* its kind is =inline-fix=, =rework= or =route-to-user=
 
 *** Scenario: Every finding says what it blocks
 - *WHEN* a finding is written, in a review file or in a file of its own
@@ -284,14 +288,6 @@ The Reviewer SHALL run at its role default unless a task override raises it.
 - *AND* the whole-change Reviewer at =opus=, =xhigh=
 
 * Gaps
-
-** Gap: Which recommended actions a finding may name
-:PROPERTIES:
-:REQUIREMENT: A finding carries its labels, its place, its evidence and a recommended action
-:END:
-The reference skill's set (=inline-fix=, =follow-up-task=, =re-implement=, =route-to-user=) predates
-=execute='s accepted routes, under which a blocking finding is never a follow-up candidate and a
-fix may be a rework or a revert.
 
 ** Gap: Which direction a defect outside the change's work takes
 :PROPERTIES:

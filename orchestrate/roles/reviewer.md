@@ -127,7 +127,7 @@ clean_review: false      # true if no findings
   the reproduction that would settle it.>
 - blocks: <task <name> | merge | next-plan | done | nothing>   # what waits on it; every finding
 - recommended_action:
-  kind: inline-fix | follow-up-task | re-implement | route-to-user
+  kind: inline-fix | rework | route-to-user   # a fix made now is never a later task; a revert is the routing's, when a rework fails
   detail: <one-line — what specifically should happen>
   # Required when kind is route-to-user (templates/ask.md § What a finding must carry):
   about: <one sentence — what the feature, flag or rule is for, in product terms>
