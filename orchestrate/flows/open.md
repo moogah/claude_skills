@@ -57,9 +57,9 @@ First `coverage.py --root "$CODE_ROOT" --intent docs/changes/<change>/intent.org
 
 ## Hand-back
 
-`open <change>: <c> capabilities, <s> scenarios, <q> open questions; docs/changes/<change>/intent.org` · `open: failed, <why>`
+`open <change>: <c> capabilities, <s> scenarios, <q> open questions; <code-root-from-home>/docs/changes/<change>/intent.org` · `open: failed, <why>`
 
-The dispatcher relays the line, so the user has the intent's path, and spawns the design round for `<change>`.
+The path is relative to the home, like every hand-back's (`SKILL.md` § Hand-back lines). A revision hands back `revise <change>: <c> capabilities, <s> scenarios, <q> open questions; <code-root-from-home>/docs/changes/<change>/intent.org` in the same form. The dispatcher relays the line, so the user has the intent's path, and spawns the design round for `<change>`.
 
 ## What opening does not do
 

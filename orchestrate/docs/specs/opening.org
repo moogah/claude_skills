@@ -1,6 +1,6 @@
 #+TITLE: opening
 #+OPTIONS: ^:{} -:nil
-#+STATUS: draft 2026-11-13, extracted from the reference skill (=main= =e356da7=); not yet reviewed; nine gaps open
+#+STATUS: draft 2026-11-13, extracted from the reference skill (=main= =e356da7=); nine gaps opened; at the hand-off review 2026-11-13: G8 applied (the path's root, a revision's line)
 
 * Purpose
 
@@ -245,6 +245,14 @@ design and no task, and hand the dispatcher one line.
 - *WHEN* opening completes
 - *THEN* the dispatcher receives one line of at most 200 characters, =open <change>: <c> capabilities, <s> scenarios, <q> open questions; = followed by the intent's path
 
+*** Scenario: The hand-back's intent path is relative to the home
+- *WHEN* opening hands back that it completed
+- *THEN* the intent's path in the line is relative to the home, through the change's code root
+
+*** Scenario: A revision hands back a line of its own
+- *WHEN* opening revises a change in place
+- *THEN* the dispatcher receives one line of at most 200 characters, =revise <change>: <c> capabilities, <s> scenarios, <q> open questions; = followed by the intent's path relative to the home
+
 *** Scenario: The hand-back's counts are the intent's
 - *WHEN* opening hands back that it completed
 - *THEN* the line's capabilities are the number the intent's Capabilities names, its scenarios the change's scenarios, and its open questions the number of the intent's open questions
@@ -285,14 +293,6 @@ On =split= it SHALL open a new change that names the one it came from.
 - *AND* the new intent's Why names the change it came from
 
 * Gaps
-
-** Gap: Which root the hand-back's intent path is relative to
-:PROPERTIES:
-:REQUIREMENT: Opening ends in one commit in the code root and one line
-:END:
-The line ends in =docs/changes/<change>/intent.org=, a path in the code root, while every hand-back
-path is to be relative to the home; where the code root is not the home's root the two differ, and
-the user given the path may not find the file.
 
 ** Gap: Which repository takes a change when the home has several and the user names none
 :PROPERTIES:
@@ -335,9 +335,3 @@ every scenario the hand-off's spec edits added or changed.
 :END:
 The revision rewrites the Goals the =#+APPROVED:= line approved; whether the line is kept, removed or
 re-dated is not stated.
-
-** Gap: What a revision hands back
-:PROPERTIES:
-:REQUIREMENT: A change is revised in place, or split, from the user's answer
-:END:
-The hand-back forms name only an opening (=open <change>: …=) and its failure.
