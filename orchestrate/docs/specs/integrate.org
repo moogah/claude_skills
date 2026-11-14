@@ -1,6 +1,6 @@
 #+TITLE: integrate
 #+OPTIONS: ^:{} -:nil
-#+STATUS: draft 2026-11-13, extracted from the reference skill (=main= =e356da7=); at the hand-off review 2026-11-13: G4 and G7 applied, the hardening list's form and a prior's thought carried in, "conformance check" reworded "conformance"; the unpinned disagreement filled
+#+STATUS: draft 2026-11-13, extracted from the reference skill (=main= =e356da7=); at the hand-off review 2026-11-13: G4 and G7 applied, the hardening list's form and a prior's thought carried in, "conformance check" reworded "conformance"; the unpinned disagreement and the take-in regression filled
 
 * Purpose
 
@@ -171,6 +171,17 @@ that review is open.
 - *THEN* the branch is merged into the change's integration branch before the whole-change Reviewer is spawned
 - *AND* the test command is run once after that merge
 - *AND* the commit's subject is =Take in <branch>: <change>=
+
+*** Scenario: A regression from the take-in is fixed in the change when the goals settle it
+- *WHEN* the run after taking in the workspace integration branch shows a test that passed before it failing, and the change's goals settle what the code should do
+- *THEN* the phase agent journals its cause
+- *AND* the handshake carries a follow-up candidate for its fix, on the main path
+- *AND* the whole-change review waits for the cycle that makes the fix
+
+*** Scenario: A take-in regression the goals do not settle is a decision ask
+- *WHEN* the run after the take-in shows a regression, and the goals of the two changes do not settle which is right
+- *THEN* a =decision= ask names both branches and the run's output
+- *AND* no =environment= ask is filed for it
 
 *** Scenario: The digest and the routing count the whole-change review
 - *WHEN* a whole-change review runs in the cycle
@@ -468,15 +479,6 @@ each agent at its role default, and SHALL hand the dispatcher one line.
 - *THEN* the dispatcher receives one line naming the phase and the cycle, and when it stopped on an ask, the ask, what it blocks and the file's path
 
 * Gaps
-
-** Gap: A regression when the workspace integration branch is taken in
-:PROPERTIES:
-:REQUIREMENT: A cycle that merged code ends with a review of the whole change
-:END:
-The reference skill makes a test failure after taking in the workspace integration branch an
-=environment= ask naming both branches. The =execute= spec changed what a regression after a merge
-leads to (a cause found, a fix in the change, a =decision= ask only when the goals do not settle it)
-for execute only. What integrate does with one is open.
 
 ** Gap: The MVP decision in a cycle with no whole-change review
 :PROPERTIES:
