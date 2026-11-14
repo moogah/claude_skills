@@ -22,14 +22,14 @@ the dispatcher's (=dispatcher=); what a task blocked on an ask records is the re
 :PROPERTIES:
 :GOAL:     none stated
 :END:
-Every question the orchestrator needs the user to answer, whichever role raised it, SHALL be one org
-file, written when the question is raised, in any phase. The orchestrator SHALL write it; the role
-that raised the question SHALL NOT.
+Every question only the user can answer, whichever role raised it, SHALL be one org file, written
+when the question is raised, in any phase. The phase agent SHALL write it; the role that raised the
+question SHALL NOT.
 
 *** Scenario: A question for the user is one file, written when it is raised
 - *WHEN* any role raises a question only the user can answer
 - *THEN* one ask file holds it, written at once
-- *AND* the orchestrator writes it, not the role that raised it
+- *AND* the phase agent writes it, not the role that raised it
 
 ** Requirement: An ask file is known by its form
 :PROPERTIES:
@@ -64,7 +64,7 @@ the file's name. Its kind SHALL be one of a closed set.
 :GOAL:     none stated
 :END:
 An ask file's place SHALL follow from its id and its status alone, and SHALL be in the home (the
-repository that holds the orchestrator's files, not the change's worktree), under the change's
+repository that holds the process's files, not the change's worktree), under the change's
 directory: the change's inbox while the question is still open, and the asks directory of its cycle
 once it is settled.
 
@@ -132,7 +132,7 @@ never asked about.
 
 *** Scenario: The kind, not the role's routing, decides whether a finding is asked
 - *WHEN* a role routes a finding to the user
-- *THEN* the orchestrator chooses the ask's kind as it writes the file
+- *THEN* the phase agent chooses the ask's kind as it writes the file
 - *AND* the kind it chose, not the role's routing, decides whether the finding is put to the user
 
 ** Requirement: An ask stops the session only for work waiting now
@@ -180,7 +180,7 @@ dispatcher's to know (=dispatcher=), and the act of putting an ask is the dispat
 An ask file SHALL be written for the reader the project names (by default a technical product
 manager who has not watched the development), in product terms: a plain question, what the thing is
 for, what happened, two to four options each with what the user would notice, one recommendation,
-and what happens if it is left unanswered. The orchestrator SHALL write every section but the
+and what happens if it is left unanswered. The phase agent SHALL write every section but the
 answer.
 
 *** Scenario: An ask is written for the project's reader
@@ -271,7 +271,7 @@ answer.
 
 *** Scenario: A discussion is kept in the file, turn by turn
 - *WHEN* the ask is discussed, in the file or in chat
-- *THEN* its =* Discussion= has one =** <date> <who>= heading per turn, those held in chat appended by the orchestrator
+- *THEN* its =* Discussion= has one =** <date> <who>= heading per turn, those held in chat appended by the dispatcher
 - *AND* the discussion is kept as written
 
 ** Requirement: A finding is asked only when it carries what the file needs
@@ -280,7 +280,7 @@ answer.
 :END:
 A role that routes a finding to the user SHALL give in it what the thing is for, the finding's kind
 and evidence, and what it blocks. A finding without them SHALL NOT be asked as it stands: the
-orchestrator SHALL fill what reading can supply, and send back to the role what only redoing its
+phase agent SHALL fill what reading can supply, and send back to the role what only redoing its
 analysis can.
 
 *** Scenario: A finding routed to the user carries what it is for, its kind and evidence, and what it blocks
@@ -289,9 +289,9 @@ analysis can.
 - *AND* it gives its kind and its evidence
 - *AND* it says what it blocks, in the =blocks= field of the finding's form (the =reviewer= spec's): a task, a merge, the next plan, the change's done, or nothing
 
-*** Scenario: What reading can supply, the orchestrator fills
+*** Scenario: What reading can supply, the phase agent fills
 - *WHEN* a finding routed to the user lacks something that reading supplies (a help text, the document it cites)
-- *THEN* the orchestrator fills it and writes the ask
+- *THEN* the phase agent fills it and writes the ask
 
 *** Scenario: What only analysis can supply goes back to the role
 - *WHEN* a finding routed to the user lacks something only redoing the analysis supplies
@@ -343,7 +343,7 @@ nothing more, and SHALL release the tasks the ask blocked.
 
 *** Scenario: An answer is never applied by editing the code directly
 - *WHEN* applying an answer changes code
-- *THEN* the orchestrator does not edit the code itself to apply it
+- *THEN* the phase agent does not edit the code itself to apply it
 
 *** Scenario: Work off the main path that an answer asks for waits on the hardening list
 - *WHEN* applying a decision needs work off the change's main path
@@ -375,7 +375,7 @@ nothing more, and SHALL release the tasks the ask blocked.
 :PROPERTIES:
 :GOAL:     none stated
 :END:
-The orchestrator SHALL read the inbox at fixed sync points and handle any answered ask there before
+The dispatcher and each phase agent SHALL read the inbox at fixed sync points and handle any answered ask there before
 any other work, through a phase agent, never the dispatcher. An ask not yet settled when its cycle
 closes SHALL stay in the inbox for the next cycle.
 

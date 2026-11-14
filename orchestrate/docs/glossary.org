@@ -619,3 +619,34 @@ task's text bears out; it may raise or lower the Implementor and only raise the 
 - Example :: "*WHEN* an agent runs at a task override"
 - Avoid :: override alone, custom setting, agent block (its form in the task file), tier change
 - Specs :: record, plan, execute
+
+* readback
+The phase agent's restatement of an answer that is not one of the ask's options (free text, a near
+match, a rule) as the consequence it will have, written under the ask's =* Readback=, at most 600
+characters; applied only once the user says yes to it.
+- Example :: "a =* Readback= restates it as a consequence, in at most 600 characters"
+- Avoid :: confirmation (an ask kind), echo, summary
+- Specs :: asks
+
+* sync point
+One of the fixed moments at which the inbox is read for answers and an answered ask is handled
+before any other work: a session's or a phase agent's start, a phase boundary, a scheduled wake-up,
+the user's next message.
+- Example :: "*WHEN* a sync point is reached and an ask in the inbox has an answer"
+- Avoid :: checkpoint (a gate's Avoid), poll, check-in
+- Specs :: asks
+
+* MVP decision
+The one =decision= ask a change raises when its main path first works end to end: harden, rethink or
+stop, showing what the change does, how to try it, the hardening list, the open tasks off the main
+path and the record corrections; nothing more runs on the change until the user answers it.
+- Example :: "*WHEN* the MVP decision ask is open"
+- Avoid :: MVP alone (the working version, not the question), MVP gate, MVP ask, MVP stop, sign-off, release decision, acceptance
+- Specs :: asks, opening, plan, integrate
+
+* YAGNI check
+The test a feature, option, generalisation or question must pass to earn work: an intent goal needs
+it, or there is a demonstrated reason (it happened, a prior, the user asked, a measured cost).
+- Example :: "no option that fails the YAGNI check is recommended"
+- Avoid :: scope check, necessity test
+- Specs :: asks
