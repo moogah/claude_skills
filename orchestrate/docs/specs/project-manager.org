@@ -1,6 +1,6 @@
 #+TITLE: project-manager
 #+OPTIONS: ^:{} -:nil
-#+STATUS: draft 2026-11-13, extracted from the reference skill (=main= =e356da7=); eight gaps opened; at the hand-off review 2026-11-13: G8 applied, its role default added; the sections' order, the throughput rows the recommendation's values, goal drift's drainage, the queue, the candidates' rows and the failed prose pass filled; no gap open; accepted 2026-11-13 by the user at the hand-off review
+#+STATUS: draft 2026-11-13, extracted from the reference skill (=main= =e356da7=); eight gaps opened; at the hand-off review 2026-11-13: G8 applied, its role default added; the sections' order, the throughput rows the recommendation's values, goal drift's drainage, the queue, the candidates' rows and the failed prose pass filled; no gap open; accepted 2026-11-13 by the user at the hand-off review; amended 2026-11-14 after acceptance (a process ask is counted, not listed; every marked line is a signal), from the evals' build-out (=research/skill-evals/overnight/plan.org= § Decided with the user, 2026-11-14 morning)
 
 * Purpose
 
@@ -57,6 +57,7 @@ check.
 *** Scenario: The PM hands back one line of its signals and its digest's path
 - *WHEN* the PM's agent pass ends
 - *THEN* it hands back one line of at most 200 characters, =pm <cycle-id>: <s> signals (<w> ⚠), <q> candidate questions[, conformance run <id>]; <path>=, the path of the digest relative to the home
+- *AND* =<s>= counts every marked signal line of the digest, ⚠, ✓ and ◦, and =<w>= those marked ⚠
 
 *** Scenario: The digest opens with its change, cycle, time and history window
 - *WHEN* a PM digest is written
@@ -222,7 +223,7 @@ the user can read without the code; the PM SHALL write no ask file. The digest S
 settled without the user and what was recorded rather than asked.
 
 *** Scenario: Every open ask is listed with its file
-- *WHEN* an ask of the change is open
+- *WHEN* an ask of the change other than a =process= ask is open
 - *THEN* the digest's asks table has a row for it with its question, what it blocks, a recommendation and its file's path relative to the home
 
 *** Scenario: A task blocked on an ask re-surfaces that ask
