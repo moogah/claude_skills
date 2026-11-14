@@ -1,6 +1,6 @@
 #+TITLE: record
 #+OPTIONS: ^:{} -:nil
-#+STATUS: draft 2026-11-13, extracted from the reference skill (=main= =e356da7=); the boundary gap filled 2026-11-13 (the state file's shape); one gap set aside (whether test runs are tracked); extended 2026-11-13 to the record's full scope (the gates, the handshake, the counts, the cycle's directory at close, the agents, recovery), two gaps open; not yet reviewed
+#+STATUS: draft 2026-11-13, extracted from the reference skill (=main= =e356da7=); the boundary gap filled 2026-11-13 (the state file's shape); one gap set aside (whether test runs are tracked); extended 2026-11-13 to the record's full scope (the gates, the handshake, the counts, the cycle's directory at close, the agents, recovery), two gaps opened; under hand-off review 2026-11-13: the hand repair filled
 
 * Purpose
 
@@ -47,7 +47,7 @@ tool's commands, which refuse what does not fit its form.
 - *THEN* the change's state is the file =state.json= in the change's directory
 
 *** Scenario: No role edits the state file by hand
-- *WHEN* any role changes the change's state
+- *WHEN* any role changes a state file that is valid
 - *THEN* it does so through a state tool command
 - *AND* never by writing the file with an editor, a heredoc or a text filter
 
@@ -452,8 +452,9 @@ SHALL mean what this requirement states.
 :PROPERTIES:
 :GOAL:     none stated
 :END:
-When the state file is missing mid-cycle or is of an older form, the record SHALL be recovered from
-what the home holds, keeping everything it held, and no role SHALL write a new state in its place.
+When the state file is missing mid-cycle, is invalid or is of an older form, the record SHALL be
+recovered from what the home holds, keeping everything it held, and no role SHALL write a new state
+in its place.
 
 *** Scenario: A missing state file is restored from the cycle's directory
 - *WHEN* the state file is missing mid-cycle and the cycle's directory holds an archived state of that cycle
@@ -463,6 +464,12 @@ what the home holds, keeping everything it held, and no role SHALL write a new s
 - *WHEN* the state file is missing mid-cycle and no archived state of that cycle exists
 - *THEN* an =environment= ask asks the user whether to recover the cycle or abandon it
 - *AND* no new state is written meanwhile
+
+*** Scenario: An invalid state file is repaired by hand in the keys it names, and journaled
+- *WHEN* the state file fails validation (it was written by hand)
+- *THEN* only the keys validation lists are fixed by hand
+- *AND* the change's journal has a =deviation= entry naming the keys fixed
+- *AND* every later change to the state goes through the state tool
 
 *** Scenario: A state file of an older form is converted, keeping all it held
 - *WHEN* the state file is of an older form
@@ -495,13 +502,6 @@ aside by the user, to be decided later: "We'll decide to track test runs in the 
 
 The gap this draft had first, "Which form of the record is its boundary", was filled by the user
 2026-11-13: "The state file's shape is the boundary" (the requirement of that name).
-
-** Gap: How a state file written by hand is repaired
-:PROPERTIES:
-:REQUIREMENT: The change's state is written only through the state tool
-:END:
-The reference skill has an invalid state file fixed by hand, and also says no role ever writes the
-state file by hand; it does not say which holds when the file is already wrong.
 
 ** Gap: What an abandoned cycle leaves in the record
 :PROPERTIES:
