@@ -1,6 +1,6 @@
 #+TITLE: inline-path
 #+OPTIONS: ^:{} -:nil
-#+STATUS: draft 2026-11-13, extracted from the reference skill (=main= =e356da7=); inferred statements and gaps not yet reviewed
+#+STATUS: draft 2026-11-13, extracted from the reference skill (=main= =e356da7=); at the hand-off review 2026-11-13: G7, G8 and G9 applied
 
 * Purpose
 
@@ -43,6 +43,19 @@ done with no review step between, and the code and the task file SHALL be commit
 - *WHEN* the inline path commits
 - *THEN* the code is committed in the code root and the task file in the home
 - *AND* when the home and the code root are one repository, both are in one commit
+
+*** Scenario: The verification run's output is kept beside the task
+- *WHEN* the inline path runs its verification
+- *THEN* the run's output is kept in a file in the change's directory, named for the task
+- *AND* the commit's message names the command that was run
+
+*** Scenario: What the edit exposed is answered in the task file
+- *WHEN* the inline path commits
+- *THEN* its task file holds one line saying what was checked for what the edit exposed and what was found, "nothing" included
+
+*** Scenario: A finished inline path hands back done with its commit
+- *WHEN* the inline path commits its edit
+- *THEN* the dispatcher receives one line of at most 200 characters, =inline <task>: done <sha>; <task file>=, the path relative to the home
 
 *** Scenario: A task from a discovery keeps where it came from
 - *WHEN* the inline path's task came from a discovery
@@ -103,6 +116,10 @@ one line naming the task and why.
 *** Scenario: An edit that reaches a seam's code bails out
 - *WHEN* the edit turns out to touch a seam's code
 - *THEN* the inline path bails out
+
+*** Scenario: An edit that changes a seam row bails out
+- *WHEN* the edit would change a seam row of the change's design, its statement or its owning symbols
+- *THEN* the inline path bails out, and the row is left as it is
 
 *** Scenario: A verification run that fails and is not trivially fixable bails out
 - *WHEN* the run that verifies the edit fails in a way that is not trivially fixable
@@ -181,6 +198,10 @@ SHALL hand back that it stopped, naming the ask; it SHALL never put the question
 - *AND* the ask blocks the inline path's commit
 - *AND* the phase agent hands back that it stopped, naming the ask, and does not put the question to the user
 
+*** Scenario: Stopped on an ask, the inline path's line names it
+- *WHEN* the inline path stops on a =decision= ask
+- *THEN* its line is =inline <task>: stopped, ask <id> blocks commit; <ask file>=, the path relative to the home
+
 * Gaps
 
 ** Gap: Where the inline path's task and its request come from
@@ -198,40 +219,12 @@ task file.
 The path is for edits asked for between cycles, yet it also says what to record "if a cycle is
 open"; whether it runs then, and how its task then appears in the change's record, is not settled.
 
-** Gap: What the inline path hands back when it finishes
-:PROPERTIES:
-:REQUIREMENT: A small change is made by one phase agent, without a worktree, an Implementor or a Reviewer
-:END:
-Only the bailout has a hand-back line; a finished edit, and a stop on an ask with no cycle open,
-have none.
-
 ** Gap: What the inline path's commit subject is
 :PROPERTIES:
 :REQUIREMENT: A small change is made by one phase agent, without a worktree, an Implementor or a Reviewer
 :END:
 The commit takes "the standard task-name commit message", which no part of the reference skill
 defines.
-
-** Gap: What evidence the verification run leaves
-:PROPERTIES:
-:REQUIREMENT: A small change is made by one phase agent, without a worktree, an Implementor or a Reviewer
-:END:
-The edit is verified by the project's test command, or a narrower one, before the commit; nothing
-says where its output is kept or what names it, so no check can see that it ran or passed.
-
-** Gap: Where the question about what the edit exposed is answered
-:PROPERTIES:
-:REQUIREMENT: What the edit exposed is routed, and the inline path writes no new task
-:END:
-The path asks of every edit whether it touched a seam or exposed a defect, and most answers are
-"no"; an answer of "no" leaves nothing a check can read.
-
-** Gap: Whether an edit that changes a seam row amends it or bails out
-:PROPERTIES:
-:REQUIREMENT: An edit that grows past its triage is bailed out and put back as a task
-:END:
-One rule amends a seam row the edit changes, in place, and commits it with the edit; the triage and
-the bailout rule send any edit of a seam's code to a batch task.
 
 ** Gap: What becomes of an edit the triage refuses before any edit
 :PROPERTIES:
