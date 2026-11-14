@@ -27,9 +27,7 @@ body { margin: 0; background: var(--bg); color: var(--ink); font: 15px/1.5 var(-
 header { padding: 28px 24px 12px; max-width: 1280px; margin: 0 auto; }
 .crumb { color: var(--muted); font-size: 13px; }
 h1 { font-size: 26px; margin: 4px 0 6px; }
-.purpose { color: var(--muted); max-width: 78ch; margin: 0; }
-.purpose button, .link { background: none; border: 0; color: var(--accent); cursor: pointer; padding: 0; font: inherit; }
-.meta { color: var(--faint); font: 12px var(--mono); margin-top: 8px; overflow-wrap: anywhere; }
+.link { background: none; border: 0; color: var(--accent); cursor: pointer; padding: 0; font: inherit; }
 #detail { min-width: 0; }
 .cov { display: flex; align-items: center; gap: 12px; margin-top: 14px; font-size: 13px; color: var(--muted); flex-wrap: wrap; }
 .bar { display: flex; width: 220px; height: 8px; border-radius: 4px; overflow: hidden; background: var(--line); }
@@ -49,13 +47,11 @@ nav { position: sticky; top: 12px; align-self: start; max-height: calc(100vh - 2
 .chip { border: 1px solid var(--line); background: var(--panel); color: var(--muted); border-radius: 12px; padding: 2px 10px; font-size: 12px; cursor: pointer; }
 .chip.on { color: var(--ink); border-color: var(--accent); }
 .kicker { font-size: 11px; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); font-weight: 600; }
-h2 { font-size: 21px; margin: 4px 0 14px; }
 h3 { font-size: 13px; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); margin: 26px 0 8px; }
 .cards { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 .card { background: var(--panel); border: 1px solid var(--line); border-top: 3px solid var(--faint); border-radius: 6px; padding: 12px 14px; }
 .card.then { border-top-color: var(--pass); } .card.when { border-top-color: var(--accent); }
 .card ul { margin: 6px 0 0; padding-left: 18px; }
-.reqtext { color: var(--muted); font-size: 14px; max-width: 80ch; margin: 6px 0 0; }
 .item { background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 10px 14px; margin-bottom: 8px; }
 .item .q { margin: 2px 0 6px; }
 .tag { font: 12px var(--mono); color: var(--muted); }
@@ -77,16 +73,10 @@ h3 { font-size: 13px; letter-spacing: .06em; text-transform: uppercase; color: v
 .tm { font: 12px var(--mono); color: var(--muted); }
 .why { font-size: 13px; margin: 6px 0 0; color: var(--ink); }
 .checks { background: var(--panel); border: 1px solid var(--line); border-radius: 6px; margin-top: 8px; }
-.crow { display: grid; grid-template-columns: 90px minmax(0, 1fr) 150px 150px; gap: 10px; padding: 8px 12px; border-bottom: 1px solid var(--line); font-size: 13px; cursor: pointer; }
-.crow:hover { background: color-mix(in srgb, var(--panel) 80%, var(--line)); }
-.crow.head { cursor: default; font-size: 11px; letter-spacing: .05em; text-transform: uppercase; color: var(--muted); font-weight: 600; }
-.crow.head:hover { background: none; }
-.cdetail { padding: 6px 12px 10px 112px; border-bottom: 1px solid var(--line); font-size: 13px; }
-.cdetail > div { margin-bottom: 8px; }
+.crow { display: grid; grid-template-columns: 90px minmax(0, 1fr) 150px 150px; gap: 10px; padding: 8px 12px; border-bottom: 1px solid var(--line); font-size: 13px; }
+.crow.head { font-size: 11px; letter-spacing: .05em; text-transform: uppercase; color: var(--muted); font-weight: 600; }
 .crow.weak b { font-weight: 600; color: var(--muted); }
 .suspect { font-size: 12px; color: var(--mixed); margin-top: 3px; }
-.audit { font-size: 13px; color: var(--muted); margin: 2px 0 0 1.6em; }
-.audit.sus { color: var(--ink); border-left: 2px solid var(--mixed); padding-left: 8px; }
 .row > div { padding: 7px 10px; font-size: 13px; }
 .row .n { font: 12px var(--mono); color: var(--faint); }
 .row .boundary { border-left: 1px dashed var(--faint); }
@@ -97,6 +87,8 @@ h3 { font-size: 13px; letter-spacing: .06em; text-transform: uppercase; color: v
 .detail { padding: 6px 14px 12px 62px; font-size: 13px; border-bottom: 1px solid var(--line); min-width: 800px; }
 .detail > div { margin-bottom: 6px; }
 .detail pre { white-space: pre-wrap; word-break: break-word; font: 12px/1.45 var(--mono); background: var(--bg); border: 1px solid var(--line); border-radius: 4px; padding: 8px; margin: 4px 0 8px; max-height: 220px; overflow: auto; }
+mark.hit { background: var(--hl); color: inherit; border-bottom: 1px solid var(--hl-line); padding: 0 1px; }
+.more { font-size: 13px; margin-top: 8px; }
 .legend { display: flex; gap: 14px; flex-wrap: wrap; font-size: 12px; color: var(--muted); margin: 8px 0 0; }
 footer { max-width: 1280px; margin: 0 auto; padding: 0 24px 40px; color: var(--faint); font-size: 12px; }
 @media (max-width: 760px) {
@@ -106,7 +98,6 @@ footer { max-width: 1280px; margin: 0 auto; padding: 0 24px 40px; color: var(--f
   nav { position: static; max-height: 46vh; border-bottom: 1px solid var(--line); padding-bottom: 8px; }
   .cards { grid-template-columns: 1fr; }
   .crow { grid-template-columns: 70px minmax(0, 1fr); }
-  .cdetail { padding-left: 12px; }
   footer { padding: 0 16px 32px; }
 }
 </style>
@@ -115,7 +106,7 @@ footer { max-width: 1280px; margin: 0 auto; padding: 0 24px 40px; color: var(--f
 <header id="top"></header>
 <main><nav id="nav"></nav><section id="detail"></section></main>
 <footer id="foot"></footer>
-<script src="execute.data.js?v=3ad67e10ab"></script>
+<script src="execute.data.js?v=2a85c7174d"></script>
 <script>
 (function () {
 const D = window.SPEC_PAGE, cap = D.capability;
@@ -123,7 +114,7 @@ const $ = (s) => document.querySelector(s);
 const esc = (s) => String(s == null ? "" : s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
 const slug = (t) => t.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
 const treesOf = (c) => D.trees.filter((t) => c.runs[t]);  // build.py's order: the tree that implements the spec first
-const TREE = (D.cases[0] && treesOf(D.cases[0])[0]) || null;
+const TREE = D.trees.find((t) => D.cases.some((c) => c.runs[t])) || null;
 
 // ---- per scenario: the case items that cite it, and their verdicts per tree
 const scen = [];
@@ -152,18 +143,15 @@ scen.forEach((s) => (s.status = status(s)));
 // ---- header
 const nCited = scen.filter((s) => s.items.length).length, nPass = scen.filter((s) => s.status === "pass").length;
 const nFail = scen.filter((s) => s.status === "fail" || s.status === "mixed").length;
-const first = D.spec.purpose.split(/(?<=\.)\s/)[0];
+const nVal = D.cases.filter((c) => c.runs[TREE] && c.runs[TREE].validation).length;
 $("#top").innerHTML = `
   <div class="crumb">orchestrate · specs · ${esc(D.source.spec)}</div>
   <h1>${esc(D.spec.title)}</h1>
-  <p class="purpose"><span id="pu">${esc(first)}</span> ${first !== D.spec.purpose ? '<button id="pmore">more</button>' : ""}</p>
   <div class="cov"><div class="bar">
     <span style="width:${(100 * nPass) / scen.length}%;background:var(--pass)"></span>
     <span style="width:${(100 * nFail) / scen.length}%;background:var(--fail)"></span></div>
     <span>${scen.length} scenarios · ${nCited} cited by an eval case · ${nPass} of them pass every trial on <b>${esc(TREE || "no tree")}</b> · ${scen.length - nCited} not cited yet</span></div>
-  <div class="meta">spec: ${esc(D.spec.status.split(";")[0])}${D.spec.status.includes(";") ? "; " + esc(D.spec.status.split(";").pop().trim()) : ""}<br>read at skill-evals ${esc(D.source.worktree_head)}${D.source.spec_dirty ? " (uncommitted changes)" : ""} · evals ${esc(D.source.evals_head)}</div>`;
-const pm = $("#pmore");
-if (pm) pm.onclick = () => { $("#pu").textContent = D.spec.purpose; pm.remove(); };
+  ${nVal ? `<div class="cov">${nVal} of ${D.cases.length} cases show their validation trial: one trial, not a counted run.</div>` : ""}`;
 
 // ---- the list
 let filt = "all", cur = null;
@@ -198,7 +186,7 @@ function align(trials) {
   const mean = (r) => r.by.reduce((a, b) => a + (b.m.call == null ? 1e6 : b.m.call), 0) / r.by.length;
   return rows.map((r, i) => ({ r, i, k: mean(r) })).sort((a, b) => a.k - b.k || a.i - b.i).map((x) => x.r);
 }
-const LANES = [["git", "git · the change branch"], ["tests", "tests"], ["record", "record · journal, asks"], ["spawn", "spawned agents · the stop"]];
+const LANES = [["git", "git · the change branch"], ["tests", "tests"], ["record", "record · journal, asks"], ["spawn", "spawned agents"]];
 function evText(r) {
   const m = r.by[0].m;
   if (r.lane === "tests") return m.label.includes("fails") ? `test run <span class="red">fails</span>` : `test run <span class="green">passes</span>`;
@@ -211,10 +199,36 @@ const VMARK = (v) => v === "pass" ? MARK.true : v === "fail" ? MARK.false : v ==
 const KIND = { decide: "decides: its failure fails the trial", signal: "signal: a word match, decides nothing", audited: "audited: computed, then reviewed by the eval agent; decides nothing" };
 const KSHORT = { decide: "decides the trial", signal: "signal · decides nothing", audited: "audited · decides nothing" };
 
+// Highlight: wrap each occurrence of the needles in <mark>; the caller states what the highlight means.
+function hl(text, needles) {
+  text = String(text == null ? "" : text);
+  const ns = [...new Set((needles || []).filter((n) => n && n.length >= 4))].sort((a, b) => b.length - a.length);
+  if (!ns.length) return esc(text);
+  const re = new RegExp(ns.map((n) => n.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).join("|"), "g");
+  let out = "", last = 0, m;
+  while ((m = re.exec(text))) { out += esc(text.slice(last, m.index)) + `<mark class="hit">${esc(m[0])}</mark>`; last = m.index + m[0].length; }
+  return out + esc(text.slice(last));
+}
+// The build ties an event by a prefix of its text; where the full text is present, mark all of it.
+const widen = (text, needles, full) => needles.map((n) => (n && full && full.startsWith(n) && String(text).includes(full) ? full : n));
+// A test run's summary, its verdict line in the verdict's colour.
+const verdictText = (r) => String(r).split("\n").map((l) => /^FAILED\b/.test(l) ? `<span class="red">${esc(l)}</span>` : /^OK\b/.test(l) ? `<span class="green">${esc(l)}</span>` : esc(l)).join("\n");
+// One event's call: how the build tied the event to it, the call's input, and for a test run what it returned.
+function callBlock(m, calls) {
+  const call = m.call != null ? calls[String(m.call)] : null;
+  const how = m.call != null ? `call ${m.call} of the main thread, tied by ${esc(m.linked_by)}${m.candidates.length > 1 ? `; also in calls ${m.candidates.filter((n) => n !== m.call).join(", ")}` : ""}` : "no call found that made it";
+  return `<div class="tag">${how}</div>
+    ${call ? `<pre>${esc(call.tool)}${call.error ? " (the call returned an error)" : ""}: ${hl(call.text, widen(call.text, [m.match], m.label))}</pre>` : ""}
+    ${m.result ? `<div class="tag">what it returned</div><pre>${verdictText(m.result)}</pre>` : ""}`;
+}
+
 // The ids a run's own case version cites for this scenario: items (…-E<n>) the eval agent judges, checks (…-S<n>).
 function runCites(run, s) {
   const ids = Object.keys(run.cites).filter((id) => run.cites[id].includes(s.key)).sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
-  return { items: ids.filter((id) => /-E\d+$/.test(id)), checks: ids.filter((id) => /-S\d+$/.test(id)) };
+  const items = ids.filter((id) => /-E\d+$/.test(id));
+  const under = items.flatMap((id) => (run.item_checks || {})[id] || []);
+  const checks = [...new Set([...ids.filter((id) => /-S\d+$/.test(id)), ...under])].sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
+  return { items, checks };
 }
 
 let tree = null, open = {};
@@ -223,17 +237,16 @@ function proof(s, c) {
   if (!trees.length) return `<div class="empty">${esc(c.id)} cites this scenario, but no run of it counts yet.</div>`;
   if (!tree || !c.runs[tree]) tree = trees[0];
   const run = c.runs[tree], N = run.trials.length, rc = runCites(run, s), rows = align(run.trials);
-  const rowOf = (id) => rows.findIndex((r) => r.by.some((b) => b.m.checks.includes(id)));
+  const rowsOf = (id) => rows.map((r, i) => (r.by.some((b) => b.m.checks.includes(id)) ? i + 1 : 0)).filter(Boolean);
   const q = (id) => ((run.items_then.find((x) => x.id === id) || c.items.find((x) => x.id === id) || {}).question || "");
-  let h = `<div class="tabs">${trees.map((t) => `<button class="chip ${t === tree ? "on" : ""}" data-t="${t}">${esc(t)}</button>`).join("")}
-    <span class="tag">${esc(c.id)} · run ${esc(run.run)} on ${esc(tree)} ${esc(run.commit)} · case at ${esc(run.case_commit)} · ${N} trials</span></div>`;
+  let h = `<div class="tabs">${trees.map((t) => `<button class="chip ${t === tree ? "on" : ""}" data-t="${t}">${esc(t)}${c.runs[t].validation ? " · validation trial" : ""}</button>`).join("")}</div>`;
   const now = c.items.filter((it) => it.cites.includes(s.key)).map((it) => it.id);
   if (now.join() !== rc.items.join()) h += `<div class="note">The case has changed since this run: it now cites this scenario from ${now.length ? esc(now.join(", ")) : "no item"}; this run's version cited it from ${rc.items.length ? esc(rc.items.join(", ")) : "no item"}.</div>`;
   if (!rc.items.length && !rc.checks.length) return h + `<div class="empty">This run's version of the case did not test this scenario.</div>`;
   h += `<div class="verdict">`;
   rc.items.forEach((id) => {
     const k = `j${tree}${id}`;
-    h += `<div class="item"><div class="tag">${esc(id)} · the eval agent's verdict, reading the evidence the case collects</div>
+    h += `<div class="item"><div class="tag">${esc(id)}</div>
       <div class="q">${esc(q(id))}</div>
       <div class="marks">${run.trials.map((t) => `<span class="tm">t${t.trial} ${VMARK(t.items[id])}</span>`).join("")}
       <button class="link" data-o="${k}">${open[k] ? "hide" : "why"}</button></div>
@@ -243,38 +256,35 @@ function proof(s, c) {
   if (rc.checks.length) {
     h += `<div class="checks"><div class="crow head"><div>check</div><div>what it computes</div><div>trials</div><div>where it looks</div></div>`;
     rc.checks.forEach((id) => {
-      const k = `c${tree}${id}`, any = run.trials.map((t) => t.checks[id]).find((x) => x) || {}, ri = rowOf(id);
+      const any = run.trials.map((t) => t.checks[id]).find((x) => x) || {}, rs = rowsOf(id);
       const sus = run.trials.filter((t) => t.checks[id] && t.checks[id].audit && t.checks[id].audit.verdict === "suspect").map((t) => "t" + t.trial);
-      h += `<div class="crow ${any.kind === "decide" ? "" : "weak"}" data-o="${k}"><div><b>${esc(id)}</b><div class="tag" title="${esc(KIND[any.kind] || "")}">${esc(KSHORT[any.kind] || any.kind || "")}</div></div>
+      h += `<div class="crow ${any.kind === "decide" ? "" : "weak"}"><div><b>${esc(id)}</b><div class="tag" title="${esc(KIND[any.kind] || "")}">${esc(KSHORT[any.kind] || any.kind || "")}</div></div>
         <div>${esc(any.desc)}</div>
         <div><div class="marks">${run.trials.map((t) => `<span class="tm">t${t.trial} ${t.checks[id] ? MARK[t.checks[id].pass] : MARK.null}</span>`).join("")}</div>
           ${sus.length ? `<div class="suspect">eval agent doubts it in ${sus.join(", ")}</div>` : ""}</div>
-        <div>${ri >= 0 ? `walkthrough row ${ri + 1}` : `the end state, not one event`}</div></div>`;
-      if (open[k]) h += `<div class="cdetail">` + run.trials.map((t) => {
-        const x = t.checks[id] || {}, a = x.audit;
-        return `<div><b>t${t.trial}</b> ${MARK[x.pass == null ? null : x.pass]} <span class="tag">found: ${esc(x.detail || "(nothing recorded)")}</span>
-          ${a ? `<div class="audit ${a.verdict === "suspect" ? "sus" : ""}">The eval agent's audit: <b>${esc(a.verdict === "agrees" ? "agrees with it" : a.verdict === "suspect" ? "suspects it is wrong here" : a.verdict)}</b>${a.agree === false ? " (its judges split)" : ""}${a.reason ? `. ${esc(a.reason)}` : ""}</div>` : ""}</div>`;
-      }).join("") + (any.kind !== "decide" ? `<div class="note">This check ${any.kind === "signal" ? "is a word match and" : "is reviewed by the eval agent and"} does not decide the trial: a ✕ here does not fail it.</div>` : "") + `</div>`;
+        <div>${rs.length ? `walkthrough row${rs.length > 1 ? "s" : ""} ${rs.join(", ")}` : `the end state, not one event`}</div></div>`;
     });
-    h += `</div><div class="legend">${Object.entries(KIND).map(([k, v]) => `<span><b>${k}</b>: ${esc(v.split(": ").pop())}</span>`).join("")}<span>click a check for what it found in each trial</span></div>`;
+    h += `</div>`;
   }
   // the walkthrough
-  h += `<h3>Walkthrough: what the agent did, across the ${N} trials</h3>
-    <div class="seq"><div class="lanes"><div></div>${LANES.map(([k, l]) => `<div class="${k === "spawn" ? "boundary" : ""}">${l}</div>`).join("")}<div>checks of this scenario</div></div>`;
-  rows.forEach((r, i) => {
+  const mine = rows.map((r, i) => i).filter((i) => rows[i].by.some((b) => b.m.checks.some((id) => rc.checks.includes(id))));
+  const kAll = `all${c.id}${tree}`, whole = !!open[kAll], shown = whole ? rows.map((r, i) => i) : mine;
+  const others = rows.length - mine.length;
+  h += `<h3>Walkthrough: ${whole ? "every event of" : "the events this scenario's checks read, in"} ${N > 1 ? `the ${N} trials` : "the trial"}</h3>`;
+  if (!mine.length && !whole) h += `<div class="empty">This scenario's checks read no single event; they read the end state.</div>`;
+  if (shown.length) h += `<div class="seq"><div class="lanes"><div></div>${LANES.map(([k, l]) => `<div class="${k === "spawn" ? "boundary" : ""}">${l}</div>`).join("")}<div>checks of this scenario</div></div>`;
+  shown.forEach((i) => {
+    const r = rows[i];
     const ids = rc.checks.filter((id) => r.by.some((b) => b.m.checks.includes(id)));
-    const badges = ids.map((id) => { const p = run.trials.filter((t) => t.checks[id] && t.checks[id].pass === true).length; return `<span class="badge">${esc(id)} ${p}/${N}</span>`; }).join("");
-    h += `<div class="row" data-r="${i}"><div class="n">${i + 1}</div>${LANES.map(([k]) =>
-      `<div class="${k === "spawn" ? "boundary" : ""}">${k === r.lane ? `<span class="ev ${k}">${evText(r)}<span class="cnt">${r.by.length}/${N}</span></span>` : ""}</div>`).join("")}<div>${badges}</div></div>`;
-    if (open[tree + i]) {
-      h += `<div class="detail">` + r.by.map((b) => {
-        const call = b.m.call != null ? b.calls[String(b.m.call)] : null;
-        return `<div><b>t${b.trial}</b> · ${esc(b.m.label)}<br><span class="tag">${b.m.call != null ? `call ${b.m.call} of the main thread (${esc(b.m.linked_by)})${b.m.candidates.length > 1 ? `; also in calls ${b.m.candidates.filter((n) => n !== b.m.call).join(", ")}` : ""}` : "no call found that made it"}${b.m.checks.length ? ` · read by ${b.m.checks.join(", ")}` : ""}</span>
-          ${call ? `<pre>${esc(call.tool)}${call.error ? " (the call returned an error)" : ""}: ${esc(call.text)}</pre>` : ""}</div>`;
-      }).join("") + (r.by.length < N ? `<div class="note">Not in ${N - r.by.length} of ${N} trials.</div>` : "") + `</div>`;
+    const badges = ids.map((id) => { const p = run.trials.filter((t) => t.checks[id] && t.checks[id].pass === true).length; return `<span class="badge">${esc(id)} ${N > 1 ? `${p}/${N}` : p ? "✓" : "✕"}</span>`; }).join("");
+    h += `<div class="row" data-r="${c.id}|${tree}|${i}"><div class="n">${i + 1}</div>${LANES.map(([k]) =>
+      `<div class="${k === "spawn" ? "boundary" : ""}">${k === r.lane ? `<span class="ev ${k}">${evText(r)}${N > 1 ? `<span class="cnt">${r.by.length}/${N}</span>` : ""}</span>` : ""}</div>`).join("")}<div>${badges}</div></div>`;
+    if (open[`${c.id}|${tree}|${i}`]) {
+      h += `<div class="detail">` + r.by.map((b) => `<div><b>t${b.trial}</b> · ${esc(b.m.label)}${b.m.checks.length ? ` <span class="tag">· read by ${b.m.checks.join(", ")}</span>` : ""}${callBlock(b.m, b.calls)}</div>`).join("") + (r.by.length < N ? `<div class="note">Not in ${N - r.by.length} of ${N} trials.</div>` : "") + `</div>`;
     }
   });
-  h += `</div><div class="legend"><span>n/${N} after an event: the trials that did it</span><span>a check's badge: that check read this event; n/${N}: the trials it passed</span><span>click a row for the calls</span></div>`;
+  if (shown.length) h += `</div><div class="legend">${N > 1 ? `<span>n/${N} after an event: the trials that did it</span><span>a check's badge: that check read this event; n/${N}: the trials it passed</span>` : `<span>a check's badge: that check read this event; ✓ or ✕: its result</span>`}<span>click a row for its call</span></div>`;
+  if (others || whole) h += `<button class="link more" data-o="${kAll}">${whole ? "show only the events this scenario's checks read" : `show the whole trial (${others} other event${others === 1 ? "" : "s"})`}</button>`;
   return h;
 }
 
@@ -282,21 +292,17 @@ function proof(s, c) {
 function show(s) {
   cur = s; nav();
   const when = s.steps.filter((x) => x.kw === "WHEN" || x.kw === "GIVEN"), then = s.steps.filter((x) => x.kw === "THEN" || x.kw === "AND");
-  let h = `<div class="kicker">Requirement · ${esc(s.req.title)}</div>
-    <h2>${esc(s.title)}</h2>
-    <div class="cards">
+  let h = `<div class="cards">
       <div class="card when"><div class="kicker">When</div><ul>${when.map((x) => `<li>${esc(x.text)}</li>`).join("")}</ul></div>
       <div class="card then"><div class="kicker">Then</div><ul>${then.map((x) => `<li>${esc(x.text)}</li>`).join("")}</ul></div>
     </div>
-    <p class="reqtext" id="rq"><button class="link" id="rqb">The requirement's text</button>${s.req.goal ? ` · goal: ${esc(s.req.goal)}` : ""}</p>
     <h3>How it was checked</h3>`;
   const cs = D.cases.filter((c) => c.items.some((it) => it.cites.includes(s.key)) || D.trees.some((t) => c.runs[t] && runCites(c.runs[t], s).items.length + runCites(c.runs[t], s).checks.length));
   h += cs.length ? cs.map((c) => proof(s, c)).join("") : `<div class="empty">No eval case cites this scenario yet${s.test ? `; the spec marks it ${esc(s.test)}` : ""}.</div>`;
   $("#detail").innerHTML = h;
-  $("#rqb").onclick = () => { $("#rq").textContent = s.req.text; };
   $("#detail").querySelectorAll("[data-t]").forEach((b) => (b.onclick = () => { tree = b.dataset.t; open = {}; show(s); }));
   $("#detail").querySelectorAll("[data-o]").forEach((b) => (b.onclick = () => { open[b.dataset.o] = !open[b.dataset.o]; show(s); }));
-  $("#detail").querySelectorAll(".row[data-r]").forEach((r) => (r.onclick = () => { const k = tree + r.dataset.r; open[k] = !open[k]; show(s); }));
+  $("#detail").querySelectorAll(".row[data-r]").forEach((r) => (r.onclick = () => { const k = r.dataset.r; open[k] = !open[k]; show(s); }));
 }
 
 function route() {
