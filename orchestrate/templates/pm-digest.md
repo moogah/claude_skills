@@ -99,7 +99,7 @@ Findings: 3 issues, 1 question; on the hardening list: 2 (`.orchestrator/changes
 ## Goal-drift check
 
 - Critical-path completion ratio: 4/11 = 0.36, stagnant for K=5 cycles while non-critical-path completions continue at ~5/cycle.
-- **Recommendation**: <none | revise | split | abandon> — <one-line reason>
+- **Recommendation**: <none | revise | split | abandon | continue> — <one-line reason>
 ```
 
 ## Agents: reading spend against E3

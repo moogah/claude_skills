@@ -1,6 +1,6 @@
 #+TITLE: project-manager
 #+OPTIONS: ^:{} -:nil
-#+STATUS: draft 2026-11-13, extracted from the reference skill (=main= =e356da7=); eight gaps opened; at the hand-off review 2026-11-13: G8 applied, its role default added; the sections' order and the throughput rows filled
+#+STATUS: draft 2026-11-13, extracted from the reference skill (=main= =e356da7=); eight gaps opened; at the hand-off review 2026-11-13: G8 applied, its role default added; the sections' order, the throughput rows and the recommendation's values filled
 
 * Purpose
 
@@ -272,6 +272,10 @@ the intent with a one-line reason; the recommendation SHALL change nothing until
 - *THEN* the digest carries a ⚠ goal-drift signal
 - *AND* its goal-drift check recommends a course for the intent, with a one-line reason
 
+*** Scenario: The goal-drift recommendation is one of the ask's options, or none
+- *WHEN* the digest's goal-drift check is written
+- *THEN* its recommendation is =revise=, =split=, =abandon= or =continue= when goal drift fired, and =none= when it did not
+
 *** Scenario: The goal-drift recommendation changes nothing
 - *WHEN* the digest recommends a course on goal drift
 - *THEN* the PM changes neither the intent's goals nor its status line
@@ -304,13 +308,6 @@ The PM's agent pass SHALL run at its role default.
 - *THEN* it runs at =sonnet=, =medium=
 
 * Gaps
-
-** Gap: Which values the goal-drift recommendation takes
-:PROPERTIES:
-:REQUIREMENT: On goal drift the PM recommends and the user decides
-:END:
-The role and the integrate phase give revise, split, abandon or continue; the digest's form gives
-none, revise, split or abandon.
 
 ** Gap: Whether goal drift needs drainage to stay positive
 :PROPERTIES:
