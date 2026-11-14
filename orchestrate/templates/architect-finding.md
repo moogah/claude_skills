@@ -10,8 +10,8 @@ Architect findings go in `<change-dir>/cycles/<cycle-id>/findings/<finding-id>.m
 
 ```yaml
 ---
-finding_id: arch-<cycle-id>-<seq>
-trigger: premise-check | conformance
+finding_id: arch-<cycle-id>-<seq>   # at the design round, before any cycle: arch-<change>-<seq>
+trigger: premise-check | conformance | design-round
 kind: issue | question                      # § Kind
 severity: high | medium | low               # § Kind
 class: shape-fragmentation | vocabulary-mismatch | responsibility-leakage
