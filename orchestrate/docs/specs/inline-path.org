@@ -1,6 +1,6 @@
 #+TITLE: inline-path
 #+OPTIONS: ^:{} -:nil
-#+STATUS: draft 2026-11-13, extracted from the reference skill (=main= =e356da7=); at the hand-off review 2026-11-13: G7, G8 and G9 applied; the task file's source, the open cycle, the commit subject and the triage's refusal filled; no gap open; accepted 2026-11-13 by the user at the hand-off review
+#+STATUS: draft 2026-11-13, extracted from the reference skill (=main= =e356da7=); at the hand-off review 2026-11-13: G7, G8 and G9 applied; the task file's source, the open cycle, the commit subject and the triage's refusal filled; no gap open; accepted 2026-11-13 by the user at the hand-off review; amended 2026-11-14 after acceptance (one commit when the home is the code root; a batch task the triage refuses; a refused request that also questions the design; three scenarios marked not test-worthy), from the evals' build-out (=research/skill-evals/overnight/plan.org= § Decided with the user, 2026-11-14 morning)
 
 * Purpose
 
@@ -52,7 +52,7 @@ done with no review step between, and the code and the task file SHALL be commit
 *** Scenario: The code and the task file are committed together
 - *WHEN* the inline path commits
 - *THEN* the code is committed in the code root and the task file in the home
-- *AND* when the home and the code root are one repository, both are in one commit
+- *AND* when the home is the code root, one working tree, both are in one commit; otherwise each is a commit of its own
 
 *** Scenario: The verification run's output is kept beside the task
 - *WHEN* the inline path runs its verification
@@ -100,6 +100,9 @@ already in a batch, however small. In doubt, the edit SHALL take the batch.
 - *AND* it is made as a batch task of a later cycle, reviewed by a Reviewer
 
 *** Scenario: An edit whose verification needs tests with state set up is not taken on the inline path
+:PROPERTIES:
+:TEST: none: the evals' fixture project has no test that needs state set up
+:END:
 - *WHEN* verifying an edit needs tests run with state set up
 - *THEN* the inline path makes no edit for it
 - *AND* it is made as a batch task of a later cycle
@@ -113,6 +116,7 @@ already in a batch, however small. In doubt, the edit SHALL take the batch.
 - *WHEN* a task is in a cycle's batch, however small
 - *THEN* it is implemented by an Implementor and reviewed by a Reviewer in that cycle's execute
 - *AND* the inline path does not make it
+- *AND* asked for it, the inline path writes no task file and no note of its own: its bailout line names the batch task's file
 
 ** Requirement: An edit that grows past its triage is bailed out and put back as a task
 :PROPERTIES:
@@ -127,6 +131,11 @@ one line naming the task and why.
 - *WHEN* the triage refuses the request before any edit is made
 - *THEN* the task file is left open for the next plan, with the triage's reason in it
 - *AND* the inline path hands back =inline <task>: bailed out, <why>; <task file>=
+
+*** Scenario: A request the triage refuses bails out even when it puts the design in question
+- *WHEN* a request the triage refuses also puts the change's design or a spec in question
+- *THEN* the inline path bails out and files no ask
+- *AND* the reason in the task file names the question, for the next plan
 
 *** Scenario: An edit that reaches a second file bails out
 - *WHEN* the edit turns out to touch a second file
@@ -145,6 +154,9 @@ one line naming the task and why.
 - *THEN* the inline path bails out
 
 *** Scenario: An edit that needs more than a paragraph of context bails out
+:PROPERTIES:
+:TEST: none: how much context an edit needs is the agent's own reading, so no fixture can make the WHEN happen
+:END:
 - *WHEN* making the edit needs more than a paragraph of context read again
 - *THEN* the inline path bails out
 
@@ -154,6 +166,9 @@ one line naming the task and why.
 - *AND* the inline path has made no commit in the code root
 
 *** Scenario: A bailout after a commit reverts it with a commit of its own
+:PROPERTIES:
+:TEST: none: the inline path commits last, so a bailout after its commit needs an agent that commits out of order
+:END:
 - *WHEN* the inline path bails out after its commit was made
 - *THEN* the commit is undone by a revert commit in the code root
 - *AND* the code root's history still holds the commit it reverts
