@@ -1,6 +1,6 @@
 #+TITLE: project-manager
 #+OPTIONS: ^:{} -:nil
-#+STATUS: draft 2026-11-13, extracted from the reference skill (=main= =e356da7=); eight gaps opened; at the hand-off review 2026-11-13: G8 applied, its role default added; the sections' order, the throughput rows the recommendation's values, goal drift's drainage, the queue, the candidates' rows and the failed prose pass filled; no gap open
+#+STATUS: draft 2026-11-13, extracted from the reference skill (=main= =e356da7=); eight gaps opened; at the hand-off review 2026-11-13: G8 applied, its role default added; the sections' order, the throughput rows the recommendation's values, goal drift's drainage, the queue, the candidates' rows and the failed prose pass filled; no gap open; accepted 2026-11-13 by the user at the hand-off review
 
 * Purpose
 
