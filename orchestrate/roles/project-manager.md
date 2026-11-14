@@ -45,7 +45,7 @@ Output: `<change-dir>/cycles/<cycle-id>/pm-digest.md` (see `templates/pm-digest.
 
 ### Why split
 
-The split fixes the failure mode of "agent hallucinating counts": counts come from the state file, never the LLM. If the agent pass fails or hallucinates, the deterministic output remains in `pm-signals.json` and is recoverable. The PM digest is *also* useful when only the deterministic pass has run (it just lacks the prose framing).
+The split fixes the failure mode of "agent hallucinating counts": counts come from the state file, never the LLM. If the agent pass fails or hallucinates, the deterministic output remains in `pm-signals.json` and is recoverable. The computed output is kept when the agent pass fails, but no digest is rendered from it alone: the agent pass is run again, and integrate's gate waits for the digest.
 
 ## Eight failure modes the PM targets
 

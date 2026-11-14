@@ -1,6 +1,6 @@
 #+TITLE: project-manager
 #+OPTIONS: ^:{} -:nil
-#+STATUS: draft 2026-11-13, extracted from the reference skill (=main= =e356da7=); eight gaps opened; at the hand-off review 2026-11-13: G8 applied, its role default added; the sections' order, the throughput rows the recommendation's values, goal drift's drainage, the queue and the candidates' rows filled
+#+STATUS: draft 2026-11-13, extracted from the reference skill (=main= =e356da7=); eight gaps opened; at the hand-off review 2026-11-13: G8 applied, its role default added; the sections' order, the throughput rows the recommendation's values, goal drift's drainage, the queue, the candidates' rows and the failed prose pass filled; no gap open
 
 * Purpose
 
@@ -30,6 +30,11 @@ questions, the goal-drift recommendation, the trends to watch and the meta-disco
 *** Scenario: The computed counts outlast a failed prose pass
 - *WHEN* the PM's prose pass fails
 - *THEN* the counts and the signals computed for the cycle are still in the cycle's directory in the home
+
+*** Scenario: A failed prose pass leaves no digest, and is run again
+- *WHEN* the PM's agent pass fails
+- *THEN* no digest is written from the computed output alone
+- *AND* the agent pass is run again, the computed output kept
 
 *** Scenario: A zero rejection rate beside inline fixes is not read as a clean batch
 - *WHEN* the cycle's counts show no rejection and several inline fixes
@@ -319,9 +324,5 @@ The PM's agent pass SHALL run at its role default.
 
 * Gaps
 
-** Gap: Whether a digest is written when the prose pass fails
-:PROPERTIES:
-:REQUIREMENT: Every number in the digest comes from the change's record
-:END:
-The role says the digest is useful with the computed part alone; the digest file is the prose pass's
-output, and the integrate gate needs it with a non-empty Signals section.
+No gap open. The eight this draft had were filled 2026-11-13 at the hand-off review
+(=research/skill-evals/extraction/project-manager.org= § Gap decisions).
