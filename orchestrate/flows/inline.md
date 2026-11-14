@@ -94,4 +94,4 @@ Most answers are "no; close." That's fine. The discipline is in asking, not in f
 
 If the change is part of a larger batch where parallel implementation is the point of using the orchestrator at all, take the standard path even for individually trivial tasks. The point of the standard path is throughput; collapsing every trivial task into inline serializes the batch.
 
-The orchestrator's batch-composer (in `flows/plan.md`) decides this. Inline path is for **out-of-cycle** trivial fixes the user asks for between cycles, not for tasks already in a batch.
+The orchestrator's batch-composer (in `flows/plan.md`) decides this. Inline path is for trivial fixes the user asks for **outside a batch**, between cycles or while one is open (then the task is added to the cycle's state as done, and the edit waits for a running after-test in the code root to finish), not for tasks already in a batch.
