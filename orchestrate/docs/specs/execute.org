@@ -1,6 +1,6 @@
 #+TITLE: execute
 #+OPTIONS: ^:{} -:nil
-#+STATUS: draft 2026-11-12, extracted from the reference skill (=main= =e356da7=); inferred statements reviewed 2026-11-12; seven gaps filled and the regression requirement revised 2026-11-12; the gap on the run after a fix filled 2026-11-13; four gaps opened and filled 2026-11-13 at the hand-off review; no gap open; accepted 2026-11-13 by the user at the hand-off review; one WHEN narrowed 2026-11-13 after acceptance (a blocked Implementor commits nothing), from the cross-spec map; an Implementor's discovery only the user can settle routed to an ask 2026-11-13 after acceptance, from =implementor='s review
+#+STATUS: draft 2026-11-12, extracted from the reference skill (=main= =e356da7=); inferred statements reviewed 2026-11-12; seven gaps filled and the regression requirement revised 2026-11-12; the gap on the run after a fix filled 2026-11-13; four gaps opened and filled 2026-11-13 at the hand-off review; no gap open; accepted 2026-11-13 by the user at the hand-off review; one WHEN narrowed 2026-11-13 after acceptance (a blocked Implementor commits nothing), from the cross-spec map; an Implementor's discovery only the user can settle routed to an ask 2026-11-13 after acceptance, from =implementor='s review; amended 2026-11-14 after acceptance (a task's front matter kept in step with the record; a file the Reviewer's spawn names is its input; an Implementor's ask stops the phase only when it bears on dependent tasks), from the evals' build-out (=research/skill-evals/overnight/plan.org= § Decided with the user, 2026-11-14 morning)
 
 * Purpose
 
@@ -295,6 +295,7 @@ other diff in flight.
 *** Scenario: The Reviewer never sees the Implementor's account
 - *WHEN* a Reviewer is spawned
 - *THEN* its input holds neither the Implementor's report nor the task's Observations and Discoveries
+- *AND* a file its spawn names for it to read, such as a brief, is part of its input and is held to the same rule
 - *AND* nothing that names the Implementor
 - *AND* no other diff in flight
 - *AND* its checkout holds nothing but the merge commit
@@ -443,6 +444,7 @@ names. Whether the user is present is the dispatcher's to know, not the phase ag
 - *WHEN* an Implementor stops to ask
 - *THEN* its task is blocked on that ask
 - *AND* its worktree is kept
+- *AND* the phase stops for the ask only when it is known to bear on tasks that wait on that task or on its answer; otherwise the other tasks go on
 
 *** Scenario: An answer is applied before anything else
 - *WHEN* the merge chain pauses and an ask has been answered
@@ -492,7 +494,7 @@ point and leave a handover a fresh agent can continue from.
 :END:
 The execute phase SHALL leave in the home what each Implementor was given and what each worker
 returned, committed when the phase closes, and SHALL leave the design, the specs, the intent and the
-task files to the phases that own them.
+tasks' contents to the phases that own them; it MAY keep a task file's front matter in step with the record.
 
 *** Scenario: Each Implementor's brief is kept
 - *WHEN* an Implementor is spawned
@@ -515,7 +517,8 @@ task files to the phases that own them.
 *** Scenario: Execute leaves the design, the specs and the intent alone
 - *WHEN* execute closes
 - *THEN* it has not changed the change's design, its specs or the intent's status line
-- *AND* it has written no task file
+- *AND* it has added no task file and changed no task's text, but for the Observations and Discoveries an Implementor appended
+- *AND* any change it made to a task file's front matter keeps it in step with the record: the task's status and its merge commit
 - *AND* no Architect has run
 
 ** Requirement: Each worker runs at its agent setting
