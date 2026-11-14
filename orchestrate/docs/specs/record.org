@@ -403,7 +403,7 @@ every artifact the cycle's steps wrote there under the names this requirement gi
 
 *** Scenario: The change's directory holds what the design round leaves before any cycle
 - *WHEN* the design round has run
-- *THEN* the change's directory holds the Architect's brief, =briefs/design-round.md=, and for each re-run =briefs/design-round-<seam-id>.md=, the seam id's slash written as a dash (=briefs/design-round-seam-options.md= for =seam/options=)
+- *THEN* the change's directory holds the Architect's brief, =briefs/design-round.md=, and for each re-run =briefs/design-round-<seam-id>.md=, the seam id's slash written as a dash (=briefs/design-round-seam-on-screen.md= for =seam/on-screen=)
 - *AND* each finding the round reported, =findings/<finding-id>.md=, outside any cycle
 
 ** Requirement: The record is committed in the home at each phase's close
