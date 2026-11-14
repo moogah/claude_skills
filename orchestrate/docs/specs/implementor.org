@@ -1,6 +1,6 @@
 #+TITLE: implementor
 #+OPTIONS: ^:{} -:nil
-#+STATUS: draft 2026-11-13, extracted from the reference skill (=main= =e356da7=); six gaps opened; at the hand-off review 2026-11-13: two filled by the cross-spec decisions (the blocked hand-back, G7); the seam objection's section and the failed hand-back filled
+#+STATUS: draft 2026-11-13, extracted from the reference skill (=main= =e356da7=); six gaps opened; at the hand-off review 2026-11-13: two filled by the cross-spec decisions (the blocked hand-back, G7); the seam objection's section and the failed hand-back filled; the obsolete-flag gap closed with no scenario (plan's)
 
 * Purpose
 
@@ -329,13 +329,6 @@ The Implementor's role default SHALL be the model =opus= at =medium= effort.
 - *THEN* it runs at =opus=, =medium=
 
 * Gaps
-
-** Gap: What the Implementor does with a task flagged as possibly obsolete
-:PROPERTIES:
-:REQUIREMENT: The Implementor hands back one line, once
-:END:
-A task file may carry an obsolescence flag whose ask is unanswered, telling its reader not to start
-work. No hand-back or record is named for an Implementor given such a task.
 
 ** Gap: Whether the Implementor leaves its worktree clean
 :PROPERTIES:
