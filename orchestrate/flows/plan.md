@@ -13,10 +13,9 @@ First, the MVP decision (`templates/hardening.md`). When `state.py status` lists
 `state.py --change <name> cycle start` starts the cycle (an entry in the change's event log) after checking the newest `<change-dir>/handshake-<prior-cycle-id>.json`. Then read the handshake (`templates/handshake.md`). It has:
 
 - `design_diff` — the seam rows conformance added, amended or retired last cycle.
-- `pm_digest_path` — the prior digest, for context.
 - `meta_discoveries` — patterns to weigh when drafting this batch. A task drafted from one names its label in its provenance.
 - `user_resolved_goal_drift` — any revise / split / abandon decisions the user made.
-- `goal_drift_recommendation` — the prior digest's goal-drift recommendation (§ 7).
+- `goal_drift_recommendation` — the PM's reading of the prior cycle against the Goals (§ 7).
 - `asks_for_user_open` (may be empty; each entry's `path` names the file in `<change-dir>/inbox/`, read the ask there), `asks_for_user_resolved` (may be empty).
 - `task_refinements` — each open task's impact set: what last cycle changed that its body has not yet absorbed.
 - `candidate_tasks` — the follow-ups and answered asks that need a new task, each with its source quoted; plan writes them (§ 2).
@@ -108,7 +107,7 @@ Overlay can override via `critical-path.override-tasks` (explicit task list) or 
 
 ### 7. User sign-off on goal-drift recommendations
 
-If the prior handshake's `user_resolved_goal_drift` is empty but the digest carried recommendations (the handshake's `goal_drift_recommendation` is `revise`, `split` or `abandon`), plan blocks until the user signs off. This is the bridge that prevents goal-drift signals from being silently ignored. The recommendation is the `decision`-kind ask file integrate wrote (`templates/ask.md`; four options: revise / split / abandon / continue). Plan reads the file's `* Answer`: an option label matched exactly satisfies the gate (`status` `answered` or `applied`); a free-text answer is read back first and the gate reports it as not signed off until the user confirms. The file is presented only under the inline rule (`templates/ask.md` § The inline rule, through the dispatcher); otherwise plan hands back `stopped` with a one-line pointer to it.
+If the prior handshake's `user_resolved_goal_drift` is empty but its `goal_drift_recommendation` is `revise`, `split` or `abandon`, plan blocks until the user signs off. This is the bridge that prevents goal-drift signals from being silently ignored. The recommendation is the `decision`-kind ask file integrate wrote (`templates/ask.md`; four options: revise / split / abandon / continue). Plan reads the file's `* Answer`: an option label matched exactly satisfies the gate (`status` `answered` or `applied`); a free-text answer is read back first and the gate reports it as not signed off until the user confirms. The file is presented only under the inline rule (`templates/ask.md` § The inline rule, through the dispatcher); otherwise plan hands back `stopped` with a one-line pointer to it.
 
 If the recommendation is `none` or `continue`, this step is a no-op.
 
@@ -116,7 +115,6 @@ If the recommendation is `none` or `continue`, this step is a no-op.
 
 - The integrate→plan handshake artifact (mandatory).
 - The change's `design.org`, `intent.org`, `coverage.py --intent docs/changes/<change>/intent.org`, and the open task files.
-- The prior cycle's PM digest (informational).
 - The project overlay's `config.yaml` (for taxonomy and critical-path).
 
 ## Exit gate
@@ -150,7 +148,7 @@ Plan is the first; integrate (`flows/integrate.md`) is the second.
 
 - **Inline tasks**: plan collapses into "is this trivial enough?" (see `flows/inline.md`). The handshake-consumption step is skipped because inline tasks don't span cycles.
 - **Standard cycles**: full plan as described above.
-- **Long cycles**: plan runs once at the start; execute spans many sessions. PM digest may run periodically within execute via `/loop` or `/schedule`.
+- **Long cycles**: plan runs once at the start; execute spans many sessions.
 - **Several changes at once**: each open change runs its own plan / execute / integrate cycle independently, from its own worktree and event log (`overlay.md` § Repositories); every `state.py` call names its change. Two changes of one repository both move its workspace integration branch, so each takes it in before integrate (`flows/integrate.md`).
 
 ## What plan does **not** do

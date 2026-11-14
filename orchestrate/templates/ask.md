@@ -89,10 +89,10 @@ No timestamps: git has them.
 | Kind | What it is | What happens |
 |---|---|---|
 | `decision` | Only the user can choose, and the choice changes the product | A file in the inbox. The only kind that becomes a question. The MVP decision is one (`templates/hardening.md`). |
-| `doc-correction` | Retired 2026-10-13. The code is right and a document is stale | Not an ask. A **record correction**: the orchestrator fixes the text, keeps it at the contract (`templates/design.md` § Seams), commits it with a subject naming the row or sentence and writes one journal line `state.py note note "record-correction: <what>" --ref <seam-id>`; the digest counts the lines. The record: 47 of 47 such files were titled as questions nobody answered, and 39 would not have existed once rows hold contracts only. Files of this kind already on disk keep it; the tool still reads them. |
+| `doc-correction` | Retired 2026-10-13. The code is right and a document is stale | Not an ask. A **record correction**: the orchestrator fixes the text, keeps it at the contract (`templates/design.md` § Seams), commits it with a subject naming the row or sentence and writes one journal line `state.py note note "record-correction: <what>" --ref <seam-id>`; the handshake's `journal` carries the lines. The record: 47 of 47 such files were titled as questions nobody answered, and 39 would not have existed once rows hold contracts only. Files of this kind already on disk keep it; the tool still reads them. |
 | `confirmation` | A default already applied; a PM action the PM may take alone (a cascade conformance run); a prior recorded from the user's words (`overlay.md` § Priors) | The same: written applied into `cycles/<cycle-id>/asks/`, with `* About` and `* What happened` and no options; its `* Answer` says "Applied without asking: <what>. Object if that is not what you meant." Never a question. |
 | `environment` | A licence, a wedged container, a permission, a missing or unreadable handshake or event log | The blocking call, at once, alone, and always a file, so the next session finds it; with no cycle open, its id names the change (§ The file). |
-| `process` | About the orchestration itself: the design round, the state layer, the skill text | A file in the inbox with no options; never presented. The digest counts them. The `process-improvement` skill, run in the home, reads them in place and turns them into rows of the home's proposals file; nothing is copied (`process-improvement` § Intake). |
+| `process` | About the orchestration itself: the design round, the state layer, the skill text | A file in the inbox with no options; never presented; `asks.py inbox` lists them. The `process-improvement` skill, run in the home, reads them in place and turns them into rows of the home's proposals file; nothing is copied (`process-improvement` § Intake). |
 
 Triage happens when the orchestrator writes the file. A finding routed "to the user" by a role brief is a candidate; the kind decides whether it is asked. One finding can yield a record correction and a file: the stale sentence is fixed and journaled now, and the product question it exposed is a separate `decision`. The record shows this pairing is the common case.
 
@@ -141,7 +141,7 @@ A role that routes a finding to the user (`roles/reviewer.md` `route-to-user`, `
 - its kind and evidence (`templates/architect-finding.md` § Kind),
 - what it blocks: a task, a merge, the next plan, the change's done, or nothing.
 
-A finding routed to the user without these is not asked as it stands. When the gap is a matter of reading (the flag's help text, the doc the finding cites, whether the ledger has entries), the orchestrator fills it; when it is a matter of redoing the analysis, the finding goes back to the role. A PM candidate question in the digest is the same: the orchestrator writes its file, since the PM does not read code.
+A finding routed to the user without these is not asked as it stands. When the gap is a matter of reading (the flag's help text, the doc the finding cites, whether the ledger has entries), the orchestrator fills it; when it is a matter of redoing the analysis, the finding goes back to the role. A PM candidate question in its hand-back is the same: the orchestrator writes its file, since the PM does not read code.
 
 ## Blocking without a second artifact
 
