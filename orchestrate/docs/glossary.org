@@ -1,0 +1,941 @@
+#+TITLE: Glossary
+#+OPTIONS: ^:{} -:nil
+
+The orchestrate skill's agreed terms. The eleven below were agreed during the research effort =~/emacs-workspaces/claude-skills/research/skill-evals/= (2026-11-11). The =state-layer= branch adds this file too, with its own terms; when the two meet, the file holds both sets.
+
+The orchestrate terms below the evals' were drafted from the reference skill (=main= =e356da7=) and agreed with the user at the hand-off review of the =execute= spec, 2026-11-13; the draft, with each entry's source in =main=, is =research/skill-evals/glossary-draft.org=.
+
+* outcome
+Something =orchestrate= is supposed to result in that the user would notice without reading the skill text. Since 2026-11-12 the outcome list (=docs/outcomes.org=) is source material for the spec, and a requirement's =:GOAL:= carries the trace up to the north star.
+- Example :: "It would be better to establish a list of behaviors the orchestrate skill is supposed to result in, and have evals for those."
+- Avoid :: goal (the north star's word, for a whole change or many), requirement, behaviour (used loosely for both an outcome and a rule)
+- Specs :: skill-evals
+
+* rule
+Retired 2026-11-12. In a spec, what a rule stated is a requirement or a scenario (=templates/spec.md=); a sentence of the skill text cited as the origin of a backfilled statement is a quote in its extraction record.
+
+/As agreed 2026-11-11:/ An instruction in a flow or role doc that an agent must follow; how the skill produces an outcome.
+- Example :: a hand-back is one line of at most 200 characters.
+- Avoid :: behaviour
+- Specs :: skill-evals
+
+* interface artifact
+A file one step of the skill writes and another step, usually of a different role, reads as its input; the place where work passes between agents.
+- Example :: "These 'interface artifacts' are an important part of the design of this skill and fundamentally how we spread complex work across many agents with different roles."
+- Avoid :: hand-off (research's word), contract (harness-design's word, for a dependency)
+- Specs :: skill-evals
+
+* rubric
+The written criteria for one kind of interface artifact that an eval agent scores an instance against, item by item.
+- Example :: "we'll need to provide them with relevant rubricks they can record their evaluations against."
+- Avoid :: checklist, criteria alone
+- Specs :: skill-evals
+
+* eval agent
+An agent that evaluates what a step left, against the case's expected result and the rubric for its kind of artifact, and audits each of the case's checks; it takes no part in the step it evaluates and changes no verdict. Revised 2026-11-12 (the evals' spec revision); until then it evaluated against a rubric only.
+- Example :: "eval agents will need to examine the artifacts."
+- Avoid :: judge (the sources' word), Reviewer (a role of the skill)
+- Specs :: skill-evals
+
+* regression set
+The fixed cases a skill change must pass before it is installed; expected to pass near 100% on the installed skill.
+- Example :: its absence: "the cycles we use to evaluate a skill change are never the same."
+- Avoid :: test suite, benchmark
+- Specs :: skill-evals
+
+* advisory set
+Cases run beside the regression set whose result is reported and blocks nothing; where what is not yet reliable is measured.
+- Example :: "gate the install with an advisory set alongside."
+- Avoid :: soft gate, capability set (the sources' word)
+- Specs :: skill-evals
+
+* step
+One piece of work one agent does between receiving its input and handing back.
+- Example :: "many if not most or all of the steps taken by skill roles can be run with some kind of constructed mock input."
+- Avoid :: phase (a phase holds many steps), task (a unit of the change's work)
+- Specs :: skill-evals
+
+* case
+One eval: it cites the scenarios it tests, names the step where they are observed and the step's input, states its expected result, and holds the checks applied to what the step left. Revised 2026-11-12 (the evals' spec revision); until then it named one outcome or one rule.
+- Example :: the dispatcher's first step on a change whose cycle has closed, checked for a spawn of the plan phase agent.
+- Avoid :: test (a product's), scenario (a spec's)
+- Specs :: skill-evals
+
+* trial
+One run of a case. A case is run more than once because two runs of the same step on the same input differ.
+- Example :: "let measured agreement set the trials."
+- Avoid :: run alone (a replay is also run), attempt
+- Specs :: skill-evals
+
+* fixture
+What a step needs besides its interface artifact in order to run: a checkout of the code at a commit for an Implementor or a Reviewer, a home with its record for a phase agent or the dispatcher.
+- Example :: a clone of a home at the commit where a cycle closed.
+- Avoid :: snapshot, stand-in (the testing skill's word, for a fake of a real thing), mock
+- Specs :: skill-evals
+
+* fixture library
+The static files and git repositories fixtures are copied from, kept apart from the cases that explain what they plant. Agreed 2026-11-12 in the review of how the evals work.
+- Example :: "we want to prefer a library of static text (including git repos) instead of generating things all the time"
+- Avoid :: fixture builder, snapshot
+- Specs :: skill-evals
+
+* audit
+An eval agent's reading of one check in one trial, given the scenario it rests on, how it is computed, what it observed and the item of the expected result it serves: does the check, as computed, observe what the item expects? /agrees/, or /suspect/ with a reason. It never changes the check's verdict; a suspect check goes to a person. Agreed 2026-11-12 in the review of how the evals work; revised 2026-11-13 (D11), when checks came to read only what a spec fixes and the audit stopped being given the skill's change between two trees.
+- Example :: "instructing the evaluating agent to consider the results of the check in context of the desired change and how the check is performed"
+- Avoid :: override, re-judge, review (a role of the skill)
+- Specs :: skill-evals
+
+* validation
+A person's reading of one trial of a case, in full, against each of its checks, items and audits, recorded with the commit it was made at (the case's =:VALIDATED:=). The case's trials count only while what runs of it is unchanged since that commit. Agreed 2026-11-13, in place of "hand reading".
+- Example :: "the phrase “Hand reading” is strange, can we name this better?"
+- Avoid :: hand reading, review (a role of the skill), calibration (suggests tuning), sign-off
+- Specs :: skill-evals
+
+* reference skill
+The version of =orchestrate= a spec is extracted from: the current, working skill at a named commit, whose behaviour the spec first states. Agreed 2026-11-12 in the reopened research effort.
+- Example :: "we are taking the current orchestration skill as a known working baseline to start from"
+- Avoid :: baseline (=flows/execute.md='s word for the test run captured before merging), golden
+
+* extraction record
+The file, one per capability, in the research effort =research/skill-evals/extraction/= that shows where each statement backfilled into that capability's spec came from: the outcome ids, its provenance and its quotes from the reference skill. Frozen when the capability's spec is accepted; the spec never depends on it. Agreed 2026-11-12.
+- Example :: =extraction/execute.org=, whose entry for "execute § Only merging stops" quotes =flows/execute.md= § 4 on both trees.
+- Avoid :: basis, evidence (a research effort's agent files)
+
+* gap
+A behaviour a spec needs that the reference skill does not state: noted in the spec's =* Gaps= section, and never a requirement or scenario until the user decides it. Agreed 2026-11-12.
+- Example :: what becomes of the merge that broke a test, while the user decides the regression ask.
+- Avoid :: missing rule, TODO
+
+* provenance
+Whether a statement backfilled into a spec is =extracted= (the reference skill states it), =inferred= (our reading of it, reviewed by the user) or =filled= (a gap the user decided); recorded in the extraction record, not in the spec. Agreed 2026-11-12.
+- Example :: "execute § A regression is recorded against its task" is =inferred=: the two trees record it differently.
+- Avoid :: confidence
+
+* home
+The directory, with its own git repository, that holds a project's orchestrator configuration and
+every change's process artifacts; usually a workspace above one or more repositories, sometimes a
+repository's own root.
+- Example :: "committed in the home with a subject naming its id"
+- Avoid :: workspace (main's word for the usual shape of a home, not for the home itself), repo root, =$ORCH_HOME= in prose
+- Specs :: execute
+
+* code root
+The change's own worktree of its repository, on the change's integration branch: where task
+worktrees branch from, where tasks are merged and tested, and where code and the change's
+documents (specs, intent, design) are committed.
+- Example :: "merged, reviewed code on the change's integration branch, in its code root"
+- Avoid :: repo, checkout, the change's worktree (true but confusable with a task's worktree), =$CODE_ROOT= in prose
+- Specs :: execute
+
+* change
+One piece of work on one repository toward the goals its intent states, carried from opening
+through one or more cycles to done; it has its own integration branch, its own worktree and its
+own directory in the home.
+- Example :: "the change's integration branch"
+- Avoid :: proposal (OpenSpec's word, still in =externalisation.md=), feature, project
+- Specs :: execute
+
+* cycle
+One pass of plan, execute and integrate over a change; a change runs as many cycles as its work
+needs, each with its own id.
+- Example :: "once in each cycle before any merge (the baseline)"
+- Avoid :: iteration, sprint, round (main's "design round" runs before any cycle), wave (main uses it once, loosely, for a batch)
+- Specs :: execute
+
+* batch
+The set of tasks plan composes for one cycle, which that cycle's execute phase implements.
+- Example :: "turns a cycle's batch into merged, reviewed code"
+- Avoid :: wave, sprint, task list
+- Specs :: execute
+
+* integration branch
+The branch named after the change, in the change's repository, that each of its tasks merges into
+and on which its tests run.
+- Example :: "merged into the change's integration branch"
+- Avoid :: main, the trunk; workspace integration branch (another branch: the one several changes of one repository share and merge into when done)
+- Specs :: execute
+
+* worktree
+A separate checkout of the change's repository on a branch of its own. In the execute spec it is
+always a task's worktree: cut from the integration branch for one task, where that task's
+Implementor works, kept or removed as the task ends.
+- Example :: "its worktree is kept"
+- Avoid :: checkout (main's word for the Reviewer's), sandbox, workspace
+- Specs :: execute
+
+* the change's directory
+The change's place in the home that holds its process artifacts: its state, its cycles' directories,
+its inbox, its task files, its hardening list and the test outputs.
+- Example :: "its output is kept in the change's directory in the home"
+- Avoid :: change dir, =<change-dir>=, =$ORCH_CHANGE_DIR= in prose; the change's docs (that is the record in the code root)
+- Specs :: execute
+
+* the cycle's directory
+The directory, inside the change's directory, that holds one cycle's artifacts: the briefs, the
+Implementors' reports, the reviews, the applied asks, the handover and, once the cycle closes, its
+archived state.
+- Example :: "saved in the cycle's directory in the home"
+- Avoid :: cycle archive (main's heading for it, which suggests it is written only at close), =cycles/<id>/=
+- Specs :: execute
+
+* dispatcher
+The session the user invokes the skill in: it spawns each phase agent, receives its one-line
+hand-back, and is the only agent that puts questions to the user.
+- Example :: "Whether the user is present is the dispatcher's to know"
+- Avoid :: orchestrator (main's flow docs use it for the phase agent), main thread, session
+- Specs :: execute
+
+* phase agent
+The agent, spawned fresh by the dispatcher, that runs one phase of one cycle by its flow: it spawns
+the role agents the flow names, runs the gate, makes the close commit and hands back one line.
+- Example :: "neither review is made by the execute phase agent itself"
+- Avoid :: orchestrator (see Note), coordinator, main agent
+- Specs :: execute
+
+* Implementor
+The role agent that does one task in the task's own worktree, against a brief, and hands back its
+commit; it also appends its Observations and Discoveries to the task file and writes a report for
+the phase agent.
+- Example :: "Each task is implemented by an Implementor in a worktree of its own"
+- Avoid :: worker (covers Reviewers too), implementer, coder, author (the Reviewer is "author-blind" to it, which is fine as a description, not a name)
+- Specs :: execute
+
+* Reviewer
+The role agent that reviews one merged task, author-blind: it reads the merge's diff against the
+seam rows and scenarios the task cites, may probe the merge read-only, and writes its findings to a
+file.
+- Example :: "reviewed author-blind by a Reviewer of its own"
+- Avoid :: reviewer agent, code reviewer, =/code-review= (a separate tool main cites as finding what reviews missed)
+- Specs :: execute
+
+* agent setting
+The model and effort an agent is spawned at, taken as a pair.
+- Example :: "at the agent setting its role or its task names"
+- Avoid :: model alone, effort alone, config, tier
+- Specs :: execute
+
+* role default
+The agent setting every agent of a role gets unless the plan sets another for a task.
+- Example :: "at the Implementor's role default otherwise"
+- Avoid :: default model, base setting
+- Specs :: execute
+
+* rework
+The run of a re-spawned Implementor on a task already merged, to fix a blocking finding or a
+regression in it.
+- Example :: "A rework runs at the task's setting, never a stronger one"
+- Avoid :: retry, re-implementation (main's word in =state.md= for the status move), rejection (main's count of send-backs); for a fresh Implementor after a wrong premise, which main's =implementor-rework= role also covers
+- Specs :: execute
+
+* baseline
+The run of the project's test command on the integration branch, taken once per cycle before the
+cycle's first merge, that every later run in the cycle is compared against. "Green" when every test
+passed in it, "red" when some already failed.
+- Example :: "against the cycle's baseline"
+- Avoid :: baseline snapshot (main's fuller name), snapshot, the reference skill (the evals' word; its glossary entry already warns against "baseline" for it)
+- Specs :: execute
+
+* regression
+A test that passed in the cycle's baseline and fails in the run after a merge.
+- Example :: "a test that passed in the baseline and fails after a merge as a regression"
+- Avoid :: test failure (a red baseline already has failures that are not regressions), breakage
+- Specs :: execute
+
+* merge queue
+The landed tasks waiting their turn to merge, in the order their Implementors landed them.
+- Example :: "the task rejoins the merge queue"
+- Avoid :: backlog, pending merges
+- Specs :: execute
+
+* merge chain
+The one-at-a-time merging of queued tasks into the integration branch, each followed by its test
+run; serial because there is one integration branch, and stopped as a whole by a regression.
+- Example :: "The merge chain does not wait for a review"
+- Avoid :: merge pipeline, merge loop
+- Specs :: execute
+
+* main path
+The uses the intent's goals name, worked end to end, on the inputs and errors those goals name; a
+defect that breaks one is fixed in the change, any other waits on the hardening list.
+- Example :: "a discovery on the change's main path"
+- Avoid :: critical path (main's plan uses =on_critical_path= for tasks on it, a near-synonym), happy path, MVP (what the main path working end to end amounts to)
+- Specs :: execute
+
+* discovery
+A defect or other significant finding an Implementor records in the task file's Discoveries, or one
+the phase agent finds itself while merging (a latent bug a regression surfaced, a structural issue
+behind an abandoned merge).
+- Example :: "an Implementor's report lists a discovery on the change's main path"
+- Avoid :: candidate (main's report field =candidate_tasks= lists discoveries outside the task), note
+- Specs :: execute
+
+* Observation
+One note an Implementor, or the inline path's phase agent for its own task, appends to the task file
+under Observations: a departure from the prescribed
+approach, a weak test, an ambiguity it resolved, a speculative need; kept as the record and never
+shown to the Reviewer.
+- Example :: "An Observation that names a defect is routed like a discovery"
+- Avoid :: note, comment, remark
+- Specs :: execute, implementor, inline-path
+
+* finding
+A defect, or a suspected defect, that an agent reports about code or text that exists. Main labels
+each with a kind (issue, question, thought); routing then gives it a decoration (blocking,
+hardening); a Reviewer's finding also carries a direction, one of which is spec-signal.
+- Example :: "route each finding of a review"
+- Avoid :: comment, defect (a finding may only suspect one), bug
+- Specs :: execute
+
+* blocking finding
+A finding the phase agent routes to be fixed in the change before its task is done: a defect on the
+main path, or an untrue sentence. Not the sense in which an ask blocks a task or a merge.
+- Example :: "A blocking finding is reproduced, then fixed, before the task is done"
+- Avoid :: decoration (main's word for the route), severity (the reporter's estimate of harm, which orders the list and does not route), kind, priority
+- Specs :: execute
+
+* spec signal
+A Reviewer's finding that the design or a spec, rather than the code, may be what is wrong; it
+becomes a decision ask at once and does not hold its task.
+- Example :: "A spec signal becomes an ask at once and does not hold its task"
+- Avoid :: design drift (another direction: the code drifted from the design), spec bug
+- Specs :: execute
+
+* stopgap
+The smallest change, carried by a spec-signal finding of kind issue, that makes the defect fail
+loudly (an error, a refusal) instead of succeeding wrongly, and that holds whichever answer the ask
+gets.
+- Example :: "A spec signal's stopgap is applied before done and named in the ask"
+- Avoid :: workaround, hotfix, interim fix
+- Specs :: execute
+
+* inline fix
+A fix the phase agent makes and commits itself in the code root, without an Implementor.
+- Example :: "the phase agent makes it as an inline fix"
+- Avoid :: inline path (a separate flow for small out-of-cycle edits), inline rule (when an ask stops the session), hotfix, direct edit
+- Specs :: execute
+
+* follow-up candidate
+A task the phase agent proposes, but does not write, for the next plan: a fix that is not simple, the
+work an answer on the main path needs, or concrete work a pattern or a prior names; recorded with the
+source's own words for the plan agent to turn into a task file.
+- Example :: "a follow-up candidate is written for the next plan, marked critical"
+- Avoid :: follow-up task (main uses it for both the candidate and the task the plan writes from it), candidate task, task file
+- Specs :: execute, integrate, plan
+
+* hardening list
+The change's one list of reasoned defects and robustness work off the main path, shown to the user
+with the MVP and worked only if they choose to harden.
+- Example :: "an entry on the change's hardening list"
+- Avoid :: backlog (=.tasks/= is main's cross-change backlog), tech debt, TODO list
+- Specs :: execute
+
+* record correction
+A correction to a statement in the change's design or specs that right code no longer matches;
+never an ask.
+- Example :: "the change's journal records the statement for integrate as a record correction"
+- Avoid :: doc-correction (main's retired ask kind for the same thing), text correction (prose outside the design and specs), amendment
+- Specs :: execute
+
+* ask
+A question the orchestrator needs the user to settle, written as one file in the change's inbox the
+moment it arises and answered there. Main has five kinds: decision (only the user can choose, and the
+choice changes the product), environment (a licence, a permission, a wedged runner, an unreadable
+state file), confirmation (a default already applied, recorded without asking), process (about the
+orchestration itself, never put to the user), and the retired doc-correction, now a record correction.
+- Example :: "a =decision= ask is filed that names the choice"
+- Avoid :: question alone (also a finding kind), escalation, prompt, user query
+- Specs :: execute
+
+* journal
+The change's one-line notes for what has no other home: the phase agent's discoveries and their
+routes, decisions such as a conflict resolution, inline fixes, push-backs and deviations.
+- Example :: "the change's journal records the cause against the task"
+- Avoid :: log, notes, the record
+- Specs :: execute
+
+* the change's record
+The change's process kept in the home: its directory, its state and its journal.
+- Example :: "the change's record shows the regression against the task"
+- Avoid :: the cycle's record (the same record), state file or =state.json= in prose; "record" for the change's documents in the code root (call those the change's documents)
+- Specs :: execute, record
+
+* handover
+The file a phase agent writes when asked to hand over: the tasks merged, the tasks and asks still
+open, and the steps left, so that a fresh agent for the same phase can go on from it.
+- Example :: "leave a handover a fresh agent can continue from"
+- Avoid :: hand-back (the one line), handoff (the research skill's word, and the evals' glossary avoids it for interface artifacts), checkpoint, swap
+- Specs :: execute
+
+* hand-back
+The one line, at most 200 characters, an agent returns to the agent that spawned it when it ends or
+stops; its detail is in a file.
+- Example :: "the dispatcher receives one line of at most 200 characters"
+- Avoid :: report (a file of the Implementor's), summary, handover, return message
+- Specs :: execute
+
+* seam row
+One row of the Seams table in the change's design: one seam, its id, the statement of what must hold
+at the boundary, its owning symbols, the scenarios it serves and the tests that pin it.
+- Example :: "the seam rows the task cites, verbatim"
+- Avoid :: design row, interface, contract alone
+- Specs :: execute
+
+* gate
+A phase's exit gate: the checks, mostly computed from state and the files on disk, that must all hold
+before the phase counts as passed and the next phase may start.
+- Example :: "*WHEN* execute passes its gate"
+- Avoid :: checkpoint, milestone, exit criteria
+- Specs :: execute
+
+* task
+One unit of a change's work: what to build, which seam rows and scenarios it implements and which
+pending tests it promotes, done by one Implementor and reviewed by one Reviewer.
+- Example :: "Each task is implemented by an Implementor in a worktree of its own"
+- Avoid :: ticket, story, step (the evals' word for one agent's piece of work)
+- Specs :: execute
+
+* task file
+The document in the home that states one task, which its Implementor reads and appends its
+Observations and Discoveries to; plan writes it, or the inline path for its own task.
+- Example :: "It writes no task file"
+- Avoid :: task body (main's name for the same text), task brief (main's =reviewer_input= field for it), brief (the Implementor's assembled input), ticket
+- Specs :: execute, inline-path, plan
+
+* seam
+A contract between two parts of the code: who produces a thing, who consumes it, and what must hold
+at the boundary; the design records each one as a seam row.
+- Example :: "touches no seam's code"
+- Avoid :: interface, boundary alone, API
+- Specs :: execute
+
+* scenario
+One case of a requirement in a capability's spec, stated When/Then; tests cite it by its capability
+and title, and its coverage is computed from them.
+- Example :: "the seam rows and scenarios the task cites"
+- Avoid :: test case, use case, acceptance criterion
+- Specs :: execute
+
+* intent
+The change's document of why it exists: its goals and non-goals, the capabilities it touches, and its
+status line; the goals decide the main path.
+- Example :: "when the intent's goals do not settle what the code should do"
+- Avoid :: proposal, spec (the requirements), design
+- Specs :: execute
+
+* spec
+A capability's living statement of its requirements and scenarios, edited in place by each change.
+- Example :: "a spec scenario the fix would change"
+- Avoid :: delta, design, intent
+- Specs :: execute
+
+* brief
+The input a spawned agent is given; in the spec, an Implementor's brief, assembled by the phase agent
+from the task and saved in the cycle's directory so the review and the audit trail can see what the
+Implementor saw.
+- Example :: "the brief it was given is saved in the cycle's directory"
+- Avoid :: prompt, instructions, task file (the task is one part of the brief)
+- Specs :: execute
+
+* report
+An Implementor's structured account of its task, written to a file for the phase agent only and never
+shown to the Reviewer.
+- Example :: "never the Implementor's report, notes or identity"
+- Avoid :: hand-back (the one line), findings file, summary
+- Specs :: execute
+
+* review file
+The file in which a Reviewer writes its findings, thoughts and probe output for one task.
+- Example :: "every task that was reviewed has its Reviewer's review file"
+- Avoid :: findings file (main's other name for it), review, report
+- Specs :: execute
+
+* inbox
+The place in the change's directory where open asks wait for their answer.
+- Example :: "it is an ask file in the change's inbox"
+- Avoid :: queue, mailbox, asks list
+- Specs :: execute
+
+* issue, question, thought
+A finding's three kinds, by the reporter's confidence: an issue is a defect that can be pointed at
+in code or text that exists; a question is a suspected one, with the reproduction that would settle
+it; a thought is a speculative need that would arise only after some future change, never a task by
+itself.
+- Example :: "it is routed as an issue, with one journal line"
+- Avoid :: kind for blocking/hardening/spec-signal (see finding), comment, nit
+- Specs :: execute
+
+* untrue sentence
+A sentence in prose that exists (a README, a help text, a comment, a spec, the design, an agent's
+instructions) and states something false; a kind of issue, routed blocking and fixed by correcting
+the text alone.
+- Example :: "An untrue sentence in prose is corrected at once"
+- Avoid :: doc bug, stale doc, typo
+- Specs :: execute
+
+* reproduction
+The test or probe that fails on a defect before its fix and passes after; the first step of every fix
+on the main path.
+- Example :: "its first step is the reproduction"
+- Avoid :: repro, failing test alone (a probe can be the reproduction), pin (see that entry)
+- Specs :: execute
+
+* pin
+The regression test that holds a fix in place: it fails before the fix and passes after it, and
+drives the same real surface the defect was shown on.
+- Example :: "a test against a fake of the surface is not taken as the pin"
+- Avoid :: regression test alone (main's word for it, but "regression" means a broken baseline test in execute), guard
+- Specs :: execute
+
+* probe
+A script or command a Reviewer runs read-only against the merge's checkout, in its own scratch
+directory, to drive the real code and show a defect.
+- Example :: "a test or probe that fails on the defect"
+- Avoid :: experiment, spike, manual test
+- Specs :: execute
+
+* premise
+A claim a task or its cited seam rows make about the code as it stands (a symbol exists, a path is
+reachable, the behaviour is not already there); a wrong premise that changes what the task should do
+stops the task.
+- Example :: "A wrong premise blocks its task without an ask"
+- Avoid :: assumption, precondition
+- Specs :: execute
+
+* priors
+The user's standing rules for the project, one line each in the user's own words, given to every
+agent's brief.
+- Example :: "the project's review standards and priors"
+- Avoid :: preferences, rules alone (the evals' glossary retired "rule"), conventions
+- Specs :: execute
+
+* review standards
+The project's own additions to the Reviewer's role, kept in the project's overlay.
+- Example :: "the project's review standards and priors, when the project has them"
+- Avoid :: reviewer standards, review checklist, style guide
+- Specs :: execute
+
+* scratch directory
+A working directory outside the home and the code root, named in an agent's brief, for its drafts and
+probes; never a fixed name shared with other agents, and gone when its work ends.
+- Example :: "it writes it in the scratch directory its brief names"
+- Avoid :: tmp, scratchpad (the session's own, which holds the agents' scratch directories)
+- Specs :: execute
+
+* worker
+An Implementor or Reviewer the phase agent spawned and that is still its responsibility until it
+hands back.
+- Example :: "never while a worker it spawned is still running"
+- Avoid :: subagent, role agent (main's word, which includes the Architect and PM)
+- Specs :: execute
+
+* phase
+One stage of a cycle, run by its own phase agent to its own gate: plan, execute and integrate (and,
+outside the cycle, opening, the design round and the inline path).
+- Example :: "those belong to plan and integrate"
+- Avoid :: step (the evals' word for one agent's piece of work), stage
+- Specs :: execute
+
+* done
+The end state of a task whose merge passed its tests, was reviewed by its own Reviewer, and had every
+blocking finding fixed.
+- Example :: "A task is done only after its merge is reviewed"
+- Avoid :: merged, executed (main's word in the opening of =flows/execute.md=), closed, complete (=completed= is an earlier status in main)
+- Specs :: execute
+
+* stopped (failed, blocked, externalised)
+The three ends of a task other than done: failed (its Implementor committed nothing, or its rework
+failed), blocked (held by an ask, a merge conflict or a wrong premise), externalised (moved to the
+cross-change backlog). A stopped task lets the phase close.
+- Example :: "every task of the batch is done, failed, blocked or externalised"
+- Avoid :: abandoned, cancelled, skipped
+- Specs :: execute
+
+* coverage
+A scenario's status as computed from the tests that cite it and their last run (failed, pending,
+passing, not test-worthy, uncited); never written by hand.
+- Example :: "each scenario it cites with that scenario's coverage"
+- Avoid :: test coverage (line coverage), traceability
+- Specs :: execute
+
+* push-back
+The phase agent's answer to a Reviewer's flag on a choice the Implementor made for a sound but
+unwritten reason: the reason is written down in the code, a test or a seam row, and the flag is not
+acted on.
+- Example :: "the change's journal records that the flag was pushed back"
+- Avoid :: rejection, override, productive tension (main's heading for the situation)
+- Specs :: execute
+
+* clean point
+The moment a phase agent asked to hand over may write its handover: every worker it spawned has
+reported, every landed task is merged and tested or held by an ask, and the state says where each
+task is.
+- Example :: "it SHALL stop at a clean point"
+- Avoid :: checkpoint, safe point, quiescence
+- Specs :: execute
+
+* handshake
+The file integrate leaves in the change's directory when a cycle closes, which the next cycle's plan
+reads before it drafts: the seam rows that moved, the PM digest's path, the meta-discoveries
+(patterns across tasks), the user's goal-drift answers, the asks open and settled, each open task's
+impact set, the follow-up candidates and the cycle's journal. No cycle after the first starts
+without it.
+- Example :: "Integrate SHALL leave in the change's directory a handshake for its cycle"
+- Avoid :: handover, hand-back (agreed terms for other things), handshake artifact and integrate→plan handshake artifact (main's full name, in prose), hand-off, contract, loop-closure artifact
+- Specs :: record, plan, integrate
+
+* counts
+The numbers of a cycle computed from the change's state: the tasks created, carried, started,
+completed, reviewed, sent back, fixed inline, externalised, blocked, failed and done, and the four
+ratios between them; never stored in the state and never written by an agent.
+- Example :: "A cycle's counts SHALL be computed from the change's state"
+- Avoid :: metrics, stats, signals (the PM digest's word for what it reads from them)
+- Specs :: record
+
+* PM digest
+The PM's one file per cycle, written at integrate in the cycle's directory: the counts and the
+signals they fire, the asks for the user, the trends to watch, the meta-discoveries and the
+goal-drift check; integrate's gate checks that its Signals section is not empty.
+- Example :: "the cycle's PM digest exists with a non-empty Signals section"
+- Avoid :: report (the Implementor's file), status report, summary, the digest alone where the reader may not know whose, =pm-signals.json= (the computed output it is written from)
+- Specs :: record, integrate, project-manager
+
+* goal drift
+A sign, read by the PM from the counts across cycles, that the change is moving away from the goals
+its intent states (the main path's completion flat or falling while other work completes); integrate
+puts it to the user as a =decision= ask with four options (revise, split, abandon, continue), and the
+next plan waits for the answer.
+- Example :: "every goal-drift recommendation the prior integrate carried has the user's answer"
+- Avoid :: scope creep, divergence alone (=divergent= is the intent's status once the ask is raised)
+- Specs :: record, plan, integrate, project-manager
+
+* send-back
+A task's return from review to an Implementor, its status moving from =needs_review= or =reviewed=
+back to =in_progress=; counted on the task and in the cycle's counts as rejected.
+- Example :: "A send-back is counted on the task"
+- Avoid :: rejection (main's field name, which suggests the work is thrown away), bounce, rework (the re-spawned Implementor's run itself)
+- Specs :: record
+
+* task override
+Plan's change to one task's agent setting, written in its task file with a one-line reason the
+task's text bears out; it may raise or lower the Implementor and only raise the Reviewer.
+- Example :: "*WHEN* an agent runs at a task override"
+- Avoid :: override alone, custom setting, agent block (its form in the task file), tier change
+- Specs :: record, plan, execute
+
+* readback
+The phase agent's restatement of an answer that is not one of the ask's options (free text, a near
+match, a rule) as the consequence it will have, written under the ask's =* Readback=, at most 600
+characters; applied only once the user says yes to it.
+- Example :: "a =* Readback= restates it as a consequence, in at most 600 characters"
+- Avoid :: confirmation (an ask kind), echo, summary
+- Specs :: asks
+
+* sync point
+One of the fixed moments at which the inbox is read for answers and an answered ask is handled
+before any other work: a session's or a phase agent's start, a phase boundary, a scheduled wake-up,
+the user's next message.
+- Example :: "*WHEN* a sync point is reached and an ask in the inbox has an answer"
+- Avoid :: checkpoint (a gate's Avoid), poll, check-in
+- Specs :: asks
+
+* MVP decision
+The one =decision= ask a change raises when its main path first works end to end: harden, rethink or
+stop, showing what the change does, how to try it, the hardening list, the open tasks off the main
+path and the record corrections; nothing more runs on the change until the user answers it.
+- Example :: "*WHEN* the MVP decision ask is open"
+- Avoid :: MVP alone (the working version, not the question), MVP gate, MVP ask, MVP stop, sign-off, release decision, acceptance
+- Specs :: asks, opening, plan, integrate
+
+* YAGNI check
+The test a feature, option, generalisation or question must pass to earn work: an intent goal needs
+it, or there is a demonstrated reason (it happened, a prior, the user asked, a measured cost).
+- Example :: "no option that fails the YAGNI check is recommended"
+- Avoid :: scope check, necessity test
+- Specs :: asks
+
+* seam objection
+A Discoveries entry in which an Implementor says that a seam row its task cites is wrong for the
+code, naming the row as its =affected_seam=; the work does what the code needs, the report lists the
+objection under =push_backs=, and integrate's conformance decides whether the row is amended.
+- Example :: "A seam row the work shows wrong gets a seam objection"
+- Avoid :: push-back (the agreed term for the phase agent's answer to a Reviewer's flag; main uses it for both), amendment (integrate's act on the row)
+- Specs :: implementor
+
+* pending test
+A test the design round writes for a scenario whose behaviour the code does not yet have, citing the
+scenario and marked in the project's pending style so the runner reports it as pending, never as
+failing; a task names the pending tests it promotes, and its Implementor removes the mark in the
+task's commit.
+- Example :: "The commit promotes the pending tests the task names"
+- Avoid :: failing test, skipped test, stub, test stub (main's retired quarantined stubs), xfail (one runner's mark)
+- Specs :: implementor, design-round, architect
+
+* deviation
+A departure an Implementor's work makes from what its task prescribes (scope beyond the task, a
+different approach, a test the task did not write changed to fit), declared in the report's
+=deviation_summary=, flagged =deviated= in the hand-back, and explained in the Observations.
+- Example :: "A deviation is flagged in the hand-back"
+- Avoid :: drift (integrate's word for code and design parting), scope creep; the journal kind =deviation= (a move off the flow, =record='s field value) is not this term
+- Specs :: implementor
+
+* whole-change review
+The review, by one Reviewer of its own at each integrate whose cycle merged code, of the whole
+change's diff since its base, looking for what no task's review could see; written as one review file
+of the cycle.
+- Example :: "The whole-change review is one review file of its cycle"
+- Avoid :: final review, change review, review alone, =/code-review= (a separate tool)
+- Specs :: reviewer, integrate
+
+* direction
+The one of three places a Reviewer's finding looks: =sub-par-code= (the diff's code, and code or
+tests that exist which it calls or is called by), =design-drift=, =spec-signal=; only =spec-signal=
+changes how a finding is routed.
+- Example :: "A finding about the change's work names the direction it looks in"
+- Avoid :: kind (a finding's =issue= / =question=), category, class (the Architect's field)
+- Specs :: reviewer
+
+* severity
+The reporter's estimate of how bad a defect is when it triggers: =high=, =medium= or =low=; it
+orders the hardening list and never routes.
+- Example :: "Severity is the harm when the defect triggers"
+- Avoid :: priority, blocking (a route), impact
+- Specs :: reviewer
+
+* Architect
+The role agent that writes the change's design and keeps it true to the code: it runs at the design
+round, at each plan's premise check, at each integrate's conformance and at a PM cascade, reports
+every defect it finds as a finding, and commits nothing.
+- Example :: "The round's phase agent spawns the Architect"
+- Avoid :: designer, architect agent; role agent alone (main's word, which also covers the Implementor and Reviewer)
+- Specs :: architect, design-round, integrate, project-manager
+
+* design
+The change's document of how the code will meet its scenarios, =docs/changes/<change>/design.org= in
+the code root beside the intent: Context, Decisions, the Seams section and, while any are open, Open
+Questions; written by the design round, read by plan, briefs and reviews, changed only by conformance
+and plan's one-row corrections. Its full form is "the change's design".
+- Example :: "The design round writes the change's design beside its intent"
+- Avoid :: design doc, =design.org= in prose, catalogue (the retired project-wide interface list), the record (the change's documents are not the change's record)
+- Specs :: architect, design-round
+
+* Decision
+One entry of the design's Decisions: what must hold and why, naming by id the seam it concerns;
+never a guard, an error string, an encoding or a helper. An answered open question becomes one.
+- Example :: "An answer is written into the design's Decisions and the spec it settles"
+- Avoid :: decision alone where the ask kind is meant (a =decision= ask), design decision, ADR, rationale
+- Specs :: architect, design-round
+
+* design round
+The step, once per change after its intent and spec edits and before its first cycle, in which a
+phase agent has the Architect write the change's design and pending tests, commits them, and has the
+user answer every question they raise in one sitting; run again for one seam when an answer or a
+spec change alters it.
+- Example :: "The design round writes the change's design beside its intent"
+- Avoid :: round alone, design phase, design cycle (it is not a cycle), design review
+- Specs :: architect, design-round
+
+* premise check
+The Architect's run at plan, before the batch is fixed, that checks each premise of the tasks it is
+given against the code at the code root's HEAD and marks each Holds or Wrong.
+- Example :: "The premise check writes a table of premises per task"
+- Avoid :: plan-time review, batch review, claim check, verification (a task file's section)
+- Specs :: architect, plan
+
+* conformance
+The Architect's run at each integrate, or on a PM cascade, that checks the merged code against the
+seam rows the cycle's tasks cite, scans the merged diffs for replaced code still live, and amends a
+row the code has rightly outgrown.
+- Example :: "A clean conformance says so in the journal"
+- Avoid :: audit (the retired full structural audit; an evals term), design review, drift check, conformance check and conformance run as other names for it
+- Specs :: architect, integrate, project-manager
+
+* open question
+An entry of the design's Open Questions, or the intent's: a question only the user can settle, with
+two to four options, a recommendation and the seam rows and pending tests that depend on it; it
+reaches the user as a =decision= ask and becomes a Decision once answered.
+- Example :: "An open question is an entry in the design's Open Questions"
+- Avoid :: ask (the file that carries it), question alone (also a finding's kind), TBD, provisional decision
+- Specs :: architect, design-round, opening
+
+* design diff
+The list, in the cycle's directory, of every seam row the cycle added, amended or retired, each with
+the finding or ask behind it; empty when no row changed.
+- Example :: "Conformance's hand-back names its design diff"
+- Avoid :: design delta, changelog
+- Specs :: architect
+
+* class
+The label of an Architect finding naming which question of the design checklist it answers no to:
+=shape-fragmentation=, =vocabulary-mismatch=, =responsibility-leakage=, =dead-branch=,
+=interface-drift=, =mutation=, =invariant-gap= or =duplication=.
+- Example :: "A finding carries the class of the design checklist"
+- Avoid :: kind (the reporter's confidence), category, type
+- Specs :: architect
+
+* sitting
+A run of calls the dispatcher puts to the user one after another, with no other work between them;
+the design round's questions are all put in one.
+- Example :: "The round's questions are put in one sitting, one per call"
+- Avoid :: session (the dispatcher's whole run), meeting, batch (the plan's set of tasks), round (the design round)
+- Specs :: design-round, dispatcher
+
+* base
+The commit a change starts from, named in its intent; the change's spec edits are its specs' diff
+from it.
+- Example :: "the change's base"
+- Avoid :: =#+BASE:= in prose, baseline (the cycle's test run before its first merge), merge base
+- Specs :: design-round
+
+* workspace integration branch
+The branch several changes of one repository share when one hand-off produced them: each is opened
+from it, takes it in before its design round and its whole-change review, and merges into it when
+done; its merge to main is the user's.
+- Example :: "A moved workspace integration branch is merged in before the Architect runs"
+- Avoid :: integration branch alone, main, trunk
+- Specs :: design-round, opening, integrate
+
+* overlay
+A home's own configuration for the skill, kept in the home: its repositories, each one's test command
+and hooks, where worktrees go, its additions to each role, and the user's priors.
+- Example :: "The dispatcher SHALL tell the user explicitly when no overlay is found for the home"
+- Avoid :: config, settings (the agent setting is another thing), project configuration
+- Specs :: dispatcher, execute
+
+* relay
+The dispatcher's showing the user what a phase agent handed back: the line itself, then the open
+decisions, one per call while the user is present and one line each while absent.
+- Example :: "the dispatcher relays the line, which gives the user the intent's path"
+- Avoid :: report (the Implementor's file), forward, echo
+- Specs :: dispatcher
+
+* call
+The dispatcher's putting one ask to the user through the session's question tool: the question, its
+options with the recommended one marked, and =Not now=; answered by an option or in the user's own
+words.
+- Example :: "the dispatcher puts that ask to the user in a call holding it alone"
+- Avoid :: blocking call (main's name; every call waits), prompt, popup, =AskUserQuestion= in prose
+- Specs :: dispatcher
+
+* present, absent
+Whether the user is at the session: present when they sent a message in its last 15 minutes, absent
+otherwise and in a session with no message from them. The dispatcher decides it.
+- Example :: "*WHEN* the session holds no message from the user in its last 15 minutes, or none at all"
+- Avoid :: available, online, idle
+- Specs :: dispatcher, execute
+
+* Not now
+The option every call offers, whose answer leaves the ask open; on an ask that blocks work waiting
+now it has the result the user's absence has.
+- Example :: "the call offers =Not now="
+- Avoid :: skip, later, defer (=deferred= is an ask status the user writes in the file)
+- Specs :: dispatcher
+
+* impact set
+For one task still open in a change, what the cycle did that touches it (a seam row it cites that
+moved, a pattern that names it, a user's answer, an inline fix in its files, a wrong premise), given
+per open task in the handshake and empty when nothing touched it; plan applies it to the task file
+before the batch is fixed.
+- Example :: "plan changes an open task's file to absorb its impact set"
+- Avoid :: task refinement (main's field name), update (the stanza is one way an impact is absorbed), delta
+- Specs :: plan, integrate
+
+* harden, rethink, stop
+The three answers to the MVP decision: work the hardening list and the open tasks off the main path;
+rewrite the goals and run to a new MVP; or end the change as it is.
+- Example :: "on =stop= or =rethink= it SHALL open no cycle"
+- Avoid :: continue, abandon (goal-drift options); this stop is a change's, not the task state stopped
+- Specs :: plan
+
+* PM
+The project manager: the role agent that, at each integrate, reads the cycle's counts and signals and
+writes the PM digest; it reads no code, recommends, and decides nothing.
+- Example :: "*WHEN* the PM's goal-drift query fires"
+- Avoid :: project manager agent, manager, PM agent pass (main's name for one of its halves); project manager in full only once
+- Specs :: integrate, project-manager
+
+* closing summary
+The =* Status= entry written with a change's =done= status line: what the change does per goal, the
+hardening entries worked and left, the open tasks left, and the corrections made to specs and prose.
+- Example :: "with the closing summary under its =* Status="
+- Avoid :: final report, release notes, summary alone
+- Specs :: integrate
+
+* goal-drift ask
+The =decision= ask integrate raises when the PM reads goal drift, offering the user revise, split,
+abandon or continue; plan waits for its answer.
+- Example :: "or =revise= on a goal-drift ask"
+- Avoid :: goal-drift signal (the PM's evidence that raises it), divergence
+- Specs :: opening, integrate, plan
+
+* cross-change backlog
+The home's =.tasks/= store of work noticed in one change and left outside it, each file one item,
+kept with its provenance until a later change takes it up.
+- Example :: "A task outside the change is placed in the cross-change backlog"
+- Avoid :: =.tasks/= in prose, backlog alone, ticket, externalised store
+- Specs :: opening, plan, project-manager
+
+* inline path
+The phase, outside any cycle's batch (between cycles or while one is open), in which one phase agent
+writes a task file from the user's request, makes the small change in the code root, verifies and
+reviews it itself and commits it, with no worktree, Implementor or Reviewer, bailing out when it grows.
+- Example :: "No Implementor or Reviewer is spawned"
+- Avoid :: inline fix (execute's), inline rule, inline task, trivial path, fast path
+- Specs :: inline-path
+
+* triage
+The inline path's test of whether an edit is small enough for it: one file, no seam's code, no tests
+that need state set up, and a verification whose output is predictable; in doubt, the edit goes to a
+batch. Execute's simple fix uses the same test.
+- Example :: "A request the triage refuses is a bailout with nothing to revert"
+- Avoid :: eligibility, sizing
+- Specs :: inline-path, execute
+
+* bailout
+The inline path's stop when the triage refuses the edit or the edit outgrows it: the code root put
+back as it was, the task file left open with the reason, and one line handed back.
+- Example :: "A bailout leaves the code root as it was"
+- Avoid :: abort, fallback, escalation, revert alone
+- Specs :: inline-path
+
+* design in question
+A seam row the merged code or an edit contradicts by doing something else, with no test pinning the
+code, so that only the user's choice settles it; it becomes a =decision= ask, never a record
+correction.
+- Example :: "A design in question is a decision ask that holds the commit"
+- Avoid :: design drift (code that drifted from a right design), spec signal (the Reviewer's finding of it)
+- Specs :: inline-path, integrate
+
+* signal
+One line of the PM digest's Signals section: a condition on the counts that holds or not this cycle,
+marked ⚠ (actionable), ✓ (healthy) or ◦ (informational), with what it recommends.
+- Example :: "the digest carries a ⚠ throughput signal"
+- Avoid :: alert, warning; spec signal (a Reviewer's direction: a different thing)
+- Specs :: project-manager
+
+* history window
+The cycles before this one whose counts the digest shows and the signals read; five unless the
+project sets another.
+- Example :: "for this cycle and each cycle of the history window"
+- Avoid :: K in prose, lookback
+- Specs :: project-manager
+
+* drainage
+Tasks completed over tasks created in a cycle, created counting no task carried in; below one the
+change's queue grows.
+- Example :: "drainage below 1.0 for 3 consecutive cycles"
+- Avoid :: throughput (the table's name), velocity
+- Specs :: project-manager
+
+* cascade
+One task from which more tasks were discovered than the project's threshold, repeatedly; a sign of a
+design or contract gap around it. Its cluster is the task and the tasks discovered from it.
+- Example :: "A cascade starts the Architect's conformance, not a question"
+- Avoid :: follow-up cascade (main's heading), explosion
+- Specs :: project-manager
+
+* candidate question
+A question the PM proposes in its digest, from which the phase agent writes an ask file; never an ask
+until written.
+- Example :: "A task blocked on anything else is a candidate question"
+- Avoid :: candidate ask, ask (the file), follow-up candidate (a task proposed for plan)
+- Specs :: project-manager

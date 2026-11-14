@@ -78,10 +78,9 @@ What belongs in `## Observations`:
 - Departures from the task body's prescribed approach (with evidence)
 - Tests that pass but are weakly asserted; mocks that diverge from production
 - Spec/design contradictions or ambiguities the implementation forced you to resolve
-- Push-backs against seam rows the brief cited
 - Speculative needs, one line each labelled `thought:`
 
-What does NOT belong in `## Observations`: a defect in code or text that exists outside the task. It is a `## Discoveries` entry with its kind (`issue` or `question`), listed in the report's `candidate_tasks`; the orchestrator routes it (`roles/implementor.md` § What belongs in `## Observations`).
+What does NOT belong in `## Observations`: a push-back against a seam row the brief cited (a seam objection, written in `## Discoveries` only); a defect in code or text that exists outside the task. It is a `## Discoveries` entry with its kind (`issue` or `question`), listed in the report's `candidate_tasks`; the orchestrator routes it (`roles/implementor.md` § What belongs in `## Observations`).
 
 ### Discoveries
 The structured form of significant findings. Implementor fills this when discoveries warrant integrate-phase attention. Each entry:

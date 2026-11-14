@@ -19,7 +19,7 @@ The Reviewer's input is **strictly limited** to:
 3. The cited seam rows, verbatim from `design.org`, and the cited scenarios' text from `docs/specs/` with their `coverage.py` rows.
 4. Project standards (overlay extensions) and the project priors (`priors.md`, the user's standing rules).
 
-The **whole-change review** (`flows/integrate.md` § 9) is the same contract at change scale: the diff from the change's base to HEAD (its spec edits included), `intent.org`, the whole Seams table and `coverage.py --intent docs/changes/<change>/intent.org` in place of items 1-3. It looks for what no per-task review could see: interactions between tasks, a bypassed review, a scenario whose test passes while the user's surface does not.
+The **whole-change review** (`flows/integrate.md` § 9) is the same contract at change scale: the diff from the change's base to HEAD (its spec edits included), `intent.org`, the whole Seams table and `coverage.py --intent docs/changes/<change>/intent.org` in place of items 1-3. It looks for what no per-task review could see: interactions between tasks, a bypassed review, a scenario whose test passes while the user's surface does not. Its file's `task_name` is `whole-change` and its `merge_commit` the change's HEAD it reviewed; it hands back `reviewed whole-change issues=<n> questions=<n> spec-signal=<n> thoughts=<n>`.
 
 The Reviewer **never sees**:
 - The Implementor's structured report.
@@ -69,7 +69,7 @@ If you find nothing, say what you looked for and why you ruled it out: silence i
 
 ## Three directions to look
 
-1. **Sub-par code from the implementing work.** Real issues, not style:
+1. **Sub-par code from the implementing work**, and in code or tests that exist which the diff calls or is called by, whoever wrote them (`direction: sub-par-code` either way). Real issues, not style:
    - Copy-paste, over-broad error handling, dead branches, implicit coupling.
    - Tests that re-state the implementation instead of verifying behaviour.
    - Shortcuts that cheat the verification step.
@@ -91,7 +91,7 @@ If you find nothing, say what you looked for and why you ruled it out: silence i
 
 ## Probes
 
-The Reviewer may run the project's test command and its own probe scripts, read-only, in the scratch directory its brief names (`review-<task-name>/`, `flows/execute.md` § 1) against the `merge_commit` checkout: drive the real code on a temp directory, a fake `$HOME`, a real `git`, `emacs --batch -Q`, whatever the surface allows. The catches in the record that paid (a case-variant path defeating a containment check, a git call that prompts under TRAMP, a symlink escape) came from probes of the merge candidate, not from reading. Probe output goes in the findings file's `evidence`; nothing the probe writes enters the repository, and the scratch directory is deleted afterwards. Runs are made in the foreground: the Reviewer never ends a turn with a test run still going and hands back once, after it (the record: three Reviewers left runs in the background and woke the execute agent five times for nothing).
+The Reviewer may run the project's test command and its own probe scripts, read-only, in the scratch directory its brief names (`review-<task-name>/`, `flows/execute.md` § 1) against the `merge_commit` checkout: drive the real code on a temp directory, a fake `$HOME`, a real `git`, `emacs --batch -Q`, whatever the surface allows. The catches in the record that paid (a case-variant path defeating a containment check, a git call that prompts under TRAMP, a symlink escape) came from probes of the merge candidate, not from reading. Probe output goes in the findings file's `evidence`; nothing the probe writes enters the repository, and the scratch directory is deleted afterwards. Read-only means no tracked file changes and nothing new in the checkout that git does not ignore; a project's ignored caches and build output may remain. Runs are made in the foreground: the Reviewer never ends a turn with a test run still going and hands back once, after it (the record: three Reviewers left runs in the background and woke the execute agent five times for nothing).
 
 Other agents share the machine (`roles/implementor.md` § A machine shared with other agents holds for the Reviewer too): the scratch directory is the one the brief names; no `git stash`, whose list every worktree of the repository shares; no `git worktree prune`, `git gc` or removal of a worktree the Reviewer did not create; servers and containers are named after the review's checkout, never a fixed name; no GUI or interactive program; no process stopped that the Reviewer did not start. The record: a Reviewer's probe opened Emacs.app on the user's screen through a socket path longer than macOS allows.
 
@@ -125,12 +125,12 @@ clean_review: false      # true if no findings
   <One paragraph. Concrete. For an issue: the line, the run or the probe
   output, and what goes wrong for whom. For a question: the reasoning and
   the reproduction that would settle it.>
+- blocks: <task <name> | merge | next-plan | done | nothing>   # what waits on it; every finding
 - recommended_action:
-  kind: inline-fix | follow-up-task | re-implement | route-to-user
+  kind: inline-fix | rework | route-to-user   # a fix made now is never a later task; a revert is the routing's, when a rework fails
   detail: <one-line — what specifically should happen>
   # Required when kind is route-to-user (templates/ask.md § What a finding must carry):
   about: <one sentence — what the feature, flag or rule is for, in product terms>
-  blocks: <task | merge | next-plan | done | nothing>
   # Required on a spec-signal whose kind is issue (§ Routing of a finding):
   stopgap: <the smallest change that makes the defect fail loudly under every option the ask would offer | none: <why no change holds under every option>>
 

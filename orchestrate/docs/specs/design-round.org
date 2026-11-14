@@ -1,0 +1,313 @@
+#+TITLE: design-round
+#+OPTIONS: ^:{} -:nil
+#+STATUS: draft 2026-11-13, extracted from the reference skill (=main= =e356da7=); at the hand-off review 2026-11-13: G1, G2, G3, G5 and G6 applied, no gap open; accepted 2026-11-13 by the user at the hand-off review; amended 2026-11-14 after acceptance (the round's commit holds the intent's Removals; the gate against a red baseline; the brief names the change's directory and the thought file, and may point at the spec edits), from the evals' build-out (=research/skill-evals/overnight/plan.org= § Decided with the user, 2026-11-14 morning)
+
+* Purpose
+
+The design round runs once per change, after its intent and spec edits are committed and before its
+first cycle. A phase agent spawns the Architect with the change's intent, spec edits and scenarios,
+checks what the Architect writes (the change's design and the pending tests) and commits it in the
+code root in one commit, and hands the dispatcher one line. Every question the round raises, with
+the intent's own open questions, its unapproved goals and its new terms, is put to the user in one
+sitting before plan drafts any task. The round runs again only for a seam a decision or a spec
+change alters. What the design and the pending tests must contain is the =architect= spec's; the
+round writes no task and implements nothing.
+
+* Requirements
+
+** Requirement: The round runs once per change, before its first cycle
+:PROPERTIES:
+:GOAL:     none stated
+:END:
+The design round SHALL run once for each change, after the change's intent and spec edits are
+committed in the code root and before its first cycle is opened, and SHALL be the first to write the
+change's design.
+
+*** Scenario: The round runs after the intent and spec edits, before the first cycle
+- *WHEN* a change's intent and spec edits are committed in the code root and the change has no design with a Seams table
+- *THEN* the design round runs before the change's first cycle is opened
+- *AND* the round's commit in the code root comes after the commit of the intent and the spec edits
+
+*** Scenario: A change no scenario needs a seam for skips the design with one line
+- *WHEN* the round's phase agent finds that no scenario of the change needs a seam
+- *THEN* it writes one line at the top of the design's Seams section saying so and why
+- *AND* it spawns no Architect
+
+*** Scenario: No design exists before the round
+- *WHEN* a change is opened or split by the skill
+- *THEN* no design of the change is written before the design round
+- *AND* the change's design is first committed by the round
+
+*** Scenario: A design the user wrote is completed by the round
+- *WHEN* the change has a design the user wrote before the round
+- *THEN* the Architect's brief holds that design
+- *AND* the round's commit holds the design completed, with its Seams table
+
+** Requirement: A moved workspace integration branch is taken in first
+:PROPERTIES:
+:GOAL:     none stated
+:END:
+When the change was cut from a workspace integration branch that has moved since the change's base,
+the design round SHALL first merge that branch into the change's integration branch, keeping the
+change's base as it was.
+
+*** Scenario: A moved workspace integration branch is merged in before the Architect runs
+- *WHEN* the change was cut from a workspace integration branch that has moved since the change's base
+- *THEN* that branch is merged into the change's integration branch before the Architect is spawned
+- *AND* the change's base is left as it was
+
+*** Scenario: A conflict in the specs or the glossary is resolved as a record correction
+- *WHEN* taking in the workspace integration branch conflicts in the specs or in the glossary
+- *THEN* the conflict is resolved by hand, the change keeping its own edits and taking the other change's
+- *AND* the merge is committed in the code root with the subject =Take in <branch>: <change>=
+
+*** Scenario: A conflict in code when the branch is taken in is an environment ask
+- *WHEN* taking in the workspace integration branch conflicts in code
+- *THEN* the merge is aborted and the change's integration branch left as it was
+- *AND* an =environment= ask names the conflicting files, filed in the change's inbox (named for the change before its first cycle)
+- *AND* the round hands back that it stopped, naming the ask
+
+** Requirement: A phase agent runs the round and the Architect writes the design
+:PROPERTIES:
+:GOAL:     none stated
+:END:
+The design round SHALL run in a phase agent the dispatcher spawns, which SHALL spawn the Architect
+at its role default in the code root, and SHALL commit only what the Architect names as written; the
+Architect SHALL NOT commit.
+
+*** Scenario: The round's phase agent spawns the Architect
+- *WHEN* the design round runs
+- *THEN* the dispatcher spawns a phase agent for it
+- *AND* that phase agent spawns the Architect
+
+*** Scenario: The Architect runs at its role default and the record keeps it
+- *WHEN* the Architect is spawned for the round
+- *THEN* it runs at the Architect's role default for the design round
+- *AND* the change's record holds the agent and its setting once the first cycle is opened
+
+*** Scenario: The Architect works in the code root
+- *WHEN* the Architect is spawned for the round
+- *THEN* it works in the code root, not in a worktree of its own
+
+*** Scenario: The Architect makes no commit
+- *WHEN* the Architect hands back
+- *THEN* it has made no commit
+- *AND* the round's output is committed by the phase agent
+
+*** Scenario: The round's commit holds only the files the Architect wrote
+- *WHEN* the round's output is committed
+- *THEN* the commit holds the files the Architect names as written, and no other but the intent, when a property a Decision drops is added to its Removals
+
+** Requirement: The Architect is given the change, its scenarios and the project's test setup
+:PROPERTIES:
+:GOAL:     none stated
+:END:
+The design round SHALL give the Architect a brief holding the change's intent, its spec edits, its
+scenarios with their tests, the intent's open questions, the existing design, and the project's
+priors, Architect additions and test setup, and SHALL name where the Architect's findings and thought
+lines go.
+
+*** Scenario: The Architect's brief holds the change and its scenarios
+- *WHEN* the Architect is spawned for the round
+- *THEN* its brief holds the intent and the change's base
+- *AND* the change's spec edits since its base, as their text or as the command that shows them with a summary of each, and the spec files they and the intent's capabilities touch
+- *AND* the change's scenarios, each with the tests that already cite it
+- *AND* the intent's open questions, when it has any
+- *AND* the change's design, when one exists
+- *AND* the change's directory in the home, where a finding of the round goes, and the file in its scratch directory where its thought lines go
+
+*** Scenario: The Architect's brief holds the project's setup
+- *WHEN* the Architect is spawned for the round
+- *THEN* its brief holds the project's own additions to the Architect's role and its priors
+- *AND* the project's test command, the layout of its test tree and its style for marking a test pending
+
+*** Scenario: The Architect's brief is kept in the change's directory
+- *WHEN* the round's phase agent spawns the Architect
+- *THEN* the brief it gives is saved in the change's directory in the home, named for the round, and for its seam on a re-run
+- *AND* it is committed in the home with the round
+
+*** Scenario: The change's scenarios include those the intent names as not met
+- *WHEN* the intent names scenarios as stated but not met
+- *THEN* the Architect's brief lists them among the change's scenarios
+- *AND* it does so even when the change's spec edits are empty
+
+** Requirement: The round's output is checked and committed in one commit
+:PROPERTIES:
+:GOAL:     G5 (O-DR-1, inferred there)
+:END:
+The design round's phase agent SHALL commit the design, the scenarios' not-test-worthy marks and the
+tests in one commit in the code root, with a subject naming the change, after running the project's
+tests on it; the commit message SHALL carry the change's coverage summary and the Architect's thought
+lines.
+
+*** Scenario: The round's output is one commit in the code root
+- *WHEN* the round's output is committed
+- *THEN* one commit in the code root, subject =Design round: <change>=, holds the design, the not-test-worthy marks on the spec's scenarios and the tests, and the intent's Removals when a Decision drops a property
+
+*** Scenario: A property a Decision drops is copied into the intent's Removals
+- *WHEN* a Decision of the round marks a property of a replaced mechanism as dropped
+- *THEN* the round's commit adds a sentence for it to the intent's Removals
+
+*** Scenario: The round's commit message carries the coverage summary
+- *WHEN* the round commits
+- *THEN* the commit message holds the summary line of the change's scenarios' coverage
+
+*** Scenario: The Architect's thought lines are carried in the round's commit message
+- *WHEN* the Architect writes a thought line for a need it did not design
+- *THEN* the round's commit message holds that line
+
+*** Scenario: The project's tests pass at the round's commit, the pending ones reported as pending
+- *WHEN* the round commits and the project's tests passed before the change
+- *THEN* the project's pre-commit check, when it has one, passes in the code root
+- *AND* the project's tests pass at the round's commit, each pending test reported as pending, not as failing
+
+*** Scenario: A failed check re-spawns the Architect once with the failure as its scope
+- *WHEN* the phase agent's check of the Architect's output fails: an uncited scenario, a name the intent gives that matches none, a failing test run or pre-commit check
+- *THEN* it re-spawns the Architect once, its brief naming the failure as the scope
+- *AND* it commits nothing until the check passes
+
+*** Scenario: A second failed check hands back failed
+- *WHEN* the check fails again after the Architect's second run
+- *THEN* the round hands back =design-round <change>: failed, <the failure>=
+- *AND* nothing of the round is committed
+
+*** Scenario: Against tests that already failed, the failing set is unchanged
+- *WHEN* the round commits and some of the project's tests already failed before the change
+- *THEN* the project has a way to compare two runs test by test
+- *AND* the set of failing tests at the round's commit is the one before the change
+
+** Requirement: The round is complete only when its design is whole and its questions answered
+:PROPERTIES:
+:GOAL:     G5 (O-DR-1, inferred there)
+:END:
+The design round SHALL hand the dispatcher =gate passed= only when the design has a Seams section, every
+scenario of the change is cited by a test or marked not test-worthy, every open question is decided
+and no test fails that was not failing before the change, the pending ones reported as pending; with open questions it SHALL
+hand back that it stopped. It SHALL write no task and implement nothing.
+
+*** Scenario: The round hands back gate passed only when it is complete
+- *WHEN* the round's phase agent hands back =design-round <change>: gate passed=
+- *THEN* the design has a Seams section: a Seams table, or the one line saying no scenario needs a seam
+- *AND* every scenario of the change is cited by a test that exists, pending or not, or is marked not test-worthy with a reason
+- *AND* every scenario the intent names exists
+- *AND* every open question in the design has its Decision, and the intent has no open questions left
+- *AND* at the round's commit no test fails that was not failing before the change, the pending tests reported as pending
+
+*** Scenario: The round writes no task and implements nothing
+- *WHEN* the round ends
+- *THEN* it has written no task file
+- *AND* it has changed no code other than tests
+
+** Requirement: Every question the round raises is asked in one sitting before plan drafts
+:PROPERTIES:
+:GOAL:     G7
+:END:
+Each open question the round raises, each open question of the intent, an unapproved intent's goals
+and the intent's new terms SHALL reach the user as =decision= asks that block plan, put to them in one
+sitting before plan drafts any task. None SHALL be deferred, nothing SHALL be drafted on a provisional
+answer, and when the user is absent the change SHALL wait. Each answer SHALL be written into the
+documents it settles.
+
+*** Scenario: Each open question becomes a decision ask that blocks plan
+- *WHEN* the design holds an open question
+- *THEN* a =decision= ask is filed for it
+- *AND* the ask blocks plan and points at the design's Open Questions
+
+*** Scenario: A design-round ask says the change waits if it is unanswered
+- *WHEN* an ask for one of the round's questions is filed
+- *THEN* its If unanswered says the change waits and plan drafts nothing until it is answered
+
+*** Scenario: The round's phase agent files the asks and hands back stopped
+- *WHEN* the round leaves open questions in the design, before the first cycle or inside one
+- *THEN* the round's phase agent files their asks in the change's inbox, named for the change when no cycle is open
+- *AND* it hands back =design-round <change>: stopped, asks <ids> block plan=
+
+*** Scenario: The round's questions are put in one sitting, one per call
+- *WHEN* the round's asks are filed and the user is present
+- *THEN* the dispatcher puts every one to the user in one sitting, one question per call
+- *AND* no task of the change is drafted until every one is answered
+
+*** Scenario: With the user absent, the change waits
+- *WHEN* the round's asks are filed and the user is absent
+- *THEN* the asks stay in the change's inbox
+- *AND* no task of the change is drafted
+
+*** Scenario: An answer is written into the design's Decisions and the spec it settles
+- *WHEN* an ask for one of the round's open questions is answered
+- *THEN* the round's phase agent, resumed with the answers, writes it into the design's Decisions, and in place into the spec it settles
+- *AND* the ask is applied, naming its Decision
+
+*** Scenario: An answer other than the recommendation re-runs the round for its seam
+- *WHEN* the answer to an open question differs from its recommendation
+- *THEN* the round runs again, for the seam the answer moves
+
+*** Scenario: The intent's open questions join the round's sitting
+- *WHEN* the intent has open questions
+- *THEN* each is asked in the same sitting as the round's own, as a =decision= ask that blocks plan
+
+*** Scenario: An intent question's answer is written into the spec and the intent
+- *WHEN* an open question of the intent is answered
+- *THEN* the answer is written into the spec and the intent it settles
+- *AND* the question is removed from the intent's open questions
+- *AND* it becomes a Decision in the design only when it moves a seam
+
+*** Scenario: An unapproved intent's goals are the sitting's first question
+- *WHEN* the intent has no approval line
+- *THEN* the first question of the sitting puts the intent's goals and non-goals as written
+- *AND* its options are to approve them as written or to answer in the user's own words
+
+*** Scenario: Approved goals give the intent its dated approval line
+- *WHEN* the user approves the intent's goals as written
+- *THEN* the intent gains its approval line, with the date
+
+*** Scenario: A changed answer rewrites the goals before the approval line
+- *WHEN* the user answers the goals question with a change
+- *THEN* the intent's goals and non-goals are rewritten from the answer
+- *AND* the approval line is written then
+
+*** Scenario: No task is drafted on an unapproved intent
+- *WHEN* the intent has no approval line
+- *THEN* no task of the change is drafted
+
+*** Scenario: The intent's new terms are the next question
+- *WHEN* the intent has new terms not marked agreed
+- *THEN* they are put in one question, after the goals, each term with what it is and its example
+- *AND* its options are to agree all as written or to answer in the user's own words
+
+*** Scenario: An agreed term is written into the product's glossary
+- *WHEN* the user agrees a new term
+- *THEN* the term is written into the product's glossary, which is created with its first term
+- *AND* the term is marked agreed in the intent
+
+*** Scenario: A renamed term is renamed in the intent and the spec edits
+- *WHEN* the user renames a new term
+- *THEN* it is renamed in the intent and in the change's spec edits
+
+*** Scenario: A rejected term is replaced by the user's plain phrase
+- *WHEN* the user rejects a new term
+- *THEN* the intent and the change's spec edits use the plain phrase the user gives in its place
+
+*** Scenario: The new terms' answer is one commit in the code root
+- *WHEN* the new terms' ask is answered
+- *THEN* its glossary and intent edits and the ask's application are one commit in the code root
+
+** Requirement: The round runs again only for a seam a decision or a spec change alters
+:PROPERTIES:
+:GOAL:     none stated
+:END:
+After its first run the design round SHALL run again only when a decision the user made, or a spec
+change, alters a seam, and then only for that seam.
+
+*** Scenario: A re-run changes only its seam
+- *WHEN* a decision the user made, or a spec change, alters a seam
+- *THEN* the round runs again for that seam
+- *AND* it changes only that seam's row, the not-test-worthy marks on its scenarios and its pending tests
+
+*** Scenario: A re-run's commit names its seam
+- *WHEN* a re-run of the round for one seam commits
+- *THEN* the commit's subject is =Design round (<seam-id>): <change>=
+
+* Gaps
+
+No gap open. The five this draft had were filled 2026-11-13 by the user's decisions on the cross-spec
+map (G1, G2, G3, G6; =research/skill-evals/extraction/design-round.org= § Gap decisions).

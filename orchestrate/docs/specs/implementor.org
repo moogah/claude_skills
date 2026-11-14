@@ -1,0 +1,371 @@
+#+TITLE: implementor
+#+OPTIONS: ^:{} -:nil
+#+STATUS: draft 2026-11-13, extracted from the reference skill (=main= =e356da7=); six gaps opened; at the hand-off review 2026-11-13: two filled by the cross-spec decisions (the blocked hand-back, G7); the seam objection's section and the failed hand-back filled; the obsolete-flag gap closed with no scenario (plan's); the clean worktree filled; no gap open; the brief's contents added from a boundary note; accepted 2026-11-13 by the user at the hand-off review; amended 2026-11-14 after acceptance (a seam row against a cited scenario; two scenarios marked not test-worthy), from the evals' build-out (=research/skill-evals/overnight/plan.org= § Decided with the user, 2026-11-14 morning)
+
+* Purpose
+
+The Implementor is the role agent that does one task of a batch, in the task's own worktree, from
+the brief the execute phase gives it. This spec states what its work leaves behind: the one commit on
+the task's branch, the Observations and Discoveries it appends to the task file in the home, the
+report it writes for the phase agent, and the one line it hands back; and what it leaves alone on a
+machine other agents share. It does not state when an Implementor is spawned, what its brief holds,
+what becomes of its commit, its notes or its report, or how a wrong premise, a discovery or a rework
+is routed: those are =execute='s.
+
+* Requirements
+
+** Requirement: The Implementor's brief holds what its work needs
+:PROPERTIES:
+:GOAL:     none stated
+:END:
+The Implementor SHALL be given a brief that names the files it writes and where it works, and
+carries what its task cites and the project's standards; it SHALL work from that brief.
+
+*** Scenario: An Implementor's brief names the files it writes
+- *WHEN* an Implementor is spawned for a task
+- *THEN* its brief names the task file in the home by its path
+- *AND* the report's path, in the cycle's directory
+- *AND* the task's scratch directory
+
+*** Scenario: An Implementor's brief carries what the task cites
+- *WHEN* an Implementor is spawned for a task
+- *THEN* its brief holds each seam row the task cites, verbatim
+- *AND* each scenario the task cites, with its coverage
+- *AND* of the design, only the decisions the cited rows link to or the task's steps name
+
+*** Scenario: An Implementor's brief carries the project's standards and where to work
+- *WHEN* an Implementor is spawned for a task
+- *THEN* its brief holds the project's additions to the role, followed by its priors
+- *AND* the verification command
+- *AND* the worktree's path and its branch
+
+** Requirement: The task's work is one commit on its task's branch
+:PROPERTIES:
+:GOAL:     none stated
+:END:
+The Implementor SHALL leave its task's work as one commit on its task's branch, with the subject
+=Implement task <task>: <description>=, made once the task's verification passes, promoting every
+pending test the task names and correcting any sentence the work made untrue. The commit SHALL hold
+nothing of the change's documents and nothing of the task file. The Implementor SHALL fix no defect
+outside its task, and SHALL declare any work beyond it.
+
+*** Scenario: The task's work is one commit with a fixed subject
+- *WHEN* an Implementor hands back =done=
+- *THEN* its task's branch has exactly one commit beyond the point it was cut from
+- *AND* that commit's subject is =Implement task <task>: <description>=
+
+*** Scenario: A done Implementor leaves its worktree clean
+- *WHEN* an Implementor hands back =done=
+- *THEN* its worktree has nothing uncommitted
+- *AND* nothing untracked outside the files the repository ignores
+
+*** Scenario: The commit passes the task's verification
+- *WHEN* the Implementor commits its work
+- *THEN* the task's verification command passes on that commit
+
+*** Scenario: The commit promotes the pending tests the task names
+- *WHEN* the task's Verification section names pending tests
+- *THEN* the commit removes the pending marker from each of them
+
+*** Scenario: The commit leaves the change's documents alone
+- *WHEN* the Implementor commits its work
+- *THEN* the commit changes nothing under =docs/=: no seam row, no scenario, no design or intent text
+- *AND* this holds when the Implementor finds a cited seam row or scenario wrong
+
+*** Scenario: The task file stays out of the commit
+- *WHEN* the Implementor commits its work
+- *THEN* the commit holds neither the task file nor its Observations and Discoveries
+- *AND* this holds when the home is the code root
+
+*** Scenario: A sentence the work made untrue is corrected in the same commit
+- *WHEN* the work makes a docstring, a comment, a README sentence or a help text untrue
+- *THEN* the task's commit corrects that sentence
+
+*** Scenario: A cited spec or design sentence the work made untrue is a discovery
+- *WHEN* the work makes untrue a sentence of a cited spec or of the change's design
+- *THEN* the commit leaves that sentence as it was
+- *AND* a Discoveries entry of kind =issue= names it, a seam objection when it is a seam row
+
+*** Scenario: A defect outside the task is not fixed in the task's commit
+- *WHEN* the Implementor finds a defect in code or text that exists outside its task
+- *THEN* its commit leaves that defect as it was
+
+*** Scenario: Work beyond the task is declared
+- *WHEN* the commit changes something the task does not ask for, or departs from the approach the task prescribes
+- *THEN* the report's =deviation_summary= says so
+- *AND* the hand-back carries =deviated=
+- *AND* an Observation names the departure with its evidence
+
+*** Scenario: The Implementor moves no branch but its task's
+- *WHEN* an Implementor hands back
+- *THEN* the change's integration branch and every other branch but its task's are where they were when it was spawned
+
+** Requirement: The Implementor's notes are appended to the task file, in two sections
+:PROPERTIES:
+:GOAL:     none stated
+:END:
+The Implementor SHALL append =## Observations= and =## Discoveries= to its task file in the home, at
+the path its brief names. Observations SHALL hold only departures from the prescribed approach,
+weak tests, ambiguities it resolved, wrong premises the work absorbed, what it saw of other agents
+on the machine, and thoughts; a
+defect in code or text that exists outside the task SHALL never be only an Observation.
+
+*** Scenario: The notes are appended to the task file in the home
+- *WHEN* an Implementor hands back =done=
+- *THEN* the task file in the home, at the path its brief named, has a =## Observations= section and a =## Discoveries= section appended to it
+
+*** Scenario: An Observation is one of its kinds
+- *WHEN* the Implementor writes an Observation other than a seam objection (an open gap)
+- *THEN* it is one of: a departure from the task's prescribed approach, with its evidence; a test that passes but asserts weakly, or a fake that diverges from the real thing; a contradiction or ambiguity in the spec or design that the work made it resolve; a wrong premise the work absorbed; a =thought:=; a stray process; or a failure that passed on a rerun
+
+*** Scenario: A speculative need is one Observation labelled thought
+- *WHEN* the Implementor sees a need that would arise only under a future change
+- *THEN* it is one line in Observations, labelled =thought:=
+
+*** Scenario: A defect outside the task is never only an Observation
+- *WHEN* an Observation names a defect in code or text that exists outside the task
+- *THEN* the Discoveries hold an entry for that defect
+
+*** Scenario: A process the Implementor did not start is noted, not stopped
+- *WHEN* the Implementor finds a stray process it did not start
+- *THEN* an Observation names it
+- *AND* the process is left running
+
+*** Scenario: A failure that passes on a rerun is noted with both results
+- *WHEN* a test fails, then passes when run again, while other agents' runs were going on
+- *THEN* an Observation says so, with both results
+
+** Requirement: Every defect outside the task is a discovery, whatever its size
+:PROPERTIES:
+:GOAL:     none stated (=north-star.org= * Disposition states it; no goal does)
+:END:
+Every defect the Implementor finds in code or text that exists outside its task SHALL be one
+Discoveries entry, of kind =issue= or =question=, with a severity and evidence, its id listed under
+the report's =candidate_tasks=, however small or unlikely it looks. Each Discoveries entry SHALL
+carry its id, a class from a closed set, a description, its kind, severity and evidence, and a
+recommendation. The Implementor SHALL write no task file.
+
+*** Scenario: A defect outside the task is a discovery, however small
+- *WHEN* the Implementor finds a defect in code beside its task or in a document, outside what the task covers
+- *THEN* the Discoveries hold one entry for it, of kind =issue= or =question=, with its severity and its evidence
+- *AND* the entry is there whatever the Implementor judges of the defect's size or likelihood
+
+*** Scenario: A discovered defect is listed among the report's candidate tasks
+- *WHEN* the Discoveries hold an entry for a defect outside the task
+- *THEN* the report's =candidate_tasks= lists that entry's id
+
+*** Scenario: A Discoveries entry carries its fields
+- *WHEN* the Implementor writes a Discoveries entry
+- *THEN* it has a =discovery_id= of the form =disc-<task>-<n>=, a =description=, an =evidence= and a =recommendation=
+- *AND* a =class= that is one of =shape-fragmentation=, =vocabulary-mismatch=, =responsibility-leakage=, =dead-branch=, =interface-drift=, =mutation=, =invariant-gap=, =spec-signal=, =deviation=, =scope-question= or =duplication=
+- *AND* a =kind= and a =severity= of =high=, =medium= or =low=
+- *AND* an =affected_seam= when the entry concerns a seam
+
+*** Scenario: A suspected defect names the reproduction that would settle it
+- *WHEN* a Discoveries entry is of kind =question=
+- *THEN* its evidence names the reproduction that would settle it
+
+*** Scenario: A discovery only the user can settle says what it blocks
+- *WHEN* a Discoveries entry is of class =spec-signal= or =scope-question= and only the user can settle it
+- *THEN* the entry says what the feature is for and what the entry blocks, besides its kind and evidence
+
+*** Scenario: A scope question no goal needs is a thought
+- *WHEN* the Implementor's scope question concerns something no goal of the intent needs
+- *THEN* it is a =thought:= line in Observations
+- *AND* no Discoveries entry is written for it
+
+*** Scenario: The Implementor writes no task file
+- *WHEN* the Implementor finds a defect outside its task
+- *THEN* no task file is added to the home
+
+** Requirement: A cited seam row the code shows wrong is objected to, not reproduced
+:PROPERTIES:
+:GOAL:     none stated
+:END:
+When the work shows a cited seam row wrong, the Implementor SHALL implement what the code needs,
+SHALL record a seam objection as a Discoveries entry naming the row, and SHALL list it in its report.
+
+*** Scenario: A seam row the work shows wrong gets a seam objection
+- *WHEN* the work shows that a cited seam row is wrong for the code
+- *THEN* the commit implements what the code needs, not what the row says
+- *AND* a Discoveries entry names the row as its =affected_seam=, with a class that says how it is wrong
+- *AND* this holds when the row also contradicts a scenario the task cites and the task's own claims are silent on the point
+
+*** Scenario: A seam objection is written in Discoveries only
+- *WHEN* the Implementor makes a seam objection
+- *THEN* the task file's Observations hold no entry for it
+
+*** Scenario: The report lists each seam objection
+- *WHEN* the Implementor has made a seam objection
+- *THEN* the report's =push_backs= names the seam, with a one-line summary
+
+** Requirement: A wrong premise, or a failing test the task did not write, is settled by what it changes
+:PROPERTIES:
+:GOAL:     none stated
+:END:
+Before writing code the Implementor SHALL check the claims its task and the task's cited rows make
+about the code at its worktree's HEAD, for every task. A wrong premise the task can absorb, and a
+test the task did not write that is wrong without the behaviour being at stake, SHALL be settled in
+the work and declared; one that changes what the task should do SHALL stop the task with a
+=blocked= hand-back naming the premise.
+
+*** Scenario: A wrong premise the task can absorb is corrected in the work
+- *WHEN* a claim of the task about the code is wrong in a name, a path, a signature or work already done
+- *THEN* the work corrects for it
+- *AND* an Observation names the claim and what HEAD has
+
+*** Scenario: A wrong premise that changes the task stops it
+- *WHEN* a claim of the task is wrong in a way that changes what the task should do: the behaviour it adds is there already, the task's own claim contradicts a cited row or scenario, or the work belongs to another seam
+- *THEN* the Implementor hands back =blocked <task>: premise wrong, <the claim>=
+- *AND* its report states the claim and what HEAD has
+- *AND* this holds whether or not the Architect checked the task's premises at plan
+
+*** Scenario: A failing test the task did not write, against wrong code, is settled in the code
+- *WHEN* a test the task did not write fails against the work and the code is what is wrong
+- *THEN* the commit fixes the code
+
+*** Scenario: A wrong test is changed only when the stated behaviour holds, and declared
+- *WHEN* a test the task did not write fails against the work, the test is what is wrong, and a change to it leaves the behaviour stated by the cited rows and scenarios intact
+- *THEN* the commit changes the test
+- *AND* the report's =deviation_summary= says so and the hand-back carries =deviated=
+- *AND* a Discoveries entry of class =deviation= quotes the assertion before and after
+
+*** Scenario: A test whose only fix changes stated behaviour stops the task
+- *WHEN* a test the task did not write fails against the work and any fix would change behaviour that a cited row or scenario states
+- *THEN* the Implementor hands back =blocked <task>: premise wrong, <the claim>=
+
+** Requirement: The report carries the task's account for the phase agent
+:PROPERTIES:
+:GOAL:     none stated
+:END:
+The Implementor SHALL write its report at the path its brief names, in a fixed form whose shape the
+project's own additions to the role cannot change, with counts that match the task file's sections.
+
+*** Scenario: The report is written with its fields
+- *WHEN* an Implementor hands back =done=
+- *THEN* a report is at the path its brief named
+- *AND* it holds =task_name=, =commit_sha= (the task's commit), =test_output_tail= (the last ten lines of the test command's output), =observations_count=, =discoveries_count=, =candidate_tasks= and =push_backs=
+- *AND* =deviation_summary= when the work deviated
+
+*** Scenario: The report's counts match the task file
+- *WHEN* the report is written
+- *THEN* =observations_count= is the number of bullets in the task file's Observations and =discoveries_count= the number of its Discoveries entries, each 0 when there are none
+
+*** Scenario: The project's additions to the role leave the report's form alone
+- *WHEN* the project adds its own text to the Implementor's role
+- *THEN* the report keeps its fields, and the Observations and Discoveries stay two sections with their own contents
+
+*** Scenario: A fix for a defect shown on a real surface is pinned there, or says why not
+- *WHEN* the Implementor's task is to fix a review finding shown by a probe of a real surface: a running process, a daemon, a client, =git= or the file system
+- *THEN* the test that pins the fix drives that surface and reproduces the probe
+- *AND* a test against a fake of the surface is not the pin
+- *AND* when the tests cannot drive the surface, the report and an Observation say so
+
+** Requirement: The Implementor hands back one line, once
+:PROPERTIES:
+:GOAL:     none stated
+:END:
+The Implementor SHALL end by handing back one line of at most 200 characters, once, after its
+commit and its test run: =done= with the task and the commit, flagged when it deviated or listed
+candidate tasks, or =blocked= or =failed= with one clause. The line SHALL name no path and carry no
+report.
+
+*** Scenario: A done hand-back names the task and its commit
+- *WHEN* an Implementor finishes with a commit
+- *THEN* its last output is one line of at most 200 characters, =done <task> <sha>=, the sha being its commit on the task's branch
+
+*** Scenario: A deviation is flagged in the hand-back
+- *WHEN* the report's =deviation_summary= is not empty
+- *THEN* the =done= line carries =deviated=
+
+*** Scenario: Candidate tasks are counted in the hand-back
+- *WHEN* the report's =candidate_tasks= is not empty
+- *THEN* the =done= line carries =candidates=<n>=, =n= being the number of ids it lists
+
+*** Scenario: The hand-back names no path and carries no report
+- *WHEN* an Implementor hands back
+- *THEN* the line names no file's path
+- *AND* holds nothing of the report, the test output, the Observations or the Discoveries
+
+*** Scenario: A task that needs revision stops the Implementor with a blocked line
+- *WHEN* the task itself appears to need revision before it can be implemented
+- *THEN* the Implementor implements no guess at it
+- *AND* hands back =blocked <task>: <what it observed and what it blocks>=, in one clause
+- *AND* writes no ask file
+
+*** Scenario: A blocked Implementor commits nothing
+- *WHEN* an Implementor hands back =blocked=
+- *THEN* no commit of its own is on its task's branch
+- *AND* its report is written with an empty =commit_sha=, and the task file's Observations and Discoveries as they stand
+
+*** Scenario: A task whose verification cannot be made to pass is handed back failed
+:PROPERTIES:
+:TEST: none: a fixture that makes the verification impossible to pass makes something outside the task stop it, which is the blocked hand-back
+:END:
+- *WHEN* the Implementor cannot make the task's verification pass, and nothing outside the task stops it
+- *THEN* it hands back =failed <task>: <why>=, in one clause
+- *AND* no commit of its own is on its task's branch
+
+*** Scenario: A stop only another party can settle is handed back blocked
+- *WHEN* what stops the Implementor is something only another party can settle: a premise, a revision of the task, the environment
+- *THEN* it hands back =blocked=, not =failed=
+
+*** Scenario: The Implementor hands back once, after its commit and its test run
+- *WHEN* an Implementor hands back
+- *THEN* no test run it started is still running
+- *AND* it hands back no second time
+
+** Requirement: The Implementor leaves what other agents share as it found it
+:PROPERTIES:
+:GOAL:     none stated
+:END:
+On a machine where other Implementors, Reviewers and test runs work at the same time, the
+Implementor SHALL use only its own worktree and branch, the task file and report its brief names,
+and its scratch directory, and SHALL leave the repository's shared lists, other agents' files and
+processes, and any resource in use by another, as they were.
+
+*** Scenario: Work is set aside with a commit, never a stash
+- *WHEN* the Implementor needs to set work aside
+- *THEN* it does so with a commit on its task's branch, folded into the task's one commit
+- *AND* the repository's stash list is as it was when the Implementor was spawned
+
+*** Scenario: The Implementor creates no worktree
+- *WHEN* an Implementor runs
+- *THEN* it works in the worktree it was given and creates none
+
+*** Scenario: The repository's worktrees and objects are left alone
+- *WHEN* an Implementor runs
+- *THEN* it prunes no worktree, removes none it did not create, and runs no garbage collection of the repository
+
+*** Scenario: Scratch files stay in the scratch directory the brief names
+- *WHEN* the Implementor writes a scratch file
+- *THEN* it is under the scratch directory its brief names
+- *AND* it edits or deletes no scratch file outside it, including one at the top level of a scratchpad it shares with the agent that spawned it
+
+*** Scenario: A container or server is named after the task's branch
+:PROPERTIES:
+:TEST: none: the evals' fixture project starts no compose project or server
+:END:
+- *WHEN* the Implementor starts a compose project or a server
+- *THEN* it is named after its worktree's branch, never a fixed name
+- *AND* a port or socket already in use is left to whoever holds it
+
+*** Scenario: The Implementor starts no interactive program and stops only its own processes
+- *WHEN* an Implementor runs
+- *THEN* it starts no GUI or interactive program
+- *AND* stops no process it did not start
+
+** Requirement: The Implementor's role default
+:PROPERTIES:
+:GOAL:     none stated
+:END:
+The Implementor's role default SHALL be the model =opus= at =medium= effort.
+
+*** Scenario: The Implementor's role default is opus at medium effort
+- *WHEN* an Implementor is spawned for a task the plan wrote no override for
+- *THEN* it runs at =opus=, =medium=
+
+* Gaps
+
+No gap open. The six this draft had were filled or closed 2026-11-13 at the hand-off review
+(=research/skill-evals/extraction/implementor.org= § Gap decisions).

@@ -1,0 +1,489 @@
+#+TITLE: integrate
+#+OPTIONS: ^:{} -:nil
+#+STATUS: draft 2026-11-13, extracted from the reference skill (=main= =e356da7=); at the hand-off review 2026-11-13: G4 and G7 applied, the hardening list's form and a prior's thought carried in, "conformance check" reworded "conformance"; the unpinned disagreement the take-in regression and the MVP's review filled; no gap open; accepted 2026-11-13 by the user at the hand-off review; amended 2026-11-14 after acceptance (an untrue sentence the whole-change review finds is a record correction), from the evals' build-out (=research/skill-evals/overnight/plan.org= § Decided with the user, 2026-11-14 morning)
+
+* Purpose
+
+The integrate phase closes a cycle. It has the merged code checked against the change's design by an
+Architect and settles each disagreement by a test: a seam row the code has rightly outgrown is
+corrected, a promise the code does not keep is reported against the code. At each integrate whose
+cycle merged code it has the whole change reviewed, and when the main path works end to end it stops
+the change for the user's MVP decision; after that decision it marks the change done with a closing
+summary. It watches for goal drift and puts it to the user. Everything the cycle found and asked it
+routes to the next plan in the handshake. It writes no task file and changes no code, except to
+correct an untrue sentence in prose; the tasks it routes are written by plan.
+
+* Requirements
+
+** Requirement: Each integrate checks the merged code against the design
+:PROPERTIES:
+:GOAL:     G6 (inferred, O-IN-1)
+:END:
+The integrate phase SHALL have an Architect check the code merged in the cycle against the seam rows
+and scenarios the cycle's tasks cite, and scan every diff merged in the cycle for replaced code still
+in use and code no longer reached; the phase agent SHALL route each finding of that check.
+
+*** Scenario: Conformance is the Architect's, at every integrate
+- *WHEN* integrate runs
+- *THEN* an Architect is spawned for conformance
+- *AND* the check is not made by the integrate phase agent itself
+- *AND* the change's record holds the agent and its setting
+
+*** Scenario: Conformance covers what the cycle's tasks cited and every diff it merged
+- *WHEN* the Architect is spawned for conformance
+- *THEN* its input names the seam rows and the scenarios the cycle's tasks cite
+- *AND* every diff merged in the cycle, for the scan for replaced code still on a live path and code no longer reached
+
+*** Scenario: Conformance that finds nothing says so in the journal
+- *WHEN* conformance finds nothing
+- *THEN* the change's journal has one line saying the check found zero findings
+
+*** Scenario: Every conformance finding is routed from its file
+- *WHEN* conformance reports findings
+- *THEN* the phase agent routes each from the finding's file, not from the Architect's hand-back
+- *AND* the change's record shows each finding's route: a record correction, a =decision= ask, a follow-up candidate or an entry on the hardening list
+
+** Requirement: Which of the design and the code is right is decided by a test
+:PROPERTIES:
+:GOAL:     G6 (inferred, O-IN-1)
+:END:
+The integrate phase SHALL correct a seam row to say what the code does only when a test pins the
+code's behaviour on that point, and SHALL never remove or weaken a promise the design made because
+the code does not keep it; such a promise SHALL stay in the design and be reported against the code.
+
+*** Scenario: A seam row the pinned code has outgrown is corrected in place
+- *WHEN* a cited seam row states something other than what the merged code does, the code is what the change wanted, and a test pins the code's behaviour on that point
+- *THEN* the seam row is corrected in place in the change's design, as a record correction
+- *AND* no ask is filed for it
+- *AND* the change's journal has one line for the record correction, against the seam
+- *AND* the finding's route names the pinning test
+
+*** Scenario: A corrected seam row is cut back to the contract
+- *WHEN* the code outgrew a seam row by a guard, an error string, an encoding or a helper the Implementor added
+- *THEN* the corrected row states less, not the added detail
+- *AND* no Decision of the design gains that detail
+
+*** Scenario: A record correction reaches the scenario that states the same thing
+- *WHEN* a spec scenario states what a corrected seam row stated
+- *THEN* the scenario is corrected in place, in the same commit as the row
+- *AND* its title is unchanged
+
+*** Scenario: A record correction's commit says so and names the pin
+- *WHEN* a record correction is committed in the code root
+- *THEN* its subject contains =record correction=
+- *AND* when it corrects a scenario in a spec, its body has one line =Pinned by: <test>= for each scenario it corrects
+
+*** Scenario: A record correction execute journaled is made by conformance
+- *WHEN* execute journaled a statement for integrate as a record correction
+- *THEN* the conformance Architect's input names it
+- *AND* it is corrected by the same test rule as a seam row conformance finds, its commit naming the pin
+
+*** Scenario: Each corrected row or scenario has a commit of its own
+- *WHEN* integrate makes more than one record correction
+- *THEN* each corrected seam row, with the scenario that states the same thing, is in a commit of its own, its subject naming the row
+
+*** Scenario: A promise the code does not keep stays in the design
+- *WHEN* the design promises something the merged code does not do
+- *THEN* the design still states the promise after integrate
+- *AND* a finding against the code is routed, as a follow-up candidate when it breaks the main path and as an entry on the hardening list otherwise
+
+*** Scenario: A broken promise is asked about only when the user's own words conflict with it
+- *WHEN* the design promises something the merged code does not do, and a spec scenario, the intent or a prior conflicts with the promise
+- *THEN* a =decision= ask is filed from the finding
+- *AND* when only the Architect sees a product question in it, no ask is filed and the finding's recommended resolution carries the question
+
+*** Scenario: Code that does something else, with no pin, puts the design in question
+- *WHEN* the merged code does something other than a cited seam row states, not merely less, and no test pins the code's behaviour on that point
+- *THEN* a =decision= ask is filed from the finding
+- *AND* the seam row is left as it is until the answer
+
+** Requirement: Every finding at integrate ends in a fix, a candidate, an ask or the hardening list
+:PROPERTIES:
+:GOAL:     none stated (O-NS-13 states it for the whole change)
+:END:
+The integrate phase SHALL route every finding it receives, conformance's and the
+whole-change review's: one on the main path SHALL become a follow-up candidate for the next plan, an
+untrue sentence SHALL be corrected, any other defect SHALL go on the hardening list. It SHALL file
+no ask for what the user's own words already answer.
+
+*** Scenario: A blocking conformance finding becomes a follow-up candidate
+- *WHEN* a conformance finding breaks the main path and is not a record correction
+- *THEN* a follow-up candidate is written for the next plan, marked critical, naming the finding it came from, with the finding's words verbatim
+- *AND* no task file is written
+
+*** Scenario: Integrate does not pass its gate while a blocking finding has no route
+- *WHEN* a blocking finding is still pending
+- *THEN* integrate does not pass its gate
+
+*** Scenario: Any other conformance defect goes on the hardening list
+- *WHEN* a conformance finding is a defect off the main path
+- *THEN* it is one entry on the change's hardening list
+- *AND* a stale sentence the same finding exposed is corrected at once all the same
+
+*** Scenario: A finding the user's words already answer gets no ask
+- *WHEN* a finding is answered by a line of the priors or a sentence the user wrote in the intent
+- *THEN* no ask file is written for it
+- *AND* it is settled with that prior or sentence cited, or routed as the prior directs
+
+*** Scenario: An ask the user's words already answer is declined
+- *WHEN* an ask file already exists for a question a prior answers
+- *THEN* the ask is declined, with the prior as its readback
+
+*** Scenario: A finding with a stale sentence and a product question yields both
+- *WHEN* a finding exposes a stale sentence and also a question only the user can answer
+- *THEN* the sentence is corrected as a record correction, with its journal line
+- *AND* one =decision= ask is filed for the question
+
+** Requirement: A cycle that merged code ends with a review of the whole change
+:PROPERTIES:
+:GOAL:     G11 (O-NS-9)
+:END:
+At every integrate whose cycle merged code, the integrate phase SHALL spawn one Reviewer over the
+whole change, author-blind, after the workspace integration branch is taken in and before the PM
+digest and the routing to the next plan; the change SHALL go no further while a blocking finding of
+that review is open.
+
+*** Scenario: A cycle that merged code gets a whole-change review
+- *WHEN* the cycle merged code: a task, an inline fix or an inline-path commit
+- *THEN* one Reviewer is spawned over the whole change, whether or not an open task remains
+- *AND* the change's record holds the agent and its setting
+
+*** Scenario: A cycle that merged only record text gets no whole-change review
+- *WHEN* the cycle merged nothing but changes to the change's documents, and it would not file the MVP decision
+- *THEN* no whole-change review is spawned
+
+*** Scenario: A cycle that would file the MVP decision runs the review whatever it merged
+- *WHEN* a cycle would file the MVP decision
+- *THEN* a whole-change review runs in that cycle, whatever the cycle merged
+- *AND* the MVP decision is filed only when that review leaves no blocking finding
+
+*** Scenario: The whole-change review reads the change from its base
+- *WHEN* the whole-change Reviewer is spawned
+- *THEN* its input holds the diff from the intent's base commit to the code root's HEAD
+- *AND* the intent, every seam row of the design, and the coverage of the change's scenarios
+- *AND* the project's review standards and priors
+
+*** Scenario: The whole-change review is author-blind
+- *WHEN* the whole-change Reviewer is spawned
+- *THEN* its input holds no Implementor's report, no Observations and no per-task review file
+
+*** Scenario: The whole-change review is kept in the cycle's directory
+- *WHEN* the whole-change review ends
+- *THEN* its review file is in the cycle's directory in the home
+
+*** Scenario: The workspace integration branch is taken in before the review
+- *WHEN* the change was opened from a workspace integration branch and that branch has moved
+- *THEN* the branch is merged into the change's integration branch before the whole-change Reviewer is spawned
+- *AND* the test command is run once after that merge
+- *AND* the commit's subject is =Take in <branch>: <change>=
+
+*** Scenario: A regression from the take-in is fixed in the change when the goals settle it
+- *WHEN* the run after taking in the workspace integration branch shows a test that passed before it failing, and the change's goals settle what the code should do
+- *THEN* the phase agent journals its cause
+- *AND* the handshake carries a follow-up candidate for its fix, on the main path
+- *AND* the whole-change review waits for the cycle that makes the fix
+
+*** Scenario: A take-in regression the goals do not settle is a decision ask
+- *WHEN* the run after the take-in shows a regression, and the goals of the two changes do not settle which is right
+- *THEN* a =decision= ask names both branches and the run's output
+- *AND* no =environment= ask is filed for it
+
+*** Scenario: The digest and the routing count the whole-change review
+- *WHEN* a whole-change review runs in the cycle
+- *THEN* the PM digest counts its findings and the corrections they led to
+- *AND* each of its blocking findings is among the cycle's follow-up candidates
+
+*** Scenario: A blocking whole-change finding holds the change for another cycle
+- *WHEN* the whole-change review reports a defect on the main path
+- *THEN* a follow-up candidate is written for the next plan, marked critical, naming the whole-change review it came from
+- *AND* while it is open the change is neither stopped for the MVP decision nor done
+
+*** Scenario: An untrue sentence the whole-change review finds is corrected at once
+- *WHEN* the whole-change review finds an untrue sentence in prose
+- *THEN* the sentence is corrected at integrate, as a record correction with its journal line, its commit saying so (§ A record correction's commit says so and names the pin)
+- *AND* it holds nothing back
+
+*** Scenario: Any other whole-change defect goes on the hardening list
+- *WHEN* the whole-change review reports a defect off the main path
+- *THEN* it is one entry on the change's hardening list
+
+*** Scenario: A spec signal from the whole-change review is an ask
+- *WHEN* the whole-change review signals that the design or a spec may be what is wrong
+- *THEN* an ask file is written for it
+
+** Requirement: When the main path works end to end, the change stops for the MVP decision
+:PROPERTIES:
+:GOAL:     G4 (O-IN-2, O-NS-4)
+:END:
+When the whole-change review leaves no blocking finding, no open task or critical follow-up candidate
+remains on the main path, and the intent's status line has not yet reached =mvp=, the integrate phase
+SHALL mark the intent =mvp=, file one =decision= ask (harden, rethink or stop) that blocks plan and
+shows the user what the change does, how to try it, the hardening list, the open tasks off the main
+path and the record corrections to the specs, and stop.
+
+*** Scenario: The main path working end to end stops the change for one decision
+- *WHEN* the whole-change review leaves no blocking finding, no open task or critical follow-up candidate is on the main path, and the intent's status line is not yet =mvp=
+- *THEN* the intent's status line becomes =mvp <date> <HEAD> <ask-id>=
+- *AND* one =decision= ask is filed with the options =harden=, =rethink= and =stop=, blocking plan
+- *AND* the status line and the ask are committed
+
+*** Scenario: Open tasks off the main path do not hold back the MVP decision
+- *WHEN* the main path works end to end and open tasks off the main path remain
+- *THEN* the MVP decision is filed all the same
+- *AND* the open tasks wait for its answer
+
+*** Scenario: Integrate hands back that it stopped on the MVP decision
+- *WHEN* the MVP decision is filed
+- *THEN* the phase passes its gate, closes and makes its close commit first
+- *AND* hands back =integrate <cycle-id>: stopped, ask <id> blocks plan; <path>=
+
+*** Scenario: The MVP decision says what the change does and how to try it
+- *WHEN* the MVP decision is filed
+- *THEN* its ask says what the change now does, one short paragraph per goal, and how to try it
+- *AND* which main-path tests pass and what the whole-change review found
+
+*** Scenario: The MVP decision lists the hardening list
+- *WHEN* the MVP decision is filed
+- *THEN* its ask has one line per hardening entry, highest severity first, with the hardening list's path
+- *AND* says so when the list is empty
+
+*** Scenario: The MVP decision lists the open tasks off the main path
+- *WHEN* the MVP decision is filed and open tasks off the main path remain
+- *THEN* its ask lists each in product terms with where it came from
+
+*** Scenario: The MVP decision shows every record correction to the specs
+- *WHEN* the MVP decision is filed
+- *THEN* its ask shows every record correction made to the specs since the intent's base: its commit, the scenario, the test that pins it and its diff
+- *AND* then each untrue sentence corrected in prose at integrate, with its commit and diff
+- *AND* they are shown, not asked about, and the ask says so when there are none
+
+*** Scenario: The MVP decision recommends one option and says what waits
+- *WHEN* the MVP decision is filed
+- *THEN* its ask recommends one option, with the reason
+- *AND* says that if it is unanswered nothing runs and the change waits at its MVP
+
+*** Scenario: After harden there is no second MVP decision
+- *WHEN* the user chose =harden= and a later whole-change review leaves no blocking finding
+- *THEN* no second MVP decision is filed
+
+*** Scenario: Rethink marks the intent divergent
+- *WHEN* integrate applies the answer =rethink=
+- *THEN* the intent's status line becomes =divergent <date> <ask-id>=, with the signal =user= and the answer quoted under its =* Status=
+
+** Requirement: A change is done only after its MVP decision and a clean whole-change review
+:PROPERTIES:
+:GOAL:     G11, G1 (inferred) (O-NS-9, O-IN-3)
+:END:
+The integrate phase SHALL mark a change done, in its intent, only after the user chose =stop= at the
+MVP decision, or chose =harden= and a later whole-change review left no blocking finding and no open
+task or follow-up candidate remains other than those the answer left; it SHALL write the closing
+summary with the status line and commit both in the code root.
+
+*** Scenario: Stop makes the change done
+- *WHEN* the user's answer to the MVP decision is =stop=
+- *THEN* the intent's status line becomes =done <date> <HEAD>=, with the closing summary under its =* Status=
+- *AND* both are committed in the code root in a commit whose subject names the change
+
+*** Scenario: After harden, done follows a clean whole-change review
+- *WHEN* the user chose =harden=, a later whole-change review leaves no blocking finding, and no open task or follow-up candidate remains other than those the answer left
+- *THEN* the intent's status line becomes =done <date> <HEAD>=, with the closing summary under its =* Status=
+
+*** Scenario: A change is reported done only after a whole-change review
+- *WHEN* a change's intent says =done=
+- *THEN* a whole-change review of the change has run
+- *AND* every blocking finding it reported is resolved
+
+*** Scenario: The closing summary accounts for the goals, the hardening list, the open tasks and the corrections
+- *WHEN* the closing summary is written
+- *THEN* it says what the change does, one line per goal
+- *AND* which hardening entries were worked, with their task names, and which were left, or none
+- *AND* the open tasks left off the main path, one line each, or none
+- *AND* the record corrections to the specs and the untrue sentences corrected, each with its commit, its scenario or file, its pinning test where there is one, and its diff
+
+*** Scenario: A done change's documents stay where they are
+- *WHEN* a change is done
+- *THEN* its intent, design and spec edits stay where they were in the code root
+
+*** Scenario: A done change merges into its workspace integration branch
+- *WHEN* a change opened from a workspace integration branch is done
+- *THEN* the change's integration branch is merged into that branch as a merge commit whose subject is =Merge <change>=
+- *AND* the integrate phase does not merge that branch to the repository's main
+
+** Requirement: Goal drift is put to the user
+:PROPERTIES:
+:GOAL:     G2 (O-NS-2)
+:END:
+When the PM digest reports that the change's goals may be drifting, the integrate phase SHALL mark the
+intent divergent with the signal and its evidence and SHALL file one =decision= ask with the options
+revise, split, abandon and continue; the user's answer SHALL reach the next plan through the
+handshake.
+
+*** Scenario: Goal drift marks the intent divergent
+- *WHEN* the PM's goal-drift query fires
+- *THEN* the intent's status line becomes =divergent <date> <ask-id>=, with the signal and its evidence under its =* Status=
+- *AND* the change is committed in the code root
+
+*** Scenario: Goal drift is a decision ask with four fixed options
+- *WHEN* the PM's goal-drift query fires
+- *THEN* one =decision= ask is filed whose options are exactly =revise=, =split=, =abandon= and =continue=
+
+*** Scenario: The user's answer on goal drift reaches the next plan
+- *WHEN* the user has answered the goal-drift ask
+- *THEN* the handshake carries the ask, the chosen option and the user's reason
+
+** Requirement: Integrate leaves the next plan a handshake of everything the cycle found
+:PROPERTIES:
+:GOAL:     none stated (O-XC-1 states it for plan)
+:END:
+The integrate phase SHALL route everything the cycle found and asked to where it lands and SHALL
+write, at each cycle, a handshake for the next plan holding the seam rows the cycle changed, the PM
+digest, the patterns seen across tasks, the user's answer on goal drift, the open and the resolved
+asks, every open task's impact set and the follow-up candidates. It SHALL write no task text.
+
+*** Scenario: Each integrate writes a handshake with all its parts
+- *WHEN* integrate passes its gate
+- *THEN* the change's directory holds the handshake for the cycle
+- *AND* it holds the seam rows changed, the PM digest's path, the patterns across tasks, the goal-drift answer, the open asks, the resolved asks, the impact sets and the follow-up candidates
+- *AND* a part with nothing in it is present and empty
+
+*** Scenario: The seam rows the cycle moved are listed with what moved them
+- *WHEN* the cycle added, corrected or retired a seam row
+- *THEN* the handshake lists each such row once, with the change made and the finding or ask that made it
+- *AND* when no row moved, the list is empty
+
+*** Scenario: Every open ask is carried in the handshake
+- *WHEN* integrate passes its gate with asks still open
+- *THEN* each open ask is in the handshake's open asks
+- *AND* an ask the user left unanswered stays open, and its default applies at the boundary its file names
+
+*** Scenario: Every open task has an impact entry, empty when nothing touched it
+- *WHEN* integrate passes its gate
+- *THEN* each task still open in the change has one entry in the handshake's impact sets
+- *AND* the entry names each change of the cycle that touches the task: a seam row it cites that moved, a pattern that names it, a user's answer, an inline fix in its files, a wrong premise
+- *AND* an entry with nothing to name is present and empty
+
+*** Scenario: Every blocking finding and every main-path answer that needs new work has a candidate
+- *WHEN* integrate passes its gate
+- *THEN* every blocking finding the cycle routed to a follow-up candidate has its candidate in the handshake
+- *AND* every answered ask on the main path that needs new work has one too
+- *AND* a finding on the hardening list has none
+
+*** Scenario: A user's answer on the main path that needs new work becomes a candidate
+- *WHEN* an answered ask defers work on the main path and that work is not an open task's
+- *THEN* a follow-up candidate is written for it, marked critical, naming the ask, with the user's decision as its words
+
+*** Scenario: A user's answer off the main path goes on the hardening list
+- *WHEN* an answered ask defers work off the main path
+- *THEN* it is one entry on the hardening list, headed as a decision
+- *AND* no follow-up candidate is written for it
+
+*** Scenario: A task named in an open ask is blocked on it
+- *WHEN* an open ask names a task it blocks
+- *THEN* that task is blocked on the ask until the ask is applied
+
+*** Scenario: A task that may be obsolete is put to the user, never closed
+- *WHEN* what the cycle did may have made an open task wholly obsolete
+- *THEN* a =decision= ask is filed whose options are close, refine, rescope and do nothing, which blocks the task and leaves it open if unanswered
+- *AND* the task stays open
+- *AND* its impact entry flags it
+
+*** Scenario: A pattern across the cycle's tasks reaches the next plan
+- *WHEN* the PM or the Architect sees a pattern across the cycle's tasks
+- *THEN* the handshake carries it with its kind, its scope, the tasks that show it and one sentence on what it means for the next plan
+
+*** Scenario: A pattern that names concrete work becomes a candidate
+- *WHEN* a pattern's meaning for the next plan names a task of its own that is not an open task's impact
+- *THEN* a follow-up candidate is written for it, not marked critical
+
+*** Scenario: A cluster in the cross-change backlog is put to the user
+- *WHEN* the PM finds a cluster of externalised tasks coherent enough to be a sub-change
+- *THEN* a =decision= ask is filed on whether to promote it into the change, whose default if unanswered is to leave it externalised
+
+*** Scenario: A thought that names a project prior becomes a candidate
+- *WHEN* the Architect's thought line names a project prior that asks for the work
+- *THEN* the handshake carries a follow-up candidate for it, off the main path, quoting the thought
+
+*** Scenario: Integrate writes no task text
+- *WHEN* integrate closes
+- *THEN* no task file has been written or edited by it
+
+** Requirement: The hardening list holds the change's reasoned defects off the main path
+:PROPERTIES:
+:GOAL:     none stated
+:END:
+The change's hardening list SHALL be one file in the change's directory, to which the phase agent
+appends one entry for each finding it routes =hardening= and each user's decision whose work is off
+the main path; each entry SHALL carry its source, its severity and its locations, and SHALL say what
+goes wrong in product terms. =plan= and =execute= cite this form.
+
+*** Scenario: A finding routed hardening is one entry, appended by the phase agent
+- *WHEN* a phase agent routes a finding =hardening=
+- *THEN* =hardening.org= in the change's directory gains one entry for it, after the others
+- *AND* no other agent writes the file
+
+*** Scenario: A hardening entry gives its kind, its source, its severity and its places
+- *WHEN* a hardening entry is written for a finding
+- *THEN* its heading is the finding's kind with =(hardening)= and one line in product terms
+- *AND* its =:REF:= is the finding's id, its review file and number, or its discovery's id; its =:SEVERITY:= the reporter's; its =:FILES:= the locations
+- *AND* its body is one paragraph: what goes wrong, on which input, and what the user would notice
+
+*** Scenario: A decision off the main path is a hardening entry with its ask
+- *WHEN* a user's decision's work is off the main path
+- *THEN* the hardening list gains an entry headed =decision (hardening):= and the decision in product terms, its =:REF:= the ask's id, with no severity
+
+*** Scenario: An entry a harden answer takes names its task, and one it leaves says so
+- *WHEN* a harden answer is applied
+- *THEN* each entry drafted into a task gains =:TASK: <task-name>=
+- *AND* each entry a partial answer leaves gains =:LEFT: <ask-id>=
+
+*** Scenario: The hardening list holds no untrue sentence, thought or style
+- *WHEN* the hardening list is read
+- *THEN* it holds no untrue sentence in a shipped document, no thought and no matter of style
+
+** Requirement: Integrate leaves its work in the home and the change's documents in the code root
+:PROPERTIES:
+:GOAL:     none stated
+:END:
+The integrate phase SHALL handle the answers waiting in the inbox first, SHALL leave a PM digest each
+cycle, SHALL commit the change's documents it corrected in the code root and the rest of its work in
+the home with one close commit, SHALL change no code except an untrue sentence in prose, SHALL spawn
+each agent at its role default, and SHALL hand the dispatcher one line.
+
+*** Scenario: An answered ask is handled before anything else
+- *WHEN* integrate starts and an ask in the inbox has an answer
+- *THEN* the answer is handled before the rest of the phase's work
+
+*** Scenario: A record correction is never an ask file
+- *WHEN* integrate makes a record correction
+- *THEN* no ask file is written for it
+- *AND* the change's journal has its line
+
+*** Scenario: Each integrate leaves a PM digest
+- *WHEN* integrate passes its gate
+- *THEN* the cycle's directory holds the PM digest, with its signals
+
+*** Scenario: Corrected documents are committed in the code root before the close commit
+- *WHEN* integrate corrected the design or a spec in the cycle
+- *THEN* the correction is committed in the code root before the home's close commit
+
+*** Scenario: Integrate closes with one commit in the home
+- *WHEN* integrate closes
+- *THEN* one commit in the home, subject =Orchestrator: <cycle-id> integrate closed=, holds the cycle's archived state and handshake, the PM digest and signals, the findings, the list of seam rows changed, the follow-up candidates and the impact sets
+
+*** Scenario: Integrate changes no code but an untrue sentence
+- *WHEN* integrate closes
+- *THEN* the only change it made to the code in the code root is the correction of an untrue sentence in prose
+
+*** Scenario: Each agent integrate spawns runs at its role default
+- *WHEN* integrate spawns the conformance Architect, the whole-change Reviewer or the PM
+- *THEN* each runs at its role default
+- *AND* the change's record holds the agent, its role and its setting
+
+*** Scenario: Integrate hands back one line
+- *WHEN* integrate passes its gate, stops on an ask, fails or hands over
+- *THEN* the dispatcher receives one line naming the phase and the cycle, and when it stopped on an ask, the ask, what it blocks and the file's path
+
+* Gaps
+
+No gap open. The six this draft had were filled 2026-11-13 at the hand-off review
+(=research/skill-evals/extraction/integrate.org= § Gap decisions).

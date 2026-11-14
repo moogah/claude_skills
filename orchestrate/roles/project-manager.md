@@ -6,7 +6,7 @@ The PM is a **counting and trending** role first, a categorisation role second, 
 
 ## Responsibility statement
 
-Watch overall progress, queue health, blocked paths, externalised work, and goal-drift. Produce the PM digest each cycle. Detect cascade signals and spawn focused Architect conformance runs. Surface user-decisions on blocked items. Maintain task taxonomy by labelling new tasks with their `task_class`.
+Watch overall progress, queue health, blocked paths, externalised work, and goal-drift. Produce the PM digest each cycle. Detect cascade signals and spawn focused Architect conformance runs. Surface user-decisions on blocked items. Recommend a task's `task_class` where plan's looks wrong; plan sets it.
 
 ## Agent setting
 
@@ -21,7 +21,7 @@ The PM operates as **two passes**:
 `state.py counts --write` produces the **instrument panel** and **raw signals** from the state file. No LLM involved. Output is structured (JSON), reproducible, auditable.
 
 It produces:
-- All counts in the throughput table (created, carried, started, completed, reviewed, rejected, inline fixes, externalised, blocked, failed, done), derived from task statuses, timestamps and the journal, for this cycle and the `history_window` before it. `created` leaves out a task carried in from an earlier cycle (`carried`); `rejected` is send-backs only, and `inline_fixes` beside it is the review findings fixed inline (`state.md` § Cycle log).
+- All counts, computed (created, carried, started, completed, reviewed, rejected, inline fixes, externalised, blocked, failed, done); the throughput table shows the form's seven and the drainage (`templates/pm-digest.md` § Form), derived from task statuses, timestamps and the journal, for this cycle and the `history_window` before it. `created` leaves out a task carried in from an earlier cycle (`carried`); `rejected` is send-backs only, and `inline_fixes` beside it is the review findings fixed inline (`state.md` § Cycle log).
 - All ratios (drainage, review balance, rejection rate, externalisation pressure). The rejection rate reads with the inline fixes: a rate of 0.00 beside several inline fixes is not a clean batch.
 - The fired-signals list for the queries it can compute from state: throughput inversion, review starvation, priority inversion, cascade (follow-ups by source task).
 - The critical-path readout, the class-distribution table, follow-ups by source, the open asks and the blocked tasks with their `blocker_note`, and the findings by kind, with the entries of `hardening.org`. The on-path total counts the on-path task files no batch holds (`on_path_unbatched`).
@@ -45,7 +45,7 @@ Output: `<change-dir>/cycles/<cycle-id>/pm-digest.md` (see `templates/pm-digest.
 
 ### Why split
 
-The split fixes the failure mode of "agent hallucinating counts": counts come from the state file, never the LLM. If the agent pass fails or hallucinates, the deterministic output remains in `pm-signals.json` and is recoverable. The PM digest is *also* useful when only the deterministic pass has run (it just lacks the prose framing).
+The split fixes the failure mode of "agent hallucinating counts": counts come from the state file, never the LLM. If the agent pass fails or hallucinates, the deterministic output remains in `pm-signals.json` and is recoverable. The computed output is kept when the agent pass fails, but no digest is rendered from it alone: the agent pass is run again, and integrate's gate waits for the digest.
 
 ## Eight failure modes the PM targets
 
@@ -123,7 +123,7 @@ The PM does **not** read code. If a question requires reading code, that's a sig
 | Cohort velocity | completion rate by `task_class` < global avg / 2 | Signal: cycle anti-pattern in class |
 | Cycle anti-pattern | rejection reasons clustered by implementor or class with count ≥3 | Signal: process bug |
 | Blocked-path aging | tasks `status: blocked` for ≥`stale-task-cycles` cycles | Signal: blocked-path stagnation; a candidate question (the orchestrator writes the ask file), or re-surface the ask id in `blocker_note` |
-| Goal drift | critical-path completion ratio stagnant or declining for K cycles while non-critical-path completions continue | Signal: goal drift |
+| Goal drift | critical-path completion ratio stagnant or declining for K cycles while non-critical-path completions continue and drainage stays positive | Signal: goal drift |
 
 All thresholds are overlay-configurable via `config.yaml` `thresholds.*`. `state.py counts` computes the first, second, third and sixth rows; the rows that need per-task cycle age or rejection reasons (stale detection, cohort velocity, cycle anti-pattern, blocked-path aging, goal drift over K cycles) are read by the agent pass from the history table until a cycle shows they are worth computing.
 
@@ -132,6 +132,9 @@ All thresholds are overlay-configurable via `config.yaml` `thresholds.*`. `state
 See `templates/pm-digest.md`. Three buckets: facts (counts), signals (interpretation), asks (user actions). Plus trends-to-watch, meta-discoveries, goal-drift recommendation.
 
 The cycle does not close until the PM digest is produced and any user-asks have been routed (see `flows/integrate.md` exit gate).
+
+
+The agent pass hands back one line: `pm <cycle-id>: <s> signals (<w> ⚠), <q> candidate questions[, conformance run <id>]; <path>`, the digest's path relative to the home (`SKILL.md` § Hand-back lines). `<s>` counts every marked signal line of the digest, ⚠, ✓ and ◦; `<w>` those marked ⚠.
 
 ## Cadence
 
@@ -170,7 +173,7 @@ The answer is routed through `flows/integrate.md` § 1's rules: code right, row 
 
 ## Escalation contract
 
-The PM is **read-only against code**, **write-only against the queue** (it can apply categorisation labels and re-rank priority within the ready set; it does not edit code or change task bodies).
+The PM is **read-only against code and the queue**: re-prioritising and relabelling are recommendations in the digest, never made; its one action is the cascade conformance run.
 
 It can:
 - **Recommend** re-prioritisation. Apply at the user's nod.
@@ -181,7 +184,7 @@ It can:
 
 It cannot:
 - **Spawn Implementor or Reviewer agents** — that's the orchestrator's job. PM influences *what* runs, not *that* something runs.
-- **Modify task bodies** — only metadata (labels, priority, blocker notes).
+- **Modify task files** at all, metadata included (labels, priority, blocker notes); it recommends.
 - **Make merge decisions** — that's the Reviewer (verdict) or the orchestrator (mechanical gates); an Architect `blocking` finding holds the integrate gate, not a merge.
 
 ## Form-factor open questions

@@ -1,0 +1,381 @@
+#+TITLE: skill-evals
+#+OPTIONS: ^:{} -:nil
+
+* Purpose
+
+The evals answer one question about a change to the =orchestrate= skill before it is installed: /does the skill still result in what its spec says, on the same cases as last time?/ They exist because the cycles used to judge a skill change were never the same twice, so a change that fixed one thing could make another worse and nobody would see it.
+
+They do this by running one step of the skill at a time, on a constructed interface artifact and a fixture taken from a library, checking with a script what a script can see for certain, having an eval agent evaluate what has to be read against the case's expected result, and keeping every result so that two versions of the skill can be set side by side.
+
+They do not own: proposing changes to the skill (the user and =process-improvement= do that; the results are kept in a form a program can read so that a proposer can be added later); evals for any skill but =orchestrate=; runs on other vendors' tools or models; the whole-cycle replay's tools (=findings/tools/replay-*= in the skills workspace), which they use and do not replace.
+
+Research: =~/emacs-workspaces/claude-skills/research/skill-evals/brief.org= (goals R1-R11, decided 2026-11-11; evidence E1-E9). Read and approved by the user as written, 2026-11-11. Revised 2026-11-12 by the review of how the evals work (=research/skill-evals/evals-review.org=, directions D1-D9) and by the spec form (=research/skill-evals/spec-form.org=, points 3 and 5). Revised 2026-11-13: a case's checks are listed under the items of its expected result (* Decided, D10); a check rests only on what a spec fixes, and a scenario whose evidence no spec fixes is a gap in that spec (* Decided, D11). Revised 2026-11-13: what a word match is for, and what decides an item no check observes (* Decided, D12); how an item is promoted left as a gap; /validation/ named in place of "hand reading". Revised 2026-11-13: the evidence given whole, and /cannot tell/ (* Decided, D13). Revised 2026-11-13: a scenario with alternatives is split, and a case cites one whose WHEN its fixture decides (* Decided, D14). Revised 2026-11-13: a stopped trial records its cost and does not run the call it stopped at (* Decided, D15); a trial has only its case's tools, under a permission mode the evals state (* Decided, D16). Revised 2026-11-13: the evals are a repository of their own, whose history is not rewritten (* Decided, D17).
+
+* Key Concepts
+
+Terms in /italics/ at their first use, and /step/, /case/, /trial/ and /fixture/ below, are defined in =docs/glossary.org=.
+
+** The specs and their scenarios
+
+Each capability of the skill has a spec, =docs/specs/<capability>.org=: requirements, each with /scenarios/ whose titles are citation keys (=execute § A regression is recorded against its task=). The evals are the specs' tests: a case cites the scenarios it tests, and coverage is read per scenario. The outcome list, =docs/outcomes.org=, is frozen source material for the specs; a case written before its capability had a spec names an outcome on it until the case moves onto the spec.
+
+** A step, a case, a trial, a fixture
+
+- A *step* is one piece of work one agent does between receiving its input and handing back: the dispatcher's first step, a Reviewer's review of one task, the execute agent's routing and fixing of one review's findings.
+- A *case* is one eval: it cites the scenarios it tests, names the step where they are observed and the step's input, states its expected result, and holds the checks applied to what the step left.
+- A *trial* is one run of a case. A case is run more than once because two runs of the same step on the same input differ.
+- A *fixture* is what a step needs besides its /interface artifact/ in order to run: a checkout of the code at a commit for an Implementor or a Reviewer, a home with its record for a phase agent or the dispatcher.
+
+The input of a case is a constructed interface artifact plus a fixture. Fixtures are taken from the /fixture library/: static files and git repositories, kept apart from the cases that explain them. The same constructed artifact serves twice: as the input of the step that reads it, and as what the output of the step that writes it is compared against.
+
+** What a script decides and what an eval agent reads
+
+What a step left is evaluated in two ways.
+
+| What | By | Decides |
+|------+----+---------|
+| A fact of the end state (a commit, a file present or unchanged, a tool called or not), or a form a spec fixes (a commit subject, an entry in the record against a task, a file in the home) | a script | pass or fail |
+| What an artifact or a record says (does the journal name the cause, does the review report the defect) | an /eval agent/, from evidence the script collects, against the case's expected result and the /rubric/ for that kind of artifact | a recorded evaluation per item |
+
+A check reads only what a spec fixes: the capability's own spec, or the spec of the capability whose boundary the evidence is (a record's form is the state layer's). A form only the skill text chooses is never checked; a scenario that leaves no evidence a spec fixes is a gap in that spec. An eval agent never changes a script's verdict: it /audits/ each check, asking whether the check as computed observes what its item expects (/agrees/, or /suspect/ with its reason), and a suspect check is put in front of a person.
+
+** The two sets
+
+| Set | Holds | Expected on the installed skill | A failure |
+|-----+-------+---------------------------------+-----------|
+| /regression set/ | the script's checks, and the eval agent's items that have been promoted | passes near 100% | blocks the install |
+| /advisory set/ | the eval agent's items not yet promoted; checks of scenarios that need several steps | any | is reported and blocks nothing |
+
+** The history
+
+Every trial's result is kept. The history is the record by which two versions of the skill are compared, a step is seen to get slower or costlier, and an item is promoted. What comparison and promotion read is tracked; the details behind it are kept locally for as long as they are needed.
+
+* Requirements
+
+** Requirement: A case tests the scenarios of a capability's spec
+A case SHALL cite the scenarios it tests by their titles, and coverage SHALL be read per scenario from those citations, not from which failures have been seen.
+
+*** Scenario: A scenario no case cites is reported as not covered
+- *WHEN* the coverage of a spec is reported
+- *AND* a scenario is cited by no check or item, and is not marked as having no test with a reason
+- *THEN* the report lists that scenario as uncited
+- *AND* it is not counted as passing
+
+*** Scenario: A case cites only scenarios its spec has
+- *WHEN* a case is run
+- *AND* one of its checks or items cites a scenario its capability's spec does not have
+- *THEN* the case is refused before any trial
+
+*** Scenario: A case written before its spec names an outcome until it moves
+- *WHEN* a case's capability has no spec yet
+- *THEN* the case names one outcome of the frozen outcome list
+- *AND* a case that names neither a capability nor such an outcome is refused
+
+*** Scenario: The skill text is rewritten and its spec's cases still apply
+- *WHEN* a change rewrites the skill text
+- *AND* the spec is unchanged
+- *THEN* the spec's cases run against the changed skill without being rewritten
+- *AND* no check needs rewriting, since each reads only what a spec fixes
+
+** Requirement: A case evaluates its scenarios at one step
+A case SHALL run one step of the skill, on a constructed interface artifact and a fixture, without running a cycle, and SHALL state before its first trial what a correct run does.
+
+*** Scenario: A case runs without a cycle
+- *WHEN* a case is run
+- *THEN* only the step it names is run
+- *AND* the run ends when that step hands back, or at the point the case names
+
+*** Scenario: The expected result is established before the first trial
+- *WHEN* a case is written
+- *THEN* it lists the scenarios it tests, each with what it comes to in the case's fixture
+- *AND* it quotes no skill text
+- *AND* it is stated before any trial is run
+
+*** Scenario: A case cites a scenario whose WHEN its fixture decides
+- *WHEN* a case cites a scenario
+- *THEN* the scenario's THEN is one outcome, and its fixture sits on one side of the scenario's WHEN, so the case expects one outcome
+- *AND* a scenario whose THEN offers alternatives chosen by conditions it does not state is a gap in its spec, to be split into one scenario per alternative, each with a WHEN that decides it
+- *AND* where a spec means a choice to be free (it says so), the case accepts every alternative, and its stop rule does not depend on which is taken
+
+*** Scenario: A case is validated before its trials count
+- *WHEN* a case is added, or what runs of it changes (its checks, build, fixture or expected result)
+- *THEN* one trial is /validated/: a person reads it in full and compares each check's verdict, each item's evaluation and each audit with what the trial did
+- *AND* a check or item that disagrees is corrected before any trial counts
+- *AND* a check that cannot fail in the trial's setting (it looks for a tool the trial does not have) is removed
+
+*** Scenario: A changed case does not count until it is validated again
+- *WHEN* a case's checks, build or expected result differ from the version it was validated at
+- *THEN* its trials are recorded as not counting
+- *AND* the version is the case's state in git, uncommitted edits recorded as such
+
+*** Scenario: A case document holds the case as it is
+- *WHEN* a case is changed or validated again
+- *THEN* its document states the case as it now is, and the validation of its current version
+- *AND* earlier versions and validations are reached through history, not kept in the document
+
+** Requirement: A trial's fixture comes from the library, and its answer is out of its reach
+A trial's fixture SHALL be taken from the fixture library and generated only where it must be. Nothing the agent under test can read SHALL name its case, its fixture or what a correct run finds.
+
+*** Scenario: Fixed content is copied, not generated
+- *WHEN* a trial's fixture is made
+- *THEN* the files and git repositories that are the same on every tree and every trial are copied from the fixture library
+- *AND* only what depends on the tree under test (a record its own tools build, text read from it) or on the trial's paths is generated
+
+*** Scenario: A trial writes only to its own copy
+- *WHEN* a trial runs
+- *THEN* it runs in a copy of the fixture made for that trial
+- *AND* every path in the copy that named the place the fixture was taken from names the copy
+- *AND* the fixture library is unchanged afterwards
+
+*** Scenario: A trial is told to read only its own copy
+- *WHEN* a trial runs
+- *THEN* its settings state that the agent under test reads the trial's directory and nothing outside it
+- *AND* a read outside it is recorded with the result, not prevented: the settings are a statement of intent, not a box
+
+*** Scenario: A trial has only its case's tools, under a mode the evals state
+- *WHEN* a trial runs
+- *THEN* the agent under test has the tools its case names, and those its host answers in its place (a question to the user, a tool the case routes to the host), and no others
+- *AND* its permission mode is stated in the trial's settings, never taken from the user's own
+- *AND* a call its case does not approve is put to the host where there is one, and refused where there is none
+
+*** Scenario: What a fixture plants is written in its case, never in the fixture
+- *WHEN* a fixture holds a planted defect or a premise a case depends on
+- *THEN* what is planted and why is written in the case
+- *AND* no file of the fixture says it, or says that it is a fixture
+
+*** Scenario: A trial with its answer in reach is refused
+- *WHEN* a trial is about to run
+- *AND* the skill's copy or the fixture names the case, the fixture, or the words of what the fixture plants
+- *THEN* the trial is refused, naming the file and the words
+
+*** Scenario: Documentation computed from the eval runs is left out of a trial's copy
+- *WHEN* the skill carries documentation computed from the eval runs (its spec pages)
+- *THEN* the skill keeps it, and a trial's copy of the skill leaves it out
+- *AND* the same holds for what describes the evals rather than the skill (the frozen outcome list, the evals' own spec)
+
+*** Scenario: The skill text cites no eval case
+- *WHEN* the skill text gives the evidence for a rule
+- *THEN* it cites what real homes did, never an eval case or its result
+- *AND* what an eval found is kept in the research or the extraction record
+
+** Requirement: A script decides what it can see for certain, and an eval agent reads the rest
+What a step left SHALL be evaluated on its full content. A script SHALL decide the facts of the end state and the forms a spec fixes, and SHALL check nothing else. A scenario whose behaviour leaves no evidence a spec fixes SHALL be recorded as a gap in that spec. What an artifact or a record says SHALL be evaluated by an eval agent, from evidence the script collects, against the case's expected result.
+
+*** Scenario: A fact or a form the spec fixes is decided by a script
+- *WHEN* a scenario is observed in a fact of the end state, or in a form the spec itself fixes
+- *THEN* a script checks it
+- *AND* the result is pass or fail
+
+*** Scenario: A form only the skill text chooses is not checked
+- *WHEN* a scenario's behaviour can be seen only in a form no spec fixes (a file name, a record field, a path the skill text chose)
+- *THEN* no check is written on that form
+- *AND* the scenario is recorded as a gap in its capability's spec, that the evidence it leaves is not stated, and the case's item for it is evaluated by the eval agent alone until the spec states it
+
+*** Scenario: A word match decides nothing and is compared across trees
+- *WHEN* a check matches words in what a record or artifact says
+- *THEN* it is a /signal/: its result is recorded and decides nothing, in the trial or the install
+- *AND* the report sets its results on two trees side by side, as a prompt to read the evidence, never as a verdict
+
+*** Scenario: What a record says is read by an eval agent from collected evidence
+- *WHEN* a scenario is observed in what an artifact or a record says
+- *THEN* the script collects the evidence (the entries, messages or files that would say it)
+- *AND* an eval agent evaluates it against the case's expected result, item by item
+
+*** Scenario: The evidence is given whole, and a cut is marked
+- *WHEN* the script collects the evidence of a trial
+- *THEN* the main thread's tool calls are given with their inputs in full; what the calls returned is given only where the case's collector names it
+- *AND* anything still cut is marked in the evidence with what was cut and its full length
+
+*** Scenario: An item the evidence cannot settle is answered as such
+- *WHEN* the evidence does not show whether an item holds
+- *THEN* the eval agent answers /cannot tell/, not pass, fail or not applicable
+- *AND* the report puts it against the case's evidence, for the collector to be corrected
+
+*** Scenario: Every check is audited
+- *WHEN* a trial's checks have run
+- *THEN* an eval agent is given, for each check, the scenario it rests on, how it is computed, what it observed and the item of the expected result it serves
+- *AND* it records for each check /agrees/, or /suspect/ with its reason
+
+*** Scenario: An audit never changes a verdict
+- *WHEN* the audit finds a check suspect
+- *THEN* the check's verdict stands in the result
+- *AND* the report shows the audit beside it, for a person to decide or the check to be corrected
+
+*** Scenario: A case's checks are listed under the items they observe
+- *WHEN* a case's expected result is written
+- *THEN* each item states what counts as pass and names the checks that observe it, each with its kind and what it computes
+- *AND* the expected result is the one list of what the case expects; there is no separate list of checks, and every check is named by at least one item
+
+*** Scenario: The audit and the report are read per item
+- *WHEN* a trial's items are judged and its checks audited
+- *THEN* the result shows each item's verdict with, beneath it, the verdicts of its checks and their audits
+- *AND* an item that no deciding check observes is shown as evaluated by the eval agent alone
+
+*** Scenario: A well-formed artifact is still evaluated on its content
+- *WHEN* a step writes an artifact that passes every check
+- *THEN* an eval agent evaluates it against the rubric for its kind, which holds what is true of every artifact of that kind
+- *AND* each item's evaluation is recorded
+
+*** Scenario: The eval agent takes no part in what it evaluates
+- *WHEN* an eval agent evaluates an artifact or audits a check
+- *THEN* it is not the agent that ran the step, and it changes nothing the step left
+
+** Requirement: A step that gets a case gets a named, formed input
+When a step receives its first case, the change to the skill that makes the step runnable alone SHALL ship with it: the artifact or brief the step reads is named in the skill text and given a form, and what the step may read beyond it is stated. The skill is changed for this only where a case needs it.
+
+*** Scenario: The first case for a step names the step's input in the skill text
+- *WHEN* the first case for a step is added
+- *AND* the skill text names no artifact for the step's input, or gives it no form
+- *THEN* the same change names the artifact and gives it a form in the skill text
+
+*** Scenario: The execute agent's routing and fixing is one step
+- *WHEN* a case covers the execute agent's handling of a merged task's discoveries, or of a review's findings
+- *THEN* the routing and the fix are run as one step
+- *AND* the routing and the fix are evaluated as separate items
+
+** Requirement: Every result is kept, with what it ran on and what it cost
+Each trial's result SHALL be recorded in a form a program can read, and kept. The tracked record SHALL carry what comparison and promotion read: the case and its version, the scenarios or outcome, the versions it ran on, the wall time and the tokens, each check's verdict and audit, and each item's evaluation. The details behind them SHALL be kept locally for as long as a rule says.
+
+*** Scenario: A result names the version of everything it ran on
+- *WHEN* a trial ends
+- *THEN* its result records the skill's branch and commit, the case's version and the evals' own version, the model id, the effort level and the harness version
+- *AND* a version with uncommitted edits is recorded as such
+- *AND* each commit it names stays valid: the history it is in is not rewritten
+
+*** Scenario: A result carries its cost
+- *WHEN* a trial ends
+- *THEN* its result records the wall time, the tokens used and the cost in dollars
+- *AND* tokens are counted once per message
+
+*** Scenario: A trial stopped at its case's point records its cost, and the call it stopped at does not run
+- *WHEN* a trial reaches the point its case names to stop at
+- *THEN* the session is ended so that its cost is reported as for a session that ends by itself
+- *AND* the call it stopped at does not run
+
+*** Scenario: Cost never blocks an install
+- *WHEN* a case's wall time or tokens rise between two versions of the skill
+- *THEN* the rise is shown in the comparison
+- *AND* the install is not blocked by it
+
+*** Scenario: A result is not rewritten
+- *WHEN* a case is run again
+- *THEN* a new result is added
+- *AND* earlier results are unchanged
+
+*** Scenario: Details are kept locally under a retention rule
+- *WHEN* a trial ends
+- *THEN* the checks' details, the eval agent's quotes and reasons, and the transcripts are kept outside the tracked record
+- *AND* they are kept at least for the runs a case was validated on, and for the latest runs, and removed after that
+- *AND* the trial's directory is removed once its result is recorded, unless it is kept for a validation
+
+** Requirement: A drop in the regression set blocks the install
+Before a skill change is installed, the regression set SHALL be run against it. A result worse than the installed skill's on the same cases SHALL stop the install, unless the user overrides it with a recorded reason. The advisory set SHALL be reported and SHALL block nothing.
+
+*** Scenario: A regression stops the install
+- *WHEN* the regression set is run against a skill change
+- *AND* a case that passes on the installed skill fails on the change
+- *THEN* the change is not installed
+- *AND* the report names the case, the scenarios its failing check or item rests on, and the audit of that check
+
+*** Scenario: The user overrides with a recorded reason
+- *WHEN* the regression set has stopped an install
+- *AND* the user decides to install anyway
+- *THEN* the reason is recorded with the result
+- *AND* the install proceeds
+
+*** Scenario: An advisory failure blocks nothing
+- *WHEN* a case in the advisory set fails or its evaluation worsens
+- *THEN* the report shows it
+- *AND* the install is not blocked
+
+*** Scenario: Checks gate from the start
+- *WHEN* a case with checks is added
+- *THEN* its checks are in the regression set once the case has been validated
+
+** Requirement: An eval agent's item gates once its history shows it is stable
+An item the eval agent evaluates, of a case's expected result or of a rubric, SHALL start in the advisory set. It SHALL be promoted to the regression set when the history shows that repeated evaluations of the same artifact agree and that it passes reliably on the installed skill.
+
+*** Scenario: A new item is advisory
+- *WHEN* an item is added
+- *THEN* its evaluations are recorded in the history
+- *AND* they block no install
+
+*** Scenario: An item is promoted on its history
+- *WHEN* the history shows an item's evaluations of the same artifact agree, and that it passes reliably on the installed skill
+- *THEN* the item is moved to the regression set
+- *AND* the history it was promoted on is named with the move
+
+** Requirement: Two versions of the skill are compared on the same cases
+The same cases SHALL be run on two trees of the skill and their results set side by side.
+
+*** Scenario: Old and new are run on the same cases
+- *WHEN* a skill change is compared with the installed skill
+- *THEN* each case is run on both trees from the same input
+- *AND* the comparison shows, per case, each tree's check verdicts and audits, item evaluations, wall time and tokens
+
+*** Scenario: Only results of one version of a case are set together
+- *WHEN* results are set side by side or summed
+- *THEN* only results of the same version of the case are taken together
+- *AND* a case changed between runs is shown once per version
+
+*** Scenario: A case that cannot be observed on one tree is reported as such
+- *WHEN* a case names a step or an artifact that one of the two trees does not have
+- *THEN* the comparison reports the case as not observable on that tree
+- *AND* it is not counted as a failure
+
+*** Scenario: A case is out of date only on the reference tree
+- *WHEN* the skill files a case names have changed on the reference skill since the commit the case was validated at
+- *THEN* the case's results are marked out of date, which is reported and not counted as a failure
+- *AND* a tree that differs from the reference skill in those files is not marked: the difference is what the comparison measures
+
+** Requirement: One run of the regression set stays within its cap
+One run of the regression set SHALL cost about what one whole-cycle replay costs: about an hour and thirty dollars. The number of trials of a case SHALL be set from the agreement its earlier trials showed. Advisory runs are outside the cap.
+
+*** Scenario: A run reports its cost against the cap
+- *WHEN* the regression set has been run
+- *THEN* the report gives the run's wall time and cost beside the cap
+
+*** Scenario: A case whose trials agree runs fewer trials
+- *WHEN* a case's checks have been unanimous across its trials
+- *THEN* the case may run fewer trials
+- *AND* the number and the history it rests on are recorded with the case
+
+** Requirement: The whole-cycle replay keeps three jobs and is not the gate
+A whole-cycle replay SHALL remain the way an observed problem is confirmed as resolved. It SHALL be the advisory check, at a slower cadence than each install, for scenarios that show only across several steps. It SHALL supply fixtures for the library.
+
+*** Scenario: A scenario that needs several steps is checked by a replay, in the advisory set
+- *WHEN* a scenario is observed only across several steps
+- *THEN* its check runs on a whole-cycle replay and is in the advisory set
+- *AND* coverage names the replay check for it, or reports it uncited
+
+*** Scenario: A replay's artifacts become fixtures
+- *WHEN* a replay has produced an interface artifact, a checkout or a home's record at a step
+- *THEN* it may be saved into the fixture library as the fixture or the constructed input of a case for that step
+- *AND* anything in it that names a case or what a correct run finds is removed first
+
+* Gaps
+
+** Gap: How an item is promoted
+:PROPERTIES:
+:REQUIREMENT: An eval agent's item gates once its history shows it is stable
+:END:
+The rule (10 trials on the installed skill, 90% agreement, 90% passing; * Decided, The numbers) does not yet fit the rest of the evals, noticed 2026-11-13: an item's set is written in the expected result, so promoting it makes a new version of the case, which stops counting until it is validated again; the history an item is promoted on is not tied to one version of the case or to the installed skill; and an item on behaviour a change introduces fails on the installed skill by design, so it cannot be promoted until the change is installed, which is when it would matter most. Set aside by the user to be thought through on its own: "I think we need to set aside time to think through how we intend to manage promoting items".
+
+* Decided
+
+The six open questions, decided by the user at the hand edit, 2026-11-12 (each the recommended option), as revised the same day by the review of how the evals work (D1-D9).
+
+- *What runs a case.* A Python script over =claude -p= (=evals/run.py= in the skills workspace, grown from E8's harness): it makes the fixture for each trial from the library, searches it and the skill's copy for the case's answer, states in the trial's settings that it reads only its own directory and records reads outside it, stops at the point the case names, records the versions and the cost, and runs the eval agent. =bin/skill-dev eval= (=claude plugin eval=) stays for prompt-only smoke checks. A tree of the skill is run from a copy of it in which =~/.claude/skills/= is rewritten to the copy, loaded as a plugin with the installed skills of the same names turned off.
+- *Where things are kept.* In the evals' own git repository, kept at the skills workspace's =evals/= and ignored by the workspace (since D17): =evals/cases/<case-id>/= (=case.org= with the expected result, what its fixture plants and why, and its current validation; the build script; =checks.py=), =evals/fixtures/<name>/= (the fixture library: files and git repositories in a form git can restore, with no explanation of what they plant), =evals/rubrics/<artifact-kind>.org=, and =evals/history.jsonl=, tracked and append-only, one JSON line per trial with what comparison and promotion read. Details and transcripts go to =evals/results/= (not tracked), under the retention rule.
+- *Rubric and eval agent.* One org file per kind of artifact, holding what is true of every artifact of that kind; what a case expects of its own fixture is in its expected result. Each item has an id, a question, what counts as pass, and the scenarios it cites. The eval agent answers per item in JSON (=pass=, =fail=, =n/a= or, since D13, =cannot tell=, with a quote from the evidence), and per check =agrees= or =suspect= with a reason. It runs as =claude-opus-5-5= at effort =high=, never as the agent that ran the step.
+- *The numbers.* A case starts at 3 trials, and each artifact is judged 3 times. An item /agrees/ when its 3 judgings of an artifact give the same verdict, on at least 90% of artifacts; it /passes reliably/ at 90% or more on the installed skill. It is promoted after 10 or more trials on the installed skill. A case whose checks are unanimous over 6 trials may drop to 2. These are a starting point, to be adjusted after the first runs.
+- *Out-of-date cases.* A case names the skill files its fixture and checks depend on. Its version and its validation's commit are git's; it is out of date when those files changed on the reference skill since that commit, which is reported and not counted as a failure. Fixtures are refreshed in the library by hand.
+- *Demotion.* A promoted item whose agreement falls below the threshold over its last 10 artifacts goes back to the advisory set, with the history named. A promoted item that fails while it still agrees is a regression and blocks the install.
+- *Checks under the items (D10).* Decided by the user, 2026-11-13, after reading the first case on a spec with its checks in =case.org= and its items in =expected.org=: two lists that cited the same scenarios and were joined only by those citations. What earns its keep is the difference between a stated expectation (an item, written before any trial, judged by the eval agent) and a computed fact (a check, run by a script, free and repeatable): the audit needs a reference the check does not define. Keeping them in two documents added nothing to that, and cost an expectation written twice, two lists to keep in step, and a join the reader and the eval agent had to make. So the item is the unit: it names its checks, and the report reads per item, which also shows an item no check decides, one observed only by signals or by nothing. A check's code stays in the case's =checks.py=. Applied 2026-11-13 (evals =ccbce68=): =execute-ex2='s checks are listed under its items; the four cases not yet on a spec keep their tables.
+- *Checks rest only on what a spec fixes (D11).* Decided by the user, 2026-11-13: "I agree definitly that checks should not be written based on things not specified in our specs. And I think a good spec should be testable: meaning it requires whatever performs the behavior to leave behind some testable evidence." The kind /audited/ (a form only the skill text fixes, checked and audited) goes: such a check tests the skill's choice, not the spec, and fails when a rewrite moves the form while the behaviour holds. A check reads a fact of the end state or a form a spec fixes, the capability's own or that of the capability whose boundary the evidence is (the boundary rule, =research/skill-evals/spec-form.org=, holds). Either is a spec extracted from the reference skill (D18, 2026-11-13: the =state-layer= branch and its spec are set aside until the specs and the eval design are done; the user: "I think we need to stop looking at the state-layer branch until we've finished our specs and eval design using the reference skill."). Where no spec fixes the evidence, the scenario is a gap in its spec, and its item is evaluated by the eval agent alone until the spec states it. Meaning splits in two: a spec fixes where the evidence is, a check decides it is there, and the eval agent reads what it says. The audit stays, narrowed to whether a check as computed observes what its item expects; it is no longer given the skill's change between two trees. Supersedes the spec form's "a check that has to read mechanism to see behaviour keeps doing so: checks are per tree" (§ Tests, 2026-11-12). Applied 2026-11-13 (evals =ccbce68=): =execute-ex2='s checks of the old kind /audited/ sorted, five onto forms the =execute= spec fixes or facts of the end state, three dropped as gaps of the state layer and =asks=, which have no spec yet.
+- *An item no check decides, and what a word match is for (D12).* Decided by the user, 2026-11-13, of three options for a scenario whose only reader is the eval agent (nothing decides it until its item is promoted; the item decides from the start when its judgings agree; a word match kept as a comparison across trees): the first and the third. Such an item stays advisory and decides nothing until it is promoted; the per-item report (D10) shows it as evaluated by the eval agent alone. A word match is a /signal/: recorded, deciding nothing, and set side by side across two trees as a prompt to read. This closes the gap "What a word match is for" with its second option; the first option (none) gave up the comparison the user valued ("it's the context of that comparison which ultimately is valuable"), and the third (a check that decides where the audit confirms it) went with D11. How an item is promoted is left as a gap.
+- *The evidence given whole (D13).* Decided by the user, 2026-11-13 ("I agree with your proposals on the truncations"). The first cases cut each main-thread tool call to its first 160 characters, gave no call's result, and cut journal entries, spawns, ask files and test runs each to its own length; measured on =execute-ex2='s seven trials, 70-90% of calls were cut, showing 2-4k of 7-22k characters, and the eval agent said on one item that the cut commands limited what it could see. Inputs in full cost a few thousand tokens a judging. Results stay out unless a case's collector names them: they are what the agent saw (73-89k characters a trial), and the items judge what the step did and left. A cut that remains is marked, so the eval agent does not take part of the evidence for the whole, and an item the evidence cannot settle is answered /cannot tell/, which points at the collector instead of being forced into pass or fail. Applied 2026-11-13 (evals =ccbce68=).
+- *A scenario with alternatives is split (D14).* Decided by the user, 2026-11-13 ("What if we had scenarios for the inline, re-spawn, and revert?", then "proceed"). The gap "A scenario that allows more than one path" was a spec that is not yet testable: a THEN offering three outcomes chosen by conditions it did not state ("simple" was defined in another requirement; "when neither will do" nowhere), so a case could not put its fixture on one side and took one outcome on its own judgment, its stop rule with it. A THEN that offers alternatives is split into scenarios, one per alternative, each with a WHEN that decides it; a case cites one, with its fixture on one side of that WHEN, and the other alternatives get cases of their own. Where a spec means a choice to be free, it says so, and the case accepts every alternative. This closes the gap. Splitting the capability's scenarios is spec work, listed in the review notes.
+- *A stopped trial's cost (D15).* Decided by the user, 2026-11-13. A trial stopped at its case's point was killed before the CLI's final result, the only place the cost is reported, so no =execute-ex2= trial recorded one; and the call it stopped at ran for up to 3 s first, long enough for a spawn to start. A probe (=research/skill-evals/probes/launch-cost-and-permissions.org=) found that an interrupt sent over stream-json input once the stopping message's final usage has arrived ends the session with a result carrying the cost, and the stopped call is refused and never runs; sent earlier, the result reports nothing. So a trial is stopped by interrupt, and the price table that would have estimated the cost from tokens is not needed. Applied 2026-11-13 (evals =ccbce68=).
+- *A trial's tools and permission mode (D16).* Decided by the user, 2026-11-13. The host launcher approved its case's tools without setting them, so its sessions had every built-in tool (30 at =init=, among them Agent, Edit and Write); and every trial so far ran under the user's own permission mode, =auto=, under which an unapproved call runs and the host is never asked. Neither changed a result (no trial called such a tool), but the denial the host case relied on was never in force, and a change to the user's settings would have changed every trial. The probe found that naming the tools keeps a deferred tool reachable and routed to the host, and that the mode stated in the trial's settings overrides the user's: =default= puts every unapproved call to the host, =dontAsk= refuses it and puts nothing to the host, even under an =ask= rule. So a trial has only its case's tools and those its host answers, and its settings state =default= under a host and =dontAsk= without one: intent, as the trial's other settings are (D9). Trials run before it are of an earlier harness. Applied 2026-11-13 (evals =ccbce68=).
+- *The evals are their own repository (D17).* Decided by the user, 2026-11-13 ("I think the problem may be that we embedded our eval code in a workspace when it should be its own repo"; then "go ahead, with a private GitHub remote"). A result names its case's and the evals' versions by commit (D4), and the evals lived in the skills workspace's repository, which the workspace tool commits and pushes on every leave, replaying unpushed commits on the other machine's when the two have diverged. One such leave (a layout saved on the other machine) gave 56 commits new ids, leaving the ids in the history and in a validation dangling until they were replaced by hand. So the evals are a repository of their own, kept in place at the workspace's =evals/= (every path stays), with a private remote, and its history is never rewritten: no rebase, amend or squash once committed, and a second machine's work merged, =history.jsonl= by union. Recording versions by git's tree ids instead, which a rebase that changes no content keeps, would also have answered it; it stays the fallback should rewriting return. Applied: split with its history (=git subtree split=), the ids the history and the validation named replaced once by the split's commits of the same tree.

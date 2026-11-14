@@ -6,18 +6,19 @@ The step that turns what the user asked for into a change the design round can t
 
 - The user asks in the session for a feature, a fix or a change of behaviour. The source is their words.
 - The user takes up `.tasks/` items, by naming them or by answering "open a new change" on a cluster ask (`externalisation.md` § Externalisation pressure). The source is the items.
-- The user answers `split` on a goal-drift ask (`templates/intent.md` § Lifecycle). The source is the old intent and the answer; the new intent's Why names the change it came from.
-- The user answers `rethink` on the MVP decision (`templates/hardening.md`) or `revise` on a goal-drift ask. The source is the intent and the answer, and the change is revised in place: the Goals, Non-goals and spec edits are rewritten from the answer, `#+BASE:` is kept, the prior Goals are quoted under `* Status` and the status line returns to `speculated`. The commit is `Revise: <change>`; the design round then re-runs for the seams the new goals move.
+- The research skill hands off a change (`research` § Hand-off) with a workspace integration branch. The source is the hand-off; the change is cut from that branch, and its intent's Capabilities names every scenario the hand-off's spec edits added or changed for it, `stated, not met`, one line each.
+- The user answers `split` on a goal-drift ask (`templates/intent.md` § Lifecycle). The source is the old intent and the answer; the new intent's Why names the change it came from. This opening leaves the old intent as it was and ends its line `; revise: <old change>`; the dispatcher then spawns an opening that revises the old change in place, its Goals losing what went to the new one.
+- The user answers `rethink` on the MVP decision (`templates/hardening.md`) or `revise` on a goal-drift ask. The source is the intent and the answer, and the change is revised in place: the Goals, Non-goals and spec edits are rewritten from the answer, the `#+APPROVED:` line is removed (the design round's sitting asks the user to approve the goals as rewritten), `#+BASE:` is kept, the prior Goals are quoted under `* Status` and the status line returns to `speculated`. The commit is `Revise: <change>`; the design round then re-runs for the seams the new goals move.
 
-Not when the user wrote the intent and spec edits themselves: the round reads them as they are. Not for work a task in an open change covers.
+Not when the user wrote the intent and spec edits themselves: the round reads them as they are. Not for work a task in an open change covers: the agent opens nothing and hands back `open: covered by <change>, task <task>; <task file>`.
 
 ## The brief
 
 The dispatcher's brief is the fixed one (`SKILL.md` § The dispatcher's loop) with the source in place of the cycle:
 
-> You are the phase agent for opening a change. Home: `<path>`. Source: `<the user's words, verbatim>` | `<.tasks/ paths>` | `<split ask id and its change>`. Run `state.py where`, then read and follow `~/.claude/skills/orchestrate/flows/open.md` to its commit. …
+> You are the phase agent for opening a change. Home: `<path>`. Source: `<the user's words, verbatim>` | `<.tasks/ paths>` | `<split ask id and its change>` | `research hand-off: <the research brief's path>, branch <the workspace integration branch>, change <the change's name>`. Run `state.py where`, then read and follow `~/.claude/skills/orchestrate/flows/open.md` to its commit. …
 
-The dispatcher copies the user's words; it reads nothing to write the brief.
+The dispatcher copies the user's words, or the research hand-off's brief path, branch and change name as the user or the research session gives them; it reads nothing to write the brief.
 
 ## Operations
 
@@ -27,9 +28,9 @@ The source; the `* Purpose` of every file under `docs/specs/`, to find the capab
 
 ### 2. Name, repository and base
 
-- `<change>`: the user's name for it, or a kebab-case phrase naming the outcome (`workspace-state-writes-honour-guards`). `docs/changes/<change>/` must not exist in the repository, except when revising a change in place (§ When it runs), which keeps its name, worktree and base.
-- The repository: the home's only one, or the one the source names (`--repo`); a change belongs to one repository (`overlay.md` § Repositories). A source that needs two repositories is two changes, the second opened after the first with its `* Why` naming it.
-- `state.py change open <change> [--repo <name>] [--from <ref>]` makes the change's worktree on the branch `<change>`, its change integration branch, from the repository checkout's HEAD or the ref given (the hand-off's workspace integration branch when the research skill made one; `research` § Hand-off), and writes `change.json`. From here `eval "$(state.py where --sh)"` gives `$CODE_ROOT`, that worktree; the intent and the spec edits are written and committed there. A change the user opened by hand (its intent already on its own branch) is adopted with `--worktree <path>` and the rest of this flow is skipped, as § When it runs says.
+- `<change>`: the user's name for it, or a kebab-case phrase naming the outcome (`workspace-state-writes-honour-guards`). `docs/changes/<change>/` must not exist in the repository, except when revising a change in place (§ When it runs), which keeps its name, worktree and base. When it does, a name the agent chose is changed to an unused one (the hand-back carries the new one); a name the user gave fails the opening, `open: failed, name taken: <change>`, before anything is created.
+- The repository: the home's only one, or the one the source names (`--repo`); with several and none named, hand back `open: failed, which repository: <names>` before creating anything, and the dispatcher relays it for the user to choose; a change belongs to one repository (`overlay.md` § Repositories). A source that needs two repositories is two changes, the second opened after the first with its `* Why` naming it: this opening opens the first only and ends its line `; second change: <repository>`, and the dispatcher spawns the second opening next.
+- `state.py change open <change> [--repo <name>] [--from <ref>]` makes the change's worktree on the branch `<change>`, its change integration branch, from the repository checkout's HEAD or the ref given (the hand-off's workspace integration branch when the research skill made one; `research` § Hand-off), and writes `change.json`. From here `eval "$(state.py where --sh)"` gives `$CODE_ROOT`, that worktree; the intent and the spec edits are written and committed there. A change the user opened by hand (its intent already on its own branch) is adopted with `--worktree <path>` and the rest of this flow is skipped, as § When it runs says; the agent hands back `adopt <change>; <code-root-from-home>/docs/changes/<change>/intent.org`.
 - `#+BASE:`: the `base` in `change.json` (`git -C "$CODE_ROOT" rev-parse HEAD` at open), written before the commit of § 5.
 
 ### 3. Spec edits
@@ -57,9 +58,13 @@ First `coverage.py --root "$CODE_ROOT" --intent docs/changes/<change>/intent.org
 
 ## Hand-back
 
-`open <change>: <c> capabilities, <s> scenarios, <q> open questions; docs/changes/<change>/intent.org` · `open: failed, <why>`
+`open <change>: <c> capabilities, <s> scenarios, <q> open questions; <code-root-from-home>/docs/changes/<change>/intent.org` · `open: failed, <why>` · `open: covered by <change>, task <task>; <task file>` · `adopt <change>; <code-root-from-home>/docs/changes/<change>/intent.org`
 
-The dispatcher relays the line, so the user has the intent's path, and spawns the design round for `<change>`.
+`<c>` is the number of capabilities the intent's Capabilities names; `<s>` the scenarios the change's spec edits add or change, together with those the intent names `stated, not met` (a scenario the change deletes is not counted); `<q>` the intent's open questions. Each line is at most 200 characters.
+
+A failed opening leaves nothing behind: it removes any branch and worktree it made (`git worktree remove`, `git branch -D`, and the change's `change.json` in the home) and any file it wrote, so a retry starts clean.
+
+The path is relative to the home, like every hand-back's (`SKILL.md` § Hand-back lines). A revision hands back `revise <change>: <c> capabilities, <s> scenarios, <q> open questions; <code-root-from-home>/docs/changes/<change>/intent.org` in the same form. The dispatcher relays the line, so the user has the intent's path, and spawns the design round for `<change>`.
 
 ## What opening does not do
 

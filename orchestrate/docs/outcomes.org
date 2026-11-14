@@ -1,0 +1,826 @@
+#+TITLE: Outcomes of orchestrate
+#+OPTIONS: ^:{} -:nil
+#+STATUS: frozen 2026-11-12 as source material for the spec (research/skill-evals/brief.org R6, goal revision); was: reviewed 2026-11-12: the 31 outcomes accepted as written; the first cases picked; four items left open (* Left open at review)
+
+This file is the list of outcomes the =orchestrate= skill is supposed to result in. Each outcome is traced up to a north-star goal (=north-star.org= in the skills workspace) and down to the rules in the flows, roles and templates that produce it; the rules may be rewritten while the outcome holds. The evals are written against this list: a case names the outcome it covers, and an outcome with no case is marked as not covered. The file describes the skill text on the branch that carries it (here =skill-evals=, cut from installed =main= at =e9025c7=), so another branch carries its own list. Its terms (outcome, rule, step, case, interface artifact, rubric, eval agent, regression set, advisory set) are defined in =docs/glossary.org=. It was drafted from the evidence files E7 (the inventory of 216 statements, 39 of them at the outcome level) and E9 (the interface artifacts) of the research effort =research/skill-evals= in the skills workspace, with every quote checked against this tree, and was reviewed by the user on 2026-11-12, who accepted the 31 outcomes as written ("well stated enough for us to continue").
+
+* How to read an entry
+
+- The heading :: the id and the outcome, one sentence a user could check by looking at what a cycle produced or at what reached them. Ids are stable; the two letters are the part's code in E7 (NS the whole change as the north star states it, XC across the whole change as the skill text states it, DP the dispatcher, OP opening, DR the design round, PL plan, EX execute, IN integrate, IL the inline path).
+- =GOAL= :: the north-star goal the outcome serves. A bare id means the outcome's source is that goal's own text; "(inferred)" means the skill text states the outcome and the link to the goal is the drafter's reading, since the skill text names no goal number; "none stated" means no goal says it.
+- =OBSERVED_AT= :: the step, and the interface artifact, where the outcome shows, in the skill's names. "E9 row" is a row of E9 Table 1 (the 39 steps where work passes between agents).
+- =SPANS= :: =one step= when the outcome can be seen in what one step wrote, given that step's input; =several steps= when it shows only across steps, phases or cycles (E7 Table 3, its C-numbers).
+- =STATE_LAYER= :: whether the statements quoted under Source stand, as quoted, in the =state-layer= branch's text (=3502e7c=): =same=, =differs: <how>=, or =not checked=. Only the Source statements were compared; a rule that differs there is named in the Note where it was seen.
+- =RECORD= :: the rows of E1 Table 3 (B1 to B13: what was fixed more than once, regressed or failed its measure) that concern this outcome, or =none=.
+- =CASES= :: the cases that cover the outcome, or =none=. Five cases over four outcomes were picked 2026-11-12 by the selection rule (research brief, * Decided 2026-11-11) and were built at the hand edit the same day; each names its case in the skills workspace's =evals/cases/=.
+- Source :: the statement the outcome is drawn from, quoted, with its file and section heading. Code in a quote is written as in org; bold is dropped.
+- Rules :: the main rules that produce the outcome, quoted the same way. [O]: the source itself links the rule to the outcome (the rule states it, sits in the passage that states it, or points to it). [I]: the link is the drafter's inference.
+- Note :: an ambiguity, two sources that disagree, or the E7 rows merged into the entry.
+
+* Across the whole change
+
+** O-NS-1. A change's intent, spec edits, design and decisions are org files committed in the code repository under =docs/=, and each section is written by one role.
+:PROPERTIES:
+:GOAL: G1
+:OBSERVED_AT: several steps: the commit =Open: <change>= (opening), the commit =Design round: <change>=, the record-correction commits of plan and integrate, the status line written at integrate; read from the git log of =docs/= in the code root
+:SPANS: several steps
+:STATE_LAYER: same
+:RECORD: none
+:CASES: none
+:END:
+- Source :: "A change is a set of version-controlled documents. Intent (goals, non-goals), specs, design and decisions, in org in the code repository, each section with one author and a defined handoff between them." (=north-star.org= G1); "no section is rewritten by a second role" (=north-star.org= G1, Know it by); "The record is in the code root, under =docs/=; the process is in the home, under =.orchestrator/=." (=SKILL.md= § Change artifact set)
+- Rules ::
+  - "The record under =docs/= is not code: the design round, an applied answer, a record correction and integrate write it in the code root, the change's worktree; an Implementor never does." (=SKILL.md= § Critical requirements) [I]
+  - "Must not modify anything under =docs/=" (=roles/implementor.md= § Escalation contract) [I]
+  - "These are the only files it writes." (=roles/architect.md= § What the Architect may and may not do) [I]
+  - "The Architect does not commit." (=flows/design.md= § 6) [I]
+  - "Process artifacts are tracked in git, in the home repo." (=SKILL.md= § Critical requirements) [I]
+- Note :: E7 row NS1. "One author" is not settled by the skill text: the Architect writes the Seams rows, the orchestrator fixes a stale row at plan ("the orchestrator fixes the row", =flows/plan.md= § 3), and an applied answer writes § Decisions. Whether those count as a second role rewriting a section is for the user to say.
+
+** O-NS-2. A change's goals and non-goals are written in its intent and approved by the user before plan runs, and a later change to them is the user's decision, recorded with what prompted it.
+:PROPERTIES:
+:GOAL: G2
+:OBSERVED_AT: several steps: the design round's sitting (the =(intent) Goals= entry, the =#+APPROVED:= line; E9 rows 9, 10); integrate § 5 (the status line =divergent=, the goal-drift ask; row 33); plan § 7 (row 34); opening on =revise= (the prior Goals under =* Status=)
+:SPANS: several steps
+:STATE_LAYER: differs: there is no PM digest; the PM gives its goal-drift recommendation in its hand-back for the handshake's =goal_drift_recommendation=, and the orchestrator decides whether to raise the ask
+:RECORD: none
+:CASES: none
+:END:
+- Source :: "Goals and non-goals are explicit, used, and revised from results. They are checked during the work, not only written at its start, and revised when the results say so; the revision is recorded with the result that prompted it." (=north-star.org= G2); "Goals are expected to move when results come in; a goal that moves is the process working." (=north-star.org= * Disposition); "The PM digest carries a goal-drift recommendation: revise / split / abandon / continue." (=flows/integrate.md= § 5)
+- Rules ::
+  - "Plan does not run on an unapproved intent." (=flows/design.md= § 5) [I]
+  - "The intent's status line becomes =divergent <date> <ask-id>=, with the signal and its evidence under =* Status=" (=flows/integrate.md= § 5) [I]
+  - "Plan refuses to start the next cycle until the user has dispositioned (or explicitly chosen =continue=)." (=flows/integrate.md= § 5) [I]
+  - "If the prior integrate's =user_resolved_goal_drift= is empty but the digest carried recommendations, plan blocks until the user signs off." (=flows/plan.md= § 7) [I]
+  - "Recommendation is only ever recommendation; user decides." (=roles/project-manager.md= § 5. Goal drift) [I]
+  - "the Goals, Non-goals and spec edits are rewritten from the answer, =#+BASE:= is kept, the prior Goals are quoted under =* Status= and the status line returns to =speculated=" (=flows/open.md= § When it runs) [I]
+- Note :: Merges E7 rows NS2 and NS17. For "used" and "checked during the work" one rule was found, the goal-drift check, and it fires on a PM query (the critical-path completion ratio over K cycles); no other check of the goals during the work was found in this tree.
+
+** O-NS-3. Every task in a change traces to a goal in its intent or to a cited reason, and nothing beyond the MVP is built before the user chooses to harden.
+:PROPERTIES:
+:GOAL: G3
+:OBSERVED_AT: several steps: plan § 2 (each task file's cited seams and scenarios, or its =discovered_from=); integrate § 7 (the tasks it creates); the hardening list; the second half only over the whole change
+:SPANS: several steps
+:STATE_LAYER: same
+:RECORD: none
+:CASES: none
+:END:
+- Source :: "Scope earns its work. Work enters a change only for a goal in its intent or a demonstrated reason. Anything else is recorded, as a thought or on the hardening list, and not built." (=north-star.org= G3); "every task traces to an intent goal or a cited reason; nothing beyond the MVP is built before the user chooses to harden" (=north-star.org= G3, Know it by); "A feature, option, generalisation or question to the user earns work only when an intent goal needs it or on a demonstrated reason (it happened, a prior, the user asked, a measured cost); otherwise it is not built and not asked about, and an agent that thinks it matters writes one =thought= line." (=SKILL.md= § Critical requirements)
+- Rules ::
+  - "Every candidate is the main path's work or a defect's fix." (=flows/plan.md= § 2) [O]
+  - "Seams, options and generality take the YAGNI check" (=flows/design.md= § 2) [O]
+  - "a question about a case the source never raised does not" (=flows/open.md= § 4) [O]
+  - "becomes a task only under the YAGNI check" (=flows/integrate.md= § 7) [O]
+  - "Otherwise it is not built and not asked about. An agent that thinks it matters writes it as one =thought= line, and it stays that line." (=templates/architect-finding.md= § The YAGNI check) [O]
+  - "=hardening= → no task now: the hardening-list entry is the record until the MVP decision" (=flows/integrate.md= § 7) [O]
+  - "Hardening is worked only after the user chooses it." (=SKILL.md= § Critical requirements) [O]
+- Note :: Merges E7 rows NS3 and NS25 (non-goal N6). E7 C15: the check is applied at any one step; the outcome needs the whole change. On =state-layer=, integrate § 7 is retitled and reworded; its rules were not compared.
+
+** O-NS-4. Every change first reaches an MVP, its main path working end to end, and stops there: the user is shown what works and how to try it, with the hardening list, and decides to harden, rethink or stop; the decision and the answer are in the change's record.
+:PROPERTIES:
+:GOAL: G4
+:OBSERVED_AT: several steps: plan § 6 (=on_critical_path= on each task), integrate § 9 (the ask and the status line =mvp=; E9 row 33), the dispatcher's call, the next plan agent or an opening agent applying the answer (row 34); afterwards in =intent.org= and the applied ask file
+:SPANS: several steps
+:STATE_LAYER: same
+:RECORD: none
+:CASES: none
+:END:
+- Source :: "Every change reaches an MVP the user tries. When the main path works, the user is shown what now works and how to try it, with the hardening list, and decides: harden, rethink or stop." (=north-star.org= G4); "each change records its MVP decision and the user's answer" (=north-star.org= G4, Know it by); "A change produces a working MVP first, then stops for the user." (=SKILL.md= § Critical requirements)
+- Rules ::
+  - "It is set when the task is added (=--critical= at =task add=), by where the task came from, never by a separate read" (=flows/plan.md= § 6) [O]
+  - "Does this defect break a use that the intent's goals name, worked end to end, on the inputs and errors those goals name?" (=templates/architect-finding.md= § Routing) [O]
+  - "Open tasks off the main path do not hold it back" (=flows/integrate.md= § 9) [O]
+  - "The answer is applied by the resumed integrate agent, or, when the user answered after that agent finished, by the next plan agent before it opens a cycle" (=templates/hardening.md= § The MVP decision) [O]
+  - The parts of it seen at one step are O-IN-2 (the ask) and O-PL-1 (the wait).
+- Note :: Merges E7 rows NS4 and XC13. E7 C4: four steps in sequence. The north star leaves open "The MVP decision with no visible surface (a library, a refactor, a migration): what the user is shown and how they try it" (=north-star.org= * Open questions).
+
+** O-NS-5. Every scenario a change touches is cited by a test or carries an explicit "none" with a reason, and coverage is computed from those citations, never written by hand.
+:PROPERTIES:
+:GOAL: G5
+:OBSERVED_AT: several steps: the design round's commit (the output of =coverage.py= shows no =uncited= scenario; E9 rows 7, 11), the Implementor's commit (the pending marker removed; row 18), conformance (each cited scenario shows =pass=; row 27)
+:SPANS: several steps
+:STATE_LAYER: same
+:RECORD: none
+:CASES: none
+:END:
+- Source :: "Each scenario maps to a test or to an explicit "none" with a reason; a test cites its scenario as =Scenario: <capability> § <title>= and coverage is computed from the citations." (=north-star.org= G5); "Scenario coverage is computed, never written." (=SKILL.md= § Change artifact set)
+- Rules ::
+  - "The record of each choice is the test's own citation, or that property; there is no table to keep in step." (=flows/design.md= § 3) [O]
+  - "For every =acceptance= and =contract= row whose behaviour HEAD does not yet satisfy, the Architect writes the test now, in the test tree" (=flows/design.md= § 4) [O]
+  - "The commit removes the pending marker from every test the task's Verification section promotes" (=roles/implementor.md= § Output contract) [O]
+  - "shows each =pass=, not =pending=, =failed=, =not run= or =uncited=" (=flows/integrate.md= § 1) [O]
+  - "=docs/specs/= is the one copy of the requirements and scenarios, an org file per capability, edited in place by each change" (=SKILL.md= § Change artifact set) [O]
+- Note :: E7 row NS5; E7 C11: four steps from the scenario to its promoted test. The part seen at the design round is O-DR-1. G5's own "Know it by" line ("a small change carries no spec bookkeeping beyond the edit itself") is not what this sentence says; it is left to the user whether it should be. On =state-layer= the command is =coverage.py --intent <intent>= in place of =--since <base>=.
+
+** O-NS-6. A change's =design.org= states decisions and contracts only: no row or Decision names a guard, an error string, an encoding, a helper or a test.
+:PROPERTIES:
+:GOAL: G6
+:OBSERVED_AT: the design round's commit (=design.org=; E9 rows 7, 11) and, again, the rows conformance amends at integrate § 1 (row 27)
+:SPANS: one step
+:STATE_LAYER: same
+:RECORD: B11
+:CASES: =architect-ns6= (the Architect at the design round, from the intent and spec edits of a change with an error-message scenario); in the skills workspace's =evals/cases/=
+:END:
+- Source :: "Design records decisions and contracts, not implementation detail. It states what must hold and why. Guards, error strings, encodings, helper and test names live in the code and the tests; a Decision or row that names one is cut, not amended, at the round and at conformance." (=north-star.org= G6); "The design is the contract, and holds only contracts." (=SKILL.md= § Critical requirements)
+- Rules ::
+  - "A row states the contract, never the implementation: no guard, error string, encoding, helper name, test name or transient marker" (=flows/design.md= § 2) [O]
+  - "A row or Decision that names a guard, error string, encoding, helper or test is wrong by construction and is cut, not amended" (=SKILL.md= § Critical requirements) [O]
+  - "when the drift is a guard, error string, encoding or helper the Implementor added, the row is cut back, never extended with it, and a Decision never gains one" (=flows/integrate.md= § 1) [O]
+  - "A seam is a contract between two parts of the code, not a feature." (=flows/design.md= § 2) [O]
+  - "A row holds current state only. No status, history, importance flags, dated notes or messages to future roles." (=flows/design.md= § 2) [I]
+  - "A scenario names no symbol, guard or encoding; those are the round's and the code's." (=flows/open.md= § 3) [I]
+  - "Owning symbols are the boundary's entry points, not every helper." (=flows/design.md= § 2) [I]
+  - "The same binds the Decisions the round writes." (=flows/design.md= § 2) [O]
+- Untested :: R2 is =SKILL.md='s statement of R1, which the Architect's brief does not load; the case observes it only through R1's checks. R3 (conformance at integrate § 1 cuts a row back) has no case yet; one is next on the roadmap. R6 binds the scenarios, which the fixture supplies already written.
+- Note :: E7 row NS6. G6's "Know it by" line ("corrections to the design are rare and each one carries information") reads over many changes and is not in the sentence.
+
+** O-NS-7. Only a question that needs the user's choice reaches the user as a question; a stale design row or sentence beside right code is corrected with a commit and a journal line and is never asked about.
+:PROPERTIES:
+:GOAL: G7
+:OBSERVED_AT: several steps: where an ask file is or is not written (plan § 3, execute § 9, integrate § 1 and § 3a; E9 rows 14, 23, 27, 33) and what the dispatcher then puts to the user (rows 9, 23, 33)
+:SPANS: several steps
+:STATE_LAYER: same
+:RECORD: B2, B11
+:CASES: none
+:END:
+- Source :: "Design signals are triaged by the system, not by the user." (=north-star.org= G7); "every ask that reaches the user is a discovery, and the user rarely reclassifies one" (=north-star.org= G7, Know it by); "only discoveries reach the user (R6)" (=north-star.org= * Decided); "Only =decision= kinds reach the user as questions" (=SKILL.md= § Critical requirements); "A stale row or sentence beside right code is a record correction: fixed, committed, one journal line; never an ask." (=SKILL.md= § Critical requirements)
+- Rules ::
+  - "Triage happens when the orchestrator writes the file, not when the digest is rendered." (=templates/ask.md= § Kinds and routing) [O]
+  - "Only =decision= is presented." (=flows/integrate.md= § 3a) [O]
+  - "=process= asks are never put." (=SKILL.md= § The dispatcher's loop) [O]
+  - "No ask file, no question" (=flows/integrate.md= § 1) [O]
+  - "No ask file. The check itself does not edit =design.org=." (=flows/plan.md= § 3) [O]
+  - "A finding that a line in =priors.md= or a sentence the user wrote in =intent.org= already answers gets no ask file" (=flows/integrate.md= § 3a) [I]
+  - "It is a =decision= ask only when the user's own words (a spec scenario, the intent, a prior) conflict with the promise" (=flows/integrate.md= § 1) [I]
+  - "A question about a case nobody raised is not asked; it is a =thought:= line like any other speculative need." (=flows/design.md= § 5) [I]
+- Note :: Merges E7 rows NS7, NS18, NS24 (non-goal N5, "fewer, better asks") and the first half of NS10 ("asks are few and are decisions"). The north star's word is "discovery" and the skill text's is the ask kind =decision=; they are read as the same thing here [I]. Two statements do not agree as written: "Only =decision= kinds reach the user as questions" and, of an =environment= ask, "The blocking call, at once, alone" (=templates/ask.md= § Kinds and routing). G7's "the user rarely reclassifies one" has no rule; E7 records its measure as deferred.
+
+** O-NS-8. Each question put to the user is a file that says in plain terms what the thing is for, what happened, the options with what the user would notice under each, a recommendation and what happens if it is left unanswered, so the user can decide without rebuilding the context.
+:PROPERTIES:
+:GOAL: G10
+:OBSERVED_AT: the ask file =<change-dir>/inbox/<ask-id>.org=, at the step that writes it (E9 rows 9, 23, 33; E9 Table 2 row 8)
+:SPANS: one step
+:STATE_LAYER: same
+:RECORD: none
+:CASES: none
+:END:
+- Source :: "The context for any decision can be reconstructed from the record without the user reconstructing it." (=north-star.org= G10); "Every question to the user is an org file in =<change-dir>/inbox/= per =templates/ask.md=, written the moment it is raised, in any phase, and triaged by kind." (=SKILL.md= § Critical requirements)
+- Rules ::
+  - "=#+TITLE:= is the question: one plain sentence a reader who has not seen the code can answer" (=templates/ask.md= § The file) [I]
+  - "a consequence says what the user would notice, not what the code would do" (=templates/ask.md= § The file) [I]
+  - "Every ask has one, so a cycle can close with open asks: what happens and at which boundary" (=templates/ask.md= § The file) [I]
+  - "A finding routed to the user without these is not asked as it stands." (=templates/ask.md= § What a finding must carry) [I]
+  - "The orchestrator writes the ask from the finding, because the PM does not read code and the finding roles do not know the reader." (=templates/ask.md=, opening) [I]
+  - "an answer outside the offered options is read back before it is applied" (=SKILL.md= § Critical requirements) [I]
+- Note :: The second half of E7 row NS10. G10's "Know it by" line has two parts: "no "I don't have any context"" and "no ask the user answers by restating the recommendation"; E7 records the second as needing rewording, and it is not in the sentence. The reader is "whoever the overlay's =asks.reader= names" (=templates/ask.md=, opening).
+
+** O-NS-9. A change is reported done only after a review of the whole change has run and its blocking findings are resolved.
+:PROPERTIES:
+:GOAL: G11
+:OBSERVED_AT: integrate § 9: =cycles/<cycle-id>/reviews/whole-change.md= exists before the status line =done= is written (E9 rows 28, 29, 39)
+:SPANS: one step
+:STATE_LAYER: same
+:RECORD: B5
+:CASES: none
+:END:
+- Source :: "A change is verified as a whole before it is called done, across its tasks and not only per task: a whole-change review at each integrate that merged code, before the MVP decision." (=north-star.org= G11); "A change is reported done only after the whole-change review (=flows/integrate.md= § 9) has run and its blocking findings are resolved." (=SKILL.md= § Critical requirements)
+- Rules ::
+  - "At every integrate whose cycle merged code (a task merge, an inline fix, an inline-path commit), the orchestrator spawns one more Reviewer over the whole change" (=flows/integrate.md= § 9) [O]
+  - "whether or not an open task remains; a cycle that merged only record text skips it" (=flows/integrate.md= § 9) [O]
+  - "It looks for what no per-task review could see: interactions between tasks, a bypassed review, a scenario whose test passes while the user's surface does not." (=roles/reviewer.md= § Author-blind constraint) [O]
+  - "and the change goes no further while one is open" (=flows/integrate.md= § 9) [O]
+  - "This covers every path a change took: its spec edits and design, task merges, inline-path commits, inline fixes, ask answers, record corrections." (=flows/integrate.md= § 9) [O]
+- Note :: Merges E7 rows NS11 and IN14. A blocking finding adds a cycle, so "resolved" can take more than one integrate. G11's "Know it by" line ("fewer defects found after completion") is a trend over many changes.
+
+** O-NS-10. The record and the code of a change arrive in one pull request that a reviewer who does not use the skills can read and approve.
+:PROPERTIES:
+:GOAL: G12
+:OBSERVED_AT: nothing a cycle produces on this tree; the change's branch after it is done
+:SPANS: several steps
+:STATE_LAYER: same
+:RECORD: none
+:CASES: none
+:END:
+- Source :: "Changes travel through teams and pull requests. The record and the code arrive in one reviewable pull request that a reviewer who does not use the skills can read and approve." (=north-star.org= G12)
+- Rules ::
+  - None found. No file under =orchestrate/= in this tree, or in the =state-layer= tree, holds the words "pull request"; E7 quotes the roadmap: "no skill text yet".
+  - "=intent.org= (=docs/changes/<change>/=) carries what the diff cannot" (=SKILL.md= § Change artifact set) [I]
+- Note :: E7 row NS12. Kept because the north star states it; whether an outcome with no rule belongs on the list is for the user. The north star leaves open "Org in pull requests: whether the record reads well enough as the forge renders org" (=north-star.org= * Open questions).
+
+** O-NS-11. A small change pays a small fixed cost and skips the steps it does not need.
+:PROPERTIES:
+:GOAL: G13
+:OBSERVED_AT: several steps: which phases and role agents a cycle ran (no design round, no premise check, no whole-change review, or the inline path) and the share of the cycle's spend that is not the task's own work
+:SPANS: several steps
+:STATE_LAYER: same
+:RECORD: none
+:CASES: none
+:END:
+- Source :: "Cost is proportional to the size of the change. A small change pays a small fixed cost and skips what it does not need." (=north-star.org= G13); "fixed overhead well below the 40-57% observed in single-task cycles (F15)" (=north-star.org= G13, Know it by)
+- Rules ::
+  - "A change with no scenario that needs a seam (a doc change, a config tweak) skips the round" (=flows/design.md= § When it runs) [I]
+  - "When no candidate needs it, the Architect is not spawned and the cycle has no =premise-check.md=." (=flows/plan.md= § 3) [I]
+  - "a cycle that merged only record text skips it" (=flows/integrate.md= § 9) [I]
+  - "Not every step needs an agent. Triage inline-vs-worktree before spawning." (=SKILL.md= § Roles) [I]
+  - The inline path is O-IL-1.
+- Note :: The first half of E7 row NS13; the second half is O-DP-1. No source says what "small" is, outside the inline path's triage table.
+
+** O-NS-12. Every defect an agent finds in code or text that exists is reported with a kind and a severity, whatever its likelihood, size or place.
+:PROPERTIES:
+:GOAL: none stated (=north-star.org= * Disposition and * Decided 2026-10-14 state it; no goal does)
+:OBSERVED_AT: the file each reporting role writes, at that role's step: the review file (E9 rows 20, 29), the finding files and =premise-check.md= (rows 14, 27), the task file's =## Discoveries= and the report (row 18)
+:SPANS: one step
+:STATE_LAYER: same
+:RECORD: B3
+:CASES: =implementor-ns12= (the Implementor, a defect planted beside its task), =reviewer-ns12= (the Reviewer, the same defect beside the diff); in the skills workspace's =evals/cases/=
+:END:
+- Source :: "Reporters never filter: every defect in present code is reported with its kind and routed by the main path, so YAGNI limits what gets built, never what gets seen." (=north-star.org= * Disposition); "Every defect an agent finds in code or text that exists is reported with a kind (=issue=, =question=, =thought=) and severity, whatever its likelihood" (=SKILL.md= § Critical requirements)
+- Rules ::
+  - "The agent that finds a defect reports it, whatever it thinks of the defect's size, likelihood or place" (=templates/architect-finding.md=, opening) [O]
+  - "Every defect you can point at in code or text that exists, as an =issue=" (=roles/reviewer.md= § Reviewer mindset) [O]
+  - "Every defect you suspect but could not settle, as a =question=, with the reasoning and the reproduction that would settle it." (=roles/reviewer.md= § Reviewer mindset) [O]
+  - "is not a thought: it is a finding of kind =issue=, whatever its severity, so the orchestrator routes it" (=roles/reviewer.md= § Output contract) [O]
+  - "Report every defect found in code or text that exists as a structured finding with its kind, severity, locations and a recommended resolution" (=roles/architect.md= § Responsibility statement) [O]
+  - "Record each as a =## Discoveries= entry with its kind (=issue= or =question=), severity and evidence, and list its id under =candidate_tasks= in the report, however small or unlikely it looks." (=roles/implementor.md= § What belongs in =## Observations=) [O]
+  - "If you find nothing, say what you looked for and why you ruled it out: silence is not a pass." (=roles/reviewer.md= § Reviewer mindset) [I]
+  - "Not style or preference" (=roles/reviewer.md= § Reviewer mindset) [I]
+- Untested :: R3 (a suspected defect as a =question=): the planted =_money= defect can be settled by a probe, so neither case calls for a =question=; a case for it is next on the roadmap. R5 is the Architect's rule, and no case runs the Architect on a defect yet; one is next on the roadmap.
+- Note :: Merges the first half of E7 row NS15 with NS16. The statement is about what is reported once found; no source says every defect present is found. The SKILL sentence lists =thought= among the kinds of a defect, while =templates/architect-finding.md= § Kind gives =thought= to a speculative need, which is not a defect.
+
+** O-NS-13. Every reported defect ends in a fix, a task, an ask or an entry on the hardening list; none ends as a journal line or a remark.
+:PROPERTIES:
+:GOAL: none stated (=north-star.org= * Disposition and * Decided 2026-10-14 state it; no goal does)
+:OBSERVED_AT: several steps: the routing at execute § 5 and § 8 (in: the task file's two sections, the review file; out: a commit, a journal line naming the route, a hardening entry, a follow-up task; E9 rows 18, 20), plan § 3, integrate § 1, § 7 and § 9; a hardening entry reaches the user only at the MVP decision
+:SPANS: several steps
+:STATE_LAYER: same
+:RECORD: B3
+:CASES: none
+:END:
+- Source :: "every defect in present code is reported with its kind and routed by the main path" (=north-star.org= * Disposition); "A finding that reaches no fix, task, ask or hardening-list entry has been dropped, which is a process bug." (=templates/architect-finding.md= § Routing); "A journal line is never where a defect ends: it ends in a fix, a task, an ask or a hardening-list entry." (=flows/execute.md= § 5)
+- Rules ::
+  - "the orchestrator alone routes it: on the change's main path (the uses the intent's goals name) it is reproduced and fixed in the change, an untrue sentence in a shipped document is fixed in the change, anything else goes on the change's hardening list" (=SKILL.md= § Critical requirements) [O]
+  - "The Reviewer does not route; the orchestrator does" (=roles/reviewer.md= § Routing of a finding) [O]
+  - "A thought that names a wrong result on an input the code accepts today is routed as an =issue=" (=flows/execute.md= § 8) [O]
+  - "one that names a defect in code or text that exists is routed the same way, as if it were a discovery" (=flows/execute.md= § 5) [O]
+  - "The task does not advance to =done= until it is fixed." (=flows/execute.md= § 8) [O]
+  - "The fix starts with a test or probe that fails on the defect, then makes it pass" (=flows/execute.md= § 8) [I]
+  - "A fix for a defect the Reviewer demonstrated on a real surface is pinned on that surface." (=flows/execute.md= § 8) [I]
+  - "the integrate gate doesn't close until the finding's =resolution= is no longer =pending=" (=flows/integrate.md= § 1) [O]
+  - "When the goals do not settle whether a defect is on the main path, it goes on the hardening list with the doubt stated in one clause; the user sees it with the MVP." (=templates/architect-finding.md= § Routing) [O]
+- Note :: Merges the second half of E7 row NS15 with XC6 and EX15. E7 C2: two steps by design, a reporter and then the orchestrator's routing. The research brief (* Decided, 2026-11-11) treats execute's route-and-fix (§ 5, § 8) as one step for the evals.
+
+** O-XC-1. What a cycle learned (the design rows that changed, the user's answers, patterns across its tasks, the open tasks it refined) is read by the next cycle's plan before it drafts a batch, and a plan does not start without it.
+:PROPERTIES:
+:GOAL: none stated
+:OBSERVED_AT: several steps: integrate § 7 and § 8 write =<change-dir>/handshake-<cycle-id>.json= (E9 row 12; E9 Table 2 row 25); plan § 1 of the next cycle reads it, or refuses to start
+:SPANS: several steps
+:STATE_LAYER: same
+:RECORD: none
+:CASES: none
+:END:
+- Source :: "The keystone transition is integrate → plan, not execute → review. Each plan reads =<change-dir>/handshake-<prior-cycle-id>.json= as a hard input contract" (=SKILL.md= § Loop closure); "This is the structural fix for "learns and forgets" — without it, the orchestrator becomes a queue runner." (=SKILL.md= § Loop closure); "each cycle's discoveries must update the next cycle's plan" (=flows/plan.md= § 1)
+- Rules ::
+  - "plan refuses to start if the artifact is missing or any of its required fields are unset" (=flows/plan.md=, opening) [O]
+  - "All seven required fields are mandatory" (=flows/integrate.md= § 8) [O]
+  - "An empty list is allowed; a missing field is not." (=flows/integrate.md= § 8) [O]
+  - "This is the single refinement point for the open task list" (=flows/integrate.md= § 7) [O]
+  - "This makes "we looked, we decided nothing was stale" auditable rather than indistinguishable from "we never looked."" (=flows/integrate.md= § 7) [I]
+  - "Meta-discoveries land in the integrate→plan handshake artifact's =meta_discoveries= field" (=flows/integrate.md= § 4) [O]
+  - "Read the overlay's =priors.md= alongside the handshake" (=flows/plan.md= § 1) [I]
+- Note :: E7 row XC22; E7 C8. This tree requires seven fields and plan § 1 also reads a =journal= that is not among them; E7 read "All eight" in another tree. On =state-layer= the Source statements stand, and the required fields are nine, with no digest path and with =candidate_tasks= and =journal= among them. The refusal half shows at one step (plan § 1 given a handshake); "is read by" shows only in the batch the plan drafts.
+
+** O-XC-2. A session stops to wait for the user's answer only for an environment ask, for an ask that blocks work waiting now while the user is present, for the design round's questions and for the MVP decision; an ask that blocks nothing never stops the session.
+:PROPERTIES:
+:GOAL: G10 (inferred)
+:OBSERVED_AT: several steps: the phase agent (writes the ask file, then hands back =stopped= or goes on; E9 row 23) and the dispatcher (makes the blocking call, or relays one line; rows 9, 33)
+:SPANS: several steps
+:STATE_LAYER: same
+:RECORD: B2
+:CASES: none
+:END:
+- Source :: "Nothing else blocks a session on a question." (=SKILL.md= § Critical requirements); "an ask that blocks nothing never stops the session" (=SKILL.md= § The dispatcher's loop); "The blocking call (=AskUserQuestion=) is for an =environment= ask, and for an ask that blocks work waiting now while the user is present" (=templates/ask.md= § The inline rule); "It never waits for the answer, with two exceptions: the design round's open questions are asked in full before plan" (=templates/ask.md= § The inline rule)
+- Rules ::
+  - "Present means the user acted within the last 15 minutes of the session" (=templates/ask.md= § The inline rule) [O]
+  - "Otherwise the file is the ask." (=flows/execute.md= § 9) [O]
+  - "When nothing else can run, it does not wait for the answer: =blocked= counts as stopped, so if =gate check execute= is all true it passes the gate and goes on to integrate" (=flows/execute.md= § 9) [O]
+  - "a phase agent has no user, so it writes the file, finishes what does not wait, hands back =stopped= naming the ask, and is resumed once the answer is in the file" (=templates/ask.md= § The inline rule) [O]
+  - "each call carrying the ask's recommendation and a =Not now= option that leaves the ask open" (=SKILL.md= § The dispatcher's loop) [O]
+  - "expect no blocking call open longer than 15 minutes unless its kind is =environment=, and one question per call" (=templates/ask.md= § Measurement) [O]
+- Note :: Merges E7 rows XC11 and DP5. E7 C5: three steps in sequence. The parts at one step: given an ask file and the time of the user's last message, whether the phase agent hands back =stopped=; given that hand-back, whether the dispatcher makes the call.
+
+** O-XC-3. What the user reads from the skill (asks, hand-back lines, relays, chat) uses the terms of the product's glossary; a domain term the glossary lacks is explained where it is used, or added to the glossary first.
+:PROPERTIES:
+:GOAL: none stated
+:OBSERVED_AT: each artifact the user reads, at the step that writes it: an ask file (E9 rows 9, 23, 33), a hand-back line (rows 3, 8, 16, 24, 35), the intent's =* New terms= (row 4)
+:SPANS: one step
+:STATE_LAYER: same
+:RECORD: none
+:CASES: none
+:END:
+- Source :: "The glossary is the vocabulary of everything the user reads: asks, hand-back lines, relays and chat. A domain term it does not have is glossed where it is used, or added to =$CODE_ROOT/docs/glossary.org= first" (=SKILL.md= § Critical requirements)
+- Rules ::
+  - "Every domain term the intent or the spec edits use that the glossary does not have goes in =* New terms=, to be agreed in the round's sitting" (=flows/open.md= § 4) [O]
+  - "On the answer each agreed term is written into =docs/glossary.org=" (=flows/design.md= § 5) [O]
+  - "When the user asks what a term means, the explanation is written into the glossary in the same turn and committed in the code root" (=SKILL.md= § Critical requirements) [O]
+  - "What the user reads uses the terms of =<code-root>/docs/glossary.org= (when it exists)." (=SKILL.md= § The dispatcher's loop) [O]
+  - "more than three glosses means the ask is not plain yet" (=templates/ask.md= § The file) [I]
+- Note :: Not one of E7's 39 outcome rows: E7 lists it as a rule (XC16). It is listed here because the statement is about what the user reads; the user decides whether it stays. The source says of itself: "No check runs against the glossary until a misuse is observed." E7 C18 names three steps (opening, the round's sitting, every later ask and hand-back); each artifact can be read alone.
+
+* The dispatcher
+
+** O-DP-1. The dispatcher's context stays near its floor for the whole change: it holds hand-back lines, the user's prompts and the blocking calls, and no flow doc, role file, artifact or code.
+:PROPERTIES:
+:GOAL: G13
+:OBSERVED_AT: several steps: every turn of the dispatcher over a session (its context in tokens per call, from the session transcript); at one step, what the dispatcher reads after a hand-back line (E9 rows 3, 8, 16, 24, 35)
+:SPANS: several steps
+:STATE_LAYER: same
+:RECORD: B8, B1
+:CASES: none
+:END:
+- Source :: "The dispatcher's context is proportional to the phase, not to the session." (=north-star.org= G13); "mean dispatcher context per call under 100k" (=north-star.org= G13, Know it by); "The dispatcher's context holds hand-back lines, the user's prompts and the blocking calls, so it stays near its floor for the whole change." (=SKILL.md= § Two contexts)
+- Rules ::
+  - "A dispatcher that reads a flow doc, a role file, an artifact or code is a process bug." (=SKILL.md= § Critical requirements) [O]
+  - "Every phase runs in a phase agent, spawned with the =Agent= tool" (=SKILL.md= § Two contexts) [O]
+  - "Every agent the orchestrator spawns hands back one line of at most 200 characters and writes everything else to the file the flow names for it." (=SKILL.md= § Hand-back lines) [O]
+  - "read once when =status= lists it (id, question, path), never the inbox in one =cat=" (=SKILL.md= § Two contexts) [O]
+  - "The dispatcher copies the user's words; it reads nothing to write the brief." (=flows/open.md= § The brief) [O]
+  - "A worker runs its test command in the foreground and reports once, after its commit" (=SKILL.md= § Hand-back lines) [I]
+  - "A phase agent near its context limit hands over to a fresh one." (=SKILL.md= § The dispatcher's loop) [I]
+- Note :: The second half of E7 row NS13. E1's B8 is about a phase agent's context and B1 about the length of a hand-back line; both are rules under this outcome. The hand-over rule is about the phase agent's context, for which no source states an outcome of its own (see * Parts with no stated outcome). On =state-layer= the dispatcher reads =report.py context= in place of =state.py context=.
+
+** O-DP-2. Invoked with no phase named, the skill takes a change up where it stands: it opens it, runs the design round, starts a plan, resumes the open phase or advances to the next, and never starts a new cycle while one is open.
+:PROPERTIES:
+:GOAL: none stated
+:OBSERVED_AT: the dispatcher's first step: its =state.py status= call and the =Agent= call it then makes (E9 rows 1, 5; E9 Table 2 rows 1, 26)
+:SPANS: one step
+:STATE_LAYER: differs: =status= gives a =stage= and a =next= (eight stages, among them "main path ended" and "MVP decision") in place of a =resume= line, read from files and git with no state file; the spec's Purpose there states the outcome ("Where does this change stand, and what comes next?")
+:RECORD: none
+:CASES: none
+:END:
+- Source :: "When invoked without an explicit phase, the dispatcher runs its loop" (=SKILL.md= § Mode detection at entry); "Its =resume= line says which of these applies: resume the current phase; advance (=phase set=) because the prior gate passed; =close= because integrate passed; or =init= a new cycle because the last one is closed." (=SKILL.md= § Mode detection at entry); "Never silently start a new cycle while a prior cycle is open" (=SKILL.md= § Mode detection at entry)
+- Rules ::
+  - "a change with no =intent.org= wants opening" (=SKILL.md= § Mode detection at entry) [O]
+  - "a =design.org= without a Seams section (or none at all) wants the design round first" (=SKILL.md= § Mode detection at entry) [O]
+  - "The dispatcher spawns the phase agent that line calls for; the phase agent runs the verb." (=SKILL.md= § Mode detection at entry) [O]
+  - "Gate passed → spawn the next phase agent." (=SKILL.md= § The dispatcher's loop) [O]
+  - "A later phase refuses to start if the prior phase's gate has not passed" (=SKILL.md= § Phases) [O]
+  - "A legacy or invalid file: =status= says so; =state.md= § Recovery gives the steps. Do not write it by hand." (=SKILL.md= § Mode detection at entry) [I]
+- Note :: Not one of E7's 39 outcome rows: E7 lists its parts as a mechanism (DP8) and a rule (DP9). It is listed here because the user sees which phase a session takes up; the user decides whether it stays. E8 ran this step alone five times.
+
+** O-DP-3. While the user is present, open decisions are put to them one question per call, each with the recommendation and a "Not now" option, and never as a list in chat.
+:PROPERTIES:
+:GOAL: G10 (inferred)
+:OBSERVED_AT: the dispatcher's step after a hand-back: the blocking calls it makes from the open ask files (E9 rows 9, 33)
+:SPANS: one step
+:STATE_LAYER: same
+:RECORD: B2
+:CASES: =dispatcher-dp3= (the dispatcher after a plan agent's =stopped= hand-back with three open decision asks); in the skills workspace's =evals/cases/=
+:END:
+- Source :: "While the user is present they are put one per call, never as a list in chat: asks whose =:BLOCKS:= names work waiting now first, then the rest in =status= order, each call carrying the ask's recommendation and a =Not now= option that leaves the ask open" (=SKILL.md= § The dispatcher's loop); "One question per call, always." (=templates/ask.md= § The inline rule)
+- Rules ::
+  - "the dispatcher asks every one in one sitting, one per call, straight from =status=, and resumes the agent when all are answered" (=SKILL.md= § The dispatcher's loop) [O]
+  - "When the user is absent, they are relayed from =status= in one line each (id, question, path)" (=SKILL.md= § The dispatcher's loop) [O]
+  - "=process= asks are never put." (=SKILL.md= § The dispatcher's loop) [O]
+  - "The user answers in the call, the file or chat" (=SKILL.md= § The dispatcher's loop) [I]
+  - "While the user is present they are put one per call, never as a list in chat: asks whose =:BLOCKS:= names work waiting now first, then the rest in =status= order, each call carrying the ask's recommendation and a =Not now= option that leaves the ask open" (=SKILL.md= § The dispatcher's loop) [O]
+  - "writes the answer with =state.py record set asks <id> decision=<label>=" (=SKILL.md= § The dispatcher's loop) [I]
+- Untested :: R2, the user absent: =dispatcher-dp3='s user is present, by its design; an absent-user case is not yet picked. R3: the fixture holds no =process= ask. R4: the case's answers come only through the call, never the file or chat.
+- Note :: Not one of E7's 39 outcome rows: E7 lists it as a rule (DP4). It is listed here because it is what reaches the user, and the source's own record says the users asked for it; the user decides whether it stays. See O-IN-4 for a statement that reads differently.
+
+** O-DP-4. When no overlay is found for the home, the user is told so explicitly before the skill falls back to defaults.
+:PROPERTIES:
+:GOAL: none stated
+:OBSERVED_AT: the dispatcher's first step, in what it tells the user (E9 row 1)
+:SPANS: one step
+:STATE_LAYER: same
+:RECORD: none
+:CASES: none
+:END:
+- Source :: "No overlay found → warn the user explicitly; fall back to sensible defaults (see =overlay.md=)" (=SKILL.md= § Resolution)
+- Rules ::
+  - "An overlay that drifted from the skill's schema" (=SKILL.md= § Resolution) [I]
+  - "is relayed to the user once and corrected by hand" (=SKILL.md= § Resolution) [I]
+- Note :: E7 row DP11. Three statements in =SKILL.md= bear on a home with no overlay and are not reconciled there: this one (warn, fall back to defaults, or onboard); § Resolution step 1, where the home is found by walking up to =config.yaml=; and § When NOT to use this skill ("is onboarded first: =state.py home init= with the user"). On =state-layer= the onboarding command is =home.py init=.
+
+* Opening a change
+
+** O-OP-1. Opening a change leaves one commit =Open: <change>= in the code root that holds the change's =intent.org= and its spec edits, written from the user's words, and the user is given the intent's path.
+:PROPERTIES:
+:GOAL: G1 (inferred)
+:OBSERVED_AT: the opening step: the commit, =intent.org=, the edited =docs/specs/= files and the hand-back line (E9 rows 2, 3, 4; E9 Table 2 rows 3, 4)
+:SPANS: one step
+:STATE_LAYER: same
+:RECORD: none
+:CASES: none
+:END:
+- Source :: "The step that turns what the user asked for into a change the design round can take" (=flows/open.md=, opening); "in the code root, =intent.org= and the spec files, staged by name, in one commit =Open: <change>=, with the coverage summary line in its message" (=flows/open.md= § 5); "The dispatcher relays the line, so the user has the intent's path" (=flows/open.md= § Hand-back)
+- Rules ::
+  - "scenarios that state what a user, an operator or a caller observes: the input and the output, the file left behind, the message shown" (=flows/open.md= § 3) [O]
+  - "Why in the user's terms (quoting them when the source is their words)" (=flows/open.md= § 4) [O]
+  - "The dispatcher copies the user's words; it reads nothing to write the brief." (=flows/open.md= § The brief) [I]
+  - "Not the code." (=flows/open.md= § 1) [I]
+  - "It does not ask the user anything. Its questions wait for the round's sitting." (=flows/open.md= § What opening does not do) [I]
+  - "A source that needs two repositories is two changes" (=flows/open.md= § 2) [I]
+  - "it must parse the edited specs and list the change's scenarios" (=flows/open.md= § 5) [O]
+- Note :: E7 row OP1. The step does not run when the user wrote the intent and the spec edits themselves. On =state-layer= the coverage command in § 5 is =coverage.py --intent= and the change is opened with =home.py open=.
+
+* The design round
+
+** O-DR-1. The design round ends with a =design.org= that has a Seams table, every scenario of the change cited by a test (pending or not) or marked =:TEST: none:= with a reason, every open question decided, and a test run that is green with the pending tests reported as pending.
+:PROPERTIES:
+:GOAL: G5 (inferred)
+:OBSERVED_AT: the design round's step: the commit =Design round: <change>= (=design.org=, the pending tests, the =:TEST:= properties), the output of =coverage.py= and the hand-back line (E9 rows 7, 8, 11)
+:SPANS: one step
+:STATE_LAYER: differs: the coverage command is =coverage.py --intent <intent path>= and must also show "no name that matches none"
+:RECORD: none
+:CASES: none
+:END:
+- Source :: "No gate; the round is complete when =design.org= has a Seams table, =coverage.py --since <base>= shows no =uncited= scenario among the change's (every one is cited by a test that exists, pending or not, or carries =:TEST: none:=), every § Open Questions entry has its Decision" (=flows/design.md= § Exit); "and the baseline run is green" (=flows/design.md= § Exit)
+- Rules ::
+  - "For each scenario, the Architect names the seam that satisfies it: a boundary the code must honour, stated in one sentence, with its owning symbols and the test that pins it." (=flows/design.md= § 2) [O]
+  - "Only for behaviour that does not hold at HEAD." (=flows/design.md= § 4) [O]
+  - "The style must be one the runner reports as pending, never as failing" (=flows/design.md= § 4) [O]
+  - "The test drives real code; it does not assert module ownership or the absence of a symbol." (=flows/design.md= § 4) [I]
+  - "=design.org=, the spec properties and the tests in one commit. The Architect does not commit." (=flows/design.md= § 6) [O]
+  - "The orchestrator does not write or verify a design before it, itself or through another agent" (=flows/design.md= § When it runs) [I]
+  - "The re-run is scoped to that seam: amend its row, its scenarios' =:TEST:= properties and its pending tests; leave the rest." (=flows/design.md= § When it runs) [I]
+- Note :: E7 row DR1. With open questions the round is complete only after the sitting (O-DR-2), so its end then spans the dispatcher's calls. What the design says is O-NS-6; E1's B13 (the Architect's output varies most between identical runs) concerns the content, which this sentence does not state.
+
+** O-DR-2. Every question the design round raises, and every open question of the intent, is put to the user before plan starts, in one sitting; none is deferred, no task is drafted on a provisional answer, and when the user is absent the change waits.
+:PROPERTIES:
+:GOAL: G7
+:OBSERVED_AT: several steps: the Architect writes =design.org= § Open Questions (E9 row 7); the round's agent or the plan agent writes the ask files (row 9); the dispatcher asks each (row 9); the resumed agent writes the answers into § Decisions and the specs (row 10)
+:SPANS: several steps
+:STATE_LAYER: same
+:RECORD: none
+:CASES: none
+:END:
+- Source :: "every one the round raises is asked before plan starts, in one sitting" (=flows/design.md= § 5); "None waits, none is deferred to a later cycle, and nothing is drafted on a provisional answer." (=flows/design.md= § 5); "The design round's questions are asked at once, before plan; a change waits for the answers when the user is absent; nothing is built on a provisional answer (R2)." (=north-star.org= * Decided); "The design round's open questions are discoveries by definition and block (R2)." (=north-star.org= G7)
+- Rules ::
+  - "it writes no Decision for the question" (=flows/design.md= § 5) [O]
+  - "It drafts those rows and tests in the form the recommendation implies and says so in the entry" (=flows/design.md= § 5) [O]
+  - "A design-round question has no =If unanswered= default." (=flows/design.md= § 5) [O]
+  - "has not finished its round either, and plan drafts nothing" (=flows/plan.md= § 2) [O]
+  - "join the same sitting" (=flows/design.md= § 5) [O]
+  - "The resumed agent writes each answer into § Decisions and into the spec it settles, in place" (=flows/design.md= § 5) [O]
+  - "A question earns its place by the YAGNI check" (=flows/design.md= § 5) [I]
+- Note :: Merges E7 rows NS20 and DR6; E7 C19: four steps.
+
+* Plan
+
+** O-PL-1. While the MVP decision is unanswered, plan starts no cycle and nothing runs on the change.
+:PROPERTIES:
+:GOAL: G4 (inferred)
+:OBSERVED_AT: plan § 1: the plan agent's hand-back line =plan: stopped, ask <id> blocks plan; <path>= and the absence of a new cycle (E9 rows 5, 16, 34)
+:SPANS: one step
+:STATE_LAYER: differs: the verb plan does not run is =state.py cycle start=, and =status= reports the stage "MVP decision", whose next step is to wait for the user's answer
+:RECORD: none
+:CASES: none
+:END:
+- Source :: "plan does not run =init= while it is open: it hands back =plan: stopped, ask <id> blocks plan; <path>=, and nothing runs on the change until the user answers" (=flows/plan.md= § 1); "and nothing more runs until the user answers" (=SKILL.md= § Critical requirements)
+- Rules ::
+  - "An answer waiting in the file is applied first, as that template says" (=flows/plan.md= § 1) [O]
+  - "writes one =decision= ask (=templates/ask.md=) with =:BLOCKS: plan=" (=templates/hardening.md= § The MVP decision) [O]
+  - "Nothing runs; the change waits at its MVP." (=templates/hardening.md= § The MVP decision) [O]
+- Note :: E7 row PL12. A part of O-NS-4 seen at one step.
+
+* Execute
+
+** O-EX-1. A task counts as done only after its implementation has merged and a separate review of that merge has completed.
+:PROPERTIES:
+:GOAL: none stated
+:OBSERVED_AT: execute: per task, the review file =cycles/<cycle-id>/reviews/<task-name>.md= beside the task's status =done=; for the batch, the exit gate (E9 rows 20, 24)
+:SPANS: one step
+:STATE_LAYER: same
+:RECORD: none
+:CASES: none
+:END:
+- Source :: "A task is "executed" only when both implement and review have completed on it. Implement-without-review is in-flight, not done." (=flows/execute.md=, opening)
+- Rules ::
+  - "After successful merge + tests pass + no regression, the task is not yet closed" (=flows/execute.md= § 6) [O]
+  - "Every review is delegated: a separate general-purpose Agent per task, at the Reviewer's setting above." (=flows/execute.md= § 7) [O]
+  - "Every task that reached =reviewed= / =done= with a =review_mode= has its findings file on disk" (=flows/execute.md= § Exit gate) [O]
+  - "When all inline fixes are applied: =state.py task set <name> done=." (=flows/execute.md= § 8) [O]
+  - "Read or pass the Implementor's structured report." (=flows/execute.md= § 7) [I]
+- Note :: E7 row EX1. The inline path is the stated exception: "Inline path skips formal review because the orchestrator IS the reviewer" (=flows/inline.md= § Inline operations). The =state-layer= spec states this as a requirement ("A task is done only on computed checks").
+
+** O-EX-2. A merge that makes a test fail which passed before it stops further merges, and the user is asked at once, with the test output named.
+:PROPERTIES:
+:GOAL: none stated
+:OBSERVED_AT: execute § 4, after a merge: the baseline and after files, the task's record, the ask file and the hand-back =stopped= (E9 row 23; E9 Table 2 row 29)
+:SPANS: one step
+:STATE_LAYER: same
+:RECORD: B4
+:CASES: =execute-ex2= (the execute agent at § 4: of two queued tasks, the first's merge fails a test that passed); in the skills workspace's =evals/cases/=
+:END:
+- Source :: "A regression is a test that passed in the baseline and fails after the merge." (=flows/execute.md= § 4); "stop further merges; keep worktrees; raise an =environment=-kind ask (=templates/ask.md=) with the after-file paths" (=flows/execute.md= § 4)
+- Rules ::
+  - "With a green baseline (~BASELINE_STATUS == 0~) the exit code decides: ~AFTER_STATUS != 0~ is a regression." (=flows/execute.md= § 4) [O]
+  - "With a red baseline the exit code cannot decide (it is non-zero both times), so the check is per test id" (=flows/execute.md= § 4) [O]
+  - "A count without names is no verdict either" (=flows/execute.md= § 4) [O]
+  - "Only merging stops: Implementors still running finish and join the queue, and Reviewers already spawned carry on." (=flows/execute.md= § 4) [O]
+  - "Captures a baseline test snapshot if one isn't already taken for this cycle" (=flows/execute.md= § 1) [O]
+  - "a red baseline would disable the post-merge regression check for every cycle of the change" (=flows/design.md= § 4) [O]
+  - "When a regression is found: =state.py task set <name> regression_detected=true=; stop further merges; keep worktrees; raise an =environment=-kind ask (=templates/ask.md=) with the after-file paths. It blocks the merge chain, so it is asked at once (§ 9)." (=flows/execute.md= § 4) [O]
+  - "=environment= asks (a regression stop, a wedged runner) always take that route" (=flows/execute.md= § 9) [O]
+  - "the phase agent writes the file, first finishes the orchestrator-side work that does not depend on it (spawn Reviewers for merged tasks, report filing), and when nothing else can run hands back =stopped= naming the ask" (=flows/execute.md= § 9) [I]
+  - "commit it in the home with a subject naming the id" (=flows/execute.md= § 9) [I]
+  - "The queue merges one task at a time, in the order tasks landed" (=flows/execute.md= § 3) [I]
+- Untested :: R2, R3 and R6 apply to a red baseline, and =execute-ex2='s baseline is green; a red-baseline case is not yet picked. R5 (§ 1 captures the baseline) happens before the step: the fixture supplies the baseline.
+- Note :: Not one of E7's 39 outcome rows: E7 lists it as a rule (EX3). It is listed here because the stop and the ask reach the user; the user decides whether it stays. E7 C12 also names the design round (a green baseline) and the state tool. On =state-layer= the Source statements stand; the run's result is also kept in =.status= and =.compare= files, and the spec states a requirement ("A task's tests pass at its merge").
+
+* Integrate
+
+** O-IN-1. After each cycle the design says what the merged code does: a cited seam row the code has rightly outgrown is amended, and a promise the code does not keep is reported against the code and not cut from the design.
+:PROPERTIES:
+:GOAL: G6 (inferred)
+:OBSERVED_AT: conformance at integrate § 1: the finding files, =design-diff.json=, the amended =design.org= and the record-correction commit (E9 rows 26, 27)
+:SPANS: one step
+:STATE_LAYER: same
+:RECORD: B13
+:CASES: none
+:END:
+- Source :: "A cycle that leaves the design saying something the merged code no longer does has discovered without integrating — the failure the integrate phase exists to prevent. Integrate's first operation checks the code against the seams the batch cited and amends the rows the code has rightly outgrown." (=flows/integrate.md=, opening)
+- Rules ::
+  - "Which side is right is decided by a test, not by the code." (=flows/integrate.md= § 1) [O]
+  - "is never a record correction, whatever the spec scenarios require" (=flows/integrate.md= § 1) [O]
+  - "Every commit that corrects record text says =record correction= in its subject, and one that corrects a scenario in =docs/specs/= names the pinning test in its body" (=flows/integrate.md= § 1) [O]
+  - "a JSON array, one element per seam row this cycle added, amended or retired" (=flows/integrate.md= § 1) [O]
+  - "Plus a dead-branch scan across every diff merged this cycle" (=flows/integrate.md= § 1) [O]
+  - "amend the seam row (and the Decision or scenario steps naming the same thing) in place at the contract level" (=roles/architect.md= § Escalation contract) [O]
+  - "The integrate question is not skipped" (=flows/inline.md= § Collapsed cycle) [I]
+- Note :: E7 row IN1. E7 records that the roadmap's measure for an earlier form of this step failed. The check is scoped to "the seams this cycle's tasks cited" and the dead-branch scan, not the whole design.
+
+** O-IN-2. When the whole-change review leaves no blocking finding and no task on the main path is open, integrate ends by asking the user one decision (harden, rethink or stop) that says what the change now does and how to try it and lists the hardening items, the open tasks off the main path and the corrections made to the specs.
+:PROPERTIES:
+:GOAL: G4
+:OBSERVED_AT: integrate § 9: the ask file, the intent's status line =mvp <date> <HEAD> <ask-id>= and the hand-back line (E9 row 33)
+:SPANS: one step
+:STATE_LAYER: differs: the condition reads "no open task or =critical= candidate on the main path remains"
+:RECORD: none
+:CASES: none
+:END:
+- Source :: "when the review leaves no blocking finding, no open task on the main path remains, and the intent's status line has not yet reached =mvp=, the main path works end to end and the change stops for the user" (=flows/integrate.md= § 9); "the user is shown what now works and how to try it, with the hardening list, and decides: harden, rethink or stop" (=north-star.org= G4)
+- Rules ::
+  - "the orchestrator writes the status line =mvp <date> <HEAD> <ask-id>= and the one =decision= ask" (=flows/integrate.md= § 9) [O]
+  - "hands back =integrate <cycle-id>: stopped, ask <id> blocks plan; <path>=" (=flows/integrate.md= § 9) [O]
+  - "what the change does now, one short paragraph per goal, and how to try it (the command, the key, the file to open)" (=templates/hardening.md= § The MVP decision) [O]
+  - "They are shown here, not asked about; the user objects in =* Answer= if one is wrong." (=templates/hardening.md= § The MVP decision) [O]
+  - "Open tasks off the main path do not hold it back: they are listed in the ask and wait for the answer." (=flows/integrate.md= § 9) [O]
+  - "there is no second MVP stop" (=templates/hardening.md= § The MVP decision) [O]
+- Note :: E7 row IN12. A part of O-NS-4 seen at one step. The =state-layer= spec adds a scenario for it ("The main path's end calls for the MVP decision").
+
+** O-IN-3. A change that is done says so in its =intent.org= (=#+STATUS: done=, the date and the commit) and carries a closing summary: what the change does for each goal, which hardening items were worked and which left, the open tasks left, and the corrections made to specs and text.
+:PROPERTIES:
+:GOAL: G1 (inferred)
+:OBSERVED_AT: integrate § 9: =intent.org= (the status line and its =* Status= entry), its commit in the code root, and the relayed hand-back line (E9 row 39)
+:SPANS: one step
+:STATE_LAYER: same
+:RECORD: none
+:CASES: none
+:END:
+- Source :: "the orchestrator writes =#+STATUS: done <date> <HEAD>= in =intent.org= with the closing summary in its =* Status=" (=flows/integrate.md= § 9); "what the change does, one line per goal" (=templates/hardening.md= § The closing summary); "the hardening list's outcome: the entries worked (with their task names) and the entries left (their headings), or "none"" (=templates/hardening.md= § The closing summary)
+- Rules ::
+  - "after the user chose =stop=, or after =harden= once this review again leaves no blocking finding and no open task" (=flows/integrate.md= § 9) [O]
+  - "The dispatcher's relay of the done hand-back names =intent.org='s path, so the user reads the summary there." (=templates/hardening.md= § The closing summary) [O]
+  - "A done change stays where it is, its status line saying so." (=SKILL.md= § Change artifact set) [O]
+  - "The branch's merge to main is the user's, recorded in the research brief that made it, never the orchestrator's." (=flows/integrate.md= § 9) [I]
+- Note :: E7 row IN15. When it may be written is O-NS-9. On =state-layer= the condition for done reads "no open task or candidate remains".
+
+** O-IN-4. After integrate the user is shown the open decisions, one line each with the question and the file's path, blocking ones first, before the cycle's results; a cycle with none says so in one line.
+:PROPERTIES:
+:GOAL: G10 (inferred)
+:OBSERVED_AT: the dispatcher's relay after the integrate agent's hand-back (E9 rows 33, 35)
+:SPANS: one step
+:STATE_LAYER: differs: the lines are printed from =asks.py inbox=, not from =state.py status=
+:RECORD: none
+:CASES: none
+:END:
+- Source :: "after the phase agent's hand-back it prints, from =state.py status=, one line per open decision (the id, the question, its path =inbox/<id>.org=), blocking ones first, and the count of files applied without asking and of process notes. Asks first; the cycle's results after or in a separate message." (=flows/integrate.md= § 3a); "A cycle with no =decision=-kind asks has nothing to present and says so in one line; that is a valid outcome, not a gate failure." (=flows/integrate.md= § 3a)
+- Rules ::
+  - "Collect every open file" (=flows/integrate.md= § 3a) [O]
+  - "Asks the user leaves unanswered keep =status: open=, their default applies at the boundary the file names, and they are carried in the handshake." (=flows/integrate.md= § 3a) [O]
+  - "Every open ask is in =handshake.asks_for_user_open= (so plan picks them up next cycle)" (=flows/integrate.md= § Exit gate) [O]
+  - "Asks come first; phase results follow, or go in a separate message." (=templates/ask.md= § Chat) [O]
+- Note :: E7 row IN22. Two statements read differently. =SKILL.md= § The dispatcher's loop, step 5, says that while the user is present the open decisions "are put one per call, never as a list in chat" and are relayed one line each when the user is absent (O-DP-3); integrate § 3a and =templates/ask.md= § Chat describe the one-line-per-decision message with no such condition. Which of the two the user sees when present is for the user to settle. Who "says so in one line" is not stated either: the phase agent has no user, and no hand-back line has that form.
+
+* The inline path
+
+** O-IL-1. A trivially small edit (one line, one file, one config value) is made without a worktree, an Implementor or a Reviewer, and is put back as an ordinary task if it turns out larger.
+:PROPERTIES:
+:GOAL: G13 (inferred)
+:OBSERVED_AT: the inline path's step: the commit in the code root and the task file's status, or, on a bailout, the reverted tree and the note in the task body (E9 rows 37, 38)
+:SPANS: one step
+:STATE_LAYER: same
+:RECORD: none
+:CASES: none
+:END:
+- Source :: "For trivial tasks where agent + worktree overhead dominates the work. The entire cycle collapses into the orchestrator's own context" (=flows/inline.md=, opening); "If the work is trivially small (one-line edit, single-file doc fix, config tweak), use the inline path" (=SKILL.md= § Phases); "If an inline turns out larger than triaged: stop, revert, reschedule as a worktree task." (=flows/inline.md= § Bailout rule)
+- Rules ::
+  - "When in doubt, take the standard path." (=flows/inline.md= § When to take the inline path) [O]
+  - "Anything touching ≥2 files" (=flows/inline.md= § When to take the inline path) [O]
+  - "The integrate question is not skipped" (=flows/inline.md= § Collapsed cycle) [O]
+  - "no commit was made yet — inline path commits last" (=flows/inline.md= § Bailout rule) [O]
+  - "revert via =git revert <commit>= in the code root rather than =git reset=" (=flows/inline.md= § Bailout rule) [O]
+  - "Inline path is for out-of-cycle trivial fixes the user asks for between cycles, not for tasks already in a batch." (=flows/inline.md= § When NOT to use inline even if technically eligible) [O]
+  - "so the dispatcher itself reads no code" (=flows/inline.md=, opening) [I]
+- Note :: Not one of E7's 39 outcome rows; it is the part of NS13 (O-NS-11) seen at one step, drawn from the inline path's own opening sentence. E9: what carries the requested edit to the inline agent is not stated. In this tree a bailout has no hand-back line of its own and § Why preserve the integrate question routes a defect in adjacent code to a task or the hardening list; on =state-layer= the bailout hands back =inline <task>: bailed out, ...= and "the inline path creates no work".
+
+* First cases
+
+Picked 2026-11-12 at review, by the selection rule (research brief =research/skill-evals/brief.org=, * Decided 2026-11-11): each one is seen at one step, reads the same on =state-layer=, takes a file or saved brief as its input, and together they touch each role. Each role is covered through an outcome its rules are attached to, since no role has an outcome of its own. All five were built and validated at the hand edit, 2026-11-12, and run three times each on =main= and =state-layer=.
+
+| Role        | Outcome  | Step and input                                                                                   | RECORD |
+|-------------+----------+--------------------------------------------------------------------------------------------------+--------|
+| Architect   | O-NS-6   | The design round, from an =intent.org= and its spec edits                                        | B11    |
+| Implementor | O-NS-12  | The Implementor's step, from a task file with a defect planted beside its code                   | B3     |
+| Reviewer    | O-NS-12  | The review step, from the author-blind input with a defect planted off the task's path           | B3     |
+| Phase agent | O-EX-2   | Execute § 4, from a fixture repository where merging one task branch fails a test that passed    | B4     |
+| Dispatcher  | O-DP-3   | The dispatcher after a hand-back, from the hand-back line and two or three open ask files        | B2     |
+
+* Left open at review
+
+The user chose on 2026-11-12 to pick the cases without going through these; each stays as the draft has it until a later sitting takes it up.
+
+- The five outcomes whose goal link is the drafter's reading: O-XC-3, O-DP-2, O-DP-3, O-EX-2, O-IL-1. Two of them (O-DP-3, O-EX-2) have cases picked; the outcomes are accepted, only the =GOAL= link is unreviewed.
+- Whether the Implementor, the Reviewer, the Architect, the project manager and the state tool get outcomes of their own (* Parts with no stated outcome), and the groups of rules there.
+- The five places where the sources disagree (each in its entry's Note).
+- The seven entries under * Words wanted.
+
+* Parts with no stated outcome
+
+Parts of the process, and groups of rules across parts, where rules were found and no source states, at the outcome level, what they are for. The nearest statement is quoted. No outcome is written for any of them; the user decides whether one is wanted. Rules already attached to an outcome above are not repeated.
+
+** Plan, apart from O-PL-1
+- Nearest statement :: "Plan turns the design into a batch the next execute phase will implement, after checking that the batch's premises still hold at HEAD." (=flows/plan.md=, opening). It says what plan does, not what the user would notice.
+- The premise check :: "Who checks a task's claims against HEAD depends on who wrote its text." (=flows/plan.md= § 3); "A task with a Wrong premise is rewritten or split by the orchestrator before the batch freezes" (=flows/plan.md= § 3); "Before writing code, check the claims the task body and its cited rows make about the code at the worktree's HEAD" (=roles/implementor.md= § Premises); "hand back =blocked <task>: premise wrong, <the claim>=" (=roles/implementor.md= § Premises). The north star states it only as a decision in force (* Decided 2026-10-14). E1 B9.
+- Drafting and composing the batch :: "one task per seam or per closely coupled pair, never one per test" (=flows/plan.md= § 2); "Each candidate cites the seams it implements" (=flows/plan.md= § 2); "≥1 task on the critical path per cycle, unless the prior integrate explicitly deferred" (=flows/plan.md= § 4); "A task named in the =:BLOCKS:= of an open ask file" (=flows/plan.md= § 2); "Plan does not modify code." (=flows/plan.md= § What plan does not do).
+
+** Execute, apart from O-EX-1 and O-EX-2
+- Merging as tasks land :: "Merges are not held for the batch." (=flows/execute.md= § 3). The reason given is waiting time on the record.
+- No scope by message :: "The orchestrator never adds scope to a running Implementor by message." (=flows/execute.md= § 1).
+- No polling :: "No polling, no =sleep=: when nothing can run, the orchestrator ends its turn and is woken by the hand-back." (=flows/execute.md= § 1).
+- A flagged choice with an unwritten reason :: "codify it as a comment, a test, or a seam row's statement — so the next reviewer doesn't flag it again" (=flows/execute.md= § Productive tension resolution).
+
+** The Implementor
+- Nearest statement :: "Produce a working diff that satisfies the task's verification commands and promotes the pending tests the task names." (=roles/implementor.md= § Responsibility statement). E7 has no outcome row for the role.
+- Rules found :: "committed to the worktree's branch with a single conventional commit" (=roles/implementor.md= § Output contract); "A sentence the work made untrue is fixed in the same commit." (=roles/implementor.md= § Output contract); "hand back one line, at most 200 characters, and nothing else" (=roles/implementor.md= § Hand-back); "Implement what the code actually needs." (=roles/implementor.md= § Reference material is for pressure-testing, not deference); "Must not silently expand scope on the in-progress task." (=roles/implementor.md= § Escalation contract).
+- Attached above :: its reporting of defects (O-NS-12), the promotion of pending tests (O-NS-5), =docs/= left alone (O-NS-1).
+
+** The Reviewer
+- Nearest statement :: "Render rigorous, substantive findings against one diff." (=roles/reviewer.md= § Responsibility statement); "A clean review is a valid outcome." (=roles/reviewer.md= § Responsibility statement).
+- The author-blind input :: "The Reviewer's input is strictly limited to" (=roles/reviewer.md= § Author-blind constraint); "it is the structural fix for sunk-cost and confirmation reasoning that LLMs exhibit when evaluating their own (or a documented) prior decisions" (=roles/reviewer.md=, opening); "Author-blind review is enforced at the harness level, not by discipline." (=SKILL.md= § Critical requirements). The reason is stated; what the user would notice is not. E9: =scripts/= holds no reviewer-spawn helper. On =state-layer= the last sentence is replaced by "Author-blind review is prose, kept by the execute agent."
+- Probes :: "nothing the probe writes enters the repository, and the scratch directory is deleted afterwards" (=roles/reviewer.md= § Probes).
+- What it cannot do :: "Apply inline fixes" (=roles/reviewer.md= § What the Reviewer cannot do); "Modify the task file" (=roles/reviewer.md= § What the Reviewer cannot do).
+- Attached above :: its reporting (O-NS-12), the whole-change review (O-NS-9).
+
+** The Architect
+- Nearest statement :: "The Architect designs the system that meets the spec, keeps that design true, and checks merged code against it." (=roles/architect.md=, opening).
+- Rules found :: "Three runs, no execute-time run." (=SKILL.md= § Roles); "Eight questions." (=roles/architect.md= § Design checklist); "one =| claim | at HEAD |= table per task with Holds or Wrong per claim, and a one-line verdict per task" (=roles/architect.md= § Premise check); "the routing, not the severity, decides whether a finding blocks" (=roles/architect.md= § Severity); "May not modify any other file, spawn agents, commit" (=roles/architect.md= § What the Architect may and may not do).
+- Attached above :: the design round (O-DR-1, O-DR-2, O-NS-6), conformance (O-IN-1), its reporting (O-NS-12).
+
+** The project manager
+- Nearest statement :: "The PM answers "is the change converging on its goal?"" (=roles/project-manager.md=, opening); "Produce the PM digest each cycle." (=roles/project-manager.md= § Responsibility statement). No source says what the user is to get from the digest.
+- Rules found :: "Counts come from the state file; never from the LLM." (=roles/project-manager.md=, opening); "The PM does not read code." (=roles/project-manager.md= § Input contract); "spawn an Architect conformance run scoped to the cluster of tasks doing the cascading" (=roles/project-manager.md= § 2. Follow-up cascade); "Cycle does not close until the digest exists with a non-empty =signals= section" (=roles/project-manager.md= § Cadence); "If the agent pass fails, the deterministic output remains and is recoverable." (=flows/integrate.md= § 3).
+- Attached above :: the goal-drift recommendation (O-NS-2).
+- On =state-layer= :: there is no PM digest and no gate requires one; the PM writes meta-discoveries and a goal-drift recommendation.
+
+** The state tool
+- Nearest statement :: none at the outcome level in this tree; the tool is described by its verbs and refusals. On =state-layer= the spec's Purpose states two: "Where does this change stand, and what comes next?" and "Is this really done?" (=docs/specs/state-layer.org= * Purpose, that branch). O-DP-2 and O-EX-1 are the nearest outcomes here.
+- Rules and mechanisms found :: "=state.json= is written only through =scripts/state.py=." (=SKILL.md= § Critical requirements); "Phase exit gates are mandatory." (=SKILL.md= § Critical requirements); "The tool owns the schema (unknown keys and long text are refused)" (=SKILL.md= § Critical requirements); "A call that cannot tell which change is meant refuses (=no_change=) and lists them." (=SKILL.md= § The dispatcher's loop); "every call writes it out in full, never through a shell variable" (=SKILL.md= § Two contexts). E1 B6.
+
+** Agent settings (every spawn point)
+- Nearest statement :: "Every spawned agent runs at a chosen agent setting, and the record says which and why" (=SKILL.md= § Critical requirements); "Quality first." (=SKILL.md= § Agent settings). The reason given is the record: an agent that inherits a setting runs at more, or less, than the work needs.
+- Rules found :: "Every =Agent= call passes both =model= and =effort=" (=SKILL.md= § Agent settings); "a task is moved only on a reason its own text gives" (=flows/plan.md= § 5); "a task that fails review or is reworked runs again at the setting it had" (=SKILL.md= § Agent settings).
+
+** Handing over at the context limit
+- Nearest statement :: "A phase agent near its context limit hands over to a fresh one." (=SKILL.md= § The dispatcher's loop). The reason is the record (phase agents past 400k and the users' request for a stop); attached to O-DP-1 as an inference only.
+- Rules found :: "Starts nothing new" (=flows/execute.md= § Handing over); "Reaches a clean point" (=flows/execute.md= § Handing over); "Writes the handover" (=flows/execute.md= § Handing over). E1 B8.
+
+** The machine agents share
+- Nearest statement :: "Other Implementors, Reviewers and test runs work on this machine at the same time" (=roles/implementor.md= § A machine shared with other agents). The record names harms the user saw (an Emacs window opened on the user's screen); no sentence states the outcome.
+- Rules found :: "Never stash" (=roles/implementor.md= § A machine shared with other agents); "No =git worktree prune=, no =git gc=" (=roles/implementor.md= § A machine shared with other agents); "only under the scratch directory your brief names" (=roles/implementor.md= § A machine shared with other agents); "sets work aside with a commit and never with =git stash=" (=flows/execute.md= § 8). E1 B10.
+
+** Who writes a task file, and provenance
+- Nearest statement :: "Only the orchestrator writes task files, by one procedure" (=externalisation.md= § Who writes a task file); "Provenance fields are mandatory on follow-up tasks." (=SKILL.md= § Critical requirements).
+- Note :: E7 (C6, rows PL2, EX20, IN8) read a tree where only plan writes task files and "Integrate writes no task text"; that sentence is not in this tree, where integrate § 7 is "integrate's one point for writing task files" (=flows/integrate.md= § 7) and execute § 5 and § 8 file follow-ups. E1 B12.
+
+** A code change takes one of three paths
+- Nearest statement :: "Every code change takes one of three paths" (=SKILL.md= § Critical requirements); "The orchestrator never edits the code directly, not to apply an ask's answer, not to add scope to a running task" (=SKILL.md= § Critical requirements). Attached to no outcome; the whole-change review "looks for" a change that bypassed review.
+
+** Decisions kept for the user
+- Nearest statement :: non-goal N5, "Taking decisions away from the user." (=north-star.org= * Non-goals). A non-goal, so no outcome is written from it; its second sentence is merged into O-NS-7.
+- Rules found :: "flag for user disposition; do not auto-close" (=flows/integrate.md= § 7); "The branch's merge to main is the user's" (=flows/integrate.md= § 9); "PM recommends; user decides." (=roles/project-manager.md= § Escalation contract); "Promotion back into the active change is the user's decision" (=SKILL.md= § Externalisation).
+
+** The user's standing rules (priors)
+- Nearest statement :: "A reply that states a general rule rather than a choice is also appended, in the user's words, to the overlay's =priors.md=" (=flows/integrate.md= § 3a); "The user's own words (a prior, an ask decision, an intent sentence) outrank a =design.org= sentence." (=SKILL.md= § Critical requirements). =overlay.md= § Priors was not read in full.
+
+** Integrate's other operations
+- Meta-discoveries :: "Per-cycle meta-discoveries surface in this digest and act on the next plan." (=flows/integrate.md= § 4). Attached to O-XC-1 through the handshake only.
+- Externalisation review :: "has the cross-cutting backlog grown to the point where a cluster should be promoted into the active change?" (=flows/integrate.md= § 6).
+- What integrate does not do :: "Integrate does not modify code." (=flows/integrate.md= § What integrate does not do).
+
+* Considered and left out
+
+** E7's 39 outcome rows, each accounted for
+
+| E7 row | Kept as, merged into, or left out |
+|--------+-----------------------------------|
+| NS1    | kept: O-NS-1                      |
+| NS2    | kept: O-NS-2                      |
+| NS3    | kept: O-NS-3                      |
+| NS4    | kept: O-NS-4                      |
+| NS5    | kept: O-NS-5                      |
+| NS6    | kept: O-NS-6                      |
+| NS7    | kept: O-NS-7                      |
+| NS8    | left out (below)                  |
+| NS9    | left out (below)                  |
+| NS10   | kept: O-NS-8 (its second sentence); its first merged into O-NS-7 |
+| NS11   | kept: O-NS-9                      |
+| NS12   | kept: O-NS-10                     |
+| NS13   | kept, in two: O-NS-11 and O-DP-1  |
+| NS14   | left out (below)                  |
+| NS15   | kept, in two: O-NS-12 and O-NS-13 |
+| NS16   | merged into O-NS-12               |
+| NS17   | merged into O-NS-2                |
+| NS18   | merged into O-NS-7                |
+| NS20   | merged into O-DR-2                |
+| NS23   | left out (below)                  |
+| NS24   | merged into O-NS-7                |
+| NS25   | merged into O-NS-3                |
+| DP5    | merged into O-XC-2                |
+| DP11   | kept: O-DP-4                      |
+| OP1    | kept: O-OP-1                      |
+| DR1    | kept: O-DR-1                      |
+| DR6    | kept: O-DR-2                      |
+| PL12   | kept: O-PL-1                      |
+| EX1    | kept: O-EX-1                      |
+| EX15   | merged into O-NS-13               |
+| IN1    | kept: O-IN-1                      |
+| IN12   | kept: O-IN-2                      |
+| IN14   | merged into O-NS-9                |
+| IN15   | kept: O-IN-3                      |
+| IN22   | kept: O-IN-4                      |
+| XC6    | merged into O-NS-13               |
+| XC11   | kept: O-XC-2                      |
+| XC13   | merged into O-NS-4                |
+| XC22   | kept: O-XC-1                      |
+
+Kept: 24. Merged into another: 11. Left out: 4.
+
+** Left out
+
+| E7 row | Statement                                                                                  | Why left out                                                                                                                                              |
+|--------+--------------------------------------------------------------------------------------------+-----------------------------------------------------------------------------------------------------------------------------------------------------------|
+| NS8    | "Practices are our own skills, built on what already exists." (G8)                         | About how the skills workspace builds its skills; nothing a cycle of =orchestrate= produces.                                                              |
+| NS9    | "A stable backbone for daily work. The skills' contracts change rarely and deliberately." (G9) | About how often the skill text is changed; not something =orchestrate= results in. E7 records its measure as failed when run once.                     |
+| NS14   | "The process measures itself." (G14)                                                       | About changes to a skill and their measures, the workspace's own process; this research effort is itself work toward it.                                  |
+| NS23   | "Every artifact names who consumes it, or it is not produced" (N4)                         | A non-goal ("Documents with no reader"); E7 records it as "not countable without new instrumentation"; no sentence in this tree's skill text states it.   |
+
+** Listed above though not among E7's 39 outcome rows
+
+| Outcome | E7 row and its level there         | Why listed                                                              |
+|---------+------------------------------------+-------------------------------------------------------------------------|
+| O-XC-3  | XC16, rule                         | The statement is about what the user reads.                             |
+| O-DP-2  | DP8, mechanism; DP9, rule          | The user sees which phase a session takes up.                           |
+| O-DP-3  | DP4, rule                          | It is what reaches the user; the record says the users asked for it.    |
+| O-EX-2  | EX3, rule                          | The stop and the ask reach the user.                                    |
+| O-IL-1  | none (IL1, IL2 and IL6 are rules)  | The inline path's own opening sentence; the part of NS13 seen at one step. |
+
+Each of these five is the drafter's reading of the agreed definition of an outcome and is for the user to keep or strike.
+
+* Words wanted
+
+Things this draft needed a word for and has none in the agreed vocabulary; a plain phrase was used.
+
+- An outcome that is the part of a wider outcome seen at one step (O-IN-2 and O-PL-1 under O-NS-4; O-IL-1 under O-NS-11; O-DR-1 under O-NS-5). Written here as "a part of ... seen at one step".
+- The link from a rule to its outcome, and from an outcome to its goal. Written here as "traced" and "the link"; the research brief's own verb.
+- The line under each north-star goal that says how one would know it holds. Written here as the goal's "Know it by" line, the north star's label.
+- A statement E7 listed as a rule or a mechanism that this draft lists as an outcome. Written here as "not one of E7's 39 outcome rows ... listed here because".
+- The tree of skill text a list describes (a branch at a commit). Written here as "this tree" and "the =state-layer= tree".
+- An agent that reports a defect, whichever role it has. The north star says "reporters"; written here as "each reporting role".
+- A group of rules that crosses the parts of the process and has no outcome (agent settings, the shared machine, the three paths). Listed under * Parts with no stated outcome as if each were a part.
+
+* Counts
+
+| What                                                              | Count |
+|-------------------------------------------------------------------+-------|
+| Outcomes                                                          |    31 |
+| Across the whole change (O-NS 13, O-XC 3)                         |    16 |
+| The dispatcher                                                    |     4 |
+| Opening a change                                                  |     1 |
+| The design round                                                  |     2 |
+| Plan                                                              |     1 |
+| Execute                                                           |     2 |
+| Integrate                                                         |     4 |
+| The inline path                                                   |     1 |
+| The Implementor, the Reviewer, the Architect, the project manager, the state tool | 0 |
+| Observable at one step                                            |    18 |
+| Observable only across several steps                              |    13 |
+| With a north-star goal stated (the source is the goal's own text) |    14 |
+| With a goal inferred                                              |     9 |
+| With no goal stated                                               |     8 |
+| With a RECORD entry                                               |    10 |
+| That differ on =state-layer=                                      |     6 |
+| With no rule found                                                |     1 |
+| Not among E7's 39 outcome rows                                    |     5 |

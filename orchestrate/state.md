@@ -38,7 +38,7 @@ Run `state.py status` before anything else in a session, in the dispatcher and i
 | `counts [--write]` | The PM deterministic pass: counts, ratios, by-status, history, critical-path readout, class table, follow-ups by source, fired signals, and `agents` (§ Agent entry: spend by role from the agents' transcripts, and the quality signals beside it). `--write` saves `cycles/<id>/pm-signals.json`. |
 | `context <agent-id>` | A running agent's context: the tokens of the last call in its transcript (`$CLAUDE_CONFIG_DIR` or `~/.claude`, `projects/*/*/subagents/agent-<id>.jsonl`; a unique prefix of the id will do), against the overlay's `thresholds.phase-agent-context` (default 400000), with `over`. The dispatcher's reading (`SKILL.md` § The dispatcher's loop). Refuses `no_transcript`, `ambiguous_agent`. Needs no state. |
 | `handshake [--meta-discoveries <json\|@file>] [--task-refinements <json\|@file>] [--design-diff <json\|@file>]` | Assembles `handshake-<cycle-id>.json` from state (asks, goal-drift decisions, digest path), the design diff (read from `cycles/<id>/design-diff.json` unless given), the candidate tasks (read from `cycles/<id>/candidate-tasks.json`; `bad_candidate_tasks` when one does not fit or a finding's `candidate-task-<name>` has none) and the two judgment fields, and validates it. |
-| `close [--abandon --why "<reason>"]` | Archives state and handshake to `cycles/<id>/` and marks the cycle closed. Requires the integrate gate unless abandoning. Reports `inbox_left` (open, answered, deferred); those files stay in the inbox for the next `init`. |
+| `close [--abandon --why "<reason>"]` | Archives state and handshake to `cycles/<id>/` and marks the cycle closed. Requires the integrate gate unless abandoning; an abandoned close records a `deviation` journal entry, "cycle abandoned: <why>", in the state it archives. Reports `inbox_left` (open, answered, deferred); those files stay in the inbox for the next `init`. |
 
 Every verb prints JSON. A refusal is `{"ok": false, "error": "<slug>", "message": …}` on stderr, exit 1. The rules the tool enforces:
 
@@ -151,7 +151,7 @@ The state record is the index line; the finding file (`templates/architect-findi
 ```json
 {
   "finding_id": "arch-<cycle-id>-<seq>",
-  "trigger": "premise-check | conformance",
+  "trigger": "premise-check | conformance | design-round",
   "kind": "issue | question",
   "severity": "high | medium | low",
   "class": "shape-fragmentation | vocabulary-mismatch | responsibility-leakage | dead-branch | interface-drift | mutation | invariant-gap | duplication",
@@ -180,7 +180,7 @@ Every question to the user, whichever role raised it, is one org file (`template
   "kind": "decision | doc-correction | process | environment | confirmation",
   "status": "open | answered | applied | deferred | declined | superseded",
   "blocks": [],
-  "path": ".orchestrator/changes/<change>/inbox/<id>.org | .orchestrator/cycles/<cycle-from-id>/asks/<id>.org"
+  "path": ".orchestrator/changes/<change>/inbox/<id>.org | .orchestrator/changes/<change>/cycles/<cycle-from-id>/asks/<id>.org"
 }
 ```
 
@@ -330,8 +330,8 @@ Computed by `gate check` from state and the files on disk: all of execute's chec
 `status` on a missing, legacy or invalid state file says which, and the orchestrator does not invent state:
 
 1. Older schema (`1.0` to `1.4`): `validate` shows the migration plan; `migrate` converts it, renames `repo_root` to `home` (an old value that differs from the home is parked under `parked.top_level` and reported as `rehomed_from`) and adds `code_root`, writes `.orchestrator/.gitignore` when absent, renames `cites_register_entries` to `cites_seams`, maps old finding triggers to the current two (the original kept as `_legacy_trigger` in the extras), turns a finding's old `observed` and `severity` into `kind` (`happened: false` is a `question`, anything else an `issue`), `evidence` and, for a `blocking` one, `decoration: blocking` (the old values kept in the extras; such a finding's routing is redone at its next integrate), writes every ask record as a file (open ones into the inbox, resolved ones under their cycle's `asks/`; a file already there is left alone, so the verb can be rerun), parks every other non-schema key and field, `register_touched` included, in `cycles/<id>/legacy-state-extras.json` (nothing is deleted) and keeps a `state.json.pre-migrate-<ts>` backup. A cycle migrated while at integrate re-runs `handshake` before `gate pass integrate`, since the handshake it wrote earlier carries the old field.
-2. Invalid current-schema file (someone wrote it by hand): `validate` lists the offending keys; fix them by hand, then continue through the tool.
-3. Missing file mid-cycle: restore `cycles/<cycle-id>/state.json` if an archive exists for the cycle; otherwise ask the user whether to recover or to abandon the cycle. This is an `environment`-kind ask (`templates/ask.md`): the blocking call, at once, since there is no state file to index an ask file.
+2. Invalid current-schema file (someone wrote it by hand): `validate` lists the offending keys; fix only those keys by hand, record it with `state.py note deviation "state repaired by hand: <keys>"`, then continue through the tool. This is the one hand edit of the state file allowed.
+3. Missing file mid-cycle: restore `cycles/<cycle-id>/state.json` if an archive exists for the cycle; otherwise ask the user whether to recover or to abandon the cycle. This is an `environment`-kind ask (`templates/ask.md`): the blocking call, at once, and a file in the inbox whose id names the change, since there is no state file to index it; the next state indexes it.
 4. An ask file and its index entry disagree (`validate` and `inbox` say how): a hand-edited `:STATUS:` is reconciled by `record set asks <id> status=<that value>`; a deleted drawer is restored by any `record set`; a file missing from its `path` is restored from git; a file in the inbox with no index entry is carried in by the next `init` or indexed now with `record add asks @<path>`.
 5. Never silently start a new cycle — `init` refuses while a cycle is open; `close --abandon --why` is the explicit way out.
 6. The one-change layout (a `state.json` at `.orchestrator/` itself, with `cycles/`, `inbox/` and the handshakes beside it, from before `changes/<change>/`): `where` and `status` say `legacy_layout`; `migrate` moves it all under `.orchestrator/changes/<change-name>/`, rewrites the paths in the state file and the handshakes, writes `change.json` adopting the old code root on its branch, then runs the schema migration if one is due. The task files were already under `changes/<change>/tasks/` and do not move.

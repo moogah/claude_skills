@@ -6,12 +6,12 @@ Reporting and routing are separate steps, done by different agents. The agent th
 
 ## Form
 
-Architect findings go in `<change-dir>/cycles/<cycle-id>/findings/<finding-id>.md`; the state file's `architect_findings` array carries the index fields in JSON form (`state.md`).
+Architect findings go in `<change-dir>/cycles/<cycle-id>/findings/<finding-id>.md` (a design-round finding, made before any cycle, in `<change-dir>/findings/<finding-id>.md`); the state file's `architect_findings` array carries the index fields in JSON form (`state.md`).
 
 ```yaml
 ---
-finding_id: arch-<cycle-id>-<seq>
-trigger: premise-check | conformance
+finding_id: arch-<cycle-id>-<seq>   # at the design round, before any cycle: arch-<change>-<seq>
+trigger: premise-check | conformance | design-round
 kind: issue | question                      # § Kind
 severity: high | medium | low               # § Kind
 class: shape-fragmentation | vocabulary-mismatch | responsibility-leakage
@@ -22,6 +22,7 @@ discovered_by: architect
 discovered_at: <iso-ts>
 seam: <seam/<name> this finding is about, if any>
 evidence: <the line, the run, the output or the shipped sentence; for a question, the reasoning and the reproduction to try>
+blocks: <task <name> | merge | next-plan | done | nothing>   # what waits on it; the premise check settles before batch_composed one that names a batch task
 decoration: blocking | hardening            # written by the orchestrator's routing (§ Routing), not by the Architect
 ---
 

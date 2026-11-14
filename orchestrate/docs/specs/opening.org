@@ -1,0 +1,342 @@
+#+TITLE: opening
+#+OPTIONS: ^:{} -:nil
+#+STATUS: draft 2026-11-13, extracted from the reference skill (=main= =e356da7=); nine gaps opened; at the hand-off review 2026-11-13: G8 applied (the path's root, a revision's line); the unnamed repository, a taken name, a failed opening, the second change, the research hand-off, the split's old change and the revision's approval filled; no gap open; accepted 2026-11-13 by the user at the hand-off review; amended 2026-11-14 after acceptance (the intent's status line named; the scenarios the hand-back counts; lines for covered work and an adopted change; a taken name the agent chose marked not test-worthy), from the evals' build-out (=research/skill-evals/overnight/plan.org= § Decided with the user, 2026-11-14 morning)
+
+* Purpose
+
+Opening turns what the user asked for into a change the design round can take: the change's
+intent and its edits to the specs, written from the user's words (or from items of the cross-change backlog, or from
+a goal-drift answer) and committed in the change's code root, on an integration branch of its own.
+It also revises a change in place when the user's answer calls for new goals. It reads no code and
+writes no design and no task, and it asks the user nothing: its open questions and its new terms
+wait in the intent for the design round's sitting, which is also where the user approves the goals.
+It hands the dispatcher one line.
+
+* Requirements
+
+** Requirement: Opening writes a change only where the user has not
+:PROPERTIES:
+:GOAL:     G1 (inferred, from O-OP-1)
+:END:
+Opening SHALL write a change's intent and spec edits only when the user has not written them, and
+SHALL open no change for work that a task of an open change covers.
+
+*** Scenario: A change the user wrote is left as written
+- *WHEN* the user has committed a change's intent and its spec edits themselves
+- *THEN* no =Open: <change>= commit is made for the change
+- *AND* the intent and the spec edits are as the user wrote them
+
+*** Scenario: A change opened by hand is adopted as it is
+- *WHEN* the user opened a change by hand, its intent already committed on a branch of its own
+- *THEN* that branch is the change's integration branch
+- *AND* no intent and no spec edit is written for the change
+- *AND* the dispatcher receives one line of at most 200 characters, =adopt <change>; = followed by the intent's path relative to the home
+
+*** Scenario: Work an open change's task covers opens no change
+- *WHEN* the user asks for work that a task of an open change already covers
+- *THEN* no change is opened for it
+- *AND* the dispatcher receives one line of at most 200 characters, =open: covered by <change>, task <task>; <task file>=, the path relative to the home
+
+** Requirement: A new change is named, placed in one repository and started from a written base
+:PROPERTIES:
+:GOAL:     G1 (inferred, from O-OP-1)
+:END:
+Opening SHALL give a new change a name not yet used in its repository, place the change in exactly
+one repository, and start its integration branch, named for the change, from the commit the
+repository is at or from the ref it is given; the intent SHALL carry that commit as the change's
+base.
+
+*** Scenario: A change takes the name the user gives it
+- *WHEN* the user names the change
+- *THEN* the change, its integration branch and its documents' directory =docs/changes/<change>/= carry that name
+
+*** Scenario: An unnamed change is named for its outcome
+- *WHEN* the user gives the change no name
+- *THEN* its name is a kebab-case phrase naming the outcome the change is for
+
+*** Scenario: A new change's name is new to its repository
+- *WHEN* a new change is opened
+- *THEN* =docs/changes/<change>/= did not exist in its repository before the opening
+
+*** Scenario: A name the agent chose that is taken is changed to an unused one
+:PROPERTIES:
+:TEST: none: the name is the agent's own choice, so no fixture can make the name it chooses be taken
+:END:
+- *WHEN* the change's name is the opening agent's own and =docs/changes/<change>/= already exists in the repository
+- *THEN* the change is given another name, not yet used
+- *AND* the hand-back names the change by the name it was given
+
+*** Scenario: A name the user gave that is taken fails the opening
+- *WHEN* the user named the change and =docs/changes/<change>/= already exists in the repository, and the change is not being revised in place
+- *THEN* opening hands back =open: failed, name taken: <change>=
+- *AND* it creates no branch and writes nothing
+
+*** Scenario: A home with one repository opens the change in it
+- *WHEN* the home holds one repository
+- *THEN* the change belongs to that repository
+
+*** Scenario: The repository the user names takes the change
+- *WHEN* the user's words name one of the home's repositories
+- *THEN* the change belongs to that repository
+
+*** Scenario: With several repositories and none named, opening asks which
+- *WHEN* the home holds several repositories and the user's words name none of them
+- *THEN* opening hands back =open: failed, which repository: <the repositories>=
+- *AND* it creates no branch and writes nothing
+
+*** Scenario: Work that needs two repositories is two changes
+- *WHEN* what the user asks for needs two repositories
+- *THEN* two changes are opened, one in each repository
+- *AND* the second change's intent names the first in its Why
+
+*** Scenario: Each opening opens one change, and names the second when there is one
+- *WHEN* what the user asks for needs two repositories
+- *THEN* the opening opens the first change only
+- *AND* its hand-back line ends =; second change: <repository>=
+
+*** Scenario: The integration branch starts from the repository's current commit
+- *WHEN* a change is opened and no ref is given to start it from
+- *THEN* its integration branch starts from the commit its repository is at
+
+*** Scenario: A change after research starts from the research's workspace integration branch
+- *WHEN* the research skill's hand-off made a workspace integration branch for the change
+- *THEN* the change's integration branch starts from that workspace integration branch
+
+*** Scenario: The intent carries the change's base
+- *WHEN* a change is opened
+- *THEN* the intent's =#+BASE:= line names the commit the change's integration branch started from
+
+** Requirement: Opening works from the user's words, never from the code
+:PROPERTIES:
+:GOAL:     G1 (inferred, from O-OP-1)
+:END:
+Opening SHALL write the intent and the spec edits without reading the code; a claim the user makes
+about the code SHALL reach the intent as the user states it, for the design round to check.
+
+*** Scenario: Opening reads no code
+- *WHEN* a change is opened
+- *THEN* the opening phase agent reads no file of the code
+
+*** Scenario: A claim about the code reaches the Why as stated
+- *WHEN* the user's words make a claim about the code
+- *THEN* the intent's Why states the claim as the user's words state it
+
+** Requirement: The spec edits state what is observed, in place
+:PROPERTIES:
+:GOAL:     G1 (inferred, from O-OP-1)
+:END:
+Opening SHALL edit the specs in place, in the spec form: each behaviour the change adds or alters
+as a requirement whose scenarios state what a user, an operator or a caller observes, and nothing
+of how it is built. It SHALL keep every existing title, and SHALL give each removal's reason in the
+intent.
+
+*** Scenario: An added or altered behaviour is a requirement with observable scenarios
+- *WHEN* the change adds or alters a behaviour
+- *THEN* the spec of its capability holds a requirement stating what =The <subject> SHALL= do
+- *AND* its scenarios state what a user, an operator or a caller observes: the input and the output, the file left behind, the message shown
+
+*** Scenario: A scenario names no symbol, guard or encoding
+- *WHEN* opening writes a scenario
+- *THEN* the scenario names no symbol, guard or encoding of the code
+
+*** Scenario: The specs are edited in place
+- *WHEN* opening edits a capability's spec
+- *THEN* it edits that capability's file under =docs/specs/=, in the spec form
+- *AND* it writes no separate file of changes to the spec
+
+*** Scenario: A new capability is a new spec file
+- *WHEN* the change adds a capability no spec states
+- *THEN* a new spec file under =docs/specs/= holds it
+
+*** Scenario: A broken behaviour the spec states rightly is named, not edited
+- *WHEN* the user reports broken a behaviour that a spec already states rightly
+- *THEN* that spec's scenario is not edited
+- *AND* the intent's Capabilities names the scenario as =stated, not met=
+
+*** Scenario: A change from a research hand-off names the hand-off's scenarios
+- *WHEN* opening runs on a research hand-off, its change cut from the hand-off's workspace integration branch
+- *THEN* the intent's Capabilities names, one line each, every scenario the hand-off's spec edits added or changed for the change, as =stated, not met=
+- *AND* the intent carries no =#+APPROVED:= line until the user approves its goals
+
+*** Scenario: A removed behaviour is deleted and its reason given
+- *WHEN* the change removes a behaviour
+- *THEN* its requirement or scenario is deleted from the spec
+- *AND* the intent's Removals names it with the reason it goes
+
+*** Scenario: Existing titles are kept
+- *WHEN* opening edits a spec
+- *THEN* no existing requirement or scenario title is renamed
+
+** Requirement: The intent states why the change exists and what it commits to
+:PROPERTIES:
+:GOAL:     G1 (inferred, from O-OP-1); G2 (from O-NS-2)
+:END:
+Opening SHALL write the change's intent in the intent form, with status =speculated=: why the change
+exists in the user's terms, its goals and non-goals, the capabilities it touches, and its removals
+and new terms when it has them, in the glossary's terms. It SHALL leave the approval of the goals
+and the agreement of new terms to the user.
+
+*** Scenario: The intent is written with status speculated
+- *WHEN* a change is opened
+- *THEN* its intent is =docs/changes/<change>/intent.org= in the change's code root
+- *AND* its status line, the line =#+STATUS:=, is =speculated=; every later status the specs give the intent is written on that line
+
+*** Scenario: The Why quotes the user
+- *WHEN* a change is opened from the user's words
+- *THEN* the intent's Why says what prompted the change in the user's terms, quoting their words
+
+*** Scenario: The intent states its goals, non-goals and capabilities
+- *WHEN* a change is opened
+- *THEN* its intent has a Why, Goals, Non-goals and Capabilities
+- *AND* it has Removals, New terms and Open Questions only when each has an entry
+
+*** Scenario: Capabilities names each spec the change edits
+- *WHEN* the change edits a capability's spec
+- *THEN* the intent's Capabilities names that capability
+
+*** Scenario: The intent and the spec edits use the glossary's terms
+- *WHEN* the intent or the spec edits name a thing the glossary has a term for
+- *THEN* they use the glossary's term
+
+*** Scenario: A term the glossary lacks is listed for agreement
+- *WHEN* the intent or the spec edits use a domain term the glossary does not have
+- *THEN* the intent's New terms lists it with what it is, an example from the user's own use and the words to avoid
+
+*** Scenario: Opening leaves the glossary as it is
+- *WHEN* a change is opened
+- *THEN* the glossary is not changed
+
+*** Scenario: An opened intent awaits the user's approval
+- *WHEN* opening writes an intent
+- *THEN* the intent carries no =#+APPROVED:= line
+
+** Requirement: A question left to the user waits in the intent
+:PROPERTIES:
+:GOAL:     G1 (inferred, from O-OP-1)
+:END:
+Opening SHALL write each question the user's words leave to the user, and the spec text depends on,
+as an open question in the intent, with its options and a recommendation the spec is written to;
+it SHALL write none for a case the user never raised, and SHALL put no question to the user.
+
+*** Scenario: A question the spec depends on is an open question
+- *WHEN* the user's words leave to the user a question the spec text depends on
+- *THEN* the intent's Open Questions holds it: the question in plain terms, two to four options each with the consequence the user would notice, a recommendation and why, and the requirements and scenarios it affects
+
+*** Scenario: The spec is written to the recommendation
+- *WHEN* the intent holds an open question
+- *THEN* the spec text is written in the form its recommendation implies
+- *AND* the open question says so
+
+*** Scenario: An open question says nothing of how to build
+- *WHEN* the intent holds an open question
+- *THEN* the open question says nothing about how the change is to be built
+
+*** Scenario: A case the user never raised is no open question
+- *WHEN* a question concerns a case the user's words never raised
+- *THEN* the intent's Open Questions does not hold it
+
+*** Scenario: Opening asks the user nothing
+- *WHEN* a change is opened
+- *THEN* no ask is filed for the change while the opening runs
+- *AND* its open questions wait in the intent for the design round's sitting
+
+** Requirement: Opening ends in one commit in the code root and one line
+:PROPERTIES:
+:GOAL:     G1 (inferred, from O-OP-1)
+:END:
+Opening SHALL commit the intent and the spec edits in the change's code root in one commit, after
+checking that every scenario the intent names exists; it SHALL commit nothing in the home, write no
+design and no task, and hand the dispatcher one line.
+
+*** Scenario: One commit holds the intent and the spec edits
+- *WHEN* opening completes
+- *THEN* one commit in the change's code root, subject =Open: <change>=, holds the intent and the spec files the change edits, and no other file
+- *AND* its message carries the coverage summary of the change's scenarios
+
+*** Scenario: Every scenario the intent names exists
+- *WHEN* opening commits
+- *THEN* every scenario the intent names matches a scenario of the specs
+
+*** Scenario: Opening commits nothing in the home
+- *WHEN* opening completes
+- *THEN* the home has no commit made by the opening
+
+*** Scenario: An item of the cross-change backlog taken up is named, and left as it is
+- *WHEN* a change is opened from items of the cross-change backlog
+- *THEN* the intent's Why names each item by its path
+- *AND* each item's file is unchanged
+
+*** Scenario: Opening writes no design and no task
+- *WHEN* opening completes
+- *THEN* the change has no =design.org=
+- *AND* no task file has been written for it
+
+*** Scenario: The hand-back names the change, its counts and the intent
+- *WHEN* opening completes
+- *THEN* the dispatcher receives one line of at most 200 characters, =open <change>: <c> capabilities, <s> scenarios, <q> open questions; = followed by the intent's path
+
+*** Scenario: The hand-back's intent path is relative to the home
+- *WHEN* opening hands back that it completed
+- *THEN* the intent's path in the line is relative to the home, through the change's code root
+
+*** Scenario: A revision hands back a line of its own
+- *WHEN* opening revises a change in place
+- *THEN* the dispatcher receives one line of at most 200 characters, =revise <change>: <c> capabilities, <s> scenarios, <q> open questions; = followed by the intent's path relative to the home
+
+*** Scenario: The hand-back's counts are the intent's
+- *WHEN* opening hands back that it completed
+- *THEN* the line's capabilities are the number the intent's Capabilities names, its scenarios the number of scenarios the change's spec edits add or change together with those the intent names =stated, not met=, a scenario it deletes not counted, and its open questions the number of the intent's open questions
+
+*** Scenario: A failed opening says why
+- *WHEN* opening cannot complete
+- *THEN* the dispatcher receives the line =open: failed, <why>=
+
+*** Scenario: A failed opening leaves nothing behind
+- *WHEN* opening hands back =open: failed=
+- *THEN* the repository has no branch or worktree the opening made
+- *AND* no change of that name exists in the home, and nothing the opening wrote is left uncommitted or committed
+
+** Requirement: A change is revised in place, or split, from the user's answer
+:PROPERTIES:
+:GOAL:     G2 (from O-NS-2)
+:END:
+On the user's =rethink= on the MVP decision or =revise= on a goal-drift ask, opening SHALL revise the
+change in place: rewrite its goals, non-goals and spec edits from the answer, keep the prior goals
+in the intent, and return the status to =speculated=, keeping the change's name, branch and base.
+On =split= it SHALL open a new change that names the one it came from.
+
+*** Scenario: A revised change keeps its name, branch and base
+- *WHEN* the user answers =rethink= on the MVP decision or =revise= on a goal-drift ask
+- *THEN* the change keeps its name, its integration branch, its code root and its intent's =#+BASE:=
+
+*** Scenario: A revision rewrites the goals and the spec edits from the answer
+- *WHEN* a change is revised on the user's answer
+- *THEN* its Goals, Non-goals and spec edits are rewritten from the answer
+
+*** Scenario: A revision keeps the prior goals under Status
+- *WHEN* a change is revised on the user's answer
+- *THEN* the prior Goals are quoted under the intent's =* Status=
+- *AND* the status line is =speculated= again
+
+*** Scenario: A revision removes the goals' approval
+- *WHEN* a change is revised on the user's answer
+- *THEN* the intent has no =#+APPROVED:= line, so the design round's sitting asks the user to approve the rewritten goals
+
+*** Scenario: A revision is one commit Revise
+- *WHEN* a revision completes
+- *THEN* the change's code root has a commit with subject =Revise: <change>=
+
+*** Scenario: A split opens a new change that names the old
+- *WHEN* the user answers =split= on a goal-drift ask
+- *THEN* a new change is opened from the old intent and the answer
+- *AND* the new intent's Why names the change it came from
+
+*** Scenario: A split's opening names the old change for revision
+- *WHEN* opening opens a new change on a =split= answer
+- *THEN* it leaves the old change's intent as it was
+- *AND* its hand-back line ends =; revise: <old change>=
+
+* Gaps
+
+No gap open. The nine this draft had were filled 2026-11-13 at the hand-off review
+(=research/skill-evals/extraction/opening.org= § Gap decisions).

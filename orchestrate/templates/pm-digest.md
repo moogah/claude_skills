@@ -1,6 +1,6 @@
 # PM digest template
 
-The PM digest is **scannable**, **action-oriented**, and **ends with the asks triage table** (which may be empty). Three buckets: *facts* (counts), *signals* (interpretation), *asks* (the questions the cycle raised, per `templates/ask.md`).
+The PM digest is **scannable**, **action-oriented**, and carries the asks triage table (which may be empty) after its signals, in the order of the form below. Three buckets: *facts* (counts), *signals* (interpretation), *asks* (the questions the cycle raised, per `templates/ask.md`).
 
 The structure is fixed; the contents are derived. Every count traces to a state-file field; counts never come from the LLM. Only the prose framing the signals and asks is agent-generated.
 
@@ -44,10 +44,10 @@ drainage         1.00       0.83       0.50       0.57       0.45  ⚠ trending 
 Spend by role (this cycle's agents recorded when `counts` ran; this integrate's own phase agent and this PM, recorded later, appear under this cycle in the next digest's history)
 
 ```
-role                   agents  setting(s)                 cost wt  share   per agent  priced wt  usd    E3 share  E3 per agent
-phase-execute             1    sonnet/high                  1.42M  21.0%      1.42M      0.71M   3.10     17.9%       1.61M
-implementor               5    opus/medium 4, sonnet/high 1 1.60M  23.7%      0.32M      1.44M   6.40     13.5%       0.35M
-reviewer-task             5    opus/high                    1.50M  22.2%      0.30M      1.50M   6.20     12.6%       0.31M
+role                   agents  setting(s)                 cost wt  share   per agent  priced wt  usd
+phase-execute             1    sonnet/high                  1.42M  21.0%      1.42M      0.71M   3.10
+implementor               5    opus/medium 4, sonnet/high 1 1.60M  23.7%      0.32M      1.44M   6.40
+reviewer-task             5    opus/high                    1.50M  22.2%      0.30M      1.50M   6.20
 ...
 not counted: 1 agent with no transcript (a1b2…); ran at another setting: none
 ```
@@ -61,7 +61,7 @@ sonnet/high        1        0            0               1   ⚠ t3-later, again
 whole change       -        -            -               1
 ```
 
-◦ **AGENT SETTINGS**: <one line: spend against the history and E3, read beside the quality signals; a setting the transcripts contradict>
+◦ **AGENT SETTINGS**: <one line: spend against the history window, read beside the quality signals; a setting the transcripts contradict>
 
 ## Signals
 
@@ -83,6 +83,8 @@ whole change       -        -            -               1
 | 1 | Should a video you fetch by hand be added to the archive? | — | Do nothing to the code | `<change-dir>/inbox/ask-cycle-N-9.org` |
 | 2 | Keep working through the refactor batch, or return to the critical path first? | next-plan | Return to the critical path | `<change-dir>/inbox/ask-cycle-N-3.org` |
 
+Every open ask other than a `process` ask has a row; a `process` ask is counted on the Process notes line below, never listed. A candidate question the PM raised has its row too, its File column `not yet filed`; the phase agent writes its file.
+
 Answer in the file's `* Answer` section (paths are relative to the home), or in chat.
 Applied without asking: 3 (`cycles/<cycle-id>/asks/`). Process notes: 1 (inbox).
 Findings: 3 issues, 1 question; on the hardening list: 2 (`.orchestrator/changes/<change>/hardening.org`).
@@ -99,32 +101,15 @@ Findings: 3 issues, 1 question; on the hardening list: 2 (`.orchestrator/changes
 ## Goal-drift check
 
 - Critical-path completion ratio: 4/11 = 0.36, stagnant for K=5 cycles while non-critical-path completions continue at ~5/cycle.
-- **Recommendation**: <none | revise | split | abandon> — <one-line reason>
+- **Recommendation**: <none | revise | split | abandon | continue> — <one-line reason>
 ```
 
-## Agents: reading spend against E3
+## Agents: reading spend against the history
 
-The section shows whether the agent settings (`SKILL.md` § Agent settings) cut spend where the work is routine without costing quality (research `agent-model-effort`, R2, at `~/emacs-workspaces/claude-skills/research/agent-model-effort/brief.org`). The baseline is E3 (`evidence/e3-orchestrate-spend.org` there): the two sessions of 2026-10-22/23, 177 agents, every one inheriting the dispatcher's Opus 5.5 (some Fable 5.1) at `medium` or `high`. Its columns, in E3's cost weight (input + 0.1 × cache read + 1.25 × cache write + 5 × output, model-blind):
+The section shows whether the agent settings (`SKILL.md` § Agent settings) cut spend where the work is routine without costing quality (research `agent-model-effort`, R2). Every number in it is one the record's counts give (`state.py counts`): this cycle's agents and the history window's (`project-manager` § Every number in the digest comes from the change's record). A baseline from outside the record (the research's E3 sessions) is not shown in the digest; it stays in the research, for people reading the digest beside it.
 
-| role | E3 agents | E3 share | E3 per agent |
-|---|---|---|---|
-| phase-execute | 12 | 17.9% | 1.61M |
-| implementor | 42 | 13.5% | 0.35M |
-| reviewer-task | 44 | 12.6% | 0.31M |
-| phase-plan | 14 | 9.2% | 0.71M |
-| phase-integrate | 8 | 9.0% | 1.21M |
-| architect-design | 6 | 7.8% | 1.40M |
-| dispatcher (not an agent; not recorded) | 2 | 7.1% | 3.83M |
-| reviewer-whole-change | 8 | 6.9% | 0.93M |
-| architect-conformance | 8 | 4.7% | 0.63M |
-| architect-premise | 7 | 4.5% | 0.70M |
-| phase-design | 6 | 2.4% | 0.43M |
-| pm | 8 | 1.9% | 0.25M |
-| implementor-rework | 5 | 1.6% | 0.35M |
-| phase-open | 5 | 0.7% | 0.15M |
-
-- **Compare per agent, and in priced weight.** Shares move whenever one role's spend does, and the cost weight ignores the model, so a role moved from Opus to Sonnet shows its saving in `priced_weight` (the weight scaled by the model's price against Opus's), not in `cost_weight`. E3's runs were nearly all Opus, so its cost weight stands for its priced weight; its Fable requests make that an understatement of E3's spend. `usd` is list price; E3 has no dollar baseline.
-- **Quality first.** Spend is read beside the quality table: a role or a setting whose spend fell while its rejections, rework tasks or defects found after done rose is the line to write. E3 records none of the three, so their baseline is the history window from the first cycle recorded.
+- **Compare per agent, and in priced weight.** Shares move whenever one role's spend does, and the cost weight ignores the model, so a role moved from Opus to Sonnet shows its saving in `priced_weight` (the weight scaled by the model's price against Opus's), not in `cost_weight`. `usd` is list price.
+- **Quality first.** Spend is read beside the quality table: a role or a setting whose spend fell while its rejections, rework tasks or defects found after done rose is the line to write; the baseline is the history window from the first cycle recorded.
 - **What the PM writes**: one `◦ AGENT SETTINGS` line, or `⚠` when a quality count rose where spend fell, or when `setting_mismatches` lists an agent (an environment variable outranked the call, so the record does not say what ran). The PM proposes no change to a setting; a setting is changed in the skill or by a task override, by people reading this.
 
 ## Signal symbols

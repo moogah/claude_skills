@@ -1,0 +1,247 @@
+#+TITLE: inline-path
+#+OPTIONS: ^:{} -:nil
+#+STATUS: draft 2026-11-13, extracted from the reference skill (=main= =e356da7=); at the hand-off review 2026-11-13: G7, G8 and G9 applied; the task file's source, the open cycle, the commit subject and the triage's refusal filled; no gap open; accepted 2026-11-13 by the user at the hand-off review; amended 2026-11-14 after acceptance (one commit when the home is the code root; a batch task the triage refuses; a refused request that also questions the design; three scenarios marked not test-worthy), from the evals' build-out (=research/skill-evals/overnight/plan.org= § Decided with the user, 2026-11-14 morning); amended 2026-11-14 after acceptance (a defect the design already plans is not exposed), from the user's decisions on round 2 of the evals (=research/skill-evals/round-2/plan.org= § Log › Decisions needed)
+
+* Purpose
+
+The inline path makes one small change the user asks for between cycles, such as a one-line edit, a
+one-file doc fix or one config value, at a small fixed cost: one phase agent, spawned by the
+dispatcher, triages it, edits and verifies it in the code root, reviews it itself, asks what the
+edit exposed, and commits; no worktree, no Implementor and no Reviewer. When the edit turns out
+larger than its triage allowed, the inline path bails out and puts the task back for a later
+cycle's batch. It is one of the three ways a code change is made, beside a batch task and the
+execute phase's inline fix; it is not the inline fix, which the execute phase agent makes inside a
+cycle for a finding, a discovery or a regression, although the inline fix's test of a simple fix is
+this path's triage. The inline path writes no new task and runs no plan, execute or integrate phase.
+
+* Requirements
+
+** Requirement: A small change is made by one phase agent, without a worktree, an Implementor or a Reviewer
+:PROPERTIES:
+:GOAL:     G13 (O-NS-11's; O-IL-1's link to it is the outcome list's reading)
+:END:
+The inline path SHALL make its edit in the code root, with no task worktree, and SHALL spawn no
+Implementor and no Reviewer: its phase agent reviews its own edit. The task SHALL go from open to
+done with no review step between, and the code and the task file SHALL be committed together.
+
+*** Scenario: The inline path writes its own task file from the request
+- *WHEN* the inline path runs on the user's request
+- *THEN* its phase agent writes the task's file in the change's open tasks from the request its brief carries
+- *AND* the task file is committed with the edit, or kept open on a bailout
+
+*** Scenario: The edit is made in the code root, with no worktree
+- *WHEN* the inline path makes its edit
+- *THEN* the edit is made and committed in the code root
+- *AND* no worktree is created for the task
+
+*** Scenario: No Implementor or Reviewer is spawned
+- *WHEN* the inline path runs
+- *THEN* it spawns no Implementor and no Reviewer
+- *AND* its phase agent reviews the edit itself
+
+*** Scenario: Between cycles, the task goes straight to done
+- *WHEN* the inline path commits its edit while no cycle is open
+- *THEN* the task file shows the task done
+- *AND* the task passed through no state of waiting for a review or of being reviewed
+
+*** Scenario: While a cycle is open, the inline task is recorded in it as done
+- *WHEN* the inline path commits its edit while a cycle of the change is open
+- *THEN* the cycle's record holds the task as done, outside the cycle's batch, and the cycle's counts include it
+- *AND* the edit was made while no run after a merge was running in the code root
+
+*** Scenario: The code and the task file are committed together
+- *WHEN* the inline path commits
+- *THEN* the code is committed in the code root and the task file in the home
+- *AND* when the home is the code root, one working tree, both are in one commit; otherwise each is a commit of its own
+
+*** Scenario: The verification run's output is kept beside the task
+- *WHEN* the inline path runs its verification
+- *THEN* the run's output is kept in a file in the change's directory, named for the task
+- *AND* the commit's message names the command that was run
+
+*** Scenario: What the edit exposed is answered in the task file
+- *WHEN* the inline path commits
+- *THEN* its task file holds one line saying what was checked for what the edit exposed and what was found, "nothing" included
+
+*** Scenario: A finished inline path hands back done with its commit
+- *WHEN* the inline path commits its edit
+- *THEN* the dispatcher receives one line of at most 200 characters, =inline <task>: done <sha>; <task file>=, the path relative to the home
+
+*** Scenario: The inline path's commit has a subject of its own
+- *WHEN* the inline path commits its edit
+- *THEN* the commit's subject is =Inline task <task>: <description>=
+
+*** Scenario: A task from a discovery keeps where it came from
+- *WHEN* the inline path's task came from a discovery
+- *THEN* its task file still names what it was discovered from, by whom, and the discovery's class
+
+** Requirement: The triage keeps the inline path to one-file edits asked for between cycles
+:PROPERTIES:
+:GOAL:     G13 (O-NS-11's; O-IL-1's link to it is the outcome list's reading)
+:END:
+The inline path SHALL take only an edit the user asks for between cycles that its triage keeps to
+one file: no seam's code, no tests that need state set up, and a verification run whose output is
+predictable. Any other edit SHALL be made as a batch task of a later cycle, and so SHALL a task
+already in a batch, however small. In doubt, the edit SHALL take the batch.
+
+*** Scenario: A one-file edit the user asks for between cycles takes the inline path
+- *WHEN* the user asks, between cycles, for a one-line edit, a one-file doc fix, the rename of one call site, the regeneration of one artifact, one config value, or a typo in a comment or docstring
+- *THEN* it is made on the inline path
+- *AND* no Implementor or Reviewer is spawned for it
+
+*** Scenario: An edit of two or more files is not taken on the inline path
+- *WHEN* an edit would touch two or more files
+- *THEN* the inline path makes no edit for it
+- *AND* it is made as a batch task of a later cycle
+
+*** Scenario: An edit of a seam's code is not taken on the inline path
+- *WHEN* an edit would touch a seam's code
+- *THEN* the inline path makes no edit for it
+- *AND* it is made as a batch task of a later cycle, reviewed by a Reviewer
+
+*** Scenario: An edit whose verification needs tests with state set up is not taken on the inline path
+:PROPERTIES:
+:TEST: none: the evals' fixture project has no test that needs state set up
+:END:
+- *WHEN* verifying an edit needs tests run with state set up
+- *THEN* the inline path makes no edit for it
+- *AND* it is made as a batch task of a later cycle
+
+*** Scenario: An edit whose verification output is not predictable is not taken on the inline path
+- *WHEN* the output of the run that verifies an edit cannot be predicted
+- *THEN* the inline path makes no edit for it
+- *AND* it is made as a batch task of a later cycle
+
+*** Scenario: A task already in a batch is not taken on the inline path
+- *WHEN* a task is in a cycle's batch, however small
+- *THEN* it is implemented by an Implementor and reviewed by a Reviewer in that cycle's execute
+- *AND* the inline path does not make it
+- *AND* asked for it, the inline path writes no task file and no note of its own: its bailout line names the batch task's file
+
+** Requirement: An edit that grows past its triage is bailed out and put back as a task
+:PROPERTIES:
+:GOAL:     G13 (O-NS-11's; O-IL-1's link to it is the outcome list's reading)
+:END:
+When the inline path's edit turns out larger than its triage allowed, the inline path SHALL bail
+out: leave the code root as it was before the edit, keeping history when a commit was already made;
+put the task back, open, with the reason and its evidence in its task file; and hand the dispatcher
+one line naming the task and why.
+
+*** Scenario: A request the triage refuses is a bailout with nothing to revert
+- *WHEN* the triage refuses the request before any edit is made
+- *THEN* the task file is left open for the next plan, with the triage's reason in it
+- *AND* the inline path hands back =inline <task>: bailed out, <why>; <task file>=
+
+*** Scenario: A request the triage refuses bails out even when it puts the design in question
+- *WHEN* a request the triage refuses also puts the change's design or a spec in question
+- *THEN* the inline path bails out and files no ask
+- *AND* the reason in the task file names the question, for the next plan
+
+*** Scenario: An edit that reaches a second file bails out
+- *WHEN* the edit turns out to touch a second file
+- *THEN* the inline path bails out
+
+*** Scenario: An edit that reaches a seam's code bails out
+- *WHEN* the edit turns out to touch a seam's code
+- *THEN* the inline path bails out
+
+*** Scenario: An edit that changes a seam row bails out
+- *WHEN* the edit would change a seam row of the change's design, its statement or its owning symbols
+- *THEN* the inline path bails out, and the row is left as it is
+
+*** Scenario: A verification run that fails and is not trivially fixable bails out
+- *WHEN* the run that verifies the edit fails in a way that is not trivially fixable
+- *THEN* the inline path bails out
+
+*** Scenario: An edit that needs more than a paragraph of context bails out
+:PROPERTIES:
+:TEST: none: how much context an edit needs is the agent's own reading, so no fixture can make the WHEN happen
+:END:
+- *WHEN* making the edit needs more than a paragraph of context read again
+- *THEN* the inline path bails out
+
+*** Scenario: A bailout leaves the code root as it was
+- *WHEN* the inline path bails out before its commit
+- *THEN* the code root's working tree is as it was before the edit
+- *AND* the inline path has made no commit in the code root
+
+*** Scenario: A bailout after a commit reverts it with a commit of its own
+:PROPERTIES:
+:TEST: none: the inline path commits last, so a bailout after its commit needs an agent that commits out of order
+:END:
+- *WHEN* the inline path bails out after its commit was made
+- *THEN* the commit is undone by a revert commit in the code root
+- *AND* the code root's history still holds the commit it reverts
+
+*** Scenario: A bailed-out task is open again with the reason in its task file
+- *WHEN* the inline path bails out
+- *THEN* the task is open again, ready for the next plan
+- *AND* its task file holds a note that the inline path bailed out, saying what was found and where its evidence is
+
+*** Scenario: A bailout hands back one line naming the task and why
+- *WHEN* the inline path bails out
+- *THEN* the dispatcher receives one line of at most 200 characters, =inline <task>: bailed out, <why>; <task file>=
+
+** Requirement: What the edit exposed is routed, and the inline path writes no new task
+:PROPERTIES:
+:GOAL:     none stated (=north-star.org= * Disposition states it; no goal does)
+:END:
+The inline path SHALL route each defect its edit exposes in the code or text beside it: an untrue
+sentence SHALL be corrected, a defect off the change's main path SHALL go on the change's hardening
+list, a defect on the main path SHALL make the inline path bail out, and a speculative need SHALL be
+one thought in the task file. It SHALL write no new task for any of them.
+
+*** Scenario: A defect the change's design already plans is not one the edit exposed
+- *WHEN* the edit shows a defect that the change's design already plans to fix, by a Decision, a seam row or a pending test
+- *THEN* it is not routed as exposed and does not make the inline path bail out
+- *AND* the task file's line on what the edit exposed names it as planned, with where the design plans it
+
+*** Scenario: An untrue sentence in the edited file is corrected in the same edit
+- *WHEN* the edit exposes an untrue sentence in the file being edited
+- *THEN* the sentence is corrected in the same edit, in prose only
+
+*** Scenario: An untrue sentence in another file is corrected in a commit of its own
+- *WHEN* the edit exposes an untrue sentence in another file
+- *THEN* the sentence is corrected, in prose only, in a commit of its own whose subject is =Text correction: <what>=
+- *AND* that second file does not make the inline path bail out
+
+*** Scenario: A defect off the main path goes on the hardening list
+- *WHEN* the edit exposes a defect in the code or text beside it that is off the change's main path
+- *THEN* it is one entry on the change's hardening list that refers to the task
+- *AND* the inline path does not bail out for it
+
+*** Scenario: A defect on the main path bails out, naming the defect
+- *WHEN* the edit exposes a defect on the change's main path
+- *THEN* the inline path bails out
+- *AND* the note in the task file names the defect and its evidence
+
+*** Scenario: A speculative need is one thought in the task file
+- *WHEN* the edit shows a need that would arise only after some future change
+- *THEN* the task file's Observations gain one line marked as a thought
+
+*** Scenario: The inline path writes no task for what it finds
+- *WHEN* the edit exposes a defect or a speculative need
+- *THEN* the inline path writes no new task file and no follow-up candidate
+
+** Requirement: A design in question stops the inline path on a decision ask
+:PROPERTIES:
+:GOAL:     none stated
+:END:
+When the edit puts the change's design in question, so that only the user's choice settles it, the
+inline path SHALL file a =decision= ask, SHALL not commit its edit until the ask is answered, and
+SHALL hand back that it stopped, naming the ask; it SHALL never put the question to the user itself.
+
+*** Scenario: A design in question is a decision ask that holds the commit
+- *WHEN* the edit puts the change's design in question
+- *THEN* a =decision= ask is filed in the change's inbox
+- *AND* the ask blocks the inline path's commit
+- *AND* the phase agent hands back that it stopped, naming the ask, and does not put the question to the user
+
+*** Scenario: Stopped on an ask, the inline path's line names it
+- *WHEN* the inline path stops on a =decision= ask
+- *THEN* its line is =inline <task>: stopped, ask <id> blocks commit; <ask file>=, the path relative to the home
+
+* Gaps
+
+No gap open. The eight this draft had were filled 2026-11-13 at the hand-off review
+(=research/skill-evals/extraction/inline-path.org= § Gap decisions).

@@ -36,9 +36,9 @@ The Implementor produces, **all in one go before reporting back**:
 
 When the task fixes a review finding whose evidence probed a real surface (a running process, daemon, client, `git`, the file system), the regression test drives that surface and reproduces the probe; a fake of it is not the pin, and when the test tree cannot drive it the report and `## Observations` say so (`flows/execute.md` § 8).
 
-The verification command runs in the foreground, before the commit; the Implementor never leaves a test run in the background and reports once. The record shows eight extra wake-ups of the orchestrator from Implementors that reported done while their own run continued.
+The verification command runs in the foreground, before the commit; the Implementor never leaves a test run in the background and reports once. On a `done` hand-back the worktree is clean: nothing uncommitted, nothing untracked outside ignored files (probes and logs go in the scratch directory the brief names). The record shows eight extra wake-ups of the orchestrator from Implementors that reported done while their own run continued.
 
-Before the commit, re-read the prose beside each change (docstrings, comments, README and help text, the cited spec and design sentences), and grep the tree for each name, flag, path or rule the task changed. A sentence the work made untrue is fixed in the same commit. The record: in one change four of five tasks went back for untrue prose, and the user answered "Yes, add the re-read"; in another, the whole-change review found untrue text the per-task reviews had missed four cycles running, one of them two lines from a sentence the task had fixed.
+Before the commit, re-read the prose beside each change (docstrings, comments, README and help text, the cited spec and design sentences), and grep the tree for each name, flag, path or rule the task changed. A sentence the work made untrue is fixed in the same commit, unless it is under `docs/` (a cited spec or design sentence): that one is a `## Discoveries` entry of kind `issue` naming it (a seam objection when it is a seam row), and the phases correct it. The record: in one change four of five tasks went back for untrue prose, and the user answered "Yes, add the re-read"; in another, the whole-change review found untrue text the per-task reviews had missed four cycles running, one of them two lines from a sentence the task had fixed.
 
 ## A machine shared with other agents
 
@@ -55,7 +55,7 @@ The overlay's `roles/implementor.md` may add the project's own resources. The re
 
 ## Premises
 
-Before writing code, check the claims the task body and its cited rows make about the code at the worktree's HEAD (a symbol exists with this signature; a path is reachable from this entry point; a return value has these cases; a test exists; the behaviour to add is not already there). A wrong claim the task can absorb (a name, a path, a signature, part of the work already done) is corrected in the work and noted in `## Observations` with what HEAD has. A wrong claim that changes what the task should do (the behaviour it adds already exists, it contradicts a cited row or scenario, the work belongs to another seam) stops the task: hand back `blocked <task>: premise wrong, <the claim>`, the report saying the claim and what HEAD has. This holds for every task, including one the Architect checked at plan (`flows/plan.md` § 3). No table: in the replay that tried one, all seven were written after the commit, no reader acted on a row, and every real wrong claim was also in `## Observations` or `## Discoveries`.
+Before writing code, check the claims the task body and its cited rows make about the code at the worktree's HEAD (a symbol exists with this signature; a path is reachable from this entry point; a return value has these cases; a test exists; the behaviour to add is not already there). A wrong claim the task can absorb (a name, a path, a signature, part of the work already done) is corrected in the work and noted in `## Observations` with what HEAD has. A wrong claim that changes what the task should do (the behaviour it adds already exists, the task's own claim contradicts a cited row or scenario, the work belongs to another seam) stops the task: hand back `blocked <task>: premise wrong, <the claim>`, the report saying the claim and what HEAD has. A blocked Implementor commits nothing: its report's `commit_sha` is empty and its `## Observations` and `## Discoveries` are as they stand; a later Implementor starts clean from the task's base. This holds for every task, including one the Architect checked at plan (`flows/plan.md` § 3). No table: in the replay that tried one, all seven were written after the commit, no reader acted on a row, and every real wrong claim was also in `## Observations` or `## Discoveries`.
 
 A test this task did not write (a pending test it promotes, or one already in the tree) that fails against the work is settled the same way, at any point in the work. When the code is wrong, fix the code. When the test is wrong and changing it keeps the behaviour the cited rows and scenarios state (a setup defect, an assumption no row makes), change it and carry on: the change is a deviation, so `deviation_summary` says it (the hand-back carries `deviated`) and a `## Discoveries` entry (`class: deviation`) quotes the assertion before and after. When the only fix changes behaviour a cited row or scenario states, stop and hand back `blocked <task>: premise wrong, …` as above. The record: in a replay an Implementor loosened two assertions in design-round specs to fit the wrapper, called them spec defects and handed back a plain `done`; one reached the Architect as a push-back, the other was seen only as an Observation.
 
@@ -67,6 +67,8 @@ When the Implementor pushes back:
 - Note the push-back in `## Discoveries` with `class: <appropriate>` (typically `shape-fragmentation`, `vocabulary-mismatch`, or `invariant-gap`) and `affected_seam`.
 - Implement what the code actually needs. Don't faithfully reproduce a wrong row just because the brief contained it.
 - The conformance check at integrate amends the row; the Implementor's job is to be honest about what the code wanted.
+
+A row that contradicts both the code and a scenario the task cites, while the task's own claims say nothing on the point, is a push-back like this one, not a stop: the stop in § Premises is for a claim the task itself makes.
 
 ## What belongs in `## Observations`
 
@@ -142,7 +144,7 @@ blocked <task-name>: <what you observed and what it blocks, one clause>
 failed <task-name>: <why, one clause>
 ```
 
-`deviated` is present when `deviation_summary` is non-empty; `candidates=<n>` when `candidate_tasks` is. The line names no path: the orchestrator named the report path in the brief. The orchestrator verifies the sha against the branch and opens the report only when a flag says to; the test output, the observations and the discoveries are in the files the brief names, not in the line.
+`failed` is for a task whose verification the Implementor could not make pass with nothing outside the task stopping it; `blocked` is for a stop only another party can settle (a premise, a revision of the task, the environment). Neither commits: the task stays at its base. `deviated` is present when `deviation_summary` is non-empty; `candidates=<n>` when `candidate_tasks` is. The line names no path: the orchestrator named the report path in the brief. The orchestrator verifies the sha against the branch and opens the report only when a flag says to; the test output, the observations and the discoveries are in the files the brief names, not in the line.
 
 ## Escalation contract
 

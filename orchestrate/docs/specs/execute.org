@@ -1,0 +1,549 @@
+#+TITLE: execute
+#+OPTIONS: ^:{} -:nil
+#+STATUS: draft 2026-11-12, extracted from the reference skill (=main= =e356da7=); inferred statements reviewed 2026-11-12; seven gaps filled and the regression requirement revised 2026-11-12; the gap on the run after a fix filled 2026-11-13; four gaps opened and filled 2026-11-13 at the hand-off review; no gap open; accepted 2026-11-13 by the user at the hand-off review; one WHEN narrowed 2026-11-13 after acceptance (a blocked Implementor commits nothing), from the cross-spec map; an Implementor's discovery only the user can settle routed to an ask 2026-11-13 after acceptance, from =implementor='s review; amended 2026-11-14 after acceptance (a task's front matter kept in step with the record; a file the Reviewer's spawn names is its input; an Implementor's ask stops the phase only when it bears on dependent tasks), from the evals' build-out (=research/skill-evals/overnight/plan.org= § Decided with the user, 2026-11-14 morning); amended 2026-11-14 after acceptance (asked to hand over, landed tasks are merged first), from the user's decisions on round 2 of the evals (=research/skill-evals/round-2/plan.org= § Log › Decisions needed)
+
+* Purpose
+
+The execute phase turns a cycle's batch into merged, reviewed code on the change's integration
+branch, in its code root. Each task is implemented by an Implementor in a worktree of its own,
+merged as it lands, tested after its merge against the cycle's baseline, and reviewed author-blind
+by a Reviewer of its own. Every defect reported on the way ends in a fix, a task, an ask or an entry
+on the change's hardening list. The phase hands the dispatcher one line. It writes no task file and
+amends no design, spec or intent: those belong to plan and integrate.
+
+* Requirements
+
+** Requirement: A task is done only after its merge is reviewed
+:PROPERTIES:
+:GOAL:     none stated
+:END:
+The execute phase SHALL count a task as done only when its implementation has merged into the
+change's integration branch and a Reviewer of its own has reviewed that merge; the phase SHALL
+close only when every task of the batch is done or explicitly stopped.
+
+*** Scenario: A merged task is not done until it is reviewed
+- *WHEN* a task's merge has passed its tests and its review has not completed
+- *THEN* the task is not done
+
+*** Scenario: Each task is reviewed by a Reviewer of its own
+- *WHEN* two tasks have merged
+- *THEN* each is reviewed by a separate Reviewer agent
+- *AND* neither review is made by the execute phase agent itself
+
+*** Scenario: A reviewed task has its review file
+- *WHEN* execute closes
+- *THEN* every task that was reviewed has its Reviewer's review file
+
+*** Scenario: An Implementor that commits nothing fails its task
+- *WHEN* an Implementor hands back other than blocked and no commit has landed on its task's branch
+- *THEN* the task is failed
+- *AND* its worktree is kept
+
+*** Scenario: The phase closes only when every task is done or stopped
+- *WHEN* execute passes its gate
+- *THEN* every task of the batch is done, failed, blocked or externalised
+- *AND* no task is left part-way: being implemented, landed and not merged, merged and not reviewed, or reviewed and not yet done
+
+** Requirement: Tasks merge one at a time, as they land
+:PROPERTIES:
+:GOAL:     none stated
+:END:
+The execute phase SHALL merge each task into the change's integration branch as soon as its
+Implementor lands a commit, one task at a time and in the order they landed, without waiting for
+the rest of the batch or for an earlier task's review; each task SHALL arrive as a merge commit of
+its own. The phase agent SHALL resolve a merge conflict itself when it can keep what both sides
+meant without dropping code or a test, and SHALL send any other conflict back to the task.
+
+*** Scenario: Tasks merge in the order they landed
+- *WHEN* two Implementors land their commits one after the other while a third still runs
+- *THEN* both tasks are merged, the first to land first
+- *AND* neither merge waits for the third Implementor
+
+*** Scenario: Each task arrives as a merge commit of its own
+- *WHEN* a task merges
+- *THEN* the integration branch gains one merge commit whose subject is =Merge task <task>: <description>=
+
+*** Scenario: The merge chain does not wait for a review
+- *WHEN* a task merges and passes its tests while another task is queued
+- *THEN* the merged task's Reviewer is spawned
+- *AND* the queued task merges without waiting for that review
+
+*** Scenario: A task waits for the tasks it depends on to merge
+- *WHEN* a task of the batch depends on other tasks of the batch
+- *THEN* its Implementor is spawned only once all of them have merged
+
+*** Scenario: A conflict that keeps both sides is resolved by hand
+- *WHEN* a task's merge conflicts and the phase agent can keep what both sides meant without dropping code or a test
+- *THEN* it resolves the conflict in the merge
+- *AND* the change's journal records the resolution as a decision, naming what each side kept
+- *AND* the merge the task's Reviewer reads holds the resolution
+
+*** Scenario: Any other conflict goes back to the task
+- *WHEN* a task's merge conflicts and the phase agent cannot resolve it that way
+- *THEN* the merge is abandoned and the integration branch is as it was before it
+- *AND* the task's worktree is kept
+- *AND* a re-spawned Implementor brings the task up to date with the integration branch and resolves the conflict, and the task rejoins the merge queue
+- *AND* the next queued task merges meanwhile
+
+*** Scenario: A conflict that needs a choice is a decision ask
+- *WHEN* resolving a conflict needs a choice of spec or goal
+- *THEN* a =decision= ask is filed that names the choice
+- *AND* the ask blocks the task
+
+*** Scenario: A task held by an ask stays out of the merge queue
+- *WHEN* a task is blocked by an ask and tasks that landed after it are queued
+- *THEN* the blocked task is not merged
+- *AND* the tasks behind it merge
+
+** Requirement: The tests run after every merge, against the cycle's baseline
+:PROPERTIES:
+:GOAL:     none stated
+:END:
+The execute phase SHALL run the project's test command on the change's integration branch once in
+each cycle before any merge (the baseline) and again after each merge, and SHALL keep each run's
+output in the change's directory in the home.
+
+*** Scenario: The baseline is taken once per cycle, before any merge
+- *WHEN* a cycle's execute starts and the cycle has no baseline
+- *THEN* the test command is run on the integration branch before the first merge
+- *AND* its output is kept in the change's directory in the home
+
+*** Scenario: Every merge is followed by a test run whose output is kept
+- *WHEN* a task merges
+- *THEN* the test command is run on the integration branch
+- *AND* its output is kept in the change's directory in the home, in a file named for the task
+
+*** Scenario: A red baseline the project cannot compare test by test is an ask
+- *WHEN* the baseline has failing tests, the project's runner names each test, and the project gives no way to compare two runs test by test
+- *THEN* an =environment= ask is filed at that first red baseline
+
+** Requirement: A merge that breaks a passing test stops the merge chain
+:PROPERTIES:
+:GOAL:     none stated
+:END:
+The execute phase SHALL treat a test that passed in the baseline and fails after a merge as a
+regression. On a regression it SHALL merge no further task until a run shows none, keep every
+task's worktree, keep the merge on the integration branch, and record the regression against the
+task; all work other than merging SHALL go on. The phase agent SHALL find the regression's cause
+and route it as a blocking defect, fixed in the change, and the task's review SHALL follow the
+fix. The user SHALL be asked only when the intent's goals do not settle what the code should do:
+which of two clashing tasks is right, or what a spec scenario the fix would change should say.
+When the goals settle it, a spec scenario or seam row that says otherwise SHALL be left for
+integrate as a record correction.
+
+*** Scenario: A regression after a merge stops further merges
+- *WHEN* two tasks are queued and merging the first makes a test fail that passed in the baseline
+- *THEN* the second task is not merged
+- *AND* both tasks' worktrees still exist
+
+*** Scenario: A regression is recorded against its task
+- *WHEN* a merge causes a regression
+- *THEN* the change's record shows the regression against the task whose merge caused it
+
+*** Scenario: Only merging stops
+- *WHEN* a regression stops the merges while an Implementor is still running and a Reviewer has been spawned
+- *THEN* the Implementor finishes and its task joins the merge queue
+- *AND* the Reviewer finishes its review
+
+*** Scenario: The merge that broke a test stays on the branch
+- *WHEN* a merge causes a regression
+- *THEN* the merge stays on the integration branch until the regression is resolved
+- *AND* it is reverted only when the task's rework fails, or when the answer to a =decision= ask chooses a revert
+
+*** Scenario: The phase agent finds the regression's cause
+- *WHEN* a regression is found
+- *THEN* the phase agent reads the failing run and the baseline to find what caused it
+- *AND* the change's journal records the cause against the task
+
+*** Scenario: A regression is fixed in the change like a blocking defect
+- *WHEN* a regression's cause is found and the intent's goals settle what the code should do
+- *THEN* it is fixed in the change
+- *AND* no ask is filed for it
+- *AND* the change's journal names the goals that settle it
+
+*** Scenario: A simple fix for a regression is made inline
+- *WHEN* the fix for a regression is in one file, touches no seam's code, and is checked by a run whose output is predictable
+- *THEN* the phase agent makes it as an inline fix
+
+*** Scenario: Any other fix for a regression is made by a re-spawned Implementor
+- *WHEN* the fix for a regression is not simple
+- *THEN* an Implementor is spawned again for the task whose code holds the cause, with the regression as the scope of its fix
+
+*** Scenario: A failed rework of a regression reverts its merge
+- *WHEN* the Implementor re-spawned to fix a regression commits nothing, or the run after its fix still shows the regression
+- *THEN* the merge that caused the regression is reverted on the integration branch
+- *AND* the task is failed and its worktree is kept
+- *AND* the next queued task merges once a run after the revert shows no regression
+
+*** Scenario: A spec statement the goals overrule is left for integrate
+- *WHEN* the fix the goals settle contradicts what a spec scenario or a seam row says
+- *THEN* the execute phase changes neither the spec nor the design
+- *AND* the change's journal records the statement for integrate as a record correction
+
+*** Scenario: Merging resumes only after a run shows no regression
+- *WHEN* the fix for a regression is in
+- *THEN* the tests are run again on the integration branch
+- *AND* the next queued task merges only once that run shows no regression
+
+*** Scenario: The run after a fix is kept beside the run after the merge
+- *WHEN* the tests are run again once a regression's fix is in
+- *THEN* that run's output is kept in the change's directory in the home, in a file of its own named for the task
+- *AND* the file holding the run after the merge is left as it was
+
+*** Scenario: The task whose merge broke a test is reviewed after the fix
+- *WHEN* a task's merge caused a regression
+- *THEN* its Reviewer is spawned only once a run after the fix shows no regression
+- *AND* the code the Reviewer reads runs through the fix
+
+*** Scenario: A regression reaches the user only as a decision
+- *WHEN* the intent's goals do not settle what the code should do: neither which of two clashing tasks is right, nor what a spec scenario the fix would change should say
+- *THEN* a =decision= ask is filed that names the choice and where the failing test output is
+- *AND* the ask blocks the merge chain
+
+*** Scenario: A test run that cannot be read is an environment ask
+- *WHEN* the run after a merge gives no verdict: the runner hangs, or the run's output cannot be read
+- *THEN* an =environment= ask is filed
+- *AND* no fix is attempted on that run
+
+*** Scenario: Against a green baseline, any failing run is a regression
+- *WHEN* every test passed in the baseline and the run after a merge fails
+- *THEN* a regression is found
+
+*** Scenario: Against a red baseline, a regression is decided test by test
+- *WHEN* the baseline already has failing tests and a merge leaves only those failing
+- *THEN* no regression is found
+- *AND* when a merge makes a test fail that passed in the baseline, a regression is found
+
+** Requirement: Every defect reported while merging is routed
+:PROPERTIES:
+:GOAL:     none stated (=north-star.org= * Disposition states it; no goal does)
+:END:
+The execute phase SHALL route every defect an Implementor reports and every defect it finds itself
+while merging: one on the change's main path SHALL be fixed in the change, an untrue sentence in
+prose SHALL be corrected, and any other SHALL go on the change's hardening list. No defect SHALL end
+as a journal line alone.
+
+*** Scenario: A discovery on the main path is fixed in the change
+- *WHEN* an Implementor's report lists a discovery on the change's main path, other than one only the user can settle
+- *THEN* it is fixed in this change, as an inline fix or as a follow-up candidate for the next plan
+
+*** Scenario: A simple fix is made inline, reproduced first
+- *WHEN* the fix for a discovery on the main path is in one file, touches no seam's code, and is checked by a run whose output is predictable
+- *THEN* the phase agent makes it as an inline fix
+- *AND* a test or probe that fails on the defect comes before the fix
+- *AND* the change's journal records the inline fix against the task
+
+*** Scenario: Any other fix is a follow-up candidate that starts with the reproduction
+- *WHEN* the fix for a discovery on the main path is not simple
+- *THEN* a follow-up candidate is written for the next plan, marked critical, naming the task and discovery it came from, with the source's words verbatim
+- *AND* its first step is the reproduction
+- *AND* no task file is written in execute
+
+*** Scenario: A discovery off the main path goes on the hardening list
+- *WHEN* an Implementor's discovery is off the change's main path, is not an untrue sentence, and is not one only the user can settle
+- *THEN* it is one entry on the change's hardening list
+
+*** Scenario: An Implementor's discovery only the user can settle becomes an ask
+- *WHEN* an Implementor's report lists a =spec-signal= or =scope-question= discovery that only the user can settle
+- *THEN* the phase agent writes a =decision= ask from it as it reads the report, naming the task and the discovery
+- *AND* the task is not held by it
+
+*** Scenario: An untrue sentence in prose is corrected at once
+- *WHEN* a discovery is a sentence in prose that is untrue
+- *THEN* the phase agent corrects the text at once
+
+*** Scenario: An Observation that names a defect is routed like a discovery
+- *WHEN* an Implementor's Observations name a defect in code or text that exists
+- *THEN* it is routed as a discovery would be
+- *AND* the other Observations stay in the task file as the record
+
+*** Scenario: Every discovery leaves a journal line naming its route
+- *WHEN* a discovery is routed
+- *THEN* the change's journal has one line for it, against the task, naming where it went
+- *AND* when a scan found nothing, the journal has one line saying what was scanned
+
+*** Scenario: A journal line is never where a defect ends
+- *WHEN* execute closes
+- *THEN* every defect it routed has a fix, a task, an ask or a hardening-list entry
+
+*** Scenario: An aborted merge that shows a structural issue is a discovery
+- *WHEN* the reason a merge was abandoned is itself a structural issue
+- *THEN* the change's journal records the issue as a discovery, not only the failed merge
+- *AND* a defect it names is routed like a finding
+
+*** Scenario: New work never reaches a running Implementor
+- *WHEN* new work turns up while an Implementor runs
+- *THEN* nothing is sent to the running Implementor
+- *AND* the work becomes a task of the next plan or an inline fix after review
+
+** Requirement: Reviews are author-blind
+:PROPERTIES:
+:GOAL:     none stated
+:END:
+The execute phase SHALL give each Reviewer only the merge's diff, the task's text without the
+Implementor's Observations and Discoveries, the seam rows and scenarios the task cites, and the
+project's review standards and priors; never the Implementor's report, notes or identity, nor any
+other diff in flight.
+
+*** Scenario: The Reviewer's input holds the merge and what the task cites
+- *WHEN* a Reviewer is spawned for a merged task
+- *THEN* its input holds the diff from the merge base to the merge commit
+- *AND* the task's text, read from the home
+- *AND* the seam rows the task cites, verbatim, and each scenario it cites with that scenario's coverage
+- *AND* the project's review standards and priors, when the project has them
+
+*** Scenario: The Reviewer never sees the Implementor's account
+- *WHEN* a Reviewer is spawned
+- *THEN* its input holds neither the Implementor's report nor the task's Observations and Discoveries
+- *AND* a file its spawn names for it to read, such as a brief, is part of its input and is held to the same rule
+- *AND* nothing that names the Implementor
+- *AND* no other diff in flight
+- *AND* its checkout holds nothing but the merge commit
+
+*** Scenario: The Implementor's notes never reach the reviewed diff
+- *WHEN* an Implementor appends Observations and Discoveries
+- *THEN* they are in the task file in the home, not on the task's branch
+- *AND* the diff the Reviewer reads contains none of them
+
+** Requirement: Review findings are routed, and a blocking one is fixed before the task is done
+:PROPERTIES:
+:GOAL:     none stated (=north-star.org= * Disposition states it; no goal does)
+:END:
+The execute phase SHALL route each finding of a review: a defect on the change's main path or an
+untrue sentence SHALL be reproduced and fixed before the task is done; a sign that the design or
+spec may be wrong SHALL become an ask at once; any other defect SHALL go on the change's hardening
+list.
+
+*** Scenario: A blocking finding is reproduced, then fixed, before the task is done
+- *WHEN* a review reports a defect on the change's main path
+- *THEN* a test or probe that fails on the defect comes first, and the fix makes it pass
+- *AND* the task is not done until the fix is in
+- *AND* no follow-up candidate is written for it
+
+*** Scenario: A simple fix for a blocking finding is made inline
+- *WHEN* the fix for a blocking finding is in one file, touches no seam's code, and is checked by a run whose output is predictable
+- *THEN* the phase agent makes it as an inline fix
+
+*** Scenario: Any other fix for a blocking finding is made by a re-spawned Implementor
+- *WHEN* the fix for a blocking finding is not simple
+- *THEN* an Implementor is spawned again for the task, with the finding as the scope of its fix
+
+*** Scenario: A re-spawned Implementor's brief names its task and the scope of its fix
+- *WHEN* an Implementor is spawned again to fix a blocking finding or a regression
+- *THEN* its brief, saved in the cycle's directory in the home in a file of its own, holds the task's text read from the home
+- *AND* the scope of its fix: the review file and the finding's number, or the failing run's file and the cause the change's journal records
+- *AND* the instruction to write a test or probe that fails on the defect before the fix; for a regression the failing test is that reproduction
+
+*** Scenario: A re-spawned Implementor works in its task's worktree, or in a new one
+- *WHEN* an Implementor is spawned again to fix a blocking finding or a regression
+- *THEN* it works in the task's worktree when that is kept, and otherwise in a new worktree cut from the tip of the integration branch
+
+*** Scenario: A failed rework of a blocking finding reverts its merge
+- *WHEN* the Implementor re-spawned to fix a blocking finding commits nothing, or its fix does not make the finding's reproduction pass
+- *THEN* the task's merge is reverted on the integration branch
+- *AND* the task is failed and its worktree is kept
+
+*** Scenario: A question on the main path that does not reproduce goes on the hardening list
+- *WHEN* a review's question about the main path is tried and its reproduction does not fail
+- *THEN* it is an entry on the change's hardening list, with what was tried
+
+*** Scenario: An untrue sentence needs only the corrected text
+- *WHEN* a review finds an untrue sentence
+- *THEN* the sentence is corrected before the task is done
+- *AND* no failing test is required for it
+
+*** Scenario: Any other defect is a hardening entry and the task can be done
+- *WHEN* a review's defect is off the main path
+- *THEN* it is one entry on the change's hardening list that names the review file and the finding
+- *AND* the task can be done
+
+*** Scenario: A spec signal becomes an ask at once and does not hold its task
+- *WHEN* a review signals that the design or a spec may be what is wrong
+- *THEN* an ask file is written at once, naming the review file
+- *AND* the task is not held by it
+- *AND* no step answering it is written into a later task's body in its place
+
+*** Scenario: A spec signal's stopgap is applied before done and named in the ask
+- *WHEN* a spec signal carries a stopgap
+- *THEN* the stopgap is applied as an inline fix before the task is done, and the ask names it
+- *AND* a stopgap that would answer the ask is not applied, and the ask says so
+
+*** Scenario: A thought that names a wrong result today is routed as an issue
+- *WHEN* a review's thought names a wrong result on an input the code accepts today
+- *THEN* it is routed as an issue, with one journal line
+- *AND* the review's other thoughts stay in the review file
+
+*** Scenario: A fix for a defect shown on a real surface is pinned on that surface
+- *WHEN* a finding's evidence is a probe of a real process, daemon, client, =git= or file system
+- *THEN* the test that pins its fix drives that same surface, failing before the fix and passing after it
+- *AND* a test against a fake of the surface is not taken as the pin
+- *AND* where the tests cannot drive the surface, the fix commit and the task's Observations say so
+
+*** Scenario: An inline fix's commit names its task, its cause and its pin
+- *WHEN* the phase agent commits an inline fix
+- *THEN* its subject is =Inline fix after <merging|review of> task <task>: <what>=
+- *AND* the message names what it answers: the review file and finding number, the discovery, or the regression
+- *AND* the message names the test or probe that pins it, which failed before the fix and passes after it
+
+*** Scenario: A flagged choice with a sound unwritten reason is written down
+- *WHEN* a Reviewer flags a choice the Implementor made for a reason that holds but was not written
+- *THEN* the reason is written down as a comment, a test or a seam row's statement
+- *AND* the change's journal records that the flag was pushed back
+- *AND* when the reason was wrong, the flag is handled as an ordinary finding
+
+** Requirement: A question raised during execute is a file at once
+:PROPERTIES:
+:GOAL:     none stated
+:END:
+The execute phase SHALL write every question that arises while it runs as an ask file at once,
+committed in the home. It SHALL stop for an ask only when the ask blocks work waiting now, and then
+only after finishing the work that does not wait on it; any other ask SHALL hold only the tasks it
+names. Whether the user is present is the dispatcher's to know, not the phase agent's.
+
+*** Scenario: An ask is a file at once, committed in the home
+- *WHEN* a question arises while execute runs
+- *THEN* it is an ask file in the change's inbox
+- *AND* the file is committed in the home with a subject naming its id
+
+*** Scenario: The phase agent never asks the user itself
+- *WHEN* a question arises while execute runs
+- *THEN* the phase agent does not put it to the user
+- *AND* the question reaches the user through its file and the dispatcher
+
+*** Scenario: An environment ask always stops the phase
+- *WHEN* an =environment= ask is filed
+- *THEN* the phase agent finishes the work that does not depend on it
+- *AND* hands back that it stopped, naming the ask
+
+*** Scenario: An ask that blocks waiting work stops the phase after the rest is done
+- *WHEN* an ask blocks a merge in this batch or a task not yet spawned
+- *THEN* the phase agent first spawns Reviewers for merged tasks and files the reports
+- *AND* when nothing else can run, hands back that it stopped, naming the ask, whether or not the user is present
+
+*** Scenario: Resumed with the user absent, the phase goes on without the answer
+- *WHEN* the phase agent stopped on an ask that blocks waiting work and is resumed with word that the user is absent
+- *THEN* each task the ask names is blocked on it
+- *AND* the merge chain goes on with the tasks behind them
+- *AND* when nothing else can run the phase passes its gate if it can and goes on to integrate
+
+*** Scenario: An ask that blocks nothing waiting does not stop the phase
+- *WHEN* an ask does not block work waiting now
+- *THEN* each task it names is blocked on it
+- *AND* the merge chain goes on with the tasks behind them
+- *AND* when nothing else can run the phase passes its gate if it can and goes on to integrate
+- *AND* only when the gate cannot pass does it stop, with a one-line pointer to the file
+
+*** Scenario: A wrong premise blocks its task without an ask
+- *WHEN* an Implementor hands back blocked on a premise that is wrong
+- *THEN* no ask is filed
+- *AND* the task is blocked, with the wrong premise as the reason, and its worktree is kept
+- *AND* the change's journal records the claim, pointing at the report
+- *AND* execute does not rewrite the task
+
+*** Scenario: An Implementor that stops to ask leaves its task blocked
+- *WHEN* an Implementor stops to ask
+- *THEN* its task is blocked on that ask
+- *AND* its worktree is kept
+- *AND* the phase stops for the ask only when it is known to bear on tasks that wait on that task or on its answer; otherwise the other tasks go on
+
+*** Scenario: An answer is applied before anything else
+- *WHEN* the merge chain pauses and an ask has been answered
+- *THEN* the answer is handled before anything else
+- *AND* an answer that unblocks a task is committed in the home with the same subject as the merge it releases
+
+** Requirement: The phase hands the dispatcher one line, and hands over when asked
+:PROPERTIES:
+:GOAL:     none stated
+:END:
+The execute phase agent SHALL hand the dispatcher one line, once, when the phase ends or stops, and
+never while a worker it spawned is still running; asked to hand over, it SHALL stop at a clean
+point and leave a handover a fresh agent can continue from.
+
+*** Scenario: The phase hands back one line naming its outcome
+- *WHEN* execute passes its gate, stops on an ask, fails or hands over
+- *THEN* the dispatcher receives one line of at most 200 characters
+- *AND* a stop on an ask names the ask, what it blocks and the file's path relative to the home
+
+*** Scenario: No hand-back while a worker runs
+- *WHEN* an Implementor or a Reviewer the phase spawned is still running
+- *THEN* the phase agent does not hand back
+
+*** Scenario: Asked to hand over, the phase stops at a clean point
+- *WHEN* the phase agent is asked to hand over
+- *THEN* it starts no new Implementor or Reviewer
+- *AND* it waits until every worker it spawned has reported and every landed task is merged and tested or held by an ask, merging the tasks that have landed
+- *AND* it writes a handover with the tasks merged, the tasks and asks open, and the steps left
+- *AND* it commits the handover in the home and hands back that it stopped, naming the handover
+
+*** Scenario: A fresh agent goes on from the steps the handover leaves
+- *WHEN* a fresh execute agent is given a handover
+- *THEN* it goes on from the steps the handover lists as left
+
+*** Scenario: A fresh agent redoes nothing the handover lists as done
+- *WHEN* a fresh execute agent is given a handover
+- *THEN* it redoes nothing the handover lists as done
+
+*** Scenario: A fresh agent leaves the handover as written
+- *WHEN* a fresh execute agent continues from a handover
+- *THEN* it does not change the handover
+- *AND* when it is asked to hand over in its turn, it writes the handover anew, whole, and commits it in the home
+
+** Requirement: Execute leaves its work in the home and nothing outside its part
+:PROPERTIES:
+:GOAL:     none stated
+:END:
+The execute phase SHALL leave in the home what each Implementor was given and what each worker
+returned, committed when the phase closes, and SHALL leave the design, the specs, the intent and the
+tasks' contents to the phases that own them; it MAY keep a task file's front matter in step with the record.
+
+*** Scenario: Each Implementor's brief is kept
+- *WHEN* an Implementor is spawned
+- *THEN* the brief it was given is saved in the cycle's directory in the home
+
+*** Scenario: Execute closes with one commit in the home
+- *WHEN* execute closes
+- *THEN* one commit in the home, subject =Orchestrator: <cycle-id> execute closed=, holds the cycle's state, the briefs, the reports, the reviews and the task files' appended sections
+- *AND* the test output files written after each merge are not committed
+
+*** Scenario: A merged and tested task's worktree is removed
+- *WHEN* a task's merge passes its tests
+- *THEN* the task's worktree is removed
+
+*** Scenario: The phase agent's working files stay in its own scratch directory
+- *WHEN* the phase agent needs a working file outside the home, such as a draft
+- *THEN* it writes it in the scratch directory its brief names, never under a fixed name shared with other agents
+- *AND* the directory is gone once the phase closes
+
+*** Scenario: Execute leaves the design, the specs and the intent alone
+- *WHEN* execute closes
+- *THEN* it has not changed the change's design, its specs or the intent's status line
+- *AND* it has added no task file and changed no task's text, but for the Observations and Discoveries an Implementor appended
+- *AND* any change it made to a task file's front matter keeps it in step with the record: the task's status and its merge commit
+- *AND* no Architect has run
+
+** Requirement: Each worker runs at its agent setting
+:PROPERTIES:
+:GOAL:     none stated
+:END:
+The execute phase SHALL spawn each Implementor and Reviewer at the agent setting its role or its
+task names, and SHALL record the setting it used.
+
+*** Scenario: An Implementor runs at its task's setting
+- *WHEN* an Implementor is spawned
+- *THEN* it runs at the task's own setting when the plan wrote one, and at the Implementor's role default otherwise
+- *AND* the change's record holds the agent and its setting
+
+*** Scenario: A Reviewer runs at its role default or the task's raised setting
+- *WHEN* a Reviewer is spawned for a task
+- *THEN* it runs at the Reviewer's role default, or at the task's Reviewer setting when the plan raised it
+- *AND* the change's record holds the agent, its setting and the task it reviews
+
+*** Scenario: A rework runs at the task's setting, never a stronger one
+- *WHEN* an Implementor is spawned again to fix a blocking finding
+- *THEN* it runs at the setting the task's first Implementor ran at, never a stronger one
+- *AND* the change's record holds it as a rework
+
+* Gaps
+
+None open.
+
