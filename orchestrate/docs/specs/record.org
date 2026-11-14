@@ -1,19 +1,22 @@
 #+TITLE: record
 #+OPTIONS: ^:{} -:nil
-#+STATUS: draft 2026-11-13, extracted from the reference skill (=main= =e356da7=); the boundary gap filled 2026-11-13 (the state file's shape); one gap set aside (whether test runs are tracked); extended 2026-11-13 to the record's full scope (the gates, the handshake, the counts, the cycle's directory at close, the agents, recovery), two gaps opened; at the hand-off review 2026-11-13: both gaps filled; the finding's entry added from a boundary note; accepted 2026-11-13 by the user at the hand-off review; amended 2026-11-13 after acceptance (a journal entry's writer; what the design round leaves in the change's directory), from the architect and design-round review; amended 2026-11-14 after acceptance (the merge commit a task under review names; a finding routed to an ask stays pending; a re-run's brief name; two scenarios marked not test-worthy), from the evals' build-out (=research/skill-evals/overnight/plan.org= § Decided with the user, 2026-11-14 morning)
+#+STATUS: accepted 2026-11-14 by the user (=research/skill-evals/state-layer/plan.org= § Decided: "take all recommendations"); the state layer's record, per tree (=state-layer-evals=), amended from the accepted baseline record (=skill-evals=, accepted 2026-11-13, amended 2026-11-14); sources =state-layer= =3502e7c=, the ports on =state-layer-evals= and the decisions of plan.org
 
 * Purpose
 
-The record is where a change's process is kept in the home: the change's own directory, its state,
-and the journal of short narrative. Other capabilities state that something is recorded ("the
-change's record shows the regression against the task", "the change's journal records the cause");
-this spec states where and in what form, so that what they record can be found and read.
+The record is where a change's process is kept in the home: the change's own directory, the files the
+roles write there, the home's commits, and the event log, which holds the few facts files and git do
+not. Other capabilities state that something is recorded ("the change's record shows the regression
+against the task", "the change's journal records the cause"); this spec states where and in what form,
+so that what they record can be found and read. Every fact has one source; nothing in the record is a
+second copy of another fact.
 
-It covers the change's directory and the cycle's directory, the state and who writes it, a task's
-entry and its status, each phase's gate and its checks, the handshake integrate leaves for the next
-plan, when a cycle may start and what closing it keeps, the agents spawned and their settings, the
-counts, and how a missing or older record is recovered. It does not say when a phase runs, what a
-phase decides or what an ask file holds: those are the phases' specs and =asks='s.
+It covers the change's directory and the cycle's directory, the event log and who writes it, a task's
+status and what it rests on, where a change stands and what comes next, each phase's gate and its
+checks, the handshake integrate leaves for the next plan, when a cycle may start and what closes it,
+how the spawned agents are recorded, the forms the record is read by, and how a lost or older record is
+recovered. It does not say when a phase runs, what a phase decides or what an ask file holds: those are
+the phases' specs and =asks='s.
 
 * Requirements
 
@@ -22,236 +25,290 @@ phase decides or what an ask file holds: those are the phases' specs and =asks='
 :GOAL:     none stated
 :END:
 Each open change SHALL have one directory in the home, named for the change, holding its process
-files. The home's git SHALL track that directory, except the output of test runs and the tool's
-own temporary files.
+files. The home's git SHALL track that directory, except the output of test runs and temporary files;
+the exit codes of the test runs SHALL be tracked.
 
 *** Scenario: The change's directory is named for the change, under the home
 - *WHEN* a change is open
 - *THEN* its process files are in =.orchestrator/changes/<change>/= under the home
-- *AND* that directory holds the change's state, its cycles, its inbox of asks, its handshakes and its test runs
+- *AND* that directory holds the change's event log, its cycles, its inbox of asks, its handshakes, its task files and its test runs
 
 *** Scenario: The change's directory is tracked by the home, its test runs are not
 - *WHEN* the home's git is asked what it tracks under =.orchestrator/=
-- *THEN* it tracks the change's directory
-- *AND* it ignores the test runs' output, the tool's temporary and lock files and its migration backups
+- *THEN* it tracks the change's directory, the test runs' exit codes among it
+- *AND* it ignores the test runs' output and temporary files
 
-** Requirement: The change's state is written only through the state tool
+** Requirement: Files and git are the record, and the state layer writes only the event log
 :PROPERTIES:
 :GOAL:     none stated
 :END:
-The change's state SHALL be one file in the change's directory, written only through the state
-tool's commands, which refuse what does not fit its form.
+A change's state SHALL be read from the files the roles write and from git, each fact from one source.
+There SHALL be no state file. The state layer SHALL write one file, the change's event log, and only
+through its commands.
 
-*** Scenario: The state is one file of the change's directory
-- *WHEN* a cycle of a change is open
-- *THEN* the change's state is the file =state.json= in the change's directory
+*** Scenario: No state file is written
+- *WHEN* a cycle runs from plan to close
+- *THEN* no =state.json= exists in the change's directory
+- *AND* the only file the state layer wrote is the event log, =events.jsonl= in the change's directory
 
-*** Scenario: No role edits the state file by hand
-- *WHEN* any role changes a state file that is valid
+*** Scenario: A fact has no second copy
+- *WHEN* a task has merged and a finding has been routed
+- *THEN* the task's merge commit is read only from its merge commit on the change branch, and its task file has no =merge_commit= field
+- *AND* the finding's routing and resolution are read only from the event log, and its finding file has no =decoration= or =resolution= field
+
+*** Scenario: No role edits the event log by hand
+- *WHEN* any role adds to the event log
 - *THEN* it does so through a state tool command
 - *AND* never by writing the file with an editor, a heredoc or a text filter
 
-** Requirement: A fact about a task is recorded on the task's entry
+** Requirement: The event log is append-only
 :PROPERTIES:
 :GOAL:     none stated
 :END:
-The change's state SHALL hold one entry per task of the cycle, and a fact found about a task SHALL
-be recorded on that task's entry, with the evidence it rests on where it has one.
+The event log SHALL hold one entry per line, each with its sequence number, its time, its cycle and its
+kind. An entry SHALL never be changed or removed; a correction SHALL be a new entry naming the entry it
+corrects, and every reader SHALL apply it.
 
-*** Scenario: A regression is marked on the task's entry, with the run that shows it
-- *WHEN* a merge causes a regression
-- *THEN* in the state file, the entry of the task whose merge caused it has =regression_detected= true
-- *AND* its =after_snapshot= names the file holding the test run after that merge
+*** Scenario: A wrong entry is corrected by a new entry
+- *WHEN* a finding is routed =blocking= with resolution =pending= by mistake and a correction naming that entry is recorded
+- *THEN* the log holds both entries
+- *AND* every answer that reads the routing, integrate's gate among them, counts no pending blocking finding for it
+
+*** Scenario: A cycle's start is in the log before any artifact
+- *WHEN* a cycle has started and nothing of it is yet on disk or in git
+- *THEN* the answer to where the change stands names the open cycle, read from the log
 
 ** Requirement: The journal holds short narrative, each line against what it concerns
 :PROPERTIES:
 :GOAL:     none stated
 :END:
-The change's state SHALL hold a journal: one entry per piece of short narrative that has no other
-home (a discovery, a decision, an inline fix, a deviation from the flow, a push-back, a note), each
-naming its kind and what it concerns, in one line, with any longer form in a file.
+The event log SHALL hold the change's journal: one note entry per piece of short narrative that has no
+other home (a discovery, a decision, an inline fix, a deviation from the flow, a push-back, a note),
+each naming its kind and what it concerns, in one line, with any longer form in a file.
 
 *** Scenario: A journal entry names its kind and what it is against
 - *WHEN* a role records a discovery, a decision, an inline fix, a deviation, a push-back or a note
-- *THEN* the state file's =journal= gains one entry whose =kind= is that kind, whose =text= is one line and whose =at= is the time
+- *THEN* the event log gains one note entry whose kind is that kind, whose text is one line and whose time is when it was written
 - *AND* its =ref= names the task, finding, ask or seam it is against, when it is against one
 
 *** Scenario: A journal entry names who wrote it
 - *WHEN* a journal entry is written
 - *THEN* its =by= names who wrote it: =orchestrator= (the phase agent), =implementor=, =reviewer=, =architect= or =pm=
+- *AND* any other =by= is refused
 
 *** Scenario: A journal line is short, and the long form is a file
 - *WHEN* what a role has to record runs longer than one line
-- *THEN* the journal entry's =text= is at most 280 characters
+- *THEN* the journal entry's text is at most 280 characters, and a longer one is refused
 - *AND* its =path= names the file that holds the rest
 
-** Requirement: The state file's shape is the record's boundary
+*** Scenario: A regression is a journal line against the task, with the run that shows it
+- *WHEN* a merge causes a regression
+- *THEN* the journal gains a =discovery= entry saying so, its =ref= the task whose merge caused it
+- *AND* its =path= names the run after that merge
+
+** Requirement: The record's files, commits and event log are its boundary
 :PROPERTIES:
 :GOAL:     none stated
 :END:
-What another role, or an eval, may rely on in the record SHALL be the change's directory, its
-=state.json= and the fields this spec's scenarios name, and the names they give in the change's and
-the cycle's directory. The rest of the file is the state tool's own. A tool that changes a named
-field changes this spec.
+What another role, or an eval, may rely on in the record SHALL be the change's directory and the names
+this spec gives in it, the task files' frontmatter keys it names, the commit subjects it names, and the
+event log's kinds and fields it names. The rest is the state layer's own. A tool that changes a named
+form changes this spec.
 
 *** Scenario: A reader finds a task's facts by the fields the record names
-- *WHEN* a reader outside the state tool needs to know whether a regression was recorded against a task, or what the journal holds against it
-- *THEN* it reads the change's =state.json= and finds them in the fields this spec names
-- *AND* it needs nothing else of the file's shape
+- *WHEN* a reader outside the state layer needs to know a task's status, its merge, whether its tests passed at the merge, whether a regression was recorded against it, or what the journal holds against it
+- *THEN* it reads the task file's frontmatter, the change branch's merge commit for the task, the exit codes recorded for that merge and the event log's note entries
+- *AND* it needs nothing else
 
-** Requirement: The state names its change, its cycle and its phase
+** Requirement: Where a change stands is one answer, read from the record
 :PROPERTIES:
 :GOAL:     none stated
 :END:
-The change's state SHALL name the change, the cycle it belongs to and the phase that cycle is in.
-Each open change SHALL have a state of its own, so that several changes run their cycles side by
-side.
+The state layer SHALL answer, in one read-only call that needs no open cycle, the change's stage, its
+next step, the open cycle and its phase, and the asks still waiting, those that block work first. The
+answer SHALL be the same for any session that asks at the same commit.
 
-*** Scenario: The state names the change, the cycle and the phase
-- *WHEN* a cycle of a change is open
-- *THEN* the state file's =change_name= is the change and its =cycle_id= is the cycle's id, =cycle-<unix-ts>=
-- *AND* its =phase= is =plan=, =execute= or =integrate=
+*** Scenario: A change with no design gets the design round
+- *WHEN* a change is open with an approved intent, and its design has no seam row
+- *THEN* the answer's stage is that the intent has no design
+- *AND* its next step is the design round
 
-*** Scenario: Each open change has its own state
+*** Scenario: An open cycle resumes at its phase
+- *WHEN* a cycle is open and the home's last commit for it closed its plan
+- *THEN* the answer names the open cycle in execute
+- *AND* its next step is to resume execute
+
+*** Scenario: The main path's end calls for the MVP decision
+- *WHEN* no open task is on the main path, at least one task is, and the intent's status line is neither =mvp= nor =done=
+- *THEN* the next step is integrate's MVP decision
+- *AND* it is not a new plan
+
+*** Scenario: A waiting MVP decision is a wait
+- *WHEN* the intent's status line is =mvp= naming an ask, and that ask has no answer
+- *THEN* the next step is to wait for the user's answer to that ask
+
+*** Scenario: Two sessions get the same answer
+- *WHEN* two fresh sessions ask for the same change at the same commit
+- *THEN* both receive the same stage and next step
+
+** Requirement: Each open change has its own record
+:PROPERTIES:
+:GOAL:     none stated
+:END:
+Each open change SHALL have its own directory and event log, so that several changes run their cycles
+side by side, and a cycle SHALL be named =cycle-<unix-ts>=.
+
+*** Scenario: Each open change has its own record
 - *WHEN* two changes of one home are open
-- *THEN* each has its own state file, in its own change's directory
+- *THEN* each has its own event log, in its own change's directory
 - *AND* a cycle of one runs while a cycle of the other is open
 
-** Requirement: The state holds pointers, and prose lives in files
+*** Scenario: The open cycle and its phase are read from the log and the home's commits
+- *WHEN* a cycle of a change is open
+- *THEN* its id, =cycle-<unix-ts>=, is that of the log's last cycle start with no close and no abandonment
+- *AND* its phase is the first of =plan=, =execute= and =integrate= with no commit in the home closing it
+
+** Requirement: Narrative lives in files of its own
 :PROPERTIES:
 :GOAL:     none stated
 :END:
-The change's state SHALL hold short values only, each text at most 280 characters (an ask's question
-and its readback at most 600); anything longer SHALL be a file of its own, which the state names by
-its path.
+Narrative longer than a journal line SHALL be a file of its own in the change's or the cycle's
+directory, and the record SHALL hold no prose in place of one.
 
-*** Scenario: No text in the state runs past its cap
-- *WHEN* any role writes to the change's state
-- *THEN* no text value in the state file is longer than 280 characters, except an ask's question and its readback, which are at most 600
-
-*** Scenario: Narrative is a file the state points at
-- *WHEN* a role has narrative to keep that is longer than a journal line: a finding, a review, an ask's prose, the digest
+*** Scenario: Narrative is a file of its own
+- *WHEN* a role has narrative to keep that is longer than a journal line: a finding, a review, an ask's prose, a brief, a report
 - *THEN* it is in a file of its own
-- *AND* the state holds that file's path
+- *AND* a journal line about it names that file by its path
 
-** Requirement: A task's entry holds its status and what the status rests on
+** Requirement: A task's status is in its task file, and changes only where a check allows
 :PROPERTIES:
 :GOAL:     none stated
 :END:
-The change's state SHALL hold each task's status, one of a closed set, moved only forward, into a
-stop, or back by the four moves this requirement names; any other move SHALL be recorded in the
-journal as a deviation. A task's entry SHALL also hold what its status rests on: its merge commit
-once it awaits review, what blocks it, the times it was sent back, whether it is on the main path,
-and, for a task whose source is another task, where it came from.
+A task's status SHALL be its task file's =status:=, one of a closed set, and nowhere else. A task SHALL
+start only once every task it waits for has merged, and SHALL be =done= only on computed checks: its
+merge commit on the change branch, a review naming that commit, and its tests passing there. A task's
+task file SHALL also hold what its status rests on that no other source holds: what it waits for,
+whether it is on the main path, and, for a task whose source is another task or a finding, where it came
+from.
 
-*** Scenario: A task's status is one of ten
-- *WHEN* a task is in the change's state
-- *THEN* its entry's =status= is one of =ready=, =setup_complete=, =in_progress=, =completed=, =needs_review=, =reviewed=, =done=, =failed=, =blocked= and =externalised=
+*** Scenario: A task's status is its task file's, one of seven
+- *WHEN* a task is in the change's record
+- *THEN* its task file's =status= is one of =ready=, =in_progress=, =needs_review=, =done=, =failed=, =blocked= and =externalised=
+- *AND* a value outside them is reported as a break of the record's forms
 
-*** Scenario: A task's status moves forward along one path
-- *WHEN* a task's status moves forward
-- *THEN* its new status comes later than its old one in =ready=, =setup_complete=, =in_progress=, =completed=, =needs_review=, =reviewed=, =done=, whether or not steps are skipped
-
-*** Scenario: A task stops from any status but done
-- *WHEN* a task becomes =failed=, =blocked= or =externalised=
-- *THEN* its status before was any status but =done=
-
-*** Scenario: A task moves back only by four moves
-- *WHEN* a task's status moves back without a deviation
-- *THEN* the move is =failed= to =ready=, =blocked= to =ready=, =needs_review= to =in_progress= or =reviewed= to =in_progress=
-
-*** Scenario: Any other move of a task is a deviation in the journal
-- *WHEN* a task's status is moved in a way the path does not allow
-- *THEN* the journal gains a =deviation= entry giving the reason for the move
+*** Scenario: A task starts only once its blockers merged
+- *WHEN* a task's start is asked for while a task its =blocked_by= names has no merge commit on the change branch
+- *THEN* the state layer refuses, naming that task
+- *AND* once every task it names has merged, the task may start
 
 *** Scenario: A task awaits review only with its merge commit recorded
 - *WHEN* a task's status is =needs_review=
-- *THEN* its entry's =merge_commit= names the commit the Reviewer reads: the merge commit of the task, or, when a regression it caused was fixed, the code root's commit after the fix
+- *THEN* the change branch holds the task's merge commit, =Merge task <task>=
+- *AND* the review file names the commit the Reviewer read: that merge, or, when a regression it caused was fixed, the code root's commit after the fix
 
-*** Scenario: A send-back is counted on the task
-- *WHEN* a task is sent back from =needs_review= or =reviewed= to =in_progress=
-- *THEN* its entry's =rejections= grows by one
+*** Scenario: Done without a merge is refused
+- *WHEN* a task's move to =done= is checked and the change branch has no merge commit for it
+- *THEN* the state layer refuses, naming the missing merge
+
+*** Scenario: Done without a review is refused
+- *WHEN* the task has a merge commit and no review file names it
+- *THEN* the state layer refuses, naming the missing review
+
+*** Scenario: Done without a test run is refused
+- *WHEN* a task has its merge commit and a review naming it, and no exit code is recorded for the run after that merge
+- *THEN* the state layer refuses, naming the missing file
+
+*** Scenario: Failing tests on a green baseline are refused
+- *WHEN* the cycle's baseline exited 0 and the task's run after its merge exited non-zero
+- *THEN* the state layer refuses, naming the run
+
+*** Scenario: A red baseline is read through the comparison
+- *WHEN* the cycle's baseline exited non-zero and the task's run exited non-zero
+- *THEN* the task may be =done= only when the recorded comparison of the two runs holds 0
+- *AND* a missing or non-zero comparison is refused, naming it
+
+*** Scenario: A send-back is a rework brief and review of the task
+- *WHEN* a review sends a task back
+- *THEN* the cycle's directory gains a rework brief and, once reviewed again, a rework review for that task, each a file of its own
+- *AND* no counter of send-backs is kept
 
 *** Scenario: A task blocked on an ask names the ask
 - *WHEN* a task is blocked on an ask
-- *THEN* its entry's =status= is =blocked=
-- *AND* its =blocker_note= is the ask's id
+- *THEN* its task file's =status= is =blocked=
+- *AND* the event log's blocker note for the task is the ask's id
 
 *** Scenario: A task names the tasks it waits for
 - *WHEN* a task depends on other tasks of the change
-- *THEN* its entry's =blocked_by= lists their names
+- *THEN* its task file's =blocked_by= lists their names
 
-*** Scenario: A task on the main path is marked on its entry
+*** Scenario: A task on the main path is marked in its task file
 - *WHEN* a task is on the change's main path
-- *THEN* its entry's =on_critical_path= is true
+- *THEN* its task file's =on_critical_path= is true
 - *AND* it is false on every other task
 
 *** Scenario: A task whose source is another task names where it came from
-- *WHEN* a task's source is another task
-- *THEN* its entry's =discovered_from=, =discovered_by= and =discovered_class= are set
+- *WHEN* a task's source is another task or a finding
+- *THEN* its task file's =discovered_from= and =discovered_by= are set, and =discovered_class= where it was given
 
-** Requirement: A finding in a file of its own is indexed in the state
+*** Scenario: A follow-up without its source is refused
+- *WHEN* plan writes a task from a handshake's candidate and its task file has no =discovered_from=
+- *THEN* the state layer refuses it, naming the missing field
+
+** Requirement: A finding's routing and resolution are in the event log
 :PROPERTIES:
 :GOAL:     none stated
 :END:
-Each finding written in a file of its own SHALL have one entry in the change's state that indexes
-it: its id, its file's path, its routing and its resolution. The file carries the rest; its fields
-are the =reviewer= spec's.
+Each finding SHALL be a file of its own, its fields the =reviewer= spec's. Its routing and how it was
+resolved SHALL be entries in the event log, the latest of each counting.
 
-*** Scenario: A finding's entry names its file, its routing and its resolution
-- *WHEN* a finding in a file of its own is recorded
-- *THEN* the change's state has one entry for it, with its =finding_id= and the =path= of its file
-- *AND* its routing, =decoration=, is empty until it is routed, then =blocking= or =hardening=
-- *AND* its =resolution= is =pending= until it is resolved
-- *AND* a finding routed to a =decision= ask stays =pending= until the ask is applied, the ask's =:REF:= naming the finding
+*** Scenario: A finding's routing and resolution are entries in the event log
+- *WHEN* a finding in a file of its own is routed or resolved
+- *THEN* the event log gains an entry naming the finding with its routing, =blocking= or =hardening=, and its resolution
+- *AND* its resolution is =pending= until it is resolved, the latest entry counting
+- *AND* a finding routed to a =decision= ask stays =pending= until the ask is applied, when the orchestrator routes it again; the ask's =:REF:= names the finding
 
 *** Scenario: A finding's resolution is one of a fixed list
 - *WHEN* a finding is resolved
-- *THEN* its =resolution= is one of =inline-fixed=, =design-amended=, =candidate-task-<name>=, =followup-task-<task-name>=, =reverted=, =accepted-with-note= or =hardening-list=
-
-*** Scenario: A finding with no kind or no evidence is refused
-:PROPERTIES:
-:TEST: none: no step of a role writes a finding without a kind or evidence on its own, so no fixture makes the WHEN happen; the state tool's refusal is its own test
-:END:
-- *WHEN* a finding is recorded without a kind of =issue= or =question=, or with no evidence
-- *THEN* the record refuses it
-- *AND* no entry is written
+- *THEN* its resolution is one of =inline-fixed=, =design-amended=, =candidate-task-<name>=, =followup-task-<task-name>=, =reverted=, =accepted-with-note= or =hardening-list=
+- *AND* any other value is refused
 
 ** Requirement: Each phase passes its gate before the next phase starts
 :PROPERTIES:
 :GOAL:     none stated
 :END:
-Each phase of a cycle SHALL have a gate in the change's state: its named checks and whether it has
-passed. A gate SHALL pass only when every check holds, and the cycle SHALL move to the next phase
-only once it has passed. A check SHALL be computed from the record and the files in the home
-wherever they can show it, and asserted by the phase agent only where they cannot; a gate SHALL hold
-no prose. Each phase's checks SHALL be those this requirement names.
+Each phase of a cycle SHALL have a gate: its named checks. A gate SHALL pass only when every computed
+check holds and every asserted check has been asserted in that cycle and phase, and a phase SHALL be
+closed only once its gate passes. A computed check SHALL be decided afresh from the files and git each
+time the gate is reported; an asserted check SHALL be shown as asserted, with who asserted it and when.
+Each phase's checks SHALL be those this requirement names.
 
 *** Scenario: A phase moves on only after its gate passes
 - *WHEN* a phase's gate has a check that does not hold
-- *THEN* the state file's =phase= stays at that phase
-- *AND* the gate's =passed= is false
+- *THEN* no commit in the home closes that phase
+- *AND* the change's stage stays at that phase
 
-*** Scenario: A passed gate is recorded with its checks and its time
-- *WHEN* a phase passes its gate
-- *THEN* the state file's =phase_gates= entry for that phase has =passed= true, every one of its =checks= true, and =passed_at= the time it passed
+*** Scenario: A passed gate is re-checked each time it is reported
+- *WHEN* execute's gate passed and a task's merge commit is afterwards removed from the change branch
+- *THEN* the next report of the gate shows it failing, naming the task
 
 *** Scenario: A check the record can show is computed, never asserted
-- *WHEN* a check is one the record and the files in the home can show
+- *WHEN* a check is one the files and git can show
 - *THEN* it holds only when they show it
-- *AND* no role asserts it
+- *AND* an assertion of it is refused
 
 *** Scenario: An asserted check gives its reason in the journal
 - *WHEN* the phase agent asserts a check the record cannot show (the batch composed, the open tasks refined)
-- *THEN* the gate holds only that the check is true
+- *THEN* the event log holds the assertion with who asserted it and when, and every report of the gate shows it as asserted, never as computed
 - *AND* any reason for it is a journal entry
 
 *** Scenario: Plan's gate checks the handshake, the batch, its citations and the goal-drift answer
 - *WHEN* plan passes its gate in a cycle after the change's first
-- *THEN* the prior cycle's handshake was present with every required field (=prior_integrate_consumed=, computed)
-- *AND* the batch was declared composed and frozen (=batch_composed=, asserted)
-- *AND* every task of the batch that is not externalised cites at least one seam row (=briefs_cite_seams=, computed)
-- *AND* every goal-drift recommendation the prior integrate carried has the user's answer (=user_signed_off_goal_drift=, computed)
+- *THEN* the prior cycle's handshake had every required field (=prior_handshake_complete=, computed)
+- *AND* the batch was declared composed (=batch_composed=, asserted)
+- *AND* the batch is not empty, every brief in it has its task file, and every task in it cites a seam (=batch_cites_seams=, computed)
+- *AND* every follow-up in it names its source (=follow_ups_name_their_source=, computed)
+- *AND* no goal-drift ask waits unanswered or answered with anything but one of its four labels (=goal_drift_signed_off=, computed)
+- *AND* the main path has not ended (=mvp_decision_not_due=, computed)
 
 *** Scenario: On a first cycle, plan's gate asks for no handshake
 - *WHEN* plan passes its gate in a change's first cycle
@@ -263,46 +320,39 @@ no prose. Each phase's checks SHALL be those this requirement names.
 
 *** Scenario: Execute's gate checks that every task ended and every review is filed
 - *WHEN* execute passes its gate
-- *THEN* every task of the batch is =done=, =failed=, =externalised= or =blocked= (=all_tasks_executed_or_stopped=)
-- *AND* every task that reached =reviewed= or =done= with a review has its review file in the home (=all_reviews_completed=)
-- *AND* no task is =setup_complete=, =in_progress=, =completed=, =needs_review= or =reviewed= (=no_orphan_in_progress=)
+- *THEN* the batch is not empty and every task in it is =done=, =failed=, =blocked= or =externalised= (=batch_stopped=)
+- *AND* every =done= task in it is merged, reviewed at its merge and passing its tests there (=done_tasks_merged_and_reviewed=)
+- *AND* every merged task merged after each task its =blocked_by= names (=blocked_by_order=)
 - *AND* all three checks are computed
 
-*** Scenario: Integrate's gate checks the findings, the digest, the asks, the open tasks and the handshake
+*** Scenario: Integrate's gate checks the findings, the asks, the open tasks and the handshake
 - *WHEN* integrate passes its gate
-- *THEN* every finding routed blocking has a resolution other than pending (=blocking_findings_resolved=, computed)
-- *AND* the cycle's PM digest exists with a non-empty Signals section (=pm_digest_produced=, computed)
-- *AND* the cycle's asks are where their status puts them and none waits unacted on (=user_asks_routed=, computed)
-- *AND* every open task has its entry in the handshake's task refinements, and every blocking finding and every answered ask on the main path that needs new work has its follow-up candidate there (=open_tasks_refined_against_handshake=, asserted)
-- *AND* the handshake is written with every required field (=handshake_artifact_written=, computed)
-
-*** Scenario: Integrate's gate holds every ask to its place and its answer
-- *WHEN* integrate's gate checks the cycle's asks
-- *THEN* every open ask is in the handshake's open asks
-- *AND* every ask's file is where its entry in the state says, and no entry lacks its file
-- *AND* no open ask has an answer not yet acted on: an answer naming an option's label is applied, and any other has its readback written
-- *AND* every ask file not yet applied, declined or superseded is in the inbox, and every other one is in the asks directory of its cycle
+- *THEN* no finding routed blocking is pending (=blocking_findings_resolved=, computed)
+- *AND* the handshake is written with every required field, its candidates and design-diff entries in form, and a candidate for every finding resolved =candidate-task-<name>= (=handshake_written=, computed)
+- *AND* every open ask is in the handshake's open asks and no open ask has an answer without its readback (=asks_routed=, computed)
+- *AND* every open task has its entry in the handshake's task refinements (=open_tasks_refined_against_handshake=, asserted)
 
 ** Requirement: Integrate leaves a handshake the next plan reads
 :PROPERTIES:
 :GOAL:     none stated
 :END:
-Integrate SHALL leave in the change's directory a handshake for its cycle, a file named for the
-cycle, holding eight required fields, each present even when it has nothing to carry, and the
-cycle's journal. Its fields SHALL carry what this requirement names.
+Integrate SHALL leave in the change's directory a handshake for its cycle, a file named for the cycle,
+holding nine required fields, each present even when it has nothing to carry. Its fields SHALL carry
+what this requirement names, and no count, ratio or signal.
 
 *** Scenario: The handshake is a file of the change's directory, named for its cycle
 - *WHEN* integrate writes its cycle's handshake
 - *THEN* it is =handshake-<cycle-id>.json= in the change's directory
 
-*** Scenario: The handshake holds eight required fields, each present even when empty
+*** Scenario: The handshake holds nine required fields, each present even when empty
 - *WHEN* a handshake is written
-- *THEN* it holds =design_diff=, =pm_digest_path=, =meta_discoveries=, =user_resolved_goal_drift=, =asks_for_user_open=, =asks_for_user_resolved=, =task_refinements= and =candidate_tasks=
-- *AND* a field with nothing to carry is an empty list, never left out
+- *THEN* it holds =design_diff=, =meta_discoveries=, =asks_for_user_open=, =asks_for_user_resolved=, =user_resolved_goal_drift=, =goal_drift_recommendation=, =task_refinements=, =candidate_tasks= and =journal=
+- *AND* a field with nothing to carry is empty, never left out
+- *AND* it holds no count, ratio or signal
 
 *** Scenario: The handshake carries the cycle's journal
 - *WHEN* a handshake is written
-- *THEN* its =journal= is the cycle's journal, copied
+- *THEN* its =journal= is the cycle's note entries from the event log
 
 *** Scenario: The handshake names each seam row that moved
 - *WHEN* a handshake is written after a cycle that added, amended or retired seam rows
@@ -310,12 +360,20 @@ cycle's journal. Its fields SHALL carry what this requirement names.
 
 *** Scenario: The handshake lists the open asks, and the settled ones with their decisions
 - *WHEN* a handshake is written
-- *THEN* its =asks_for_user_open= holds the state's entry of each open ask, with the path of its file
-- *AND* its =asks_for_user_resolved= holds the entry of each answered, applied or deferred ask, with its decision, its readback and what applied it, read from its file
+- *THEN* its =asks_for_user_open= holds each open ask with its kind, what it blocks and the path of its file
+- *AND* its =asks_for_user_resolved= holds each ask whose file the home's git touched since the cycle started, and each answered or deferred one still in the inbox, with its decision, its readback and what applied it, read from its file
+
+*** Scenario: The resolved asks are the cycle's
+- *WHEN* integrate gathers the handshake's resolved asks, one ask was applied in an earlier cycle and one in this cycle
+- *THEN* only the one whose file the home's git touched since this cycle started is listed, wherever its file now sits
 
 *** Scenario: A goal-drift answer is carried with its label and its readback
 - *WHEN* the user has answered a goal-drift ask in the cycle
 - *THEN* the handshake's =user_resolved_goal_drift= holds the ask's id, the label the answer named (=revise=, =split=, =abandon= or =continue=) and the readback as its rationale
+
+*** Scenario: The PM's goal-drift recommendation is carried with its reason
+- *WHEN* a handshake is written
+- *THEN* its =goal_drift_recommendation= holds the PM's recommendation, =none=, =revise=, =split=, =abandon= or =continue=, and its one-line reason
 
 *** Scenario: A follow-up candidate in the handshake carries its source's words
 - *WHEN* a follow-up candidate is in the handshake's =candidate_tasks=
@@ -331,28 +389,15 @@ cycle's journal. Its fields SHALL carry what this requirement names.
 :PROPERTIES:
 :GOAL:     none stated
 :END:
-A new cycle of a change SHALL start only when no cycle of that change is open, the prior cycle's
-handshake is present with every required field (or the change has had no cycle), the home's git
-tracks the record, and the code root holds no record of its own. A new cycle's state SHALL start
-fresh, carrying the earlier cycles' counts and every ask left in the inbox.
+A new cycle of a change SHALL start only when no cycle of that change is open, the change is designed
+and its main path has not ended, and the newest handshake is present with every required field (or no
+cycle of the change has closed). A cycle's start SHALL be an entry in the event log naming the
+handshake it started from.
 
 *** Scenario: No cycle starts while one is open
 - *WHEN* a cycle of a change is open
 - *THEN* no new cycle of that change starts
-- *AND* the open cycle's state is left as it is
-
-*** Scenario: No cycle starts without the prior handshake
-- *WHEN* the change has had a cycle and its last handshake is missing or lacks a required field
-- *THEN* no new cycle starts
-
-*** Scenario: A change's first cycle starts with no handshake
-- *WHEN* a change's first cycle starts
-- *THEN* no handshake is needed
-- *AND* the state file's =prior_handshake= is null
-
-*** Scenario: A later cycle's state names the handshake it started from
-- *WHEN* a cycle other than the change's first starts
-- *THEN* its state file's =prior_handshake= names the prior cycle's handshake in the change's directory
+- *AND* the event log gains nothing
 
 *** Scenario: No cycle starts in a home whose git ignores the record
 - *WHEN* the home's git ignores =.orchestrator/=
@@ -362,44 +407,56 @@ fresh, carrying the earlier cycles' counts and every ask left in the inbox.
 - *WHEN* the change's code root holds an =.orchestrator/= directory of its own
 - *THEN* no cycle starts
 
-*** Scenario: A new cycle's state starts fresh, with the counts history and the inbox
-- *WHEN* a new cycle of a change starts
-- *THEN* its state is a new file, naming the new cycle
-- *AND* it carries the counts of the change's earlier cycles
-- *AND* it indexes every ask file left in the change's inbox
+*** Scenario: No cycle starts without the prior handshake
+- *WHEN* a cycle of the change has closed and the newest handshake is missing or lacks a required field
+- *THEN* no new cycle starts, and the refusal names each missing field
 
-** Requirement: Closing a cycle keeps its record in the cycle's directory
+*** Scenario: A change's first cycle starts with no handshake
+- *WHEN* a change's first cycle starts
+- *THEN* no handshake is needed
+- *AND* its start entry in the event log names no prior handshake
+
+*** Scenario: A later cycle's start names the handshake it started from
+- *WHEN* a cycle other than the change's first starts
+- *THEN* its start entry in the event log names the newest handshake in the change's directory
+
+*** Scenario: No cycle starts before the design or after the main path ended
+- *WHEN* the change has no seam row in its design, is =done=, waits on its MVP decision, or its main path has ended
+- *THEN* no cycle starts, and the refusal names the change's stage
+
+** Requirement: Closing a cycle is a commit, and nothing is archived
 :PROPERTIES:
 :GOAL:     none stated
 :END:
-A cycle SHALL close only once integrate's gate has passed, unless it is explicitly abandoned.
-Closing SHALL keep the cycle's state, frozen, and its handshake in the cycle's directory, beside
-every artifact the cycle's steps wrote there under the names this requirement gives.
+A cycle SHALL close only once integrate's gate has passed, by the commit closing its integrate, with its
+handshake written, unless it is explicitly abandoned. Nothing SHALL be moved or copied at the close;
+every artifact stays where the step that wrote it put it, under the names this requirement gives.
 
 *** Scenario: A cycle closes only after integrate's gate passes
 - *WHEN* integrate's gate has not passed and the cycle is not being abandoned
 - *THEN* the cycle stays open
 
-*** Scenario: An abandoned cycle's reason is a deviation entry in its archived state
-- *WHEN* a cycle is closed as abandoned, with a reason
-- *THEN* the state kept in the cycle's directory has a =deviation= entry in its journal saying the cycle was abandoned and giving the reason
+*** Scenario: An abandoned cycle's reason is in the event log
+- *WHEN* a cycle is ended as abandoned, with a reason
+- *THEN* the event log gains an entry saying the cycle was abandoned and giving the reason
+- *AND* the cycle is no longer open
 
-*** Scenario: Closing a cycle keeps its state and its handshake in the cycle's directory
+*** Scenario: Closing a cycle archives nothing
 - *WHEN* a cycle closes
-- *THEN* the cycle's directory holds =state.json=, the state as it was at the close, with its close time set
-- *AND* it holds =handshake.json=, the cycle's handshake
+- *THEN* the change's directory holds =handshake-<cycle-id>.json=, and nothing of the cycle is moved or copied
+- *AND* no state file is written in the cycle's directory
 
 *** Scenario: A cycle's directory holds what its steps wrote, under fixed names
 - *WHEN* a cycle has run
 - *THEN* its directory is =.orchestrator/changes/<change>/cycles/<cycle-id>/= in the home
-- *AND* it holds what the cycle's steps wrote, each under its name: the Implementors' briefs (=briefs/<task>.md=), their reports (=reports/<task>.md=), the review files (=reviews/<task>.md=, and =reviews/whole-change.md=), the findings (=findings/<finding-id>.md=), the settled asks (=asks/<ask-id>.org=), =premise-check.md=, =design-diff.json=, =pm-signals.json=, =pm-digest.md=, =meta-discoveries.json=, =task-refinements.json= and =candidate-tasks.json=
+- *AND* it holds what the cycle's steps wrote, each under its name: the Implementors' briefs (=briefs/<task>.md=), their reports (=reports/<task>.md=), the review files (=reviews/<task>.md=, and =reviews/whole-change.md=), the findings (=findings/<finding-id>.md=), the settled asks (=asks/<ask-id>.org=), =premise-check.md=, =design-diff.json=, =meta-discoveries.json=, =task-refinements.json= and =candidate-tasks.json=
 
 *** Scenario: The change's directory holds its files under fixed names
 - *WHEN* a change is open
-- *THEN* its directory holds =change.json= (the repository, branch, worktree and base commit the change was opened on), =state.json= and the inbox, =inbox/=
+- *THEN* its directory holds =change.json= (the repository, branch, worktree and base commit the change was opened on), =events.jsonl= and the inbox, =inbox/=
 - *AND* a =handshake-<cycle-id>.json= for each cycle whose integrate wrote one
 - *AND* the task files under =tasks/open/= and =tasks/closed/=, and the hardening list, =hardening.org=
-- *AND* the baseline's output, =baseline-<cycle-id>.txt=, and the output of each run after a merge, =after-<task>-<ts>.txt=
+- *AND* the baseline's exit code, =baseline-<cycle-id>.status=, and for each run after a merge its exit code, =after-<task>-<sha12>.status=, and against a red baseline its comparison's, =.compare=, each beside its output, =.txt=
 
 *** Scenario: The change's directory holds what the design round leaves before any cycle
 - *WHEN* the design round has run
@@ -411,123 +468,100 @@ every artifact the cycle's steps wrote there under the names this requirement gi
 :GOAL:     none stated
 :END:
 What the change's directory holds and the home's git tracks SHALL be committed in the home no later
-than the close of the phase that wrote it, in one commit whose subject names the cycle and the
-phase.
+than the close of the phase that wrote it, in one commit whose subject names the cycle and the phase.
+That commit SHALL be what records the phase's close; a subject in another form SHALL NOT be read as one.
 
 *** Scenario: Each phase's close commits the record in the home
 - *WHEN* a phase of a cycle closes
-- *THEN* one commit in the home, subject =Orchestrator: <cycle-id> <phase> closed=, holds the state file and whatever else the phase wrote in the change's directory that was not yet committed
+- *THEN* one commit in the home, subject =Orchestrator: <cycle-id> <phase> closed=, holds the event log and whatever else the phase wrote in the change's directory that was not yet committed
 
-** Requirement: Every spawned agent is recorded with its setting
+*** Scenario: A phase is closed only by its closing commit
+- *WHEN* the home has a commit for a cycle's phase whose subject is not exactly =Orchestrator: <cycle-id> <phase> closed=
+- *THEN* the phase is not read as closed
+
+** Requirement: The record's forms are checked, and a break fails what reads it
 :PROPERTIES:
 :GOAL:     none stated
 :END:
-The change's state SHALL hold one entry for each agent spawned for the change, other than a
-read-only helper: the agent's id, its role, its task when it has one, the cycle it worked in, the
-agent setting it was spawned at and why. An agent recorded while no cycle is open SHALL be kept until
-the next cycle starts, under the cycle it worked in.
+The state layer SHALL check the forms the record is read by: the merge commits on the change branch,
+the phase-close commits, the inline-fix commits, the test runs' files, the review and brief files, and
+the task files' frontmatter. It SHALL report each break with where it is and the form expected, and a
+break in a form a computed check reads SHALL fail that check rather than be guessed around.
 
-*** Scenario: A spawned agent has one entry with its role, its cycle and its setting
+*** Scenario: A merge commit in another form is reported
+- *WHEN* the change branch has a merge of a task's branch whose subject is not =Merge task <task>=
+- *THEN* the convention check reports the commit and the expected subject
+- *AND* the task's done check fails until it is fixed
+
+*** Scenario: A rework's merge is the task's merge, marked as a rework
+- *WHEN* a task sent back is merged again
+- *THEN* its merge commit's subject is =Merge task <task> (rework)=, with a one-line description after it where given
+
+*** Scenario: An unknown status is reported
+- *WHEN* a task file's =status:= is not in the task status set
+- *THEN* the convention check reports the file and the value
+
+*** Scenario: A second copy of a fact is reported, naming its source
+- *WHEN* a task file carries =merge_commit= or a time, or a finding file carries =decoration= or =resolution=
+- *THEN* the convention check reports the file and the field, naming where that fact is read from
+
+*** Scenario: A finding with no kind or no evidence is reported
+:PROPERTIES:
+:TEST: none: no step of a role writes a finding without a kind or evidence on its own, so no fixture makes the WHEN happen; the convention check is its own test
+:END:
+- *WHEN* a finding file has no kind of =issue= or =question=, or no evidence
+- *THEN* the convention check reports the file and what it lacks
+
+** Requirement: A spawned agent is recorded by its spawn
+:PROPERTIES:
+:GOAL:     none stated
+:END:
+The record of an agent spawned for a change, its role, what it works on and the setting it ran at,
+SHALL be its spawn: the description and the setting on the call, kept in the session's transcript. The
+change's directory SHALL hold no entry for it.
+
+*** Scenario: A spawned agent's description names its role and what it works on
 - *WHEN* an agent is spawned for a change
-- *THEN* the state file's =agents= gains one entry with its =agent_id=, its =role=, its =task= when it has one, its =cycle=, its =model= and =effort=, its =source= and its =reason=
+- *THEN* its spawn's description is =<role>: <task | cycle-id | change>=
+- *AND* its model and effort are those of the spawn
 
-*** Scenario: An agent's role and setting are from closed sets
-- *WHEN* an agent's entry is written
-- *THEN* its =role= is one of =phase-open=, =phase-design=, =phase-plan=, =phase-execute=, =phase-integrate=, =phase-inline=, =architect-design=, =architect-premise=, =architect-conformance=, =implementor=, =implementor-rework=, =reviewer-task=, =reviewer-whole-change= and =pm=
-- *AND* its =model= is =opus=, =sonnet= or =fable=, and its =effort= is =low=, =medium=, =high=, =xhigh= or =max=
+*** Scenario: No agent entry is written in the change's directory
+- *WHEN* an agent is spawned, resumed or hands back
+- *THEN* no file of the change's directory gains an entry for it
 
-*** Scenario: An agent at its role default gives that as its reason
-- *WHEN* an agent runs at its role default
-- *THEN* its entry's =source= is =role-default= and its =reason= is =role default=
-
-*** Scenario: An agent at a task override gives the task file's reason
-- *WHEN* an agent runs at a task override
-- *THEN* its entry's =source= is =task-override= and its =reason= is the task file's one-line reason
-
-*** Scenario: A resumed agent keeps its first entry
-- *WHEN* an agent that has an entry is resumed
-- *THEN* it gains no second entry
-
-*** Scenario: An agent recorded with no open cycle waits for the next one
-- *WHEN* an agent is recorded while the change has no open cycle
-- *THEN* its entry is kept in =agents-pending.json= in the change's directory, naming the cycle it worked in
-- *AND* the next cycle's state takes it in
-
-*** Scenario: A read-only helper is not recorded
-:PROPERTIES:
-:TEST: none: no fixture makes an agent spawn a read-only helper; whether one is spawned is the agent's own choice
-:END:
-- *WHEN* a read-only helper, such as a web fetch, is spawned
-- *THEN* the state gains no entry for it
-
-** Requirement: The counts are computed from the record, never written
+** Requirement: The record holds no counts
 :PROPERTIES:
 :GOAL:     none stated
 :END:
-A cycle's counts SHALL be computed from the change's state, from its tasks' statuses and times and its
-journal, and SHALL never be stored in the state file or written by an agent; each count and ratio
-SHALL mean what this requirement states.
+No count, ratio or signal of a cycle SHALL be stored in the record or written by an agent; spend and
+quality by role SHALL be computed on demand from the transcripts and the record, outside it.
 
-*** Scenario: The state file holds no count of its cycle
+*** Scenario: No count is stored in the record
 - *WHEN* a cycle is under way or closed
-- *THEN* its state file holds no count and no ratio of that cycle
+- *THEN* no file of the change's directory and no event log entry holds a count or ratio of that cycle
 
-*** Scenario: A task an earlier cycle held is carried, not created
-- *WHEN* a task of the cycle was held by an earlier cycle of the change
-- *THEN* it is counted as carried
-- *AND* it is not counted as created
-
-*** Scenario: The four ratios divide the cycle's counts
-- *WHEN* a cycle's counts are computed
-- *THEN* drainage is completed over created, review balance is reviewed over completed, rejection rate is rejected over completed, and externalisation pressure is externalised over created
-
-*** Scenario: Send-backs and inline fixes are counted from the record
-- *WHEN* a cycle's counts are computed
-- *THEN* rejected counts the cycle's send-backs only
-- *AND* inline fixes counts the cycle's =inline-fix= journal entries
-
-*** Scenario: The state carries the earlier cycles' counts
-- *WHEN* a cycle starts after earlier ones
-- *THEN* its state carries the counts of the change's last cycles, five unless the state's history window says otherwise
-
-** Requirement: A missing or older record is recovered, never invented
+** Requirement: A lost or older record is recovered, never invented
 :PROPERTIES:
 :GOAL:     none stated
 :END:
-When the state file is missing mid-cycle, is invalid or is of an older form, the record SHALL be
-recovered from what the home holds, keeping everything it held, and no role SHALL write a new state
-in its place.
+When the event log is missing or unreadable mid-cycle, it SHALL be restored from the home's git and what
+was appended since the last close redone; when it cannot be restored the user SHALL be asked. A change
+whose record is of the older form SHALL start its next cycle with nothing converted.
 
-*** Scenario: A missing state file is restored from the cycle's directory
-- *WHEN* the state file is missing mid-cycle and the cycle's directory holds an archived state of that cycle
-- *THEN* the state is restored from it
+*** Scenario: A missing event log is restored from git
+- *WHEN* the event log is missing or unreadable mid-cycle
+- *THEN* it is restored from the home's git
+- *AND* what was appended since the last phase close is redone
 
-*** Scenario: A missing state file with nothing to restore is an environment ask
-- *WHEN* the state file is missing mid-cycle and no archived state of that cycle exists
-- *THEN* an =environment= ask asks the user whether to recover the cycle or abandon it
-- *AND* no new state is written meanwhile
+*** Scenario: An event log that cannot be restored is an environment ask
+- *WHEN* the event log is missing mid-cycle and git holds no copy of it
+- *THEN* an =environment= ask asks the user how to recover
+- *AND* no event log is invented meanwhile
 
-*** Scenario: An invalid state file is repaired by hand in the keys it names, and journaled
-- *WHEN* the state file fails validation (it was written by hand)
-- *THEN* only the keys validation lists are fixed by hand
-- *AND* the change's journal has a =deviation= entry naming the keys fixed
-- *AND* every later change to the state goes through the state tool
-
-*** Scenario: A state file of an older form is converted, keeping all it held
-- *WHEN* the state file is of an older form
-- *THEN* it is converted to the current form
-- *AND* what the current form has no place for is kept, in =legacy-state-extras.json= in the cycle's directory
-- *AND* the file as it was is kept beside it, as =state.json.pre-migrate-<ts>=
-
-*** Scenario: An older record's asks become files
-- *WHEN* a state file of an older form holds asks
-- *THEN* each becomes an ask file: an open one in the inbox, a resolved one in its cycle's asks directory
-- *AND* an ask file already there is left as it is
-
-*** Scenario: The one-change layout is moved under its change's directory
-- *WHEN* a home holds one change's record directly under =.orchestrator/=: its state, its cycles, its inbox and its handshakes
-- *THEN* they are all moved under =.orchestrator/changes/<change>/=
-- *AND* a =change.json= is written there that adopts the old code root on its branch
+*** Scenario: A change on the older state file starts its next cycle with nothing converted
+- *WHEN* a change's directory holds a =state.json= from the older state tool and its open cycle has closed on that tool
+- *THEN* its next cycle starts on the event log with nothing converted, the old file left as it is and read by nothing
+- *AND* the old handshake is read as the prior
 
 * Gaps
 
@@ -535,12 +569,5 @@ in its place.
 :PROPERTIES:
 :REQUIREMENT: A change has a directory of its own in the home
 :END:
-The test runs' output is kept in the change's directory and ignored by the home's git, a rule made
-2026-10-09 while the change's directory was still inside the code repository, to keep noise out of
-it; no cost of tracking was observed then (=findings/2026-10-09-findings-and-questions-as-files.org=).
-The home has been above the code root since 2026-10-10. Measured 2026-11-13, the Emacs homes hold
-61-273 MB of test output each (files up to 1.2 MB), and those homes are pushed on every leave. Set
-aside by the user, to be decided later: "We'll decide to track test runs in the future, I suspect we can optimize the system such that fewer test files are created."
-
-The gap this draft had first, "Which form of the record is its boundary", was filled by the user
-2026-11-13: "The state file's shape is the boundary" (the requirement of that name).
+Carried from the baseline, set aside by the user 2026-11-13. On the state layer the exit codes are
+tracked and the outputs are not, which narrows the question to the outputs.
