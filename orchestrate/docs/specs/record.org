@@ -85,11 +85,10 @@ naming its kind and what it concerns, in one line, with any longer form in a fil
 :PROPERTIES:
 :GOAL:     none stated
 :END:
-What another role, or an eval, may rely on in the record SHALL be the state file and the fields this
-spec names: the change's directory, =state.json=, a task's entry by its =task_name= with its
-=regression_detected= and =after_snapshot=, and the =journal= with each entry's =kind=, =ref=, =text=,
-=at= and =path=. The rest of the file is the state tool's own. A tool that changes a named field
-changes this spec.
+What another role, or an eval, may rely on in the record SHALL be the change's directory, its
+=state.json= and the fields this spec's scenarios name, and the names they give in the change's and
+the cycle's directory. The rest of the file is the state tool's own. A tool that changes a named
+field changes this spec.
 
 *** Scenario: A reader finds a task's facts by the fields the record names
 - *WHEN* a reader outside the state tool needs to know whether a regression was recorded against a task, or what the journal holds against it
