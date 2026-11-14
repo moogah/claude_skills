@@ -1,6 +1,6 @@
 #+TITLE: implementor
 #+OPTIONS: ^:{} -:nil
-#+STATUS: draft 2026-11-13, extracted from the reference skill (=main= =e356da7=); six gaps opened; at the hand-off review 2026-11-13: two filled by the cross-spec decisions (the blocked hand-back, G7); the seam objection's section and the failed hand-back filled; the obsolete-flag gap closed with no scenario (plan's); the clean worktree filled; no gap open
+#+STATUS: draft 2026-11-13, extracted from the reference skill (=main= =e356da7=); six gaps opened; at the hand-off review 2026-11-13: two filled by the cross-spec decisions (the blocked hand-back, G7); the seam objection's section and the failed hand-back filled; the obsolete-flag gap closed with no scenario (plan's); the clean worktree filled; no gap open; the brief's contents added from a boundary note
 
 * Purpose
 
@@ -13,6 +13,31 @@ what becomes of its commit, its notes or its report, or how a wrong premise, a d
 is routed: those are =execute='s.
 
 * Requirements
+
+** Requirement: The Implementor's brief holds what its work needs
+:PROPERTIES:
+:GOAL:     none stated
+:END:
+The Implementor SHALL be given a brief that names the files it writes and where it works, and
+carries what its task cites and the project's standards; it SHALL work from that brief.
+
+*** Scenario: An Implementor's brief names the files it writes
+- *WHEN* an Implementor is spawned for a task
+- *THEN* its brief names the task file in the home by its path
+- *AND* the report's path, in the cycle's directory
+- *AND* the task's scratch directory
+
+*** Scenario: An Implementor's brief carries what the task cites
+- *WHEN* an Implementor is spawned for a task
+- *THEN* its brief holds each seam row the task cites, verbatim
+- *AND* each scenario the task cites, with its coverage
+- *AND* of the design, only the decisions the cited rows link to or the task's steps name
+
+*** Scenario: An Implementor's brief carries the project's standards and where to work
+- *WHEN* an Implementor is spawned for a task
+- *THEN* its brief holds the project's additions to the role, followed by its priors
+- *AND* the verification command
+- *AND* the worktree's path and its branch
 
 ** Requirement: The task's work is one commit on its task's branch
 :PROPERTIES:
