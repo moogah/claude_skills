@@ -791,3 +791,39 @@ done; its merge to main is the user's.
 - Example :: "A moved workspace integration branch is merged in before the Architect runs"
 - Avoid :: integration branch alone, main, trunk
 - Specs :: design-round, opening, integrate
+
+* overlay
+A home's own configuration for the skill, kept in the home: its repositories, each one's test command
+and hooks, where worktrees go, its additions to each role, and the user's priors.
+- Example :: "The dispatcher SHALL tell the user explicitly when no overlay is found for the home"
+- Avoid :: config, settings (the agent setting is another thing), project configuration
+- Specs :: dispatcher, execute
+
+* relay
+The dispatcher's showing the user what a phase agent handed back: the line itself, then the open
+decisions, one per call while the user is present and one line each while absent.
+- Example :: "the dispatcher relays the line, which gives the user the intent's path"
+- Avoid :: report (the Implementor's file), forward, echo
+- Specs :: dispatcher
+
+* call
+The dispatcher's putting one ask to the user through the session's question tool: the question, its
+options with the recommended one marked, and =Not now=; answered by an option or in the user's own
+words.
+- Example :: "the dispatcher puts that ask to the user in a call holding it alone"
+- Avoid :: blocking call (main's name; every call waits), prompt, popup, =AskUserQuestion= in prose
+- Specs :: dispatcher
+
+* present, absent
+Whether the user is at the session: present when they sent a message in its last 15 minutes, absent
+otherwise and in a session with no message from them. The dispatcher decides it.
+- Example :: "*WHEN* the session holds no message from the user in its last 15 minutes, or none at all"
+- Avoid :: available, online, idle
+- Specs :: dispatcher, execute
+
+* Not now
+The option every call offers, whose answer leaves the ask open; on an ask that blocks work waiting
+now it has the result the user's absence has.
+- Example :: "the call offers =Not now="
+- Avoid :: skip, later, defer (=deferred= is an ask status the user writes in the file)
+- Specs :: dispatcher
