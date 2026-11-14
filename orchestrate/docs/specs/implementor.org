@@ -1,6 +1,6 @@
 #+TITLE: implementor
 #+OPTIONS: ^:{} -:nil
-#+STATUS: draft 2026-11-13, extracted from the reference skill (=main= =e356da7=); not yet reviewed; six gaps open
+#+STATUS: draft 2026-11-13, extracted from the reference skill (=main= =e356da7=); six gaps opened; at the hand-off review 2026-11-13: two filled by the cross-spec decisions (the blocked hand-back, G7)
 
 * Purpose
 
@@ -50,6 +50,11 @@ outside its task, and SHALL declare any work beyond it.
 *** Scenario: A sentence the work made untrue is corrected in the same commit
 - *WHEN* the work makes a docstring, a comment, a README sentence or a help text untrue
 - *THEN* the task's commit corrects that sentence
+
+*** Scenario: A cited spec or design sentence the work made untrue is a discovery
+- *WHEN* the work makes untrue a sentence of a cited spec or of the change's design
+- *THEN* the commit leaves that sentence as it was
+- *AND* a Discoveries entry of kind =issue= names it, a seam objection when it is a seam row
 
 *** Scenario: A defect outside the task is not fixed in the task's commit
 - *WHEN* the Implementor finds a defect in code or text that exists outside its task
@@ -253,6 +258,11 @@ report.
 - *AND* hands back =blocked <task>: <what it observed and what it blocks>=, in one clause
 - *AND* writes no ask file
 
+*** Scenario: A blocked Implementor commits nothing
+- *WHEN* an Implementor hands back =blocked=
+- *THEN* no commit of its own is on its task's branch
+- *AND* its report is written with an empty =commit_sha=, and the task file's Observations and Discoveries as they stand
+
 *** Scenario: The Implementor hands back once, after its commit and its test run
 - *WHEN* an Implementor hands back
 - *THEN* no test run it started is still running
@@ -320,24 +330,6 @@ in Discoveries only is not settled.
 :REQUIREMENT: The Implementor hands back one line, once
 :END:
 The hand-back has a =failed <task>: <why>= form and no condition that chooses it over =blocked=.
-
-** Gap: What a blocked Implementor leaves on its branch and in its report
-:PROPERTIES:
-:REQUIREMENT: A wrong premise, or a failing test the task did not write, is settled by what it changes
-:END:
-A =blocked= hand-back on a wrong premise comes with a report stating the claim. The reference skill
-does not say whether the Implementor commits the work it has before stopping, nor what the report's
-=commit_sha= and the task file's sections hold when it does not. =execute= fails a task whose
-Implementor commits nothing, and blocks one whose Implementor hands back a wrong premise.
-
-** Gap: A cited spec or design sentence the work made untrue
-:PROPERTIES:
-:REQUIREMENT: The task's work is one commit on its task's branch
-:END:
-Before its commit the Implementor re-reads the cited spec and design sentences with the rest of the
-prose beside its change, and corrects in its commit any sentence its work made untrue; but that
-commit may change nothing under =docs/=. What the Implementor leaves for such a sentence is not
-stated.
 
 ** Gap: What the Implementor does with a task flagged as possibly obsolete
 :PROPERTIES:
