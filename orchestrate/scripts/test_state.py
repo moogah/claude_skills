@@ -663,3 +663,39 @@ def test_a_finding_from_the_design_round_is_routed_by_the_first_cycle(home):
     out = home.ok("route", "arch-chg-1", "--decoration", "hardening", "--resolution", "hardening-list")
     assert out["finding"] == "arch-chg-1"
     assert home.ok("conventions")["ok"] is True
+
+
+# ---------------------------------------------------------------- A regression fixed inline (execute § 4)
+
+def _inline_fix(home, name="a"):
+    git(home.wt, "commit", "-q", "--allow-empty", "-m", f"Inline fix after merging task {name}: the clash")
+    return git(home.wt, "rev-parse", "HEAD")
+
+
+def test_a_task_fixed_inline_after_its_merge_is_done_on_the_run_after_the_fix(home):
+    """execute § The task whose merge broke a test is reviewed after the fix; § The run after a fix is
+    kept beside the run after the merge."""
+    cycle = started(home)
+    home.task("a", status="needs_review")
+    sha = home.merge("a", tests=1)                      # the regression, left as it was
+    fix = _inline_fix(home)
+    stem = home.dir / f"after-a-{sha[:12]}-fix-1"
+    stem.with_suffix(".txt").write_text("ran\n")
+    stem.with_suffix(".status").write_text("1\n")       # the first attempt still failed
+    stem2 = home.dir / f"after-a-{sha[:12]}-fix-2"
+    stem2.with_suffix(".status").write_text("0\n")
+    home.review(cycle, "a", fix)
+    assert home.ok("check", "done", "a")["merge_commit"] == sha
+    stem2.with_suffix(".status").write_text("1\n")
+    code, _, err = home.run("check", "done", "a")
+    assert code == 1 and "fix-2" in err["message"]
+
+
+def test_a_review_naming_a_commit_before_the_merge_does_not_count(home):
+    cycle = started(home)
+    home.task("a", status="needs_review")
+    before = git(home.wt, "rev-parse", "HEAD")
+    home.merge("a")
+    home.review(cycle, "a", before)
+    code, _, err = home.run("check", "done", "a")
+    assert code == 1 and "review" in err["message"]

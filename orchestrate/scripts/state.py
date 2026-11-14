@@ -561,10 +561,14 @@ def done_problems(ch, name):
         problems.append(f"no `Merge task {name}` commit on {ch.branch}")
         return problems, None
     sha = merges[-1]
-    named = [p for p, fm in ch.reviews(name) if _same_sha(fm.get("merge_commit"), sha)]
+    # The review names the merge, or a later commit on the first parent that holds it: after a
+    # regression's inline fix it reads the code through the fix (execute § 4).
+    shas = [c for c, _n, _s in ch.first_parent()]
+    through = shas[shas.index(sha):] if sha in shas else [sha]
+    named = [p for p, fm in ch.reviews(name) if any(_same_sha(fm.get("merge_commit"), c) for c in through)]
     if not named:
         problems.append(f"no review file (cycles/*/reviews/{name}.md or {name}-rework.md) names its merge "
-                        f"commit {sha[:12]}")
+                        f"commit {sha[:12]} or a later commit through it")
     problems += test_problems(ch, name, sha)
     return problems, sha
 
@@ -579,10 +583,17 @@ def _read_int(path):
 def test_problems(ch, name, sha):
     """The test run recorded for the merge commit passes: `after-<task>-<sha12>.status` holds 0, or,
     against a red baseline of the cycle whose batch holds the task, `after-<task>-<sha12>.compare`
-    (test.compare's exit code) holds 0. The state layer reads the files; it runs nothing. The
+    (test.compare's exit code) holds 0. When runs after a regression's fix exist
+    (`after-<task>-<sha12>-fix-<n>`), the newest of them is read instead. The state layer reads the files; it runs nothing. The
     `.status` and `.compare` files are tracked, so every clone gives the same answer; the run's
     output, `.txt`, is not."""
     stem = os.path.join(ch.dir, f"after-{name}-{sha[:12]}")
+    # After a regression's fix the newest run after it decides; the merge's own run stays as the
+    # regression's evidence (execute § 4: `after-<task>-<sha12>-fix-<n>`).
+    fixes = [(int(m.group(1)), p[:-len(".status")]) for p in glob.glob(stem + "-fix-*.status")
+             if (m := re.search(r"-fix-(\d+)\.status$", p))]
+    if fixes:
+        stem = max(fixes)[1]
     rel = ch.rel(stem)
     if not os.path.exists(stem + ".status"):
         return [f"no test run for merge commit {sha[:12]}: {rel}.status is missing (flows/execute.md § 4)"]
