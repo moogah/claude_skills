@@ -1,6 +1,6 @@
 #+TITLE: project-manager
 #+OPTIONS: ^:{} -:nil
-#+STATUS: draft 2026-11-13, extracted from the reference skill (=main= =e356da7=); eight gaps opened; at the hand-off review 2026-11-13: G8 applied, its role default added; the sections' order filled
+#+STATUS: draft 2026-11-13, extracted from the reference skill (=main= =e356da7=); eight gaps opened; at the hand-off review 2026-11-13: G8 applied, its role default added; the sections' order and the throughput rows filled
 
 * Purpose
 
@@ -89,6 +89,11 @@ and SHALL read spend against quality in one line without proposing a change to a
 *** Scenario: The throughput table covers the history window
 - *WHEN* a PM digest is written
 - *THEN* it shows, for this cycle and each cycle of the history window, the tasks created, carried, completed, reviewed and rejected, the inline fixes, the tasks externalised, and the drainage
+
+*** Scenario: The throughput table holds the form's counts only
+- *WHEN* a PM digest's throughput table is written
+- *THEN* its rows are those counts and the drainage, and no other
+- *AND* the counts of tasks started, blocked, failed and done stay in the computed output
 
 *** Scenario: The main-path readout counts active, blocked and complete tasks on the main path
 - *WHEN* a PM digest is written
@@ -299,13 +304,6 @@ The PM's agent pass SHALL run at its role default.
 - *THEN* it runs at =sonnet=, =medium=
 
 * Gaps
-
-** Gap: Which counts the throughput table shows
-:PROPERTIES:
-:REQUIREMENT: The digest shows the cycle's throughput, its main path and its agents
-:END:
-The PM's role names eleven counts for the throughput table (with started, blocked, failed and done);
-the digest's form shows seven of them and the drainage.
 
 ** Gap: Which values the goal-drift recommendation takes
 :PROPERTIES:
