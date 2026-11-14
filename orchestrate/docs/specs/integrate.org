@@ -1,6 +1,6 @@
 #+TITLE: integrate
 #+OPTIONS: ^:{} -:nil
-#+STATUS: draft 2026-11-13, extracted from the reference skill (=main= =e356da7=); at the hand-off review 2026-11-13: G4 and G7 applied, the hardening list's form and a prior's thought carried in, "conformance check" reworded "conformance"
+#+STATUS: draft 2026-11-13, extracted from the reference skill (=main= =e356da7=); at the hand-off review 2026-11-13: G4 and G7 applied, the hardening list's form and a prior's thought carried in, "conformance check" reworded "conformance"; the unpinned disagreement filled
 
 * Purpose
 
@@ -91,6 +91,11 @@ the code does not keep it; such a promise SHALL stay in the design and be report
 - *WHEN* the design promises something the merged code does not do, and a spec scenario, the intent or a prior conflicts with the promise
 - *THEN* a =decision= ask is filed from the finding
 - *AND* when only the Architect sees a product question in it, no ask is filed and the finding's recommended resolution carries the question
+
+*** Scenario: Code that does something else, with no pin, puts the design in question
+- *WHEN* the merged code does something other than a cited seam row states, not merely less, and no test pins the code's behaviour on that point
+- *THEN* a =decision= ask is filed from the finding
+- *AND* the seam row is left as it is until the answer
 
 ** Requirement: Every finding at integrate ends in a fix, a candidate, an ask or the hardening list
 :PROPERTIES:
@@ -463,15 +468,6 @@ each agent at its role default, and SHALL hand the dispatcher one line.
 - *THEN* the dispatcher receives one line naming the phase and the cycle, and when it stopped on an ask, the ask, what it blocks and the file's path
 
 * Gaps
-
-** Gap: Which disagreement with no pinning test is a decision ask
-:PROPERTIES:
-:REQUIREMENT: Which of the design and the code is right is decided by a test
-:END:
-The reference skill sends a disagreement between a row and the code with no pinning test to a
-=decision= ask, and a promise the code does not keep (which no test can pin) to a finding against the
-code, asked about only when the user's words conflict with it. Where one ends and the other begins is
-not stated.
 
 ** Gap: A regression when the workspace integration branch is taken in
 :PROPERTIES:
