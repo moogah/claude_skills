@@ -1,6 +1,6 @@
 #+TITLE: execute
 #+OPTIONS: ^:{} -:nil
-#+STATUS: draft 2026-11-12, extracted from the reference skill (=main= =e356da7=); inferred statements reviewed 2026-11-12; seven gaps filled and the regression requirement revised 2026-11-12; the gap on the run after a fix filled 2026-11-13; four gaps opened and filled 2026-11-13 at the hand-off review; no gap open; accepted 2026-11-13 by the user at the hand-off review
+#+STATUS: draft 2026-11-12, extracted from the reference skill (=main= =e356da7=); inferred statements reviewed 2026-11-12; seven gaps filled and the regression requirement revised 2026-11-12; the gap on the run after a fix filled 2026-11-13; four gaps opened and filled 2026-11-13 at the hand-off review; no gap open; accepted 2026-11-13 by the user at the hand-off review; one WHEN narrowed 2026-11-13 after acceptance (a blocked Implementor commits nothing), from the cross-spec map
 
 * Purpose
 
@@ -35,7 +35,7 @@ close only when every task of the batch is done or explicitly stopped.
 - *THEN* every task that was reviewed has its Reviewer's review file
 
 *** Scenario: An Implementor that commits nothing fails its task
-- *WHEN* an Implementor hands back and no commit has landed on its task's branch
+- *WHEN* an Implementor hands back other than blocked and no commit has landed on its task's branch
 - *THEN* the task is failed
 - *AND* its worktree is kept
 
