@@ -1075,6 +1075,27 @@ def test_init_carries_inbox_writes_gitignore_refuses_when_ignored(run, repo):
         assert code == 1 and err["error"] == "orchestrator_ignored"
 
 
+def test_init_moves_an_ask_settled_before_any_cycle(run, repo):
+    """asks § An ask settled before any cycle waits in the inbox for the first."""
+    inbox = repo / ".orchestrator" / "changes" / "chg" / "inbox"
+    inbox.mkdir(parents=True)
+    rec = {**state.ASK_DEFAULTS, **state.ASK_FILE_DEFAULTS, **ASK, "id": "ask-chg-1",
+           "status": "applied", "decision": "Do it", "applied_via": "design.org D1"}
+    (inbox / "ask-chg-1.org").write_text(state.ask_to_org(rec))
+    (inbox / "ask-chg-2.org").write_text(state.ask_to_org({**rec, "id": "ask-chg-2", "status": "open",
+                                                            "decision": None, "applied_via": None}))
+    code, out, err = init(run, "cycle-1", "--first-cycle")
+    assert code == 0, err
+    moved = ".orchestrator/changes/chg/cycles/cycle-1/asks/ask-chg-1.org"
+    assert out["inbox_settled_moved"] == [moved]
+    assert (repo / moved).exists() and not (inbox / "ask-chg-1.org").exists()
+    assert (inbox / "ask-chg-2.org").exists()
+    paths = {a["id"]: a["path"] for a in read_state(repo)["asks_for_user"]}
+    assert paths == {"ask-chg-1": moved, "ask-chg-2": ".orchestrator/changes/chg/inbox/ask-chg-2.org"}
+    code, out, _ = run("inbox")
+    assert not out.get("problems")
+
+
 # 31
 def test_migrate_1_2_asks_to_files(run, repo):
     src = json.loads((FIX / "state-1.2.json").read_text())

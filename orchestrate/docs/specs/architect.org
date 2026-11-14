@@ -1,0 +1,425 @@
+#+TITLE: architect
+#+OPTIONS: ^:{} -:nil
+#+STATUS: draft 2026-11-13, extracted from the reference skill (=main= =e356da7=); nine gaps open; at the hand-off review 2026-11-13: G2, G5, G7, G8 and G11 applied, its role default added; the dropped property, what each run writes and the prior's cleanup filled; no gap open; accepted 2026-11-13 by the user at the hand-off review; amended 2026-11-14 after acceptance (what the design round writes besides the design; a design-round finding's id and trigger; the state's entries for the findings a run writes), from the evals' build-out (=research/skill-evals/overnight/plan.org= § Decided with the user, 2026-11-14 morning)
+
+* Purpose
+
+The Architect is the role agent that writes the change's design and keeps it true to the code. It
+runs three times. At the design round it writes the change's design, the pending tests and the
+scenarios' test properties. At a plan's premise check it checks what the tasks it is given claim
+about the code and writes a verdict on each claim. At an integrate's conformance it checks the
+merged code against the seam rows the cycle's tasks cited, amends a row the code has rightly
+outgrown, and lists the rows the cycle changed. In every run it reports each defect it finds in
+code or text that exists as a finding and routes none. Each run hands back one line. This spec
+states what each run writes. When a run happens, what it is given and what is done with its output
+are stated by =design-round=, =plan= and =integrate=; the labels a finding carries are stated by
+=reviewer=. The Architect commits nothing, spawns no agent and writes no task.
+
+* Requirements
+
+** Requirement: The design round writes the change's design and its tests, and nothing else
+:PROPERTIES:
+:GOAL:     G5 (inferred; =outcomes.org= O-DR-1)
+:END:
+The Architect's design round SHALL write the change's design, =docs/changes/<change>/design.org=
+in the code root, with a Context, Decisions, a Seams table and, while any question is open, Open
+Questions; and SHALL write the pending tests and the scenarios' test properties. It SHALL change no
+other file. A run for one seam SHALL change only that seam's row, the test properties of the
+scenarios it serves and its pending tests.
+
+*** Scenario: The design round writes the change's design beside its intent
+- *WHEN* the Architect's design round hands back
+- *THEN* the change's design is =docs/changes/<change>/design.org= in the code root, in the same directory as the intent
+- *AND* it has a Context, Decisions and Seams section, Decisions before Seams
+
+*** Scenario: The Context describes the code the change starts from
+- *WHEN* the design round writes the change's design
+- *THEN* its Context describes the code as it stands at the change's base, as far as the change needs it
+
+*** Scenario: The Seams table has the design's five columns
+- *WHEN* the design round writes the Seams table
+- *THEN* its columns are =id=, =statement=, =owning symbols=, =scenarios= and =tests=
+- *AND* each seam has one row
+
+*** Scenario: The design round writes only the design, the tests and the test properties
+- *WHEN* the design round hands back
+- *THEN* the only files it changed are the change's design, files of the test tree, and the spec files, where only scenarios' =:TEST:= properties changed
+- *AND* besides them it has written only a finding file for each defect it found (§ A defect found at the design round is a finding of the change, outside any cycle) and the thought file its brief names
+
+*** Scenario: A run for one seam leaves the rest of the design as it was
+- *WHEN* the design round is run again for one seam
+- *THEN* it changes that seam's row, the =:TEST:= properties of the scenarios the row serves and that seam's pending tests
+- *AND* every other row and every other test is as it was
+
+** Requirement: A seam row states only what must hold at the boundary
+:PROPERTIES:
+:GOAL:     G6 (=outcomes.org= O-NS-6)
+:END:
+Each seam row the Architect writes or amends SHALL state, in one or two sentences, what must hold
+where one part of the code hands something to another; SHALL name as its owning symbols the
+boundary's entry points; SHALL cite the scenarios it serves by their titles and name the tests that
+pin it; and SHALL hold the current state only. It SHALL name no guard, error string, encoding, helper,
+test or transient marker. Each seam SHALL serve a scenario the change's goals need, or have a
+demonstrated reason.
+
+*** Scenario: A seam row's statement names no implementation detail
+- *WHEN* the Architect writes or amends a seam row
+- *THEN* its statement names none of these: a guard, an error string, an encoding, a helper's name, a test's name, a transient marker such as "(new)" or "pending"
+
+*** Scenario: A seam is a boundary between two parts of the code, not a scenario restated
+- *WHEN* the Architect writes a seam row
+- *THEN* its statement says, in one or two sentences, what holds between the part of the code that produces a thing and the part that consumes it
+- *AND* it does not restate a scenario's behaviour
+
+*** Scenario: Owning symbols are the boundary's entry points
+- *WHEN* the Architect writes a seam row
+- *THEN* its owning symbols name the file and the symbols another part of the code calls or reads at that boundary
+- *AND* not the helpers behind them, and no line number
+
+*** Scenario: A symbol the design introduces is named without a marker
+- *WHEN* a seam's entry point does not yet exist at the code root's HEAD
+- *THEN* the row names the symbol the design introduces, with nothing marking it as new
+
+*** Scenario: A seam row has a unique id and names its scenarios and tests
+- *WHEN* the Architect writes a seam row
+- *THEN* its id is =seam/<name>=, used by no other row of the change
+- *AND* its scenarios cell cites each scenario the seam serves as =<capability> § <title>=, with the title exactly as the spec has it
+- *AND* its tests cell names the test files that pin the seam
+
+*** Scenario: A seam row holds the current state only
+- *WHEN* the Architect writes or amends a seam row
+- *THEN* the row carries no status, importance flag, dated note, history or message to a later role
+
+*** Scenario: Each seam serves a scenario the goals need
+- *WHEN* the design round writes the Seams table
+- *THEN* each seam serves a scenario of the change that the intent's goals need, or has a demonstrated reason
+- *AND* no second implementation, configuration point or extension hook is designed for a case nobody raised
+
+** Requirement: A Decision states what must hold and why
+:PROPERTIES:
+:GOAL:     G6 (=outcomes.org= O-NS-6)
+:END:
+Each Decision the Architect writes or amends SHALL record what must hold and why, SHALL name by id
+the seam it concerns, and SHALL name no guard, error string, encoding or helper. A Decision that
+replaces a mechanism SHALL name each property the old one provided and whether the new one keeps it.
+
+*** Scenario: A Decision names no implementation detail
+- *WHEN* the Architect writes or amends a Decision
+- *THEN* it states what must hold and why
+- *AND* it names none of these: a guard, an error string, an encoding, a helper's name
+
+*** Scenario: A Decision that names a seam links to it by id
+- *WHEN* a Decision names a seam
+- *THEN* the Decision's heading carries the seam's id
+
+*** Scenario: A Decision that replaces a mechanism accounts for what the old one gave
+- *WHEN* a Decision replaces a mechanism
+- *THEN* it names each property the old mechanism provided and whether the new one keeps it
+- *AND* each property kept is a seam row a Reviewer can cite
+
+*** Scenario: A property dropped on purpose is marked dropped in its Decision
+- *WHEN* a Decision replaces a mechanism and drops one of its properties on purpose
+- *THEN* the Decision names that property as dropped
+- *AND* the Architect does not write the intent
+
+** Requirement: Every scenario of the change is cited by a test or says why it has none
+:PROPERTIES:
+:GOAL:     G5 (inferred; =outcomes.org= O-DR-1)
+:END:
+At the design round the Architect SHALL leave each scenario of the change cited by a test, pending
+or not, or carrying a =:TEST: none:= property with its reason. It SHALL write a pending test,
+citing its scenario and marked in the project's pending style, for each scenario a test can pin whose
+behaviour the code at HEAD does not yet have; and a plain test, or a citation added to an existing
+test, for each scenario whose behaviour the code already has.
+
+*** Scenario: Every scenario of the change is cited by a test or marked none
+- *WHEN* the design round hands back
+- *THEN* each scenario of the change is cited by a test that exists, pending or not, or carries =:TEST: none:= with a reason
+
+*** Scenario: A scenario the code lacks gets a pending test that cites it
+- *WHEN* a test can pin a scenario of the change and the code at HEAD does not yet have its behaviour
+- *THEN* the Architect writes a test for it that cites the scenario as =<capability> § <title>=
+- *AND* the test is marked pending in the project's pending style
+- *AND* a test that stands in for a seam also cites the seam's id
+
+*** Scenario: A pending test is reported as pending, never as failing
+- *WHEN* the project's test command runs in the code root after the design round, before any task
+- *THEN* each pending test is reported as pending, not as a failure
+- *AND* a run that passed before the round still passes
+
+*** Scenario: A scenario the code already has gets a plain test
+- *WHEN* the code at HEAD already has a scenario's behaviour
+- *THEN* the test that cites it is not marked pending and passes at HEAD
+- *AND* when an existing test already pins it, that test gains the scenario's citation and nothing else in it changes
+
+*** Scenario: A new test sits with the tests of the module it drives
+- *WHEN* the Architect writes a test
+- *THEN* it is in the file that already tests the seam's owning module, or the module of the surface an acceptance test drives
+- *AND* it is in a new file only when no such file exists
+
+*** Scenario: A pending test drives real code
+- *WHEN* the Architect writes a pending test
+- *THEN* the test exercises the code itself
+- *AND* it asserts neither which module owns a behaviour nor that a symbol is absent
+
+*** Scenario: A scenario with no test worth writing says why
+- *WHEN* no test is worth writing for a scenario: nothing a test can drive and no seam whose test would pin it, or a cost the Architect states
+- *THEN* the scenario carries =:TEST: none:= with that reason
+- *AND* the reason names the seam that stands in for a test, when there is one
+
+** Requirement: A design-round question is written for the user, never decided
+:PROPERTIES:
+:GOAL:     G7 (=outcomes.org= O-DR-2)
+:END:
+Each question only the user can settle that the design round raises SHALL be an entry in the
+design's Open Questions, with its options, its recommendation and the rows and tests that depend on
+it; those rows and tests SHALL be drafted in the form the recommendation implies, and the entry SHALL
+say so; no Decision SHALL be written for an open question. The intent's open questions SHALL join
+them as written. A question about a case nobody raised SHALL not be an entry.
+
+*** Scenario: An open question is an entry in the design's Open Questions
+- *WHEN* the design round raises a question only the user can settle, which an intent goal or a scenario of the change needs answered
+- *THEN* the design has an Open Questions section with one entry for it
+- *AND* the entry gives the question in plain terms, two to four options each with the consequence the user would notice, the recommendation and its reason, and the seam rows and pending tests that depend on the answer
+
+*** Scenario: An open question's rows and tests are drafted in the recommended form
+- *WHEN* the design round writes an open question
+- *THEN* the seam rows and pending tests that depend on it are written as the recommendation implies
+- *AND* the entry says that they are
+- *AND* no Decision is written for the question
+
+*** Scenario: The intent's open questions join the design's
+- *WHEN* the intent has open questions
+- *THEN* each is an entry of the design's Open Questions, as the intent words it and marked =(intent)=
+- *AND* the seam rows and pending tests its recommendation implies are written with it
+
+*** Scenario: A question about a case nobody raised is not an open question
+- *WHEN* the design round meets a question that neither an intent goal nor a scenario of the change needs answered
+- *THEN* the design's Open Questions has no entry for it
+
+** Requirement: The premise check writes a verdict on each premise and leaves the design alone
+:PROPERTIES:
+:GOAL:     none stated
+:END:
+The premise check SHALL write, in the cycle's directory, a table for each task it is given, with
+each premise the task makes about the code at the code root's HEAD marked as holding or wrong, and a
+one-line verdict for each task. A defect it finds outside every task's scope SHALL be a finding. It
+SHALL change neither the design nor any test.
+
+*** Scenario: The premise check writes a table of premises per task
+- *WHEN* the premise check runs on a cycle's candidate tasks
+- *THEN* the cycle's directory holds =premise-check.md=
+- *AND* for each task it holds a table of the premises the task makes about the code at the code root's HEAD, each marked Holds or Wrong
+- *AND* a one-line verdict for each task
+
+*** Scenario: A defect of the task file itself is a row of its table
+- *WHEN* a task file has a defect of its own form, such as a quote of a seam row cut short
+- *THEN* the defect is a row of that task's table, marked as a defect of the task file
+
+*** Scenario: A defect outside every task's scope is a finding of the premise check
+- *WHEN* the premise check finds a defect in code or text that exists, outside the scope of every task it was given
+- *THEN* it writes a finding for it, marked as found by the premise check, found from the cycle's batch
+
+*** Scenario: A stale seam row is an interface-drift finding of the premise check
+- *WHEN* the premise check finds a seam row stale: the code or the test tree is right and the row is not
+- *THEN* it writes a finding of class =interface-drift= for the row, found by the premise check
+- *AND* it leaves the row as it is
+
+*** Scenario: The premise check changes neither the design nor the tests
+- *WHEN* the premise check hands back, whether or not it found a seam row stale
+- *THEN* the change's design is as it was before the check
+- *AND* it has written no test
+
+** Requirement: Conformance makes the design say what the merged code does
+:PROPERTIES:
+:GOAL:     G6 (inferred; =outcomes.org= O-IN-1)
+:END:
+At conformance the Architect SHALL check each seam row the cycle's tasks cited, and each diff the
+cycle merged, against the merged code. Where a test pins the code's behaviour and the row is stale,
+it SHALL amend the row in place, with the Decision and the scenario steps that state the same thing,
+keeping each to what must hold at the boundary. Where the code does not keep a promise of the
+design, or no test decides which side is right, it SHALL write a finding and leave the promise in
+the design. It SHALL list every row the cycle added, amended or retired.
+
+*** Scenario: A row the code has rightly outgrown is amended in place
+- *WHEN* a cited seam row disagrees with the merged code and a test pins the code's behaviour on that point
+- *THEN* the Architect amends the row in place in the change's design
+- *AND* in the same edit it amends the Decision and the spec scenario steps that state the same thing
+
+*** Scenario: An amendment's finding names the test that pins the code
+- *WHEN* the Architect amends a seam row at conformance
+- *THEN* its finding of the drift records that the design was amended
+- *AND* names the test that pins the code's behaviour
+
+*** Scenario: An amendment cuts implementation detail and never adds it
+- *WHEN* a cited row is stale because the code gained a guard, an error string, an encoding or a helper
+- *THEN* the amended row names none of them, and a row that named one is cut back
+- *AND* no Decision gains one
+
+*** Scenario: A promise the code does not keep is a finding against the code
+- *WHEN* the design promises something the merged code does not do
+- *THEN* the Architect writes a finding against the code
+- *AND* the promise is still in the design
+
+*** Scenario: Without a pinning test, a disagreement is a finding that puts the design in question
+- *WHEN* a cited seam row and the merged code disagree and no test pins the code's behaviour on that point
+- *THEN* the Architect writes a finding that says what the seam is for, with its kind and its evidence
+- *AND* the Architect writes no ask
+
+*** Scenario: An amendment never renames a scenario
+- *WHEN* the Architect amends a spec scenario's steps at conformance
+- *THEN* the scenario's title is as it was
+
+*** Scenario: A cited seam the merged code no longer honours is a finding
+- *WHEN* at conformance a cited seam's owning symbols are gone or no longer the one producer or mapping, or a scenario the cycle's tasks cited does not pass
+- *THEN* the Architect writes a finding that names the seam
+- *AND* the seam row is not amended to match unless a test pins the code's behaviour
+
+*** Scenario: A replaced implementation still on a live path is a finding
+- *WHEN* a diff the cycle merged leaves a replaced implementation on a live path
+- *THEN* the Architect writes a finding for it
+
+*** Scenario: Conformance lists the rows the cycle changed
+- *WHEN* conformance hands back
+- *THEN* the cycle's directory holds =design-diff.json=, a list with one element for each seam row this cycle added, amended or retired
+- *AND* each element names the row, whether it was added, amended or retired, and the finding or ask behind the change
+- *AND* the list is empty when no row changed
+
+*** Scenario: A clean conformance says so in the journal
+- *WHEN* conformance finds no defect
+- *THEN* the change's journal gains one line saying conformance found nothing
+
+** Requirement: Every defect the Architect finds is a finding, and it routes none
+:PROPERTIES:
+:GOAL:     none stated (=outcomes.org= O-NS-12; =north-star.org= * Disposition states it, no goal does)
+:END:
+At each of its runs the Architect SHALL report each defect it finds in code or
+text that exists, whatever its likelihood, as a finding: one file per finding in the cycle's
+directory, carrying the labels the =reviewer= spec states for a finding, the run that found it, its
+class, the seam it concerns when there is one, and a recommended resolution. It SHALL write no route
+for a finding. A speculative need, or a cleanup that changes no behaviour today, SHALL be one thought
+line in the change's journal and not a finding. Style and preference SHALL not be reported.
+
+*** Scenario: A finding is one file in the cycle's findings directory
+- *WHEN* the premise check or conformance finds a defect
+- *THEN* one file for that defect is in the =findings/= directory of the cycle's directory
+- *AND* it carries the labels the =reviewer= spec states for a finding
+- *AND* it names the run that found it, premise check or conformance, the task or the batch it was found from, and the seam it concerns when there is one
+
+*** Scenario: A defect found at the design round is a finding of the change, outside any cycle
+- *WHEN* at the design round the Architect finds a defect in code or text that exists
+- *THEN* one finding file for it is in the =findings/= directory of the change's directory, outside any cycle
+- *AND* its id is =arch-<change>-<n>= and its =trigger= is =design-round=
+- *AND* the design's Open Questions has no entry for it
+
+*** Scenario: A finding carries the class of the design checklist
+- *WHEN* the Architect writes a finding
+- *THEN* its class is one of =shape-fragmentation=, =vocabulary-mismatch=, =responsibility-leakage=, =dead-branch=, =interface-drift=, =mutation=, =invariant-gap= and =duplication=
+
+*** Scenario: A finding says why the tests missed it and how to resolve it
+- *WHEN* the Architect writes a finding
+- *THEN* it says in one sentence why the tests missed the defect
+- *AND* it gives a recommended resolution in one paragraph that names the files and functions to change
+- *AND* when the Architect amended a seam row, the resolution names the row and how it was amended
+
+*** Scenario: Every defect is a finding, whatever its likelihood
+- *WHEN* at the premise check or conformance the Architect finds a defect in code or text that exists, however unlikely it is to trigger
+- *THEN* it writes a finding for it
+
+*** Scenario: A need the code has today is an issue, never a thought
+- *WHEN* the code needs something today, such as a variable read where nothing on its load path defines it, or a guard that lets through what it should refuse
+- *THEN* the Architect writes a finding of kind =issue= for it, whatever its severity
+- *AND* the journal has no thought line for it
+
+*** Scenario: A speculative need or a cleanup is a thought line, not a finding
+- *WHEN* at the premise check or conformance the Architect notices a need that would arise only after a future change, or a cleanup that changes no behaviour today, and no project prior asks for that kind of work
+- *THEN* the change's journal gains one thought line for it
+- *AND* no finding file is written for it
+
+*** Scenario: A design-round thought goes to the file its brief names
+- *WHEN* at the design round the Architect notices a speculative need or a cleanup that changes no behaviour today
+- *THEN* it writes one thought line for it in the file of its scratch directory that its brief names
+- *AND* its hand-back stays one line
+
+*** Scenario: A cleanup a project prior asks for is a thought line naming the prior
+- *WHEN* the Architect notices a cleanup that changes no behaviour today, and one of the project's priors asks for that kind of work
+- *THEN* the change's journal gains one thought line for it that names the prior
+- *AND* no finding file is written for it
+
+*** Scenario: The Architect writes no route for a finding
+- *WHEN* the Architect writes a finding
+- *THEN* the finding carries no decoration, neither blocking nor hardening
+
+*** Scenario: A finding that breaks a cited seam is of high severity
+- *WHEN* the Architect finds that merged code breaks a cited seam's promise, by a second producer, an inlined mapping or a promoted test that fails, or that it loses data
+- *THEN* the finding's severity is =high=
+
+*** Scenario: Style and preference are not reported
+- *WHEN* the Architect would only have written the code differently by taste, in naming, formatting or an equivalent structure
+- *THEN* there is neither a finding nor a thought line for it
+
+** Requirement: Each run hands back one line and leaves the rest to its spawner
+:PROPERTIES:
+:GOAL:     none stated
+:END:
+Each run of the Architect SHALL hand back one line of at most 200 characters that gives its counts,
+its detail being in the files it wrote. No run SHALL commit, spawn an agent or write a task. The
+Architect SHALL run the test suite and its probes only read-only, in the scratch directory its brief
+names.
+
+*** Scenario: The design round hands back its counts
+- *WHEN* the design round ends
+- *THEN* it hands back one line, =design-round <change>: <n> seams, <k> pending tests, <u> uncited scenarios, <q> open questions=, and nothing else
+- *AND* the line is at most 200 characters
+
+*** Scenario: The premise check hands back its counts and its file
+- *WHEN* the premise check ends
+- *THEN* it hands back one line, =premise-check <cycle-id>: <n> holds, <m> wrong, <f> findings; <path>=, and nothing else
+- *AND* =<path>= is the path of its =premise-check.md=, relative to the home
+- *AND* the line is at most 200 characters
+
+*** Scenario: Conformance hands back its counts
+- *WHEN* conformance ends
+- *THEN* it hands back one line that starts =conformance <cycle-id>: <f> findings, <a> rows amended;= and nothing else
+- *AND* the line is at most 200 characters
+
+*** Scenario: Conformance's hand-back names its design diff
+- *WHEN* conformance hands back
+- *THEN* its line ends =; <path>=, the path of the cycle's =design-diff.json= relative to the home, which every conformance run writes
+
+*** Scenario: The premise check writes only its table, its findings and thought lines
+- *WHEN* the premise check hands back
+- *THEN* the files it has written or changed are =premise-check.md= and its finding files in the cycle's directory
+- *AND* besides them it has added only thought lines to the change's journal and the state's entry for each finding it wrote (=record= § A finding in a file of its own is indexed in the state)
+
+*** Scenario: Conformance writes only its findings, its design diff and the text it corrects
+- *WHEN* conformance hands back
+- *THEN* the files it has written or changed are its finding files and =design-diff.json= in the cycle's directory, and the seam rows and spec sentences it amended
+- *AND* besides them it has added only thought lines to the change's journal and the state's entry for each finding it wrote (=record= § A finding in a file of its own is indexed in the state)
+
+*** Scenario: No run commits, spawns an agent or writes a task
+- *WHEN* any run of the Architect hands back
+- *THEN* it has made no commit, in the code root or in the home
+- *AND* it has spawned no agent
+- *AND* it has written no task file
+
+*** Scenario: Probes leave their files in the scratch directory
+- *WHEN* the Architect runs the test suite or a probe
+- *THEN* it does so in the scratch directory its brief names
+- *AND* the probe changes no file of the code root or the home
+
+** Requirement: The Architect's role default
+:PROPERTIES:
+:GOAL:     none stated
+:END:
+Each run of the Architect SHALL be at its role default; a task override SHALL NOT reach it.
+
+*** Scenario: The Architect's role default is opus, at high for the design round and conformance and medium for the premise check
+- *WHEN* the Architect is spawned
+- *THEN* it runs at =opus=, at =high= effort for the design round and for conformance
+- *AND* at =medium= for the premise check
+
+* Gaps
+
+No gap open. The nine this draft had were filled 2026-11-13 at the hand-off review
+(=research/skill-evals/extraction/architect.org= § Gap decisions).

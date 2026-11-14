@@ -101,7 +101,7 @@ FINDING_FIELDS = {
 FINDING_DEFAULTS = {"severity": None, "class": None, "locations": [], "why_tests_missed": None,
                     "discovered_from": None, "seam": None, "evidence": None, "decoration": None,
                     "resolution": "pending", "blocking_merge_until_resolved": False}
-TRIGGERS = ["premise-check", "conformance"]
+TRIGGERS = ["premise-check", "conformance", "design-round"]
 KINDS = ["issue", "question"]
 SEVERITIES = ["high", "medium", "low"]
 DECORATIONS = ["blocking", "hardening"]
@@ -1775,12 +1775,18 @@ def verb_init(store, args):
     wrote_gitignore = _write_orchestrator_gitignore(store)
     ts = int(time.time())
     cycle_id = args.cycle or f"cycle-{ts}"
-    carried = []
+    carried, settled_moves = [], []
     for p in sorted(glob.glob(os.path.join(store.dir, "inbox", "*.org"))):
         rel = os.path.relpath(p, store.home)
         _doc, rec = read_ask_file(store, rel)
         if rec["kind"] not in ASK_KINDS or rec["status"] not in ASK_STATUSES:
             continue  # reported by `inbox` as a problem, not silently indexed
+        if rec["status"] in ASK_TERMINAL:
+            # Settled while no cycle was open (a design-round question): it waited in the inbox
+            # for the first cycle, and moves to that cycle's asks/ now (asks spec).
+            dest = ask_path(rec["id"], rec["status"], cycle_id, store)
+            settled_moves.append((rel, dest))
+            rel = dest
         carried.append(_index_entry(rec, rel))
     state = {
         "schema_version": SCHEMA_VERSION,
@@ -1820,11 +1826,14 @@ def verb_init(store, args):
             store.write(state)
             if pending_agents:
                 os.remove(_pending_agents_path(store))
+            for old_rel, new_rel in settled_moves:
+                _move_ask_file(store, old_rel, new_rel)
         finally:
             fcntl.flock(lock, fcntl.LOCK_UN)
     return {"ok": True, "cycle_id": cycle_id, "path": store.path,
             "history_cycles": [h["cycle_id"] for h in state["cycle_log"]["history"]],
             "inbox_carried": [a["id"] for a in carried],
+            "inbox_settled_moved": [new_rel for _old, new_rel in settled_moves],
             "agents_carried": [a["agent_id"] for a in pending_agents], "gitignore_written": wrote_gitignore,
             "home": store.home, "change": store.change, "code_root": store.code_root,
             "warnings": home_warnings(store) + red_baseline_warnings(store, prior_baseline,

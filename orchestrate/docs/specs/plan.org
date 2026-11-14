@@ -1,0 +1,480 @@
+#+TITLE: plan
+#+OPTIONS: ^:{} -:nil
+#+STATUS: draft 2026-11-13, extracted from the reference skill (=main= =e356da7=); at the hand-off review 2026-11-13: G1, G5, G6, G9 and G10 applied, the obsolete flag carried from =implementor=; the premise corrections filled (a free choice); the main-path rule filled; no gap open; accepted 2026-11-13 by the user at the hand-off review; amended 2026-11-14 after acceptance (an off-batch hardening finding is listed at once), from the evals' build-out (=research/skill-evals/overnight/plan.org= § Decided with the user, 2026-11-14 morning)
+
+* Purpose
+
+The plan phase turns what the change's design still has to build, and what the prior cycle learned,
+into the batch the cycle's execute phase implements. It starts a cycle only from the handshake the
+prior cycle's integrate left, and starts none while the change's MVP decision waits for the user. It
+writes every task file: the tasks drafted from the design's seams and pending scenarios, the
+follow-up candidates the handshake carries, each open task's impact set, and, after the user
+chooses to harden, the hardening list's entries. It has the tasks not drafted from the design
+checked against the code root's HEAD before it fixes the batch, and it marks each task on or off the
+main path by where the task came from. It writes no code, spawns no Implementor and does not
+redesign; the premise check's output is the Architect's, the handshake's and the gates' form are
+the record's, and the handshake itself is integrate's.
+
+* Requirements
+
+** Requirement: A cycle starts only from the prior cycle's handshake
+:PROPERTIES:
+:GOAL:     none stated
+:END:
+The plan phase SHALL start a cycle of a change only from the handshake the change's prior cycle
+left, holding every field the handshake's form requires, or with no handshake when the change has
+had no cycle. Without that handshake it SHALL start no cycle and SHALL hand back that it stopped.
+
+*** Scenario: A cycle starts from the prior cycle's newest handshake
+- *WHEN* plan starts a cycle of a change whose prior cycle has closed
+- *THEN* the cycle is started from the newest handshake in the change's directory
+- *AND* the change's record names the handshake the cycle was started from
+
+*** Scenario: A first cycle starts with no handshake
+- *WHEN* plan starts the first cycle of a change
+- *THEN* the cycle is started without a handshake, and nothing is read in its place
+
+*** Scenario: Without a whole prior handshake, plan starts no cycle
+- *WHEN* plan runs for a change that has had a cycle, and the prior cycle's handshake is missing or lacks a field its form requires
+- *THEN* no cycle is started and no task file is written
+- *AND* the plan phase agent hands back that it stopped
+
+*** Scenario: A missing handshake is an environment ask filed in the inbox
+- *WHEN* plan starts no cycle because the prior handshake is missing or lacks a field
+- *THEN* an =environment= ask in the change's inbox, its id naming the change, asks the user to close the prior cycle properly or abandon it
+- *AND* the hand-back names the ask
+
+*** Scenario: An empty field is not a missing one
+- *WHEN* the prior handshake holds every required field and some of them are empty lists
+- *THEN* plan starts the cycle from it
+
+** Requirement: What the prior cycle learned is in the batch's task files
+:PROPERTIES:
+:GOAL:     none stated
+:END:
+Before it fixes a batch, the plan phase SHALL apply to each open task the impact set the handshake
+gives it, SHALL turn each follow-up candidate the handshake carries into a task file or absorb it
+into the open task that covers it, SHALL apply each answer waiting in the inbox, and SHALL keep out
+of the batch every task an open ask blocks.
+
+*** Scenario: An impact that makes a task's prose false is absorbed in place
+- *WHEN* the handshake gives an open task an impact that makes a sentence of its task file false or dead
+- *THEN* that sentence is rewritten where it stands, before the batch is fixed
+
+*** Scenario: Any other impact is appended as an update for the cycle
+- *WHEN* the handshake gives an open task an impact that makes no sentence of its task file false
+- *THEN* the task file gains a section of updates for this cycle that carries the impact
+
+*** Scenario: A wrong-premise impact rewrites the step that made the claim
+- *WHEN* an impact says that an open task's premise is wrong
+- *THEN* the step of the task file that made the claim is rewritten
+
+*** Scenario: A task flagged obsolete names the ask that decides it
+- *WHEN* the handshake flags an open task as possibly obsolete
+- *THEN* the task file gains a stanza saying so that names the ask the user decides it by
+
+*** Scenario: A task flagged obsolete is not batched while its ask is open
+- *WHEN* an open task's file carries an obsolescence stanza whose ask is unanswered
+- *THEN* the task is not in the batch
+
+*** Scenario: Each refined task leaves one journal line
+- *WHEN* plan changes an open task's file to absorb its impact set
+- *THEN* the change's journal has one line against the task, saying whether the change was made in place or appended
+
+*** Scenario: Each follow-up candidate becomes a task file
+- *WHEN* the handshake carries a follow-up candidate that no open task covers
+- *THEN* a task file named as the candidate names it is drafted from the candidate's quoted words and evidence, where the candidate's placement puts it
+- *AND* the task file carries the candidate's provenance: its source, who found it and its class
+- *AND* it is marked on the main path when the candidate is marked critical
+
+*** Scenario: A task drafted from a meta-discovery names its label
+- *WHEN* plan drafts a task from one of the handshake's meta-discoveries
+- *THEN* the task file's provenance names the meta-discovery's label
+
+*** Scenario: A follow-up's task starts with the reproduction
+- *WHEN* plan drafts a task from a follow-up candidate of a defect
+- *THEN* the first step of its task file is the reproduction
+
+*** Scenario: A candidate an open task covers is absorbed into that task
+- *WHEN* the handshake carries a follow-up candidate whose work an open task already covers
+- *THEN* no new task file is written for it, and the open task absorbs it
+- *AND* the change's journal has one line saying so
+
+*** Scenario: A task an open ask blocks stays out of the batch
+- *WHEN* an open ask file names a task among what it blocks
+- *THEN* that task is not in the batch until the ask is applied
+
+*** Scenario: An answered ask is applied before the batch is drafted
+- *WHEN* an ask in the change's inbox has an answer when plan starts
+- *THEN* the answer is applied before any task of the batch is drafted
+
+** Requirement: While the MVP decision is unanswered, nothing runs on the change
+:PROPERTIES:
+:GOAL:     G4
+:END:
+The plan phase SHALL start no cycle while the change's MVP decision is open, and SHALL apply an
+answer waiting in it before it opens a cycle: on =stop= or =rethink= it SHALL open no cycle; on
+=harden= it SHALL start the cycle and draft tasks from the hardening list. No task SHALL be drafted
+from the hardening list before the user chooses to harden.
+
+*** Scenario: An open MVP decision starts no cycle
+- *WHEN* plan runs while the change's MVP decision ask is open
+- *THEN* no cycle is started and no task file is written
+- *AND* the plan phase agent hands back that it stopped, naming the ask, that it blocks plan, and the ask file's path
+
+*** Scenario: An MVP answer is applied before a cycle is opened
+- *WHEN* the change's MVP decision has an answer that integrate did not apply
+- *THEN* plan applies the answer before it opens a cycle
+
+*** Scenario: A stop answer opens no cycle
+- *WHEN* plan applies the answer =stop= to the MVP decision
+- *THEN* no cycle is started
+- *AND* the plan phase agent hands back that the change did not start because it stopped, naming the intent's path
+
+*** Scenario: A stop answer applied at plan marks the change done
+- *WHEN* plan applies the answer =stop= to the MVP decision
+- *THEN* the intent's status line says =done=, with the date and the code root's HEAD
+- *AND* the intent holds the change's closing summary
+- *AND* both are committed in the code root in a commit whose subject names the change
+
+*** Scenario: A rethink answer opens no cycle
+- *WHEN* plan applies the answer =rethink= to the MVP decision
+- *THEN* no cycle is started
+- *AND* the plan phase agent hands back that the change did not start because of a rethink, naming the intent's path
+
+*** Scenario: A rethink answer applied at plan marks the intent divergent
+- *WHEN* plan applies the answer =rethink= to the MVP decision
+- *THEN* the intent's status line says =divergent=, with the date and the ask's id
+- *AND* the intent's status section quotes the user's answer, with the user as the signal
+
+*** Scenario: A harden answer starts the cycle and drafts from the hardening list
+- *WHEN* plan applies the answer =harden= to the MVP decision
+- *THEN* plan starts the cycle
+- *AND* each hardening-list entry the answer covers is drafted into a task, entries that touch the same code sharing one task
+
+*** Scenario: A hardening entry names the task drafted from it
+- *WHEN* plan drafts a task from a hardening-list entry
+- *THEN* the entry names the task
+- *AND* the task's provenance names the finding, review or discovery the entry refers to
+
+*** Scenario: A harden answer leaves the intent at its MVP status
+- *WHEN* plan applies the answer =harden= to the MVP decision
+- *THEN* the intent's status line still says =mvp=
+
+*** Scenario: Entries a partial harden answer leaves are marked left
+- *WHEN* plan applies a =harden= answer that covers only some of the hardening-list entries
+- *THEN* each entry it does not cover is marked left, naming the ask
+
+*** Scenario: Open tasks off the main path that a harden answer covers join the batch
+- *WHEN* plan applies a =harden= answer that covers open tasks off the main path
+- *THEN* those tasks are in the batch of the cycle it starts
+
+*** Scenario: No task is drafted from the hardening list before harden
+- *WHEN* the user has not answered =harden= to the change's MVP decision
+- *THEN* no task of the batch is drafted from the hardening list
+
+** Requirement: The batch is drafted from a design whose round has finished
+:PROPERTIES:
+:GOAL:     none stated
+:END:
+The plan phase SHALL open no cycle and draft no task while the change's design round has not
+finished, and SHALL write no answer into the design; it SHALL hand back =failed= naming the round. It SHALL draft the
+change's pending scenarios into tasks one seam at a time, and each task SHALL cite the seams it
+implements, the scenarios it makes pass and the pending tests it promotes.
+
+*** Scenario: Plan on an unfinished design round opens no cycle
+- *WHEN* plan runs and the change's design has no Seams section, a scenario of the change is uncited, or an open question has no Decision
+- *THEN* plan opens no cycle, drafts no task and writes no answer into the design
+- *AND* it hands back =failed=, naming the change's unfinished design round
+
+*** Scenario: Pending scenarios are drafted one task per seam
+- *WHEN* plan drafts tasks from the change's pending scenarios
+- *THEN* the scenarios are grouped by the seam whose row cites them, one task to a seam or to two closely coupled seams
+- *AND* no task is drafted for a single test
+
+*** Scenario: Every task cites its seams, its scenarios and the tests it promotes
+- *WHEN* plan drafts a task
+- *THEN* its task file names the seams it implements and the scenarios it makes pass
+- *AND* its verification lists the pending tests it promotes
+
+*** Scenario: Generated task files are replaced by tasks drafted from the design
+- *WHEN* at the change's first plan the change's open tasks include task files a split agent or another tool generated
+- *THEN* those files are deleted and the batch is drafted from the design
+- *AND* the change's journal has one line naming the deleted files
+
+** Requirement: A task file carries what its Implementor works from
+:PROPERTIES:
+:GOAL:     none stated
+:END:
+Each task file the plan phase writes for the change SHALL be in the change's directory in the home,
+and SHALL hold the task's summary, each cited seam row verbatim, its steps, its verification and
+what is out of its scope.
+
+*** Scenario: An open task's file is in the change's directory
+- *WHEN* plan writes a task file for the change
+- *THEN* it is =tasks/open/<task>.md= in the change's directory in the home
+
+*** Scenario: A task file holds its seams verbatim, its steps, its verification and its limits
+- *WHEN* plan writes a task file
+- *THEN* it holds a summary of what the task accomplishes
+- *AND* each seam row it cites, quoted verbatim from the design
+- *AND* numbered steps, the commands that verify it, and what is deliberately not in it
+
+** Requirement: Work enters the batch only for a goal or a cited reason
+:PROPERTIES:
+:GOAL:     G3
+:END:
+The plan phase SHALL draft a task only for the change's main path or a defect's fix, or for scope
+that a goal needs or a demonstrated reason supports; a task whose work lies outside the change SHALL
+go to the cross-change backlog with its provenance, and plan SHALL draft nothing from that backlog
+on its own.
+
+*** Scenario: Every task traces to a scenario of the change or to where it came from
+- *WHEN* plan has fixed the batch
+- *THEN* every task of the batch either cites a scenario of the change or carries the provenance of the finding, discovery, ask or hardening-list entry it came from
+
+*** Scenario: Scope no goal needs is not drafted without a demonstrated reason
+- *WHEN* a task would add an option, a generalisation or a refactor for a future caller that no goal of the intent needs, and no demonstrated reason supports it (it happened, a prior, the user asked, a measured cost)
+- *THEN* no task is drafted for it
+
+*** Scenario: A task outside the change is placed in the cross-change backlog
+- *WHEN* filing a task in the change would mean the intent has to state a new outcome
+- *THEN* its task file is in the home's cross-change backlog, marked externalised, and not in the change's open tasks
+
+*** Scenario: An externalised task carries its provenance
+- *WHEN* plan places a task in the cross-change backlog
+- *THEN* its task file names the source it came from, who found it and its class
+
+*** Scenario: Plan does not draw tasks from the cross-change backlog
+- *WHEN* the home's cross-change backlog holds tasks and the user has not promoted any into the change
+- *THEN* no task of the batch is drawn from it
+
+** Requirement: Tasks not drafted from the design are checked against HEAD before the batch is fixed
+:PROPERTIES:
+:GOAL:     none stated
+:END:
+The plan phase SHALL have an Architect check every task not drafted at this plan from the design's
+seams and pending scenarios against the code root's HEAD before it fixes the batch, and SHALL
+spawn none when no task needs it. It SHALL correct each wrong premise in the task's text, SHALL
+route each defect the check finds outside every task's scope, and SHALL make a stale seam row a
+record correction.
+
+*** Scenario: A task drafted from the design gets no premise check
+- *WHEN* every task of the batch was drafted at this plan from the design's seams and pending scenarios
+- *THEN* no Architect is spawned
+- *AND* the cycle has no premise check
+
+*** Scenario: Any other task is checked against HEAD before the batch is fixed
+- *WHEN* a task was carried over, or drafted from a follow-up candidate, the hardening list, a bug report or a task the user wrote
+- *THEN* an Architect checks the task's claims about the code against the code root's HEAD before the batch is fixed
+- *AND* the cycle's premise check covers that task
+
+*** Scenario: A wrong premise is corrected in the task's text before the batch is fixed
+- *WHEN* the premise check finds a claim of a task wrong
+- *THEN* before the batch is fixed the task's text no longer makes that claim
+- *AND* the correction is made in the text itself, not as an update stanza
+
+*** Scenario: Rewrite or split is the plan agent's free choice
+- *WHEN* the plan phase agent corrects a task for a wrong premise
+- *THEN* it may rewrite the task or split it, and either is a pass
+- *AND* the tasks it leaves make no wrong claim
+
+*** Scenario: A premise finding that blocks a batch task is fixed in the batch's work
+- *WHEN* a premise-check finding routed blocking blocks a task of the batch
+- *THEN* before the batch is fixed its fix is in the batch: a new task, or a rewrite of the task it blocks, the plan agent's free choice
+
+*** Scenario: An off-batch hardening finding goes on the hardening list at once
+- *WHEN* the premise check finds a defect outside every task's scope and it is routed to hardening
+- *THEN* it is an entry on the change's hardening list at once, so a plan that stops before it closes has it listed
+
+*** Scenario: An off-batch blocking finding waits for integrate's candidate
+- *WHEN* the premise check finds a defect outside every task's scope and it is routed blocking
+- *THEN* no task file is written for it at this plan
+- *AND* the change's record holds the finding with its route
+
+*** Scenario: A speculative need the check notices is one thought line
+- *WHEN* the premise check notices a speculative need
+- *THEN* the change's journal has one =thought= line for it, and no task or ask
+
+*** Scenario: A decision a premise finding raises keeps its task out of the batch
+- *WHEN* a finding of the premise check blocks a task of the batch and raises a decision only the user can make
+- *THEN* a =decision= ask file is written for it
+- *AND* the task it blocks is not in the batch while the ask is open
+
+*** Scenario: A decision ask that blocks a batch task stops plan after the rest is drafted
+- *WHEN* an ask raised during plan blocks a task of this batch and is unanswered
+- *THEN* plan finishes the rest of the batch
+- *AND* hands back that it stopped, naming the ask
+
+*** Scenario: Resumed with the user absent, plan leaves the blocked task out and passes its gate
+- *WHEN* plan is resumed with word that the user is absent, its batch task still blocked by the ask
+- *THEN* the task stays out of the batch, blocked on the ask
+- *AND* plan passes its gate without the answer
+
+*** Scenario: A stale seam row is a record correction, not an ask
+- *WHEN* the premise check finds a seam row stale while the code or the test tree is right
+- *THEN* the plan phase agent fixes the row and commits it in the code root, in a commit whose subject names the row
+- *AND* the change's journal has one record-correction line against the seam
+- *AND* no ask is filed for it, and the premise check itself has not edited the design
+
+** Requirement: The batch holds a main-path task and keeps each task's dependencies
+:PROPERTIES:
+:GOAL:     none stated
+:END:
+The plan phase SHALL put at least one task on the main path in each batch while such a task is
+ready, until the change's MVP decision, and SHALL write in each task file the tasks of the
+batch it must follow.
+
+*** Scenario: A batch holds a main-path task when one is ready
+- *WHEN* a task on the main path is ready for the batch, and the change has not reached its MVP decision
+- *THEN* the batch holds at least one task on the main path
+
+*** Scenario: After harden, a batch needs no main-path task
+- *WHEN* plan drafts a batch after the user answered harden on the MVP decision
+- *THEN* the batch may hold no task on the main path
+
+*** Scenario: A task that must follow others names them
+- *WHEN* a task of the batch must follow other tasks of the batch
+- *THEN* its task file names those tasks as the ones it is blocked by
+
+** Requirement: A task is placed on or off the main path by where it came from
+:PROPERTIES:
+:GOAL:     G4
+:END:
+The plan phase SHALL mark each task on or off the change's main path when it adds the task, by the
+task's source alone: a task drafted from the design by the goals its scenarios serve; a follow-up by
+its finding's route; a task from a user's decision by that decision's route; a hardening, meta-
+discovery or scope task off it; and a task whose source does not settle it off it, with the doubt
+journaled.
+
+*** Scenario: A design task is on the main path when a goal names a scenario it makes pass
+- *WHEN* plan drafts a task from the design's seams and pending scenarios
+- *THEN* its task file marks it on the main path when a scenario it makes pass is a use a goal names
+- *AND* off the main path when no goal names any of them
+
+*** Scenario: A follow-up is on the main path when it was routed blocking on it
+- *WHEN* plan drafts a task from a follow-up candidate of a finding or discovery
+- *THEN* its task file marks it on the main path when the defect was routed blocking as a defect on the main path, and off it otherwise
+
+*** Scenario: An untrue sentence makes no task
+- *WHEN* a finding or discovery is an untrue sentence
+- *THEN* plan drafts no task for it
+
+*** Scenario: A task from a user's decision is on the main path when the decision was routed there
+- *WHEN* plan drafts a task from a decision of the user
+- *THEN* its task file marks it on the main path when the decision was routed to the main path, and off it otherwise
+
+*** Scenario: Hardening, meta-discovery and scope tasks are off the main path
+- *WHEN* plan drafts a task from a hardening-list entry after =harden=, from a meta-discovery, or as scope a demonstrated reason supports
+- *THEN* its task file marks it off the main path
+
+*** Scenario: A task whose source does not settle it is off the main path, with the doubt journaled
+- *WHEN* a task's source does not settle whether it is on the main path
+- *THEN* its task file marks it off the main path
+- *AND* the change's journal has one line against it naming the doubt
+
+*** Scenario: After rethink every open task is placed again
+- *WHEN* plan runs after the user answered =rethink= and the goals were rewritten
+- *THEN* every open task is marked on or off the main path again against the new goals
+
+** Requirement: A task's agent setting moves only on a reason its text gives
+:PROPERTIES:
+:GOAL:     none stated
+:END:
+The plan phase SHALL leave each task at the role defaults unless it writes a task override in the
+task file, with the new setting and a one-line reason the task's text bears out, before the batch is
+fixed; nothing SHALL change the override after. No agent of a task SHALL run at Haiku, a task's
+Reviewer SHALL never be set below its role default, and a task carried over after a failure, a
+rejection or a rework SHALL keep its setting. The Architect's premise check SHALL run at its role
+default.
+
+*** Scenario: A task override names its setting and a reason the task's text bears out
+- *WHEN* plan moves a task's Implementor or Reviewer off the role default
+- *THEN* the task file holds the new setting and a one-line reason a reader can check against the task's text
+- *AND* the override is written before the batch is fixed
+
+*** Scenario: Nothing changes a task override once the batch is fixed
+- *WHEN* plan has fixed the batch
+- *THEN* no task's override changes after that point
+
+*** Scenario: No agent of a task runs at Haiku
+- *WHEN* plan writes a task override
+- *THEN* neither the Implementor nor the Reviewer is set to Haiku
+
+*** Scenario: A task's Reviewer is never set below its role default
+- *WHEN* plan writes a task override that names the task's Reviewer
+- *THEN* the Reviewer's setting is at or above the Reviewer's role default
+
+*** Scenario: A task carried over after a failure keeps its setting
+- *WHEN* a task carried over failed, was rejected or was reworked in an earlier cycle
+- *THEN* its agent setting is the one it had
+
+*** Scenario: The premise check runs at the Architect's role default
+- *WHEN* plan spawns the Architect for the premise check
+- *THEN* it runs at the Architect's role default for the premise check
+- *AND* the change's record holds the agent, its setting and that it ran the premise check
+
+** Requirement: A goal-drift recommendation is signed off before plan passes
+:PROPERTIES:
+:GOAL:     none stated
+:END:
+When the prior integrate carried a goal-drift recommendation the user has not resolved, the plan
+phase SHALL not pass its gate until the user has answered the goal-drift ask with one of its
+options; a free-text answer SHALL be read back first. With no recommendation the step SHALL ask
+nothing.
+
+*** Scenario: An unresolved goal-drift recommendation holds the plan
+- *WHEN* the prior integrate's digest carried a goal-drift recommendation and the handshake holds no resolution of it
+- *THEN* plan does not pass its gate
+- *AND* the plan phase agent hands back that it stopped, naming the goal-drift ask
+
+*** Scenario: An exact option signs off the goal drift
+- *WHEN* the goal-drift ask's answer is exactly one of its options
+- *THEN* the goal drift counts as signed off
+
+*** Scenario: A free-text goal-drift answer is read back before it signs off
+- *WHEN* the goal-drift ask's answer is free text
+- *THEN* it is read back to the user first
+- *AND* the goal drift does not count as signed off until the user confirms the readback
+
+*** Scenario: With no goal-drift recommendation, nothing is signed off
+- *WHEN* the prior integrate carried no goal-drift recommendation
+- *THEN* plan raises no goal-drift question and the sign-off does not hold its gate
+
+** Requirement: Plan passes its gate, closes with one commit and hands back one line
+:PROPERTIES:
+:GOAL:     none stated
+:END:
+The plan phase SHALL pass its gate only when the handshake was consumed, the batch is fixed, every
+task cites a seam and any goal drift is signed off; it SHALL close with one commit in the home and
+hand the dispatcher one line. It SHALL write no code and spawn no Implementor.
+
+*** Scenario: Plan passes its gate only with the handshake, the batch, the seams and the sign-off
+- *WHEN* the plan of a cycle after the first passes its gate
+- *THEN* the cycle was started from the prior handshake, holding every field its form requires
+- *AND* the batch is fixed and its list of tasks explicit
+- *AND* every task of the batch that is not externalised cites at least one seam
+- *AND* any goal-drift recommendation of the prior integrate has the user's answer
+
+*** Scenario: Plan closes with one commit in the home
+- *WHEN* plan closes
+- *THEN* one commit in the home, subject =Orchestrator: <cycle-id> plan closed=, holds the batch's task files, the cycle's premise check when there is one, and the cycle's state
+- *AND* it holds the task files plan wrote in the cross-change backlog, when it wrote any
+
+*** Scenario: Plan hands back one line naming its outcome
+- *WHEN* plan passes its gate, stops on an ask, or does not start because of an MVP answer
+- *THEN* the dispatcher receives one line of at most 200 characters
+- *AND* a path in it is relative to the home
+
+*** Scenario: Plan writes no code
+- *WHEN* plan closes
+- *THEN* nothing in the code root's source or test tree was changed by plan
+
+*** Scenario: Plan spawns no Implementor
+- *WHEN* plan runs
+- *THEN* no Implementor is spawned
+
+* Gaps
+
+No gap open. The seven this draft had were filled 2026-11-13 at the hand-off review
+(=research/skill-evals/extraction/plan.org= § Gap decisions).
