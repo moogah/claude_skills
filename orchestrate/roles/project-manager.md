@@ -133,6 +133,9 @@ See `templates/pm-digest.md`. Three buckets: facts (counts), signals (interpreta
 
 The cycle does not close until the PM digest is produced and any user-asks have been routed (see `flows/integrate.md` exit gate).
 
+
+The agent pass hands back one line: `pm <cycle-id>: <s> signals (<w> ⚠), <q> candidate questions[, conformance run <id>]; <path>`, the digest's path relative to the home (`SKILL.md` § Hand-back lines).
+
 ## Cadence
 
 Mapped onto the three-phase cycle:

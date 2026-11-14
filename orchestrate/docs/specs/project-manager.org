@@ -1,6 +1,6 @@
 #+TITLE: project-manager
 #+OPTIONS: ^:{} -:nil
-#+STATUS: draft 2026-11-13, extracted from the reference skill (=main= =e356da7=); not yet reviewed; eight gaps open
+#+STATUS: draft 2026-11-13, extracted from the reference skill (=main= =e356da7=); eight gaps opened; at the hand-off review 2026-11-13: G8 applied, its role default added
 
 * Purpose
 
@@ -48,6 +48,10 @@ check.
 *** Scenario: The digest is one file in the cycle's directory
 - *WHEN* the PM produces a cycle's digest
 - *THEN* it is the file =pm-digest.md= in the cycle's directory in the home
+
+*** Scenario: The PM hands back one line of its signals and its digest's path
+- *WHEN* the PM's agent pass ends
+- *THEN* it hands back one line of at most 200 characters, =pm <cycle-id>: <s> signals (<w> ⚠), <q> candidate questions[, conformance run <id>]; <path>=, the path of the digest relative to the home
 
 *** Scenario: The digest opens with its change, cycle, time and history window
 - *WHEN* a PM digest is written
@@ -280,6 +284,16 @@ changes in the change is its digest and, on a cascade, the conformance run it st
 - *WHEN* the PM has run
 - *THEN* the change's record holds no Implementor or Reviewer it spawned
 
+** Requirement: The PM's role default
+:PROPERTIES:
+:GOAL:     none stated
+:END:
+The PM's agent pass SHALL run at its role default.
+
+*** Scenario: The PM's agent pass runs at sonnet, medium
+- *WHEN* the PM's agent pass is spawned
+- *THEN* it runs at =sonnet=, =medium=
+
 * Gaps
 
 ** Gap: Where the asks table stands in the digest
@@ -324,12 +338,6 @@ alone; the record has no priority, and a task's class is set when plan adds it.
 :END:
 The asks table's question column is the PM's candidate questions and its file column is rendered from
 the open asks; a candidate question has no file yet when the digest is written.
-
-** Gap: What the PM hands back
-:PROPERTIES:
-:REQUIREMENT: The digest is one file per cycle, in a fixed form
-:END:
-Every spawned agent hands back one line, and the reference skill gives no line for the PM.
 
 ** Gap: Whether a digest is written when the prose pass fails
 :PROPERTIES:
