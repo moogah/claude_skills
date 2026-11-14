@@ -1,6 +1,6 @@
 #+TITLE: opening
 #+OPTIONS: ^:{} -:nil
-#+STATUS: draft 2026-11-13, extracted from the reference skill (=main= =e356da7=); nine gaps opened; at the hand-off review 2026-11-13: G8 applied (the path's root, a revision's line); the unnamed repository, a taken name, a failed opening, the second change, the research hand-off, the split's old change and the revision's approval filled; no gap open; accepted 2026-11-13 by the user at the hand-off review
+#+STATUS: draft 2026-11-13, extracted from the reference skill (=main= =e356da7=); nine gaps opened; at the hand-off review 2026-11-13: G8 applied (the path's root, a revision's line); the unnamed repository, a taken name, a failed opening, the second change, the research hand-off, the split's old change and the revision's approval filled; no gap open; accepted 2026-11-13 by the user at the hand-off review; amended 2026-11-14 after acceptance (the intent's status line named; the scenarios the hand-back counts; lines for covered work and an adopted change; a taken name the agent chose marked not test-worthy), from the evals' build-out (=research/skill-evals/overnight/plan.org= § Decided with the user, 2026-11-14 morning)
 
 * Purpose
 
@@ -30,10 +30,12 @@ SHALL open no change for work that a task of an open change covers.
 - *WHEN* the user opened a change by hand, its intent already committed on a branch of its own
 - *THEN* that branch is the change's integration branch
 - *AND* no intent and no spec edit is written for the change
+- *AND* the dispatcher receives one line of at most 200 characters, =adopt <change>; = followed by the intent's path relative to the home
 
 *** Scenario: Work an open change's task covers opens no change
 - *WHEN* the user asks for work that a task of an open change already covers
 - *THEN* no change is opened for it
+- *AND* the dispatcher receives one line of at most 200 characters, =open: covered by <change>, task <task>; <task file>=, the path relative to the home
 
 ** Requirement: A new change is named, placed in one repository and started from a written base
 :PROPERTIES:
@@ -57,6 +59,9 @@ base.
 - *THEN* =docs/changes/<change>/= did not exist in its repository before the opening
 
 *** Scenario: A name the agent chose that is taken is changed to an unused one
+:PROPERTIES:
+:TEST: none: the name is the agent's own choice, so no fixture can make the name it chooses be taken
+:END:
 - *WHEN* the change's name is the opening agent's own and =docs/changes/<change>/= already exists in the repository
 - *THEN* the change is given another name, not yet used
 - *AND* the hand-back names the change by the name it was given
@@ -174,7 +179,7 @@ and the agreement of new terms to the user.
 *** Scenario: The intent is written with status speculated
 - *WHEN* a change is opened
 - *THEN* its intent is =docs/changes/<change>/intent.org= in the change's code root
-- *AND* its status line is =speculated=
+- *AND* its status line, the line =#+STATUS:=, is =speculated=; every later status the specs give the intent is written on that line
 
 *** Scenario: The Why quotes the user
 - *WHEN* a change is opened from the user's words
@@ -280,7 +285,7 @@ design and no task, and hand the dispatcher one line.
 
 *** Scenario: The hand-back's counts are the intent's
 - *WHEN* opening hands back that it completed
-- *THEN* the line's capabilities are the number the intent's Capabilities names, its scenarios the change's scenarios, and its open questions the number of the intent's open questions
+- *THEN* the line's capabilities are the number the intent's Capabilities names, its scenarios the number of scenarios the change's spec edits add or change together with those the intent names =stated, not met=, a scenario it deletes not counted, and its open questions the number of the intent's open questions
 
 *** Scenario: A failed opening says why
 - *WHEN* opening cannot complete
