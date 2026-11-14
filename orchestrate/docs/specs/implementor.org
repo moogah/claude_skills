@@ -1,6 +1,6 @@
 #+TITLE: implementor
 #+OPTIONS: ^:{} -:nil
-#+STATUS: draft 2026-11-13, extracted from the reference skill (=main= =e356da7=); six gaps opened; at the hand-off review 2026-11-13: two filled by the cross-spec decisions (the blocked hand-back, G7); the seam objection's section filled
+#+STATUS: draft 2026-11-13, extracted from the reference skill (=main= =e356da7=); six gaps opened; at the hand-off review 2026-11-13: two filled by the cross-spec decisions (the blocked hand-back, G7); the seam objection's section and the failed hand-back filled
 
 * Purpose
 
@@ -267,6 +267,15 @@ report.
 - *THEN* no commit of its own is on its task's branch
 - *AND* its report is written with an empty =commit_sha=, and the task file's Observations and Discoveries as they stand
 
+*** Scenario: A task whose verification cannot be made to pass is handed back failed
+- *WHEN* the Implementor cannot make the task's verification pass, and nothing outside the task stops it
+- *THEN* it hands back =failed <task>: <why>=, in one clause
+- *AND* no commit of its own is on its task's branch
+
+*** Scenario: A stop only another party can settle is handed back blocked
+- *WHEN* what stops the Implementor is something only another party can settle: a premise, a revision of the task, the environment
+- *THEN* it hands back =blocked=, not =failed=
+
 *** Scenario: The Implementor hands back once, after its commit and its test run
 - *WHEN* an Implementor hands back
 - *THEN* no test run it started is still running
@@ -320,12 +329,6 @@ The Implementor's role default SHALL be the model =opus= at =medium= effort.
 - *THEN* it runs at =opus=, =medium=
 
 * Gaps
-
-** Gap: When an Implementor hands back failed rather than blocked
-:PROPERTIES:
-:REQUIREMENT: The Implementor hands back one line, once
-:END:
-The hand-back has a =failed <task>: <why>= form and no condition that chooses it over =blocked=.
 
 ** Gap: What the Implementor does with a task flagged as possibly obsolete
 :PROPERTIES:

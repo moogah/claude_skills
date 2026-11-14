@@ -142,7 +142,7 @@ blocked <task-name>: <what you observed and what it blocks, one clause>
 failed <task-name>: <why, one clause>
 ```
 
-`deviated` is present when `deviation_summary` is non-empty; `candidates=<n>` when `candidate_tasks` is. The line names no path: the orchestrator named the report path in the brief. The orchestrator verifies the sha against the branch and opens the report only when a flag says to; the test output, the observations and the discoveries are in the files the brief names, not in the line.
+`failed` is for a task whose verification the Implementor could not make pass with nothing outside the task stopping it; `blocked` is for a stop only another party can settle (a premise, a revision of the task, the environment). Neither commits: the task stays at its base. `deviated` is present when `deviation_summary` is non-empty; `candidates=<n>` when `candidate_tasks` is. The line names no path: the orchestrator named the report path in the brief. The orchestrator verifies the sha against the branch and opens the report only when a flag says to; the test output, the observations and the discoveries are in the files the brief names, not in the line.
 
 ## Escalation contract
 
