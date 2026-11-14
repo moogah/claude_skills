@@ -253,3 +253,83 @@ run; serial because there is one integration branch, and stopped as a whole by a
 - Example :: "The merge chain does not wait for a review"
 - Avoid :: merge pipeline, merge loop
 - Specs :: execute
+
+* main path
+The uses the intent's goals name, worked end to end, on the inputs and errors those goals name; a
+defect that breaks one is fixed in the change, any other waits on the hardening list.
+- Example :: "a discovery on the change's main path"
+- Avoid :: critical path (main's plan uses =on_critical_path= for tasks on it, a near-synonym), happy path, MVP (what the main path working end to end amounts to)
+- Specs :: execute
+
+* discovery
+A defect or other significant finding an Implementor records in the task file's Discoveries, or one
+the phase agent finds itself while merging (a latent bug a regression surfaced, a structural issue
+behind an abandoned merge).
+- Example :: "an Implementor's report lists a discovery on the change's main path"
+- Avoid :: candidate (main's report field =candidate_tasks= lists discoveries outside the task), note
+- Specs :: execute
+
+* Observation
+One note an Implementor appends to the task file under Observations: a departure from the prescribed
+approach, a weak test, an ambiguity it resolved, a speculative need; kept as the record and never
+shown to the Reviewer.
+- Example :: "An Observation that names a defect is routed like a discovery"
+- Avoid :: note, comment, remark
+- Specs :: execute
+
+* finding
+A defect, or a suspected defect, that an agent reports about code or text that exists. Main labels
+each with a kind (issue, question, thought); routing then gives it a decoration (blocking,
+hardening); a Reviewer's finding also carries a direction, one of which is spec-signal.
+- Example :: "route each finding of a review"
+- Avoid :: comment, defect (a finding may only suspect one), bug
+- Specs :: execute
+
+* blocking finding
+A finding the phase agent routes to be fixed in the change before its task is done: a defect on the
+main path, or an untrue sentence. Not the sense in which an ask blocks a task or a merge.
+- Example :: "A blocking finding is reproduced, then fixed, before the task is done"
+- Avoid :: decoration (main's word for the route), severity (the reporter's estimate of harm, which orders the list and does not route), kind, priority
+- Specs :: execute
+
+* spec signal
+A Reviewer's finding that the design or a spec, rather than the code, may be what is wrong; it
+becomes a decision ask at once and does not hold its task.
+- Example :: "A spec signal becomes an ask at once and does not hold its task"
+- Avoid :: design drift (another direction: the code drifted from the design), spec bug
+- Specs :: execute
+
+* stopgap
+The smallest change, carried by a spec-signal finding of kind issue, that makes the defect fail
+loudly (an error, a refusal) instead of succeeding wrongly, and that holds whichever answer the ask
+gets.
+- Example :: "A spec signal's stopgap is applied before done and named in the ask"
+- Avoid :: workaround, hotfix, interim fix
+- Specs :: execute
+
+* inline fix
+A fix the phase agent makes and commits itself in the code root, without an Implementor.
+- Example :: "the phase agent makes it as an inline fix"
+- Avoid :: inline path (a separate flow for small out-of-cycle edits), inline rule (when an ask stops the session), hotfix, direct edit
+- Specs :: execute
+
+* follow-up candidate
+A task the phase agent proposes, but does not write, for the next plan: a fix that is not simple,
+recorded with the source's own words for the plan agent to turn into a task file.
+- Example :: "a follow-up candidate is written for the next plan, marked critical"
+- Avoid :: follow-up task (main uses it for both the candidate and the task the plan writes from it), candidate task, task file
+- Specs :: execute
+
+* hardening list
+The change's one list of reasoned defects and robustness work off the main path, shown to the user
+with the MVP and worked only if they choose to harden.
+- Example :: "an entry on the change's hardening list"
+- Avoid :: backlog (=.tasks/= is main's cross-change backlog), tech debt, TODO list
+- Specs :: execute
+
+* record correction
+A correction to a statement in the change's design or specs that right code no longer matches;
+never an ask.
+- Example :: "the change's journal records the statement for integrate as a record correction"
+- Avoid :: doc-correction (main's retired ask kind for the same thing), text correction (prose outside the design and specs), amendment
+- Specs :: execute

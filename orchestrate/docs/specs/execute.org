@@ -225,7 +225,7 @@ as a journal line alone.
 
 *** Scenario: A discovery on the main path is fixed in the change
 - *WHEN* an Implementor's report lists a discovery on the change's main path
-- *THEN* it is fixed in this change, as an inline fix or as a follow-up for the next plan
+- *THEN* it is fixed in this change, as an inline fix or as a follow-up candidate for the next plan
 
 *** Scenario: A simple fix is made inline, reproduced first
 - *WHEN* the fix for a discovery on the main path is in one file, touches no seam's code, and is checked by a run whose output is predictable
@@ -358,7 +358,7 @@ list.
 - *AND* no step answering it is written into a later task's body in its place
 
 *** Scenario: A spec signal's stopgap is applied before done and named in the ask
-- *WHEN* a spec-signal finding carries a stopgap
+- *WHEN* a spec signal carries a stopgap
 - *THEN* the stopgap is applied as an inline fix before the task is done, and the ask names it
 - *AND* a stopgap that would answer the ask is not applied, and the ask says so
 
