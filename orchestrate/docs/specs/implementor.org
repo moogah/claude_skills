@@ -1,6 +1,6 @@
 #+TITLE: implementor
 #+OPTIONS: ^:{} -:nil
-#+STATUS: draft 2026-11-13, extracted from the reference skill (=main= =e356da7=); six gaps opened; at the hand-off review 2026-11-13: two filled by the cross-spec decisions (the blocked hand-back, G7)
+#+STATUS: draft 2026-11-13, extracted from the reference skill (=main= =e356da7=); six gaps opened; at the hand-off review 2026-11-13: two filled by the cross-spec decisions (the blocked hand-back, G7); the seam objection's section filled
 
 * Purpose
 
@@ -160,6 +160,10 @@ SHALL record a seam objection as a Discoveries entry naming the row, and SHALL l
 - *THEN* the commit implements what the code needs, not what the row says
 - *AND* a Discoveries entry names the row as its =affected_seam=, with a class that says how it is wrong
 
+*** Scenario: A seam objection is written in Discoveries only
+- *WHEN* the Implementor makes a seam objection
+- *THEN* the task file's Observations hold no entry for it
+
 *** Scenario: The report lists each seam objection
 - *WHEN* the Implementor has made a seam objection
 - *THEN* the report's =push_backs= names the seam, with a one-line summary
@@ -316,14 +320,6 @@ The Implementor's role default SHALL be the model =opus= at =medium= effort.
 - *THEN* it runs at =opus=, =medium=
 
 * Gaps
-
-** Gap: Whether a seam objection is also an Observation
-:PROPERTIES:
-:REQUIREMENT: A cited seam row the code shows wrong is objected to, not reproduced
-:END:
-The role puts a seam objection in Discoveries; the task file's own description of its Observations
-lists objections to cited seam rows among them. Whether an objection is written in both sections or
-in Discoveries only is not settled.
 
 ** Gap: When an Implementor hands back failed rather than blocked
 :PROPERTIES:
