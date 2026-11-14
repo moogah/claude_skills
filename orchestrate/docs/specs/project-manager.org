@@ -1,6 +1,6 @@
 #+TITLE: project-manager
 #+OPTIONS: ^:{} -:nil
-#+STATUS: draft 2026-11-13, extracted from the reference skill (=main= =e356da7=); eight gaps opened; at the hand-off review 2026-11-13: G8 applied, its role default added; the sections' order, the throughput rows the recommendation's values and goal drift's drainage filled
+#+STATUS: draft 2026-11-13, extracted from the reference skill (=main= =e356da7=); eight gaps opened; at the hand-off review 2026-11-13: G8 applied, its role default added; the sections' order, the throughput rows the recommendation's values, goal drift's drainage and the queue filled
 
 * Purpose
 
@@ -293,6 +293,11 @@ changes in the change is its digest and, on a cascade, the conformance run it st
 - *THEN* the code root has no change of its making
 - *AND* no task file's text has changed
 
+*** Scenario: The PM writes nothing to the queue
+- *WHEN* the PM has run
+- *THEN* no task's labels, priority, class or blocker note has changed by its hand
+- *AND* any re-prioritisation or relabelling it has in mind is a recommendation in the digest
+
 *** Scenario: The PM spawns no Implementor or Reviewer
 - *WHEN* the PM has run
 - *THEN* the change's record holds no Implementor or Reviewer it spawned
@@ -308,14 +313,6 @@ The PM's agent pass SHALL run at its role default.
 - *THEN* it runs at =sonnet=, =medium=
 
 * Gaps
-
-** Gap: What, if anything, the PM writes to the queue
-:PROPERTIES:
-:REQUIREMENT: The PM acts only through its digest and the cascade run
-:END:
-The role lets the PM label tasks' classes, re-rank priority and set blocker notes, and also says a
-re-prioritisation is applied at the user's nod; the ask kinds call a re-rank a PM action it may take
-alone; the record has no priority, and a task's class is set when plan adds it.
 
 ** Gap: Whether the asks table holds candidate questions, and with what file
 :PROPERTIES:

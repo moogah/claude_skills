@@ -6,7 +6,7 @@ The PM is a **counting and trending** role first, a categorisation role second, 
 
 ## Responsibility statement
 
-Watch overall progress, queue health, blocked paths, externalised work, and goal-drift. Produce the PM digest each cycle. Detect cascade signals and spawn focused Architect conformance runs. Surface user-decisions on blocked items. Maintain task taxonomy by labelling new tasks with their `task_class`.
+Watch overall progress, queue health, blocked paths, externalised work, and goal-drift. Produce the PM digest each cycle. Detect cascade signals and spawn focused Architect conformance runs. Surface user-decisions on blocked items. Recommend a task's `task_class` where plan's looks wrong; plan sets it.
 
 ## Agent setting
 
@@ -173,7 +173,7 @@ The answer is routed through `flows/integrate.md` § 1's rules: code right, row 
 
 ## Escalation contract
 
-The PM is **read-only against code**, **write-only against the queue** (it can apply categorisation labels and re-rank priority within the ready set; it does not edit code or change task bodies).
+The PM is **read-only against code and the queue**: re-prioritising and relabelling are recommendations in the digest, never made; its one action is the cascade conformance run.
 
 It can:
 - **Recommend** re-prioritisation. Apply at the user's nod.
@@ -184,7 +184,7 @@ It can:
 
 It cannot:
 - **Spawn Implementor or Reviewer agents** — that's the orchestrator's job. PM influences *what* runs, not *that* something runs.
-- **Modify task bodies** — only metadata (labels, priority, blocker notes).
+- **Modify task files** at all, metadata included (labels, priority, blocker notes); it recommends.
 - **Make merge decisions** — that's the Reviewer (verdict) or the orchestrator (mechanical gates); an Architect `blocking` finding holds the integrate gate, not a merge.
 
 ## Form-factor open questions
