@@ -270,12 +270,13 @@ behind an abandoned merge).
 - Specs :: execute
 
 * Observation
-One note an Implementor appends to the task file under Observations: a departure from the prescribed
+One note an Implementor, or the inline path's phase agent for its own task, appends to the task file
+under Observations: a departure from the prescribed
 approach, a weak test, an ambiguity it resolved, a speculative need; kept as the record and never
 shown to the Reviewer.
 - Example :: "An Observation that names a defect is routed like a discovery"
 - Avoid :: note, comment, remark
-- Specs :: execute
+- Specs :: execute, implementor, inline-path
 
 * finding
 A defect, or a suspected defect, that an agent reports about code or text that exists. Main labels
