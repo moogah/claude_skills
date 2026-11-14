@@ -1,6 +1,6 @@
 #+TITLE: project-manager
 #+OPTIONS: ^:{} -:nil
-#+STATUS: draft 2026-11-13, extracted from the reference skill (=main= =e356da7=); eight gaps opened; at the hand-off review 2026-11-13: G8 applied, its role default added; the sections' order, the throughput rows and the recommendation's values filled
+#+STATUS: draft 2026-11-13, extracted from the reference skill (=main= =e356da7=); eight gaps opened; at the hand-off review 2026-11-13: G8 applied, its role default added; the sections' order, the throughput rows the recommendation's values and goal drift's drainage filled
 
 * Purpose
 
@@ -308,13 +308,6 @@ The PM's agent pass SHALL run at its role default.
 - *THEN* it runs at =sonnet=, =medium=
 
 * Gaps
-
-** Gap: Whether goal drift needs drainage to stay positive
-:PROPERTIES:
-:REQUIREMENT: On goal drift the PM recommends and the user decides
-:END:
-The integrate phase's statement of the query adds that drainage stays positive; the role's does not,
-so a stalled main path while the queue grows fires goal drift by one and not by the other.
 
 ** Gap: What, if anything, the PM writes to the queue
 :PROPERTIES:

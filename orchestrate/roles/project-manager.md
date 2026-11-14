@@ -123,7 +123,7 @@ The PM does **not** read code. If a question requires reading code, that's a sig
 | Cohort velocity | completion rate by `task_class` < global avg / 2 | Signal: cycle anti-pattern in class |
 | Cycle anti-pattern | rejection reasons clustered by implementor or class with count ≥3 | Signal: process bug |
 | Blocked-path aging | tasks `status: blocked` for ≥`stale-task-cycles` cycles | Signal: blocked-path stagnation; a candidate question (the orchestrator writes the ask file), or re-surface the ask id in `blocker_note` |
-| Goal drift | critical-path completion ratio stagnant or declining for K cycles while non-critical-path completions continue | Signal: goal drift |
+| Goal drift | critical-path completion ratio stagnant or declining for K cycles while non-critical-path completions continue and drainage stays positive | Signal: goal drift |
 
 All thresholds are overlay-configurable via `config.yaml` `thresholds.*`. `state.py counts` computes the first, second, third and sixth rows; the rows that need per-task cycle age or rejection reasons (stale detection, cohort velocity, cycle anti-pattern, blocked-path aging, goal drift over K cycles) are read by the agent pass from the history table until a cycle shows they are worth computing.
 
