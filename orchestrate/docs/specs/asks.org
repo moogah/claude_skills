@@ -1,6 +1,6 @@
 #+TITLE: asks
 #+OPTIONS: ^:{} -:nil
-#+STATUS: draft 2026-11-13, extracted from the reference skill (=main= =e356da7=); first limited to the ask file (where it lives, how it is committed; its one inferred scenario reviewed by the user 2026-11-13); extended 2026-11-13 to the asks' full scope (the kinds, the blocking rule, the sections, answering and applying, the sync points, the index), two gaps opened; at the hand-off review 2026-11-13: both filled by the cross-spec decisions G1 and G3, and G11 applied; accepted 2026-11-13 by the user at the hand-off review; amended 2026-11-14 after acceptance (a design-round question's If unanswered; a decision settled in execute left for integrate; an ask's status once answered; an ask settled with no cycle open), from the evals' build-out (=research/skill-evals/overnight/plan.org= § Decided with the user, 2026-11-14 morning); amended 2026-11-14 after acceptance (a label with words that narrow it is read back), from the user's decisions on round 2 of the evals (=research/skill-evals/round-2/plan.org= § Log › Decisions needed)
+#+STATUS: draft 2026-11-13, extracted from the reference skill (=main= =e356da7=); first limited to the ask file (where it lives, how it is committed; its one inferred scenario reviewed by the user 2026-11-13); extended 2026-11-13 to the asks' full scope (the kinds, the blocking rule, the sections, answering and applying, the sync points, the index), two gaps opened; at the hand-off review 2026-11-13: both filled by the cross-spec decisions G1 and G3, and G11 applied; accepted 2026-11-13 by the user at the hand-off review; amended 2026-11-14 after acceptance (a design-round question's If unanswered; a decision settled in execute left for integrate; an ask's status once answered; an ask settled with no cycle open), from the evals' build-out (=research/skill-evals/overnight/plan.org= § Decided with the user, 2026-11-14 morning); amended 2026-11-14 after acceptance (a label with words that narrow it is read back), from the user's decisions on round 2 of the evals (=research/skill-evals/round-2/plan.org= § Log › Decisions needed); amended 2026-11-14 after acceptance (no index of asks: the file alone is the record; adopted from the state layer, =research/skill-evals/state-layer/plan.org= § Decided)
 
 * Purpose
 
@@ -12,7 +12,7 @@ this spec states what such a file is and where it lives.
 It covers the file, its form and its place; the kinds, and which of them reach the user and when an
 ask stops the session; what each section must say so the user can decide without the code; what a
 finding must carry for an ask to be written from it; how an answer is given, read back and applied;
-the sync points at which answers are handled; the ask's entry in the change's state; and the commits
+the sync points at which answers are handled; and the commits
 that carry an ask's history. Putting an ask to the user, and knowing whether the user is present, is
 the dispatcher's (=dispatcher=); what a task blocked on an ask records is the record's (=record=).
 
@@ -50,10 +50,9 @@ the file's name. Its kind SHALL be one of a closed set.
 - *AND* the file is named =<id>.org=
 
 *** Scenario: An ask raised with no open cycle is named for its change
-- *WHEN* an ask is raised while no cycle of its change is open (before the first cycle, between cycles, or with no state to hold it)
+- *WHEN* an ask is raised while no cycle of its change is open (before the first cycle, or between cycles)
 - *THEN* its id is =ask-<change>-<n>=, the change's name and a sequence number
 - *AND* it is a file in the change's inbox, committed in the home like any other ask
-- *AND* the next state opened for the change indexes it
 
 *** Scenario: An ask's kind is one of a closed set
 - *WHEN* an ask file is written
@@ -403,22 +402,6 @@ closes SHALL stay in the inbox for the next cycle.
 *** Scenario: An unsettled ask stays in the inbox across cycles
 - *WHEN* a cycle closes with asks open, answered or deferred
 - *THEN* their files stay in the inbox
-- *AND* the next cycle's state indexes them
-
-** Requirement: The ask file is the record, and the state only indexes it
-:PROPERTIES:
-:GOAL:     none stated
-:END:
-The change's state SHALL hold, for each ask, only an entry naming its id, kind, status, what it
-blocks and its file's path; where the entry and the file disagree, the file SHALL win.
-
-*** Scenario: The state holds an ask's id, kind, status, blocks and path
-- *WHEN* an ask is filed in a cycle
-- *THEN* the state file's =asks_for_user= has one entry for it with its =id=, =kind=, =status=, =blocks= and =path=, and nothing of its prose
-
-*** Scenario: Where the entry and the file disagree, the file wins
-- *WHEN* an ask's file and its entry in the state disagree
-- *THEN* the entry is rewritten from the file
 
 ** Requirement: An ask's answer and its application are committed in the home
 :PROPERTIES:
