@@ -1,6 +1,6 @@
 #+TITLE: integrate
 #+OPTIONS: ^:{} -:nil
-#+STATUS: draft 2026-11-13, extracted from the reference skill (=main= =e356da7=); at the hand-off review 2026-11-13: G4 and G7 applied, the hardening list's form and a prior's thought carried in, "conformance check" reworded "conformance"; the unpinned disagreement the take-in regression and the MVP's review filled; no gap open; accepted 2026-11-13 by the user at the hand-off review; amended 2026-11-14 after acceptance (an untrue sentence the whole-change review finds is a record correction), from the evals' build-out (=research/skill-evals/overnight/plan.org= § Decided with the user, 2026-11-14 morning); amended 2026-11-14 after acceptance (the PM digest retired into the handshake, =research/skill-evals/state-layer/plan.org= F4-1); amended 2026-11-14 after acceptance (F1-3: adopted from the state layer, =research/skill-evals/state-layer/plan.org=); amended 2026-11-14 after acceptance (the close commit names no archived state, =research/skill-evals/state-layer/plan.org=)
+#+STATUS: draft 2026-11-13, extracted from the reference skill (=main= =e356da7=); at the hand-off review 2026-11-13: G4 and G7 applied, the hardening list's form and a prior's thought carried in, "conformance check" reworded "conformance"; the unpinned disagreement the take-in regression and the MVP's review filled; no gap open; accepted 2026-11-13 by the user at the hand-off review; amended 2026-11-14 after acceptance (an untrue sentence the whole-change review finds is a record correction), from the evals' build-out (=research/skill-evals/overnight/plan.org= § Decided with the user, 2026-11-14 morning); amended 2026-11-14 after acceptance (the PM digest retired into the handshake, =research/skill-evals/state-layer/plan.org= F4-1); amended 2026-11-14 after acceptance (F1-3: adopted from the state layer, =research/skill-evals/state-layer/plan.org=); amended 2026-11-14 after acceptance (the close commit names no archived state, =research/skill-evals/state-layer/plan.org=); amended 2026-11-14 after acceptance (integrate edits a task file's status only: adopted from the state layer, =research/skill-evals/state-layer/plan.org= R3-8)
 
 * Purpose
 
@@ -342,7 +342,8 @@ handshake.
 The integrate phase SHALL route everything the cycle found and asked to where it lands and SHALL
 write, at each cycle, a handshake for the next plan holding the seam rows the cycle changed, the
 patterns seen across tasks, the PM's goal-drift recommendation, the user's answer on goal drift, the open and the resolved
-asks, every open task's impact set and the follow-up candidates. It SHALL write no task text.
+asks, every open task's impact set and the follow-up candidates. It SHALL write no task text: a task file
+it touches only to set its =status:= (a task blocked on an ask).
 
 *** Scenario: Each integrate writes a handshake with all its parts
 - *WHEN* integrate passes its gate
@@ -409,7 +410,7 @@ asks, every open task's impact set and the follow-up candidates. It SHALL write 
 
 *** Scenario: Integrate writes no task text
 - *WHEN* integrate closes
-- *THEN* no task file has been written or edited by it
+- *THEN* no task file has been written by it, and none edited but its =status:= line
 
 ** Requirement: The hardening list holds the change's reasoned defects off the main path
 :PROPERTIES:
