@@ -217,7 +217,7 @@ hand-back, and is the only agent that puts questions to the user.
 
 * phase agent
 The agent, spawned fresh by the dispatcher, that runs one phase of one cycle by its flow: it spawns
-the role agents the flow names, runs the gate, makes the close commit and hands back one line.
+the role agents the flow names, runs the gate, makes the close commit and hands back.
 - Example :: "neither review is made by the execute phase agent itself"
 - Avoid :: orchestrator (see Note), coordinator, main agent
 - Specs :: execute
@@ -393,13 +393,13 @@ The change's process kept in the home: its directory, its state and its journal.
 The file a phase agent writes when asked to hand over: the tasks merged, the tasks and asks still
 open, and the steps left, so that a fresh agent for the same phase can go on from it.
 - Example :: "leave a handover a fresh agent can continue from"
-- Avoid :: hand-back (the one line), handoff (the research skill's word, and the evals' glossary avoids it for interface artifacts), checkpoint, swap
+- Avoid :: hand-back (what an agent returns), handoff (the research skill's word, and the evals' glossary avoids it for interface artifacts), checkpoint, swap
 - Specs :: execute
 
 * hand-back
-The one line, at most 200 characters, an agent returns to the agent that spawned it when it ends or
-stops; its detail is in a file.
-- Example :: "the dispatcher receives one line of at most 200 characters"
+What an agent returns to the agent that spawned it when it ends or stops: its outcome, short (at most
+1,000 characters) and never a report; its detail is in a file. It keeps the spawner's context small.
+- Example :: "the dispatcher receives a short hand-back of at most 1,000 characters naming the outcome"
 - Avoid :: report (a file of the Implementor's), summary, handover, return message
 - Specs :: execute
 
@@ -470,7 +470,7 @@ Implementor saw.
 An Implementor's structured account of its task, written to a file for the phase agent only and never
 shown to the Reviewer.
 - Example :: "never the Implementor's report, notes or identity"
-- Avoid :: hand-back (the one line), findings file, summary
+- Avoid :: hand-back (what an agent returns), findings file, summary
 - Specs :: execute
 
 * review file

@@ -142,7 +142,7 @@ any cycle, in the spawn's description; the spawn is the record of the agent and 
 - *WHEN* the dispatcher spawns a phase agent
 - *THEN* its brief tells it to spawn every agent at the setting its phase names, passing model and effort, and to name each spawn's role and its task or cycle in its description
 - *AND* that it cannot ask the user: an ask is a file, and it hands back that it stopped, naming the ask, after finishing what does not wait on it
-- *AND* that it hands back once, in one line, never a report
+- *AND* that it hands back once, briefly, never a report
 - *AND* that asked to hand over, it stops at a clean point and writes a handover
 - *AND* that what the user reads uses the terms of the product's glossary, when it has one
 

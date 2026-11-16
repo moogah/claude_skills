@@ -235,7 +235,7 @@ path and the record corrections to the specs, and stop.
 *** Scenario: Integrate hands back that it stopped on the MVP decision
 - *WHEN* the MVP decision is filed
 - *THEN* the phase passes its gate, closes and makes its close commit first
-- *AND* hands back =integrate <cycle-id>: stopped, ask <id> blocks plan; <path>=
+- *AND* hands back that it stopped, naming the cycle, the ask, that the ask blocks plan, and the ask's path
 
 *** Scenario: The MVP decision says what the change does and how to try it
 - *WHEN* the MVP decision is filed
@@ -452,7 +452,7 @@ goes wrong in product terms. =plan= and =execute= cite this form.
 The integrate phase SHALL handle the answers waiting in the inbox first, SHALL leave the PM's
 meta-discoveries each cycle, SHALL commit the change's documents it corrected in the code root and the rest of its work in
 the home with one close commit, SHALL change no code except an untrue sentence in prose, SHALL spawn
-each agent at its role default, and SHALL hand the dispatcher one line.
+each agent at its role default, and SHALL hand the dispatcher a short hand-back.
 
 *** Scenario: An answered ask is handled before anything else
 - *WHEN* integrate starts and an ask in the inbox has an answer
@@ -484,9 +484,9 @@ each agent at its role default, and SHALL hand the dispatcher one line.
 - *THEN* each runs at its role default
 - *AND* each spawn's description names its role and the cycle, and the spawn passes its setting
 
-*** Scenario: Integrate hands back one line
+*** Scenario: Integrate hands back its outcome briefly
 - *WHEN* integrate passes its gate, stops on an ask, fails or hands over
-- *THEN* the dispatcher receives one line naming the phase and the cycle, and when it stopped on an ask, the ask, what it blocks and the file's path
+- *THEN* the dispatcher receives a short hand-back of at most 1,000 characters naming the phase and the cycle, and when it stopped on an ask, the ask, what it blocks and the file's path
 
 * Gaps
 

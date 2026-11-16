@@ -65,7 +65,7 @@ done with no review step between, and the code and the task file SHALL be commit
 
 *** Scenario: A finished inline path hands back done with its commit
 - *WHEN* the inline path commits its edit
-- *THEN* the dispatcher receives one line of at most 200 characters, =inline <task>: done <sha>; <task file>=, the path relative to the home
+- *THEN* the dispatcher receives a short hand-back of at most 1,000 characters saying the task is done and naming its commit and the task file
 
 *** Scenario: The inline path's commit has a subject of its own
 - *WHEN* the inline path commits its edit
@@ -125,7 +125,7 @@ already in a batch, however small. In doubt, the edit SHALL take the batch.
 When the inline path's edit turns out larger than its triage allowed, the inline path SHALL bail
 out: leave the code root as it was before the edit, keeping history when a commit was already made;
 put the task back, open, with the reason and its evidence in its task file; and hand the dispatcher
-one line naming the task and why.
+a short hand-back naming the task and why.
 
 *** Scenario: A request the triage refuses is a bailout with nothing to revert
 - *WHEN* the triage refuses the request before any edit is made
@@ -178,9 +178,9 @@ one line naming the task and why.
 - *THEN* the task is open again, ready for the next plan
 - *AND* its task file holds a note that the inline path bailed out, saying what was found and where its evidence is
 
-*** Scenario: A bailout hands back one line naming the task and why
+*** Scenario: A bailout hands back the task and why
 - *WHEN* the inline path bails out
-- *THEN* the dispatcher receives one line of at most 200 characters, =inline <task>: bailed out, <why>; <task file>=
+- *THEN* the dispatcher receives a short hand-back of at most 1,000 characters saying the task bailed out and why, and naming the task file
 
 ** Requirement: What the edit exposed is routed, and the inline path writes no new task
 :PROPERTIES:
