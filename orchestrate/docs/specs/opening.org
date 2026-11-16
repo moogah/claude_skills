@@ -68,7 +68,7 @@ base.
 
 *** Scenario: A name the user gave that is taken fails the opening
 - *WHEN* the user named the change and =docs/changes/<change>/= already exists in the repository, and the change is not being revised in place
-- *THEN* opening hands back =open: failed, name taken: <change>=
+- *THEN* opening hands back that it failed because the name is taken, naming the change
 - *AND* it creates no branch and writes nothing
 
 *** Scenario: A home with one repository opens the change in it
@@ -81,7 +81,7 @@ base.
 
 *** Scenario: With several repositories and none named, opening asks which
 - *WHEN* the home holds several repositories and the user's words name none of them
-- *THEN* opening hands back =open: failed, which repository: <the repositories>=
+- *THEN* opening hands back that it failed because no repository was named, naming the repositories
 - *AND* it creates no branch and writes nothing
 
 *** Scenario: Work that needs two repositories is two changes
@@ -92,7 +92,7 @@ base.
 *** Scenario: Each opening opens one change, and names the second when there is one
 - *WHEN* what the user asks for needs two repositories
 - *THEN* the opening opens the first change only
-- *AND* its hand-back line ends =; second change: <repository>=
+- *AND* its hand-back names the second change's repository
 
 *** Scenario: The integration branch starts from the repository's current commit
 - *WHEN* a change is opened and no ref is given to start it from
@@ -289,10 +289,10 @@ design and no task, and hand the dispatcher a short hand-back.
 
 *** Scenario: A failed opening says why
 - *WHEN* opening cannot complete
-- *THEN* the dispatcher receives the line =open: failed, <why>=
+- *THEN* the dispatcher receives a short hand-back saying opening failed and why
 
 *** Scenario: A failed opening leaves nothing behind
-- *WHEN* opening hands back =open: failed=
+- *WHEN* opening hands back that it failed
 - *THEN* the repository has no branch or worktree the opening made
 - *AND* no change of that name exists in the home, and nothing the opening wrote is left uncommitted or committed
 
@@ -334,7 +334,7 @@ On =split= it SHALL open a new change that names the one it came from.
 *** Scenario: A split's opening names the old change for revision
 - *WHEN* opening opens a new change on a =split= answer
 - *THEN* it leaves the old change's intent as it was
-- *AND* its hand-back line ends =; revise: <old change>=
+- *AND* its hand-back names the old change, to be revised
 
 * Gaps
 
