@@ -7,7 +7,7 @@
 The design round runs once per change, after its intent and spec edits are committed and before its
 first cycle. A phase agent spawns the Architect with the change's intent, spec edits and scenarios,
 checks what the Architect writes (the change's design and the pending tests) and commits it in the
-code root in one commit, and hands the dispatcher one line. Every question the round raises, with
+code root in one commit, and hands the dispatcher a short hand-back. Every question the round raises, with
 the intent's own open questions, its unapproved goals and its new terms, is put to the user in one
 sitting before plan drafts any task. The round runs again only for a seam a decision or a spec
 change alters. What the design and the pending tests must contain is the =architect= spec's; the
@@ -220,7 +220,7 @@ documents it settles.
 *** Scenario: The round's phase agent files the asks and hands back stopped
 - *WHEN* the round leaves open questions in the design, before the first cycle or inside one
 - *THEN* the round's phase agent files their asks in the change's inbox, named for the change when no cycle is open
-- *AND* it hands back =design-round <change>: stopped, asks <ids> block plan=
+- *AND* it hands back that the round stopped, naming the change and each ask's id, and that the asks block plan
 
 *** Scenario: The round's questions are put in one sitting, one per call
 - *WHEN* the round's asks are filed and the user is present

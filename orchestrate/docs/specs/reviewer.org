@@ -5,7 +5,7 @@
 * Purpose
 
 A Reviewer reads one merged task, or at integrate the whole change, and writes what it found to a
-review file, then hands back one line. This spec states what that file must carry, what makes a
+review file, then hands back a short hand-back. This spec states what that file must carry, what makes a
 finding (its kind, severity, direction, locations, evidence and recommended action, whoever writes
 it, the Architect included), what a Reviewer may and may not touch while it probes the merge, and the
 form of its hand-back line. It does not state what a Reviewer is given, when it is spawned, at which
@@ -217,34 +217,33 @@ other agents on the machine share.
 - *AND* any server or container it starts carries the name of the review's checkout, not a fixed one
 - *AND* it starts no GUI or interactive program and stops no process it did not start
 
-** Requirement: The Reviewer hands back one line of counts
+** Requirement: The Reviewer hands back its counts
 :PROPERTIES:
 :GOAL:     none stated
 :END:
-The Reviewer SHALL hand back one line of at most 200 characters, naming the task and counting its
-findings by kind and its spec signals and thoughts, with no path and nothing else.
+The Reviewer SHALL hand back a short hand-back of at most 1,000 characters, naming the task and counting its
+findings by kind and its spec signals and thoughts, with no summary and nothing else.
 
-*** Scenario: The hand-back line counts the findings
+*** Scenario: The hand-back counts the findings
 - *WHEN* the Reviewer has written its review file
-- *THEN* it hands back one line, =reviewed <task> issues=<n> questions=<n> spec-signal=<n> thoughts=<n>=, of at most 200 characters
-- *AND* =issues= and =questions= count the file's findings of each kind, and =spec-signal= those among them whose direction is =spec-signal=
+- *THEN* it hands back the task and its counts of issues, questions, spec signals and thoughts, in at most 1,000 characters
+- *AND* the issues and questions count the file's findings of each kind, and the spec signals those among them whose direction is =spec-signal=
 
-*** Scenario: The hand-back carries no path and no summary
+*** Scenario: The hand-back carries no summary
 - *WHEN* the Reviewer hands back
-- *THEN* the line names no path
-- *AND* the hand-back holds nothing but that line
+- *THEN* the hand-back holds nothing but the task and its counts
 
 ** Requirement: The whole-change review is written in the same form
 :PROPERTIES:
 :GOAL:     G11
 :END:
 The Reviewer of the whole change SHALL write one review file for the cycle in the form of a task's,
-report what no task's review could see, and hand back one line.
+report what no task's review could see, and hand back a short hand-back.
 
 *** Scenario: The whole-change review is one review file of its cycle
 - *WHEN* the whole-change review runs
 - *THEN* its review file is =.orchestrator/changes/<change>/cycles/<cycle-id>/reviews/whole-change.md= in the home, in the form of a task's review file
-- *AND* the Reviewer hands back one line
+- *AND* the Reviewer hands back its counts, as for a task's review
 
 *** Scenario: The whole-change review names the whole change in place of a task
 - *WHEN* the whole-change review file is written

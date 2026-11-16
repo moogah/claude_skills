@@ -448,14 +448,14 @@ recommendation of none or continue the step SHALL ask nothing.
 - *WHEN* the prior handshake's goal-drift recommendation is =none= or =continue=
 - *THEN* plan raises no goal-drift question and the sign-off does not hold its gate
 
-** Requirement: Plan passes its gate, closes with one commit and hands back one line
+** Requirement: Plan passes its gate, closes with one commit and hands back its outcome
 :PROPERTIES:
 :GOAL:     none stated
 :END:
 The plan phase SHALL pass its gate only when the handshake was consumed, the batch is fixed, every
 task cites a seam (unless the design records that no scenario of the change needs one) and any goal
 drift is signed off; it SHALL close with one commit in the home and
-hand the dispatcher one line. It SHALL write no code and spawn no Implementor.
+hand the dispatcher a short hand-back. It SHALL write no code and spawn no Implementor.
 
 *** Scenario: Plan passes its gate only with the handshake, the batch, the seams and the sign-off
 - *WHEN* the plan of a cycle after the first passes its gate
@@ -474,10 +474,9 @@ hand the dispatcher one line. It SHALL write no code and spawn no Implementor.
 - *THEN* one commit in the home, subject =Orchestrator: <cycle-id> plan closed=, holds the batch's task files, the cycle's premise check when there is one, and the event log
 - *AND* it holds the task files plan wrote in the cross-change backlog, when it wrote any
 
-*** Scenario: Plan hands back one line naming its outcome
+*** Scenario: Plan hands back its outcome briefly
 - *WHEN* plan passes its gate, stops on an ask, or does not start because of an MVP answer
-- *THEN* the dispatcher receives one line of at most 200 characters
-- *AND* a path in it is relative to the home
+- *THEN* the dispatcher receives a short hand-back of at most 1,000 characters naming the outcome
 
 *** Scenario: Plan writes no code
 - *WHEN* plan closes

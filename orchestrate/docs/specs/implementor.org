@@ -7,7 +7,7 @@
 The Implementor is the role agent that does one task of a batch, in the task's own worktree, from
 the brief the execute phase gives it. This spec states what its work leaves behind: the one commit on
 the task's branch, the Observations and Discoveries it appends to the task file in the home, the
-report it writes for the phase agent, and the one line it hands back; and what it leaves alone on a
+report it writes for the phase agent, and the short hand-back it ends with; and what it leaves alone on a
 machine other agents share. It does not state when an Implementor is spawned, what its brief holds,
 what becomes of its commit, its notes or its report, or how a wrong premise, a discovery or a rework
 is routed: those are =execute='s.
@@ -269,31 +269,29 @@ project's own additions to the role cannot change, with counts that match the ta
 - *AND* a test against a fake of the surface is not the pin
 - *AND* when the tests cannot drive the surface, the report and an Observation say so
 
-** Requirement: The Implementor hands back one line, once
+** Requirement: The Implementor hands back once, briefly
 :PROPERTIES:
 :GOAL:     none stated
 :END:
-The Implementor SHALL end by handing back one line of at most 200 characters, once, after its
+The Implementor SHALL end by handing back a short hand-back of at most 1,000 characters, once, after its
 commit and its test run: =done= with the task and the commit, flagged when it deviated or listed
-candidate tasks, or =blocked= or =failed= with one clause. The line SHALL name no path and carry no
-report.
+candidate tasks, or =blocked= or =failed= with one clause. It SHALL carry no report.
 
 *** Scenario: A done hand-back names the task and its commit
 - *WHEN* an Implementor finishes with a commit
-- *THEN* its last output is one line of at most 200 characters, =done <task> <sha>=, the sha being its commit on the task's branch
+- *THEN* its last output is a short hand-back of at most 1,000 characters, =done= with the task and the sha of its commit on the task's branch
 
 *** Scenario: A deviation is flagged in the hand-back
 - *WHEN* the report's =deviation_summary= is not empty
-- *THEN* the =done= line carries =deviated=
+- *THEN* the =done= hand-back says it deviated
 
 *** Scenario: Candidate tasks are counted in the hand-back
 - *WHEN* the report's =candidate_tasks= is not empty
-- *THEN* the =done= line carries =candidates=<n>=, =n= being the number of ids it lists
+- *THEN* the =done= hand-back gives the number of candidate tasks, the number of ids it lists
 
-*** Scenario: The hand-back names no path and carries no report
+*** Scenario: The hand-back carries no report
 - *WHEN* an Implementor hands back
-- *THEN* the line names no file's path
-- *AND* holds nothing of the report, the test output, the Observations or the Discoveries
+- *THEN* it holds nothing of the report, the test output, the Observations or the Discoveries
 
 *** Scenario: A task that needs revision stops the Implementor with a blocked line
 - *WHEN* the task itself appears to need revision before it can be implemented

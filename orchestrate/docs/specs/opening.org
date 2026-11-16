@@ -10,7 +10,7 @@ a goal-drift answer) and committed in the change's code root, on an integration 
 It also revises a change in place when the user's answer calls for new goals. It reads no code and
 writes no design and no task, and it asks the user nothing: its open questions and its new terms
 wait in the intent for the design round's sitting, which is also where the user approves the goals.
-It hands the dispatcher one line.
+It hands the dispatcher a short hand-back.
 
 * Requirements
 
@@ -30,12 +30,12 @@ SHALL open no change for work that a task of an open change covers.
 - *WHEN* the user opened a change by hand, its intent already committed on a branch of its own
 - *THEN* that branch is the change's integration branch
 - *AND* no intent and no spec edit is written for the change
-- *AND* the dispatcher receives one line of at most 200 characters, =adopt <change>; = followed by the intent's path relative to the home
+- *AND* the dispatcher receives a short hand-back of at most 1,000 characters saying the change was adopted and naming the intent's path
 
 *** Scenario: Work an open change's task covers opens no change
 - *WHEN* the user asks for work that a task of an open change already covers
 - *THEN* no change is opened for it
-- *AND* the dispatcher receives one line of at most 200 characters, =open: covered by <change>, task <task>; <task file>=, the path relative to the home
+- *AND* the dispatcher receives a short hand-back of at most 1,000 characters saying no change was opened and naming the change, the task and its task file
 
 ** Requirement: A new change is named, placed in one repository and started from a written base
 :PROPERTIES:
@@ -240,13 +240,13 @@ it SHALL write none for a case the user never raised, and SHALL put no question 
 - *THEN* no ask is filed for the change while the opening runs
 - *AND* its open questions wait in the intent for the design round's sitting
 
-** Requirement: Opening ends in one commit in the code root and one line
+** Requirement: Opening ends in one commit in the code root and a short hand-back
 :PROPERTIES:
 :GOAL:     G1 (inferred, from O-OP-1)
 :END:
 Opening SHALL commit the intent and the spec edits in the change's code root in one commit, after
 checking that every scenario the intent names exists; it SHALL commit nothing in the home, write no
-design and no task, and hand the dispatcher one line.
+design and no task, and hand the dispatcher a short hand-back.
 
 *** Scenario: One commit holds the intent and the spec edits
 - *WHEN* opening completes
@@ -273,19 +273,19 @@ design and no task, and hand the dispatcher one line.
 
 *** Scenario: The hand-back names the change, its counts and the intent
 - *WHEN* opening completes
-- *THEN* the dispatcher receives one line of at most 200 characters, =open <change>: <c> capabilities, <s> scenarios, <q> open questions; = followed by the intent's path
+- *THEN* the dispatcher receives a short hand-back of at most 1,000 characters naming the change, its counts of capabilities, scenarios and open questions, and the intent's path
 
-*** Scenario: The hand-back's intent path is relative to the home
+*** Scenario: The hand-back's intent path leads to the intent
 - *WHEN* opening hands back that it completed
-- *THEN* the intent's path in the line is relative to the home, through the change's code root
+- *THEN* the intent's path in the hand-back leads to the change's intent, through the change's code root
 
 *** Scenario: A revision hands back a line of its own
 - *WHEN* opening revises a change in place
-- *THEN* the dispatcher receives one line of at most 200 characters, =revise <change>: <c> capabilities, <s> scenarios, <q> open questions; = followed by the intent's path relative to the home
+- *THEN* the dispatcher receives a short hand-back of at most 1,000 characters saying the change was revised and naming it, its counts of capabilities, scenarios and open questions, and the intent's path
 
 *** Scenario: The hand-back's counts are the intent's
 - *WHEN* opening hands back that it completed
-- *THEN* the line's capabilities are the number the intent's Capabilities names, its scenarios the number of scenarios the change's spec edits add or change together with those the intent names =stated, not met=, a scenario it deletes not counted, and its open questions the number of the intent's open questions
+- *THEN* the hand-back's capabilities are the number the intent's Capabilities names, its scenarios the number of scenarios the change's spec edits add or change together with those the intent names =stated, not met=, a scenario it deletes not counted, and its open questions the number of the intent's open questions
 
 *** Scenario: A failed opening says why
 - *WHEN* opening cannot complete

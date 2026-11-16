@@ -10,7 +10,7 @@ scenarios' test properties. At a plan's premise check it checks what the tasks i
 about the code and writes a verdict on each claim. At an integrate's conformance it checks the
 merged code against the seam rows the cycle's tasks cited, amends a row the code has rightly
 outgrown, and lists the rows the cycle changed. In every run it reports each defect it finds in
-code or text that exists as a finding and routes none. Each run hands back one line. This spec
+code or text that exists as a finding and routes none. Each run hands back a short hand-back. This spec
 states what each run writes. When a run happens, what it is given and what is done with its output
 are stated by =design-round=, =plan= and =integrate=; the labels a finding carries are stated by
 =reviewer=. The Architect commits nothing, spawns no agent and writes no task.
@@ -339,7 +339,7 @@ line in the change's journal and not a finding. Style and preference SHALL not b
 *** Scenario: A design-round thought goes to the file its brief names
 - *WHEN* at the design round the Architect notices a speculative need or a cleanup that changes no behaviour today
 - *THEN* it writes one thought line for it in the file of its scratch directory that its brief names
-- *AND* its hand-back stays one line
+- *AND* its hand-back carries no thought line
 
 *** Scenario: A cleanup a project prior asks for is a thought line naming the prior
 - *WHEN* the Architect notices a cleanup that changes no behaviour today, and one of the project's priors asks for that kind of work
@@ -358,34 +358,33 @@ line in the change's journal and not a finding. Style and preference SHALL not b
 - *WHEN* the Architect would only have written the code differently by taste, in naming, formatting or an equivalent structure
 - *THEN* there is neither a finding nor a thought line for it
 
-** Requirement: Each run hands back one line and leaves the rest to its spawner
+** Requirement: Each run hands back its counts and leaves the rest to its spawner
 :PROPERTIES:
 :GOAL:     none stated
 :END:
-Each run of the Architect SHALL hand back one line of at most 200 characters that gives its counts,
+Each run of the Architect SHALL hand back a short hand-back of at most 1,000 characters that gives its counts and holds no report,
 its detail being in the files it wrote. No run SHALL commit, spawn an agent or write a task. The
 Architect SHALL run the test suite and its probes only read-only, in the scratch directory its brief
 names.
 
 *** Scenario: The design round hands back its counts
 - *WHEN* the design round ends
-- *THEN* it hands back one line, =design-round <change>: <n> seams, <k> pending tests, <u> uncited scenarios, <q> open questions=, and nothing else
-- *AND* the line is at most 200 characters
+- *THEN* it hands back the change and its counts of seams, pending tests, uncited scenarios and open questions, and nothing else
+- *AND* the hand-back is at most 1,000 characters
 
 *** Scenario: The premise check hands back its counts and its file
 - *WHEN* the premise check ends
-- *THEN* it hands back one line, =premise-check <cycle-id>: <n> holds, <m> wrong, <f> findings; <path>=, and nothing else
-- *AND* =<path>= is the path of its =premise-check.md=, relative to the home
-- *AND* the line is at most 200 characters
+- *THEN* it hands back the cycle, its counts of premises that hold and that are wrong and of findings, and the path of its =premise-check.md=, and nothing else
+- *AND* the hand-back is at most 1,000 characters
 
 *** Scenario: Conformance hands back its counts
 - *WHEN* conformance ends
-- *THEN* it hands back one line that starts =conformance <cycle-id>: <f> findings, <a> rows amended;= and nothing else
-- *AND* the line is at most 200 characters
+- *THEN* it hands back the cycle and its counts of findings and of rows amended, and nothing else
+- *AND* the hand-back is at most 1,000 characters
 
 *** Scenario: Conformance's hand-back names its design diff
 - *WHEN* conformance hands back
-- *THEN* its line ends =; <path>=, the path of the cycle's =design-diff.json= relative to the home, which every conformance run writes
+- *THEN* it names the path of the cycle's =design-diff.json=, which every conformance run writes
 
 *** Scenario: The premise check writes only its table, its findings and thought lines
 - *WHEN* the premise check hands back

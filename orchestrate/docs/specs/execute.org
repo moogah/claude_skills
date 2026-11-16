@@ -8,7 +8,7 @@ The execute phase turns a cycle's batch into merged, reviewed code on the change
 branch, in its code root. Each task is implemented by an Implementor in a worktree of its own,
 merged as it lands, tested after its merge against the cycle's baseline, and reviewed author-blind
 by a Reviewer of its own. Every defect reported on the way ends in a fix, a task, an ask or an entry
-on the change's hardening list. The phase hands the dispatcher one line. It writes no task file and
+on the change's hardening list. The phase hands the dispatcher a short hand-back. It writes no task file and
 amends no design, spec or intent: those belong to plan and integrate.
 
 * Requirements
@@ -451,18 +451,18 @@ names. Whether the user is present is the dispatcher's to know, not the phase ag
 - *THEN* the answer is handled before anything else
 - *AND* an answer that unblocks a task is committed in the home with the same subject as the merge it releases
 
-** Requirement: The phase hands the dispatcher one line, and hands over when asked
+** Requirement: The phase hands the dispatcher a short hand-back, and hands over when asked
 :PROPERTIES:
 :GOAL:     none stated
 :END:
-The execute phase agent SHALL hand the dispatcher one line, once, when the phase ends or stops, and
+The execute phase agent SHALL hand the dispatcher a short hand-back, once, when the phase ends or stops, and
 never while a worker it spawned is still running; asked to hand over, it SHALL stop at a clean
 point and leave a handover a fresh agent can continue from.
 
-*** Scenario: The phase hands back one line naming its outcome
+*** Scenario: The phase hands back its outcome briefly
 - *WHEN* execute passes its gate, stops on an ask, fails or hands over
-- *THEN* the dispatcher receives one line of at most 200 characters
-- *AND* a stop on an ask names the ask, what it blocks and the file's path relative to the home
+- *THEN* the dispatcher receives a short hand-back of at most 1,000 characters naming the outcome
+- *AND* a stop on an ask names the ask, what it blocks and the file's path
 
 *** Scenario: No hand-back while a worker runs
 - *WHEN* an Implementor or a Reviewer the phase spawned is still running
