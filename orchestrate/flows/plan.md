@@ -49,7 +49,7 @@ Each candidate cites the seams it implements (`cites_seams`) and the scenarios i
 Who checks a task's claims against HEAD depends on who wrote its text. Kept after one replay (roadmap 1.1, 2026-10-14).
 
 - A task drafted at this plan from the design's seams and the pending scenarios (§ 2, source 2): no Architect check. Its Implementor checks the claims against HEAD before writing code (`roles/implementor.md` § Premises).
-- Every other candidate (carried over, drafted from `candidate_tasks` or the hardening list, a bug report, a task the user wrote): the Architect check below. Written at this plan or not, its text was not drawn from a seam row. When no candidate needs it, the Architect is not spawned and the cycle has no `premise-check.md`.
+- Every other task of the batch (carried over, drafted from `candidate_tasks` or the hardening list, a bug report, a task the user wrote): the Architect check below. An open task left out of the batch is not checked; a later plan that puts it in a batch checks it then. Written at this plan or not, its text was not drawn from a seam row. When no candidate needs it, the Architect is not spawned and the cycle has no `premise-check.md`.
 
 The record behind the split: of 48 Wrong rows over two projects, 17 of the 27 design-wrong rows and all 12 task defects were in task text the orchestrator wrote, 14 of them in one bug task; the Implementor reads HEAD anyway, and the check's own agent cost about 6.6M tokens a run.
 
@@ -125,7 +125,7 @@ The cycle does not enter execute until:
 |---|---|
 | `prior_handshake_complete` | The prior handshake has every required field; none on a first cycle (computed) |
 | `batch_composed` | Batch task list explicit and frozen (asserted: `state.py assert batch_composed --by orchestrator`) |
-| `batch_cites_seams` | The batch (the task briefs § 5 wrote) is not empty, each brief has its task file, and each task cites at least one seam (computed; it checks that a citation exists, not that the id is in `design.org`) |
+| `batch_cites_seams` | The batch (the task briefs § 5 wrote) is not empty, each brief has its task file, and each task cites at least one seam, unless the design's Seams section is the one line saying no scenario needs a seam (computed; it checks that a citation exists, not that the id is in `design.org`) |
 | `follow_ups_name_their_source` | Every follow-up in the batch has `discovered_from` and `discovered_by` (computed) |
 | `goal_drift_signed_off` | No goal-drift ask in the inbox is unanswered or answered with anything but revise / split / abandon / continue (computed) |
 | `mvp_decision_not_due` | An open task remains on the main path, or none is on it yet (computed) |

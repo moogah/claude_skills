@@ -102,7 +102,7 @@ Each phase's gate is a list of checks. `state.py gate` evaluates every computed 
 |---|---|---|---|
 | plan | `prior_handshake_complete` | computed | the prior handshake `cycle start` read has every required field (`templates/handshake.md`); a first cycle has none |
 | plan | `batch_composed` | asserted | `state.py assert batch_composed --by <role>` |
-| plan | `batch_cites_seams` | computed | the batch (the task briefs under `cycles/<cycle-id>/briefs/`, less review, rework, premise-check and conformance briefs) is not empty, every brief has a task file, and every task in it cites a seam |
+| plan | `batch_cites_seams` | computed | the batch (the task briefs under `cycles/<cycle-id>/briefs/`, less review, rework, premise-check and conformance briefs) is not empty, every brief has a task file, and every task in it cites a seam, unless the design's Seams section is the one line saying no scenario needs a seam |
 | plan | `follow_ups_name_their_source` | computed | every follow-up in the batch has `discovered_from` and `discovered_by` |
 | plan | `goal_drift_signed_off` | computed | no goal-drift ask in the inbox (a `decision` whose options are revise / split / abandon / continue) is unanswered or answered with anything but one of those labels |
 | plan | `mvp_decision_not_due` | computed | the main path has not ended (§ Stages) |

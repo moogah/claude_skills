@@ -307,7 +307,7 @@ Each phase's checks SHALL be those this requirement names.
 - *WHEN* plan passes its gate in a cycle after the change's first
 - *THEN* the prior cycle's handshake had every required field (=prior_handshake_complete=, computed)
 - *AND* the batch was declared composed (=batch_composed=, asserted)
-- *AND* the batch is not empty, every brief in it has its task file, and every task in it cites a seam (=batch_cites_seams=, computed)
+- *AND* the batch is not empty, every brief in it has its task file, and every task in it cites a seam, unless the design's Seams section is the one line saying no scenario needs a seam (=batch_cites_seams=, computed)
 - *AND* every follow-up in it names its source (=follow_ups_name_their_source=, computed)
 - *AND* no goal-drift ask waits unanswered or answered with anything but one of its four labels (=goal_drift_signed_off=, computed)
 - *AND* the main path has not ended (=mvp_decision_not_due=, computed)

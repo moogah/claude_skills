@@ -724,6 +724,18 @@ def test_a_design_whose_seams_section_is_one_line_is_designed(home):
     assert home.ok("status")["stage"] == "intent, no design"
 
 
+def test_a_seamless_change_passes_the_seam_check_with_tasks_citing_none(home):
+    """plan § A change no scenario needs a seam for passes the gate with tasks citing none (R4-9)."""
+    cycle = started(home)
+    home.task("doc", cites=())
+    home.brief(cycle, "doc")
+    assert check(home.gate("plan"), "batch_cites_seams")["ok"] is False
+    (home.record / "design.org").write_text("#+TITLE: chg: design\n\n* Seams\n\nNo scenario needs a seam: "
+                                            "the change edits a docstring only.\n")
+    c = check(home.gate("plan"), "batch_cites_seams")
+    assert c["ok"] is True and "needs no seam" in c["reason"]
+
+
 def test_rework_briefs_and_reviews_are_numbered(home):
     """execute § A re-spawned Implementor's brief names its task and the scope of its fix: each
     rework's brief is a file of its own, so a second does not overwrite the first."""

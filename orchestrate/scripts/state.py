@@ -544,21 +544,27 @@ class Change:
         return {"path": p, "exists": True, "approved": bool(approved),
                 "status": status.group(1).split() if status else []}
 
-    def design_has_seams(self):
-        """The Seams section is a table with a row, or, with no table, one line at its top saying no
-        scenario needs a seam and why (flows/design.md; design-round spec)."""
+    def design_seams_form(self):
+        """"table" when the Seams section is a table with a row; "none-needed" when, with no table, it is one
+        line at its top saying no scenario needs a seam and why (flows/design.md; design-round spec); None
+        when there is no design, no Seams section, or neither form."""
         p = os.path.join(self.record_dir, "design.org") if self.record_dir else None
         if not p or not os.path.exists(p):
-            return False
+            return None
         m = re.search(r"^\* Seams[ \t]*\n(.*?)(?=^\* |\Z)", open(p, encoding="utf-8").read(), re.S | re.M)
         if not m:
-            return False
+            return None
         lines = [l.strip() for l in m.group(1).splitlines() if l.strip()]
         table = [l for l in lines if l.startswith("|")]
         if not table:
-            return bool(lines) and not lines[0].startswith(("#", ":"))
+            return "none-needed" if lines and not lines[0].startswith(("#", ":")) else None
         sep = next((i for i, l in enumerate(table) if re.match(r"^\|[-+|\s]+\|?$", l)), None)
-        return sep is not None and any(not re.match(r"^\|[-+|\s]+\|?$", l) for l in table[sep + 1:])
+        rows = sep is not None and any(not re.match(r"^\|[-+|\s]+\|?$", l) for l in table[sep + 1:])
+        return "table" if rows else None
+
+    def design_has_seams(self):
+        """The Seams section is a table with a row, or the one line saying no scenario needs a seam."""
+        return self.design_seams_form() is not None
 
 
 # ---------------------------------------------------------------- the checks
@@ -742,11 +748,14 @@ def evaluate_gate(ch, cycle, phase):
             [f"{prior}: {p}" for p in handshake_problems(os.path.join(ch.home, prior), prior=True)] if prior else [],
             f"{prior} has every required field" if prior else "first cycle: no prior handshake")
         missing = [n for n in batch if n not in tasks]
+        seamless = ch.design_seams_form() == "none-needed"
         put("batch_cites_seams",
             (["no batch: no task brief under " + ch.rel(os.path.join(ch.cycle_dir(cycle), "briefs"))] if not batch else [])
             + [f"no task file for brief {n}" for n in missing]
-            + [f"{n} cites no seam" for n in batch if n in tasks and not _names(tasks[n]["fm"].get("cites_seams"))],
-            "every task in the batch cites at least one seam")
+            + ([] if seamless else
+               [f"{n} cites no seam" for n in batch if n in tasks and not _names(tasks[n]["fm"].get("cites_seams"))]),
+            "the design needs no seam: no task need cite one" if seamless
+            else "every task in the batch cites at least one seam")
         put("follow_ups_name_their_source",
             [p for n in batch if n in tasks for p in provenance_problems(ch, n)],
             "every follow-up in the batch names discovered_from and discovered_by")
