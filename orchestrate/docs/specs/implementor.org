@@ -207,7 +207,10 @@ Before writing code the Implementor SHALL check the claims its task and the task
 about the code at its worktree's HEAD, for every task. A wrong premise the task can absorb, and a
 test the task did not write that is wrong without the behaviour being at stake, SHALL be settled in
 the work and declared; one that changes what the task should do SHALL stop the task with a
-=blocked= hand-back naming the premise.
+=blocked= hand-back naming the premise. So SHALL a failing test whose expectation an accepted
+scenario or design decision states, cited by the task or not, when the work's rows or the design
+require otherwise: two accepted statements disagree, and another role reconciles them before the
+work goes on.
 
 *** Scenario: A wrong premise the task can absorb is corrected in the work
 - *WHEN* a claim of the task about the code is wrong in a name, a path, a signature or work already done
@@ -225,7 +228,7 @@ the work and declared; one that changes what the task should do SHALL stop the t
 - *THEN* the commit fixes the code
 
 *** Scenario: A wrong test is changed only when the stated behaviour holds, and declared
-- *WHEN* a test the task did not write fails against the work, the test is what is wrong, and a change to it leaves the behaviour stated by the cited rows and scenarios intact
+- *WHEN* a test the task did not write fails against the work, the test is what is wrong, a change to it leaves the behaviour stated by the cited rows and scenarios intact, and no accepted scenario or design decision states what the test expects
 - *THEN* the commit changes the test
 - *AND* the report's =deviation_summary= says so and the hand-back carries =deviated=
 - *AND* a Discoveries entry of class =deviation= quotes the assertion before and after
@@ -233,6 +236,11 @@ the work and declared; one that changes what the task should do SHALL stop the t
 *** Scenario: A test whose only fix changes stated behaviour stops the task
 - *WHEN* a test the task did not write fails against the work and any fix would change behaviour that a cited row or scenario states
 - *THEN* the Implementor hands back =blocked <task>: premise wrong, <the claim>=
+
+*** Scenario: A test an uncited statement backs, against the work's requirements, stops the task
+- *WHEN* a test the task did not write fails against the work, an accepted scenario or design decision the task does not cite states what the test expects, and the task's cited rows or the design require otherwise
+- *THEN* the Implementor hands back =blocked <task>: premise wrong, <the two statements that disagree>=
+- *AND* no commit changes the test
 
 ** Requirement: The report carries the task's account for the phase agent
 :PROPERTIES:

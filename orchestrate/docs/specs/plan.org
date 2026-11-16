@@ -271,7 +271,7 @@ record correction.
 - *AND* the cycle has no premise check
 
 *** Scenario: Any other task is checked against HEAD before the batch is fixed
-- *WHEN* a task was carried over, or drafted from a follow-up candidate, the hardening list, a bug report or a task the user wrote
+- *WHEN* a task of the batch was carried over, or drafted from a follow-up candidate, the hardening list, a bug report or a task the user wrote
 - *THEN* an Architect checks the task's claims about the code against the code root's HEAD before the batch is fixed
 - *AND* the cycle's premise check covers that task
 
@@ -452,15 +452,21 @@ recommendation of none or continue the step SHALL ask nothing.
 :GOAL:     none stated
 :END:
 The plan phase SHALL pass its gate only when the handshake was consumed, the batch is fixed, every
-task cites a seam and any goal drift is signed off; it SHALL close with one commit in the home and
+task cites a seam (unless the design records that no scenario of the change needs one) and any goal
+drift is signed off; it SHALL close with one commit in the home and
 hand the dispatcher one line. It SHALL write no code and spawn no Implementor.
 
 *** Scenario: Plan passes its gate only with the handshake, the batch, the seams and the sign-off
 - *WHEN* the plan of a cycle after the first passes its gate
 - *THEN* the cycle was started from the prior handshake, holding every field its form requires
 - *AND* the batch is fixed and its list of tasks explicit
-- *AND* every task of the batch that is not externalised cites at least one seam
+- *AND* every task of the batch that is not externalised cites at least one seam, when the design has a Seams table
 - *AND* any goal-drift recommendation of the prior integrate has the user's answer
+
+*** Scenario: A change no scenario needs a seam for passes the gate with tasks citing none
+- *WHEN* plan runs for a change whose design's Seams section is the one line saying no scenario needs a seam
+- *THEN* plan's gate passes with tasks in the batch that cite no seam
+- *AND* every other condition of the gate still holds
 
 *** Scenario: Plan closes with one commit in the home
 - *WHEN* plan closes
