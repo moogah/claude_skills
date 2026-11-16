@@ -259,8 +259,9 @@ on its own.
 :PROPERTIES:
 :GOAL:     none stated
 :END:
-The plan phase SHALL have an Architect check every task not drafted at this plan from the design's
-seams and pending scenarios against the code root's HEAD before it fixes the batch, and SHALL
+The plan phase SHALL have an Architect check every task of the batch not drafted at this plan from the
+design's seams and pending scenarios against the code root's HEAD before it fixes the batch (an open
+task left out of the batch is owed nothing until it enters one), and SHALL
 spawn none when no task needs it. It SHALL correct each wrong premise in the task's text, SHALL
 route each defect the check finds outside every task's scope, and SHALL make a stale seam row a
 record correction.
