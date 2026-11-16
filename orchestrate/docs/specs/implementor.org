@@ -219,7 +219,7 @@ work goes on.
 
 *** Scenario: A wrong premise that changes the task stops it
 - *WHEN* a claim of the task is wrong in a way that changes what the task should do: the behaviour it adds is there already, the task's own claim contradicts a cited row or scenario, or the work belongs to another seam
-- *THEN* the Implementor hands back =blocked <task>: premise wrong, <the claim>=
+- *THEN* the Implementor hands back =blocked=, naming the task and saying the premise is wrong and which claim
 - *AND* its report states the claim and what HEAD has
 - *AND* this holds whether or not the Architect checked the task's premises at plan
 
@@ -235,11 +235,11 @@ work goes on.
 
 *** Scenario: A test whose only fix changes stated behaviour stops the task
 - *WHEN* a test the task did not write fails against the work and any fix would change behaviour that a cited row or scenario states
-- *THEN* the Implementor hands back =blocked <task>: premise wrong, <the claim>=
+- *THEN* the Implementor hands back =blocked=, naming the task and saying the premise is wrong and which claim
 
 *** Scenario: A test an uncited statement backs, against the work's requirements, stops the task
 - *WHEN* a test the task did not write fails against the work, an accepted scenario or design decision the task does not cite states what the test expects, and the task's cited rows or the design require otherwise
-- *THEN* the Implementor hands back =blocked <task>: premise wrong, <the two statements that disagree>=
+- *THEN* the Implementor hands back =blocked=, naming the task and the two statements that disagree
 - *AND* no commit changes the test
 
 ** Requirement: The report carries the task's account for the phase agent
@@ -296,7 +296,7 @@ candidate tasks, or =blocked= or =failed= with one clause. It SHALL carry no rep
 *** Scenario: A task that needs revision stops the Implementor with a blocked line
 - *WHEN* the task itself appears to need revision before it can be implemented
 - *THEN* the Implementor implements no guess at it
-- *AND* hands back =blocked <task>: <what it observed and what it blocks>=, in one clause
+- *AND* hands back =blocked=, naming the task, what it observed and what it blocks
 - *AND* writes no ask file
 
 *** Scenario: A blocked Implementor commits nothing
@@ -309,7 +309,7 @@ candidate tasks, or =blocked= or =failed= with one clause. It SHALL carry no rep
 :TEST: none: a fixture that makes the verification impossible to pass makes something outside the task stop it, which is the blocked hand-back
 :END:
 - *WHEN* the Implementor cannot make the task's verification pass, and nothing outside the task stops it
-- *THEN* it hands back =failed <task>: <why>=, in one clause
+- *THEN* it hands back =failed=, naming the task and why
 - *AND* no commit of its own is on its task's branch
 
 *** Scenario: A stop only another party can settle is handed back blocked

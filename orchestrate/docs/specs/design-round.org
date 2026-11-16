@@ -168,7 +168,7 @@ lines.
 
 *** Scenario: A second failed check hands back failed
 - *WHEN* the check fails again after the Architect's second run
-- *THEN* the round hands back =design-round <change>: failed, <the failure>=
+- *THEN* the round hands back that it failed, naming the change and the failure
 - *AND* nothing of the round is committed
 
 *** Scenario: Against tests that already failed, the failing set is unchanged
@@ -186,7 +186,7 @@ and no test fails that was not failing before the change, the pending ones repor
 hand back that it stopped. It SHALL write no task and implement nothing.
 
 *** Scenario: The round hands back gate passed only when it is complete
-- *WHEN* the round's phase agent hands back =design-round <change>: gate passed=
+- *WHEN* the round's phase agent hands back that the round's gate passed
 - *THEN* the design has a Seams section: a Seams table, or the one line saying no scenario needs a seam
 - *AND* every scenario of the change is cited by a test that exists, pending or not, or is marked not test-worthy with a reason
 - *AND* every scenario the intent names exists

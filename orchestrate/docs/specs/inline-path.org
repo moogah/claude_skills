@@ -130,7 +130,7 @@ a short hand-back naming the task and why.
 *** Scenario: A request the triage refuses is a bailout with nothing to revert
 - *WHEN* the triage refuses the request before any edit is made
 - *THEN* the task file is left open for the next plan, with the triage's reason in it
-- *AND* the inline path hands back =inline <task>: bailed out, <why>; <task file>=
+- *AND* the inline path hands back that it bailed out, naming the task, why and the task file
 
 *** Scenario: A request the triage refuses bails out even when it puts the design in question
 - *WHEN* a request the triage refuses also puts the change's design or a spec in question
@@ -237,9 +237,9 @@ SHALL hand back that it stopped, naming the ask; it SHALL never put the question
 - *AND* the ask blocks the inline path's commit
 - *AND* the phase agent hands back that it stopped, naming the ask, and does not put the question to the user
 
-*** Scenario: Stopped on an ask, the inline path's line names it
+*** Scenario: Stopped on an ask, the inline path's hand-back names it
 - *WHEN* the inline path stops on a =decision= ask
-- *THEN* its line is =inline <task>: stopped, ask <id> blocks commit; <ask file>=, the path relative to the home
+- *THEN* its hand-back says it stopped, naming the task, the ask, that the ask blocks the commit, and the ask's file
 
 * Gaps
 

@@ -8,7 +8,7 @@ A Reviewer reads one merged task, or at integrate the whole change, and writes w
 review file, then hands back a short hand-back. This spec states what that file must carry, what makes a
 finding (its kind, severity, direction, locations, evidence and recommended action, whoever writes
 it, the Architect included), what a Reviewer may and may not touch while it probes the merge, and the
-form of its hand-back line. It does not state what a Reviewer is given, when it is spawned, at which
+form of its hand-back. It does not state what a Reviewer is given, when it is spawned, at which
 agent setting, or what becomes of its findings: =execute= states those for a task's review and
 =integrate= for the whole-change review.
 
@@ -231,7 +231,7 @@ findings by kind and its spec signals and thoughts, with no summary and nothing 
 
 *** Scenario: The hand-back carries no summary
 - *WHEN* the Reviewer hands back
-- *THEN* the hand-back holds nothing but the task and its counts
+- *THEN* the hand-back holds no summary of the review
 
 ** Requirement: The whole-change review is written in the same form
 :PROPERTIES:
@@ -248,7 +248,7 @@ report what no task's review could see, and hand back a short hand-back.
 *** Scenario: The whole-change review names the whole change in place of a task
 - *WHEN* the whole-change review file is written
 - *THEN* its =task_name= is =whole-change= and its =merge_commit= the change's HEAD it reviewed
-- *AND* its hand-back line is =reviewed whole-change issues=<n> questions=<n> spec-signal=<n> thoughts=<n>=
+- *AND* its hand-back names the whole change in place of a task, with its counts
 
 *** Scenario: The whole-change review reports what no task's review could see
 - *WHEN* tasks of the change interact wrongly, or a change bypassed review, or a scenario's test passes while the surface the user would use does not
