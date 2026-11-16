@@ -25,8 +25,10 @@ not in it), pending (`xit`, an `it` with no body, or PENDING in the output), cit
 output given), pass, none: <reason>, uncited. With `--output`, a raw test run's output, a log
 or a verbose run: Buttercup lines join on the `it` string (one that a message or a newline in the
 title splits over several lines is joined first), ERT lines on the test name, pytest `-v` lines
-on the node id. An output whose summary counts tests of a framework but holds no line per test
-(a compact report, pytest without -v) is refused, naming its `Log:` path when it gives one.
+on the node id, Python unittest `-v` lines on the dotted id (`tests.test_cli.TestDownload.test_x`
+read as `tests/test_cli.py::TestDownload::test_x`). An output whose summary counts tests of a
+framework but holds no line per test (a compact report, pytest or unittest without -v) is refused,
+naming its `Log:` path when it gives one; so is an output in which no reader finds a run.
 
 `--intent docs/changes/<change>/intent.org` selects the change's scenarios: those the diff from its
 `#+BASE:` touches, and those its `* Capabilities` names (`- <cap> § <title>: stated, not met`,
@@ -384,8 +386,15 @@ _BUTTER = re.compile(r"^\s+(.*?)\s+(?:(PENDING|FAILED|SKIPPED)\s+|(!! CANCELLED 
 # indented one before it.
 _TIME_ONLY = re.compile(r"^\s*(?:(?:PENDING|FAILED|SKIPPED)\s+)?\(\d[\d.]*(?:ms|s|m)\)\s*$")
 _PYTEST = re.compile(r"^(\S+?\.py)::(\S+?)(?:\[[^\]]*\])?\s+(PASSED|FAILED|ERROR|SKIPPED|XFAIL|XPASS)\b")
+# unittest -v: `test_x (pkg.mod.Class.test_x) ... ok` (Python 3.11 on; before, the id ends at the class);
+# a test with a docstring prints its first line on the next line, with the status after it.
+_UNITTEST = re.compile(r"^(\w+) \(([\w.]+)\)(?: \.\.\. (.*))?$")
+_UNITTEST_STATUS = re.compile(r"^.* \.\.\. (ok|FAIL|ERROR|skipped\b.*|expected failure|unexpected success)$")
+_UNITTEST_WORD = {"ok": "pass", "FAIL": "failed", "ERROR": "failed", "expected failure": "pending",
+                  "unexpected success": "failed"}
 _SUMMARIES = {"Buttercup": re.compile(r"^Ran (\d+) (?:out of \d+ )?specs?\b", re.M),
               "ERT": re.compile(r"^Ran (\d+) tests?,", re.M),
+              "unittest": re.compile(r"^Ran (\d+) tests? in [\d.]+s$", re.M),
               "pytest": re.compile(r"^=+ .*?\b(\d+) (?:passed|failed|errors?|skipped|xfailed|xpassed)\b.* in [\d.]+s", re.M)}
 _SPLIT_MAX = 20  # lines a coloured title may span
 
@@ -395,11 +404,12 @@ class Run:
     and the it lines a message split ({title and message: {status}}, read by prefix)."""
     def __init__(self):
         self.it, self.ert, self.py, self.glued = {}, {}, {}, {}
+        self.ut = 0  # unittest lines read (their results go in self.py, keyed as pytest's)
         self.ran = {}  # framework -> the count its summary line gives
         self.log = None
 
     def tables(self):
-        return {"Buttercup": self.it or self.glued, "ERT": self.ert, "pytest": self.py}
+        return {"Buttercup": self.it or self.glued, "ERT": self.ert, "pytest": self.py, "unittest": self.ut}
 
 
 def parse_output(text):
@@ -436,6 +446,20 @@ def parse_output(text):
         if m:
             run.py.setdefault((m.group(1), m.group(2)), set()).add(word[m.group(3)])
             continue
+        m = _UNITTEST.match(line)
+        if m:
+            status = m.group(3)
+            if status is None and i < len(lines):  # the docstring's line carries the status
+                n = _UNITTEST_STATUS.match(_ANSI.sub("", lines[i]))
+                if n:
+                    status, i = n.group(1), i + 1
+            key = _unittest_key(m.group(1), m.group(2))
+            if status is not None and key:
+                st = "pending" if status.startswith("skipped") else _UNITTEST_WORD.get(status)
+                if st:
+                    run.py.setdefault(key, set()).add(st)
+                    run.ut += 1
+                    continue
         m = _COLOURED.match(seg)
         if m:
             run.it.setdefault(m.group(2), set()).add(_COLOUR[m.group(1)])
@@ -455,6 +479,17 @@ def parse_output(text):
     return run
 
 
+def _unittest_key(name, dotted):
+    """(file, node) as pytest names it, from unittest's test name and dotted id: `pkg/mod.py`,
+    `Class::name`. None when the id holds no module and class."""
+    parts = dotted.split(".")
+    if parts[-1] == name:
+        parts = parts[:-1]
+    if len(parts) < 2:
+        return None
+    return "/".join(parts[:-1]) + ".py", f"{parts[-1]}::{name}"
+
+
 def read_output(path):
     """Run from the file at PATH; a Refusal when a framework's summary counts tests and the file
     holds no line for any of them (a compact report: every citation would read "not run")."""
@@ -465,7 +500,10 @@ def read_output(path):
     if bare:
         where = f"the run's log, {run.log}," if run.log else "the run's log"
         raise Refusal(f"{path} counts {' and '.join(bare)} tests but holds no line per test (a compact "
-                      f"report, or pytest without -v); give --output {where} or a verbose run")
+                      f"report, or pytest or unittest without -v); give --output {where} or a verbose run")
+    if not run.ran and not any(tables.values()):
+        raise Refusal(f"{path} holds no test run any reader finds (Buttercup, ERT, pytest -v, unittest -v): "
+                      f"every citation would read \"not run\"; give --output a raw run's output")
     return run
 
 

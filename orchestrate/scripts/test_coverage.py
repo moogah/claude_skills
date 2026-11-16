@@ -412,6 +412,45 @@ def test_pytest_statuses(pytree):
         cov.compute(str(pytree), str(pytree / "docs/specs"), output=str(pytree / "run.txt"))
 
 
+UT_RUN = """test_saved_items (tests.test_cli.TestTop.test_saved_items) ... ok
+test_wrapped (tests.test_cli.TestDownload.test_wrapped)
+Scenario: ws § Wrapped title that goes. ... ok
+test_param (tests.test_cli.TestDownload) ... FAIL
+test_later (tests.test_cli.TestDownload.test_later) ... skipped 'later'
+
+======================================================================
+FAIL: test_param (tests.test_cli.TestDownload.test_param)
+----------------------------------------------------------------------
+Ran 4 tests in 0.004s
+
+FAILED (failures=1, skipped=1)
+"""
+
+
+def test_unittest_verbose_output(pytree):
+    """R5-16: a unittest -v run is read by its dotted ids, a docstring's line carrying the status."""
+    run = cov.parse_output(UT_RUN)
+    assert run.py == {("tests/test_cli.py", "TestTop::test_saved_items"): {"pass"},
+                      ("tests/test_cli.py", "TestDownload::test_wrapped"): {"pass"},
+                      ("tests/test_cli.py", "TestDownload::test_param"): {"failed"},
+                      ("tests/test_cli.py", "TestDownload::test_later"): {"pending"}}
+    (pytree / "run.txt").write_text(UT_RUN)
+    rows, _, _ = cov.compute(str(pytree), str(pytree / "docs/specs"), output=str(pytree / "run.txt"))
+    st = {t: r["status"] for t, r in rows_by_title(rows).items()}
+    assert (st["Wrapped title that goes"], st["Failing one"]) == ("pass", "failed")
+    # unittest without -v names no passing test: refused
+    (pytree / "run.txt").write_text("..F.\n" + UT_RUN[UT_RUN.index("Ran 4"):])
+    with pytest.raises(cov.Refusal, match="unittest without -v"):
+        cov.compute(str(pytree), str(pytree / "docs/specs"), output=str(pytree / "run.txt"))
+
+
+def test_output_no_reader_finds_is_refused(pytree):
+    """R5-16: an output in which no reader finds a run is refused, not read as every test not run."""
+    (pytree / "run.txt").write_text("something went wrong before the tests ran\n")
+    with pytest.raises(cov.Refusal, match="no test run any reader finds"):
+        cov.compute(str(pytree), str(pytree / "docs/specs"), output=str(pytree / "run.txt"))
+
+
 # ---------------------------------------------------------------- run from the home
 
 def test_run_from_a_home_finds_the_code_root(tmp_path, monkeypatch, capsys):
