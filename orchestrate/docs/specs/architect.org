@@ -32,9 +32,9 @@ scenarios it serves and its pending tests.
 - *THEN* the change's design is =docs/changes/<change>/design.org= in the code root, in the same directory as the intent
 - *AND* it has a Context, Decisions and Seams section, Decisions before Seams
 
-*** Scenario: The Context describes the code the change starts from
-- *WHEN* the design round writes the change's design
-- *THEN* its Context describes the code as it stands at the change's base, as far as the change needs it
+*** Scenario: The Context describes the code as it stands now
+- *WHEN* the design round writes the change's design, or a cycle's merged work makes a sentence of its Context untrue
+- *THEN* its Context describes the code as it stands now, as far as the change needs it
 
 *** Scenario: The Seams table has the design's five columns
 - *WHEN* the design round writes the Seams table
@@ -310,7 +310,7 @@ line in the change's journal and not a finding. Style and preference SHALL not b
 - *WHEN* at the design round the Architect finds a defect in code or text that exists
 - *THEN* one finding file for it is in the =findings/= directory of the change's directory, outside any cycle
 - *AND* its id is =arch-<change>-<n>= and its =trigger= is =design-round=
-- *AND* the design's Open Questions has no entry for it
+- *AND* the design's Open Questions has no entry for it, unless the fix turns on the user's answer, and then the finding names that entry
 
 *** Scenario: A finding carries the class of the design checklist
 - *WHEN* the Architect writes a finding
@@ -364,8 +364,8 @@ line in the change's journal and not a finding. Style and preference SHALL not b
 :END:
 Each run of the Architect SHALL hand back a short hand-back of at most 1,000 characters that gives its counts and holds no report,
 its detail being in the files it wrote. No run SHALL commit, spawn an agent or write a task. The
-Architect SHALL run the test suite and its probes only read-only, in the scratch directory its brief
-names.
+Architect SHALL run its probes only read-only, in the scratch directory its brief names; at the design
+round it MAY run the test suite in the code root, changing no file there.
 
 *** Scenario: The design round hands back its counts
 - *WHEN* the design round ends
@@ -403,9 +403,14 @@ names.
 - *AND* it has written no task file
 
 *** Scenario: Probes leave their files in the scratch directory
-- *WHEN* the Architect runs the test suite or a probe
+- *WHEN* the Architect runs a probe, or runs the test suite outside the design round
 - *THEN* it does so in the scratch directory its brief names
 - *AND* the probe changes no file of the code root or the home
+
+*** Scenario: The design round may run the suite in the code root
+- *WHEN* at the design round the Architect runs the test suite
+- *THEN* it may run it in the code root
+- *AND* no file of the code root is changed by the run
 
 ** Requirement: The Architect's role default
 :PROPERTIES:
