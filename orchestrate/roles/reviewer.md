@@ -110,7 +110,8 @@ clean_review: false      # true if no findings
 
 ## Summary
 
-<One paragraph. What you looked at, what you ruled out, what you found.>
+<One paragraph. What you looked at; what you looked for in each of the three directions and ruled
+out, so that silence on a direction is a real silence; what you found. A clean review says the same.>
 
 ## Findings
 
@@ -141,12 +142,9 @@ clean_review: false      # true if no findings
 - thought: <one line — a speculative need; omit the section when there is none>
 
 A line that names a defect present at `merge_commit` (a variable read where nothing on the declared load path defines it, a guard that passes what it should refuse) is not a thought: it is a finding of kind `issue`, whatever its severity, so the orchestrator routes it. The record: two Reviewers wrote the same void variable under Thoughts and the Architect wrote it as a `thought:` journal line; `/code-review` reported it as a bug after the cycle closed.
-
-## What I looked for and ruled out
-
-<Optional but encouraged. One short paragraph per direction. Demonstrates
-that the silence on a direction is a real silence, not a missed pass.>
 ```
+
+`## Thoughts` is the file's last section when it is there; what was looked for and ruled out goes in the Summary, not in a section after it.
 
 Then the Reviewer hands back **one line** and nothing else (`SKILL.md` § Hand-back lines):
 
