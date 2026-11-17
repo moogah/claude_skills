@@ -84,7 +84,7 @@ An Observation is one of these seven kinds, and nothing else:
 - A stray process you did not start (§ A machine shared with other agents).
 - A failure that passed on a rerun while other runs were active, with both results.
 
-Not an Observation: a log of what you did, a summary of the work, the tests you added, or a confirmation that the approach, a seam or the cited rows held. The report and the commit already say those. A task done as prescribed has no Observations: write the section as `- none`, which is the usual case.
+Not an Observation: a log of what you did, a summary of the work, the tests you added, or a confirmation that the approach, a seam or the cited rows held. The report and the commit already say those. A task done as prescribed has no Observations: the section stays empty (`observations_count: 0`), which is the usual case.
 
 What does **NOT** belong in `## Observations`: a defect in code or text that exists outside your task, in adjacent code or in a document (an unstable sort one layer up, a README sentence your change made untrue that the task does not cover). Record each as a `## Discoveries` entry with its kind (`issue` or `question`), severity and evidence, and list its id under `candidate_tasks` in the report, however small or unlikely it looks. You do not fix it outside your task and you do not file a task; the orchestrator routes it in execute § 5 (`templates/architect-finding.md` § Routing): fixed in the change when it breaks the change's main path, otherwise onto the change's hardening list. The record: of 38 items agents wrote as free-text remarks or journal lines, 27 left no later trace; of the six reasoned faults among them, three were found later by `/code-review`.
 

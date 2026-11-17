@@ -76,7 +76,7 @@ What belongs in `## Observations`, and nothing else (`roles/implementor.md` § W
 - A stray process the Implementor did not start
 - A failure that passed on a rerun while other runs were active, with both results
 
-Not a log of the work, a summary, the tests added or a confirmation that the approach held: a task done as prescribed has `- none`.
+Not a log of the work, a summary, the tests added or a confirmation that the approach held: a task done as prescribed leaves the section empty.
 
 What does NOT belong in `## Observations`: a push-back against a seam row the brief cited (a seam objection, written in `## Discoveries` only); a defect in code or text that exists outside the task. It is a `## Discoveries` entry with its kind (`issue` or `question`), listed in the report's `candidate_tasks`; the orchestrator routes it (`roles/implementor.md` § What belongs in `## Observations`).
 
