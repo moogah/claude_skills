@@ -330,7 +330,7 @@ list.
 
 *** Scenario: A re-spawned Implementor's brief names its task and the scope of its fix
 - *WHEN* an Implementor is spawned again to fix a blocking finding or a regression
-- *THEN* its brief, saved in the cycle's directory in the home in a file of its own, holds the task's text read from the home
+- *THEN* its brief, saved in the cycle's directory in the home in a file of its own, names the task's file in the home
 - *AND* the scope of its fix: the review file and the finding's number, or the failing run's file and the cause the change's journal records
 - *AND* the instruction to write a test or probe that fails on the defect before the fix; for a regression the failing test is that reproduction
 

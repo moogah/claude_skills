@@ -175,7 +175,7 @@ that review is open.
 - *WHEN* the change was opened from a workspace integration branch and that branch has moved
 - *THEN* the branch is merged into the change's integration branch before the whole-change Reviewer is spawned
 - *AND* the test command is run once after that merge
-- *AND* the commit's subject is =Take in <branch>: <change>=
+- *AND* the commit's subject is =Take in <branch>: <change>=, =<change>= naming the change being worked, not a change taken in
 
 *** Scenario: A regression from the take-in is fixed in the change when the goals settle it
 - *WHEN* the run after taking in the workspace integration branch shows a test that passed before it failing, and the change's goals settle what the code should do
@@ -200,7 +200,8 @@ that review is open.
 
 *** Scenario: An untrue sentence the whole-change review finds is corrected at once
 - *WHEN* the whole-change review finds an untrue sentence in prose
-- *THEN* the sentence is corrected at integrate, as a record correction with its journal line, its commit saying so (§ A record correction's commit says so and names the pin)
+- *THEN* the sentence is corrected at integrate: in the change's design or a spec, as a record correction with its journal line, its commit saying so (§ A record correction's commit says so and names the pin)
+- *AND* anywhere else, in prose only, in a commit of its own whose subject is =Text correction: <what>=
 - *AND* it holds nothing back
 
 *** Scenario: Any other whole-change defect goes on the hardening list
@@ -249,7 +250,7 @@ path and the record corrections to the specs, and stop.
 
 *** Scenario: The MVP decision lists the open tasks off the main path
 - *WHEN* the MVP decision is filed and open tasks off the main path remain
-- *THEN* its ask lists each in product terms with where it came from
+- *THEN* its ask lists each in product terms with where it came from, in the reader's terms: the user asked for it, a review found it, or it was planned with no goal naming it
 
 *** Scenario: The MVP decision shows every record correction to the specs
 - *WHEN* the MVP decision is filed
@@ -395,10 +396,6 @@ it touches only to set its =status:= (a task blocked on an ask).
 *** Scenario: A pattern across the cycle's tasks reaches the next plan
 - *WHEN* the PM or the Architect sees a pattern across the cycle's tasks
 - *THEN* the handshake carries it with its kind, its scope, the tasks that show it and one sentence on what it means for the next plan
-
-*** Scenario: A pattern that names concrete work becomes a candidate
-- *WHEN* a pattern's meaning for the next plan names a task of its own that is not an open task's impact
-- *THEN* a follow-up candidate is written for it, not marked critical
 
 *** Scenario: A cluster in the cross-change backlog is put to the user
 - *WHEN* the PM finds a cluster of externalised tasks coherent enough to be a sub-change

@@ -387,16 +387,16 @@ nothing more, and SHALL release the tasks the ask blocked.
 :GOAL:     none stated
 :END:
 The dispatcher and each phase agent SHALL read the inbox at fixed sync points and handle any answered ask there before
-any other work, through a phase agent, never the dispatcher. An ask not yet settled when its cycle
+the phase's next spawn, cycle start or close, through a phase agent, never the dispatcher. An ask not yet settled when its cycle
 closes SHALL stay in the inbox for the next cycle.
 
 *** Scenario: The inbox is read at the sync points
 - *WHEN* a session starts, a phase agent starts, a phase advances, a gate passes, a cycle starts, a scheduled wake-up fires, or the user writes their next prompt
 - *THEN* the inbox is read for answers
 
-*** Scenario: An answered ask is handled before other work, by a phase agent
+*** Scenario: An answered ask is handled before the next spawn, by a phase agent
 - *WHEN* a sync point is reached and an ask in the inbox has an answer
-- *THEN* the phase agent handles it before any other work: the readback when one is needed, applying it, setting its status, moving its file and committing
+- *THEN* the phase agent handles it before the phase's next spawn, cycle start or close: the readback when one is needed, applying it, setting its status, moving its file and committing
 - *AND* the dispatcher does not handle it
 
 *** Scenario: An unsettled ask stays in the inbox across cycles

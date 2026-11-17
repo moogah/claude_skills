@@ -59,7 +59,7 @@ change's base as it was.
 *** Scenario: A conflict in the specs or the glossary is resolved as a record correction
 - *WHEN* taking in the workspace integration branch conflicts in the specs or in the glossary
 - *THEN* the conflict is resolved by hand, the change keeping its own edits and taking the other change's
-- *AND* the merge is committed in the code root with the subject =Take in <branch>: <change>=
+- *AND* the merge is committed in the code root with the subject =Take in <branch>: <change>=, =<change>= naming the change being worked, not a change taken in
 
 *** Scenario: A conflict in code when the branch is taken in is an environment ask
 - *WHEN* taking in the workspace integration branch conflicts in code
@@ -287,9 +287,9 @@ documents it settles.
 - *WHEN* the user rejects a new term
 - *THEN* the intent and the change's spec edits use the plain phrase the user gives in its place
 
-*** Scenario: The new terms' answer is one commit in the code root
+*** Scenario: The new terms' answer is one commit in each repository it touches
 - *WHEN* the new terms' ask is answered
-- *THEN* its glossary and intent edits and the ask's application are one commit in the code root
+- *THEN* its glossary and intent edits and the ask's application are one commit in each repository the answer touches, each with the same subject
 
 ** Requirement: The round runs again only for a seam a decision or a spec change alters
 :PROPERTIES:
@@ -303,9 +303,10 @@ change, alters a seam, and then only for that seam.
 - *THEN* the round runs again for that seam
 - *AND* it changes only that seam's row, the not-test-worthy marks on its scenarios and its pending tests
 
-*** Scenario: A re-run's commit names its seam
-- *WHEN* a re-run of the round for one seam commits
-- *THEN* the commit's subject is =Design round (<seam-id>): <change>=
+*** Scenario: A re-run's commit names its seams
+- *WHEN* a re-run of the round commits
+- *THEN* the commit's subject is =Design round (<seam ids>): <change>=, naming each seam the re-run covered
+- *AND* it is not the round's first subject, =Design round: <change>=
 
 * Gaps
 

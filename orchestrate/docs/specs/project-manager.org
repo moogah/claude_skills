@@ -109,7 +109,7 @@ SHALL start the Architect's conformance over the cluster instead of raising a qu
 
 *** Scenario: A coherent externalised cluster is proposed for promotion
 - *WHEN* three or more externalised tasks share modules and a discovered class
-- *THEN* a meta-discovery names the cluster and proposes promoting it into the active change
+- *THEN* a meta-discovery names the cluster and puts its promotion into the active change to the user, its recommendation following the main path
 - *AND* the PM does not promote it
 
 *** Scenario: Priority inversion is a meta-discovery that recommends the main path
@@ -146,7 +146,8 @@ PM SHALL write no ask file.
 *** Scenario: A candidate question is plain, says what it blocks and recommends
 - *WHEN* the PM proposes a candidate question
 - *THEN* it is a plain question for the reader the project's configuration names
-- *AND* it says what it blocks and gives a recommendation
+- *AND* it says what it blocks
+- *AND* a candidate =decision= question gives a recommendation
 
 *** Scenario: The PM writes no ask file
 - *WHEN* the PM has run
