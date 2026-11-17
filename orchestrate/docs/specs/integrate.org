@@ -451,9 +451,9 @@ meta-discoveries each cycle, SHALL commit the change's documents it corrected in
 the home with one close commit, SHALL change no code except an untrue sentence in prose, SHALL spawn
 each agent at its role default, and SHALL hand the dispatcher a short hand-back.
 
-*** Scenario: An answered ask is handled before anything else
+*** Scenario: An answered ask is handled before the phase's first spawn
 - *WHEN* integrate starts and an ask in the inbox has an answer
-- *THEN* the answer is handled before the rest of the phase's work
+- *THEN* the answer is handled before the phase's first spawn or its close
 
 *** Scenario: A record correction is never an ask file
 - *WHEN* integrate makes a record correction

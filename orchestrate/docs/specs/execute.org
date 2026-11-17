@@ -446,9 +446,9 @@ names. Whether the user is present is the dispatcher's to know, not the phase ag
 - *AND* its worktree is kept
 - *AND* the phase stops for the ask only when it is known to bear on tasks that wait on that task or on its answer; otherwise the other tasks go on
 
-*** Scenario: An answer is applied before anything else
+*** Scenario: An answer is applied before the next spawn or merge
 - *WHEN* the merge chain pauses and an ask has been answered
-- *THEN* the answer is handled before anything else
+- *THEN* the answer is handled before the phase's next spawn, merge or close
 - *AND* an answer that unblocks a task is committed in the home with the same subject as the merge it releases
 
 ** Requirement: The phase hands the dispatcher a short hand-back, and hands over when asked
