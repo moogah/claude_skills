@@ -805,6 +805,24 @@ def test_a_findings_first_route_names_its_decoration(home):
     assert home.ok("log", "--kind", "finding-routed")["entries"][-1]["resolution"] == "hardening-list"
 
 
+def test_a_route_with_no_decoration_yet_names_one(home):
+    """IR-E1 (round 8): an entry with a resolution and no decoration (as a converted home lays one) decorates
+    nothing, so the next route still names a decoration."""
+    import json as _json
+    cycle = started(home)
+    home.finding(cycle, "arch-cycle-1-1")
+    log = home.dir / "events.jsonl"
+    last = _json.loads(log.read_text().splitlines()[-1])
+    entry = dict(last, seq=last["seq"] + 1, kind="finding-routed", finding="arch-cycle-1-1",
+                 decoration=None, resolution="pending")
+    for k in [k for k in entry if k not in ("seq", "kind", "at", "cycle", "finding", "decoration", "resolution")]:
+        entry.pop(k)
+    log.write_text(log.read_text() + _json.dumps(entry) + "\n")
+    code, _, err = home.run("route", "arch-cycle-1-1", "--resolution", "design-amended")
+    assert code == 1 and err["error"] == "no_decoration"
+    home.ok("route", "arch-cycle-1-1", "--decoration", "blocking", "--resolution", "design-amended")
+
+
 def test_a_corrected_first_route_leaves_the_finding_unrouted(home):
     cycle = started(home)
     home.finding(cycle, "arch-cycle-1-1")

@@ -1148,7 +1148,7 @@ def verb_route(ch, args):
         raise Refusal("no_finding", f"no finding file for {args.finding} under findings/ or cycles/*/findings/")
     if not (args.decoration or args.resolution):
         raise Refusal("bad_entry", "route needs --decoration, --resolution or both")
-    if not args.decoration and args.finding not in ch.routing():
+    if not args.decoration and not ch.routing().get(args.finding, {}).get("decoration"):
         raise Refusal("no_decoration", f"{args.finding} has not been routed: its first route names "
                                        "--decoration blocking or hardening (templates/architect-finding.md "
                                        "§ Routing); later routes may give --resolution alone")
