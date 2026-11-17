@@ -18,7 +18,7 @@ Three tools sit beside the state layer and are not part of it:
 | Tool | Does | Doc |
 |---|---|---|
 | `scripts/home.py` | `where [--sh]` (the home, its repositories, its open changes; `eval "$(home.py where --sh)"` exports `ORCH_HOME`, `ORCH_WORKTREES`, `ORCH_CHANGE`, `ORCH_CHANGE_DIR`, `ORCH_REPO`, `CODE_ROOT`), `init` (a new home's `config.yaml`), `open <name>` (a change's worktree, branch and `change.json`), `worktree <branch> [--sh]` (where a task worktree goes) | `overlay.md` § Bootstrap, § Repositories |
-| `scripts/asks.py` | `add`, `set <id> field=value …`, `inbox`: writes and moves the ask files | `templates/ask.md` |
+| `scripts/asks.py` | `add` (writes the ask file and commits it in the home, that path only, subject `<id>: <question>`; a `recommendation` is `{option, why}` or `{label, why}`, and one it cannot place, naming no option or none of the ask's options, is refused `bad_recommendation`), `set <id> field=value …`, `inbox`: writes and moves the ask files | `templates/ask.md` |
 | `scripts/report.py` | `spend` (spend and quality by role, on demand), `context <agent-id>` (a running agent's context) | `report.md` |
 
 Git and worktree operations (branching, merging, removing a worktree) are the agents', in the flows' bash blocks. So are the files agents write: task files, briefs, reviews, findings, `design.org`, the handshake.
@@ -27,16 +27,16 @@ Git and worktree operations (branching, merging, removing a worktree) are the ag
 
 | Verb | Does |
 |---|---|
-| `status` | Read-only. The change's `stage` and `next` step (§ Stages), the open `cycle` and `phase` with that phase's `gate` report, the `intent`'s approval and status line, the `inbox` (`{open, answered}`), the `asks` still waiting (open or answered, with `:BLOCKS:`), those that block work first, and `convention_breaks` when there are any. One call; needs no open cycle. |
+| `status` | Read-only. The change's `stage` and `next` step (§ Stages), the open `cycle` and `phase` with that phase's `gate` report, the `intent`'s approval and status line, the `inbox` (`{open, answered}`), the `asks` still waiting (open or answered, with `:BLOCKS:`), those that block work first, and `convention_breaks` when there are any. With the event log gone while the change's files say a cycle ran, the stage is `event log missing` and `log_missing` names the evidence and the commit that holds a copy, if any (§ Recovery). One call; needs no open cycle. |
 | `gate [<phase>]` | Read-only. The open cycle's gate for its phase (or the named one), every computed check evaluated afresh, every asserted check with who asserted it and when (§ Gates). Exit 1 when it does not pass. |
 | `conventions` | Read-only. Every break of the record's forms (§ Conventions), with where it is and the form expected. |
 | `check done <task>` | Refuses (`not_done`) unless the task's `Merge task <task>` commit is on the change branch, a review file names that commit or a later commit on the first parent through it (the fix, after a regression), and the tests pass at it: `after-<task>-<sha12>.status` exists and holds 0, or, against a red baseline (`baseline-<cycle-id>.status` non-zero), `after-<task>-<sha12>.compare` holds 0 (`flows/execute.md` § 4); after a regression's fix the newest `after-<task>-<sha12>-fix-<n>` run is read in its place, the merge's own run left as the regression's evidence. It reads the files and runs nothing. Prints the merge commit. Run before writing `status: done`. |
 | `check start <task>` | Refuses (`blocked`) while a task in its `blocked_by` has no merge commit on the change branch. Run before spawning its Implementor. |
 | `check new <task>` | Refuses (`bad_task`) a follow-up (a task a handshake's `candidate_tasks` names, or one carrying any `discovered_*` field) without `discovered_from` and `discovered_by`, and a status outside the set. Run when plan writes a task file. |
-| `cycle start [--cycle <id>]` | Starts a cycle in plan: appends `cycle-started` to the log. Moves each settled ask waiting in the inbox (one whose id names the change, settled while no cycle was open) to the new cycle's `asks/` and lists them in `asks_moved`, the one file move it makes. Refuses `orchestrator_ignored` when the home's git ignores `.orchestrator/`; `misplaced_artifacts` when the code root holds an `.orchestrator/` of its own; `cycle_open` while one is open; `not_ready` before the design round's Seams exist (or at done, or while the MVP decision waits); `mvp_decision_due` when the main path has ended; `bad_prior_handshake` naming each missing field of the newest `handshake-<cycle-id>.json`; `no_prior_handshake` when a cycle of the change closed and no handshake is there. The id defaults to `cycle-<epoch>`. |
+| `cycle start [--cycle <id>]` | Starts a cycle in plan: appends `cycle-started` to the log. Moves each settled ask waiting in the inbox (one whose id names the change, settled while no cycle was open) to the new cycle's `asks/` and lists them in `asks_moved`, the one file move it makes. Refuses `answered_ask_waiting` while an ask whose status is `answered` sits in the inbox, naming each (apply it first); `orchestrator_ignored` when the home's git ignores `.orchestrator/`; `misplaced_artifacts` when the code root holds an `.orchestrator/` of its own; `cycle_open` while one is open; `not_ready` before the design round's Seams exist (or at done, while the MVP decision waits, or with the event log missing); `mvp_decision_due` when the main path has ended; `bad_prior_handshake` naming each missing field of the newest `handshake-<cycle-id>.json`; `no_prior_handshake` when a cycle of the change closed and no handshake is there. The id defaults to `cycle-<epoch>`. |
 | `cycle abandon --why "<reason>"` | Ends the open cycle without closing it (`cycle-abandoned`). The only way out of a cycle whose integrate cannot close. |
 | `assert <check> --by <role>` | Records an asserted check of the open phase (`asserted`). `<role>` is `orchestrator` (the phase agent), `implementor`, `reviewer`, `architect` or `pm`, else `bad_by`. Refuses `computed_check` for a check a script decides, `wrong_phase` for another phase's. |
-| `route <finding-id> [--decoration blocking\|hardening] [--resolution <r>]` | Records a finding's routing and how it ended (`finding-routed`); the latest value of each field counts. The finding's file is in a cycle's `findings/`, or the change's own `findings/` for one made before any cycle (the design round's); refuses `no_finding` otherwise. Resolutions: `templates/architect-finding.md` § Resolution states. |
+| `route <finding-id> [--decoration blocking\|hardening] [--resolution <r>]` | Records a finding's routing and how it ended (`finding-routed`); the latest value of each field counts. A finding's first route names its `--decoration`, else `no_decoration`; a later one may give `--resolution` alone. The finding's file is in a cycle's `findings/`, or the change's own `findings/` for one made before any cycle (the design round's); refuses `no_finding` otherwise. Resolutions: `templates/architect-finding.md` § Resolution states. |
 | `blocker <task> "<note>"` | A blocked task's note (`blocker-note`): the ask id, the finding id, `merge-conflict`, or an external dependency. Read only while the task's file says `blocked`. |
 | `note <kind> "<text>" [--ref <id>] [--by <role>] [--path <file>]` | One journal line, at most 280 characters (`note`). Kinds: `discovery`, `decision`, `inline-fix`, `deviation`, `push-back`, `note`. The long form goes in a file and `--path` points at it. `--by`, when given, is one of the roles `assert` names (`bad_by`). |
 | `fix-link <commit> --task <t> --review <n>` | Links an inline-fix commit to the review finding it answers (`inline-fix-link`); the subject names the task, not the finding. |
@@ -53,6 +53,7 @@ Git and worktree operations (branching, merging, removing a worktree) are the ag
 | `not open` | no `change.json` | open the change (`flows/open.md`) |
 | `open, no intent` | no `docs/changes/<change>/intent.org` in the code root | write the intent (`flows/open.md`) |
 | `done` | `intent.org` `#+STATUS: done …` | nothing |
+| `event log missing` | no `events.jsonl` (and no older `state.json`) while a cycle's directory, a handover, a phase-close commit or a copy in git says a cycle ran | restore the log from the home's git, or, with no copy, an `environment` ask (§ Recovery) |
 | `MVP decision` | `#+STATUS: mvp <date> <commit> <ask-id>`, that ask unanswered | wait for the user's answer to `<ask-id>` |
 | `intent, no design` | `design.org`'s Seams section has no row, nor (with no table) the one line saying no scenario needs a seam | the design round (`flows/design.md`) |
 | `cycle open` | the log's last `cycle-started` has no `integrate closed` commit and no `cycle-abandoned`; the phase is the first of plan, execute, integrate with no `Orchestrator: <cycle-id> <phase> closed` commit in the home | resume that phase; or, when its gate passes, close it and go on |
@@ -79,7 +80,7 @@ A task's status is its task file's `status:` (`templates/task-body.md`), and now
 
 ## The event log
 
-`<change-dir>/events.jsonl`: one JSON object per line, `{"seq", "at", "cycle", "kind", …the fields its kind names}`. Only the verbs above write it. An entry is never edited or removed; a mistake is answered by `state.py correct <seq>`, and every reader applies the correction. It is tracked by the home repo and committed at each phase close.
+`<change-dir>/events.jsonl`: one JSON object per line, `{"seq", "at", "cycle", "kind", …the fields its kind names}`. Only the verbs above write it, and only `cycle start` begins it: every other verb that writes it, and `gate`, refuses `no_log` while there is none. An entry is never edited or removed; a mistake is answered by `state.py correct <seq>`, and every reader applies the correction. It is tracked by the home repo and committed at each phase close.
 
 | Kind | Fields | Written by |
 |---|---|---|
@@ -113,6 +114,7 @@ Each phase's gate is a list of checks. `state.py gate` evaluates every computed 
 | integrate | `handshake_written` | computed | `handshake-<cycle-id>.json` has every required field, its candidates and design-diff elements fit, and every finding routed `candidate-task-<name>` has that candidate |
 | integrate | `asks_routed` | computed | every open ask in the inbox is in the handshake's `asks_for_user_open`, and no open ask has an answer without a readback |
 | integrate | `open_tasks_refined_against_handshake` | asserted | `state.py assert open_tasks_refined_against_handshake --by <role>` |
+| every phase | `answered_asks_applied` | computed | no ask in the inbox has status `answered`: an answered ask is applied before the phase closes (`templates/ask.md`) |
 
 There is no PM digest and no gate on one. The **author-blind review** (the Reviewer never sees who wrote the code, nor the Implementor's report) is prose in `flows/execute.md`, followed by the phase agent; no code checks it, and these docs do not call it enforced.
 
@@ -130,7 +132,7 @@ The record is readable only while agents keep these forms. `state.py conventions
 
 ## Recovery
 
-- **A missing or unreadable event log mid-cycle**: restore it from git (it is committed at each phase close); what was appended since the last close is redone (`cycle start` again if the log lost it, the assertions, the routings). An unrestorable log is an `environment` ask (`templates/ask.md`).
+- **A missing or unreadable event log mid-cycle**: `status` names a missing one (stage `event log missing`, with the evidence and the commit holding a copy), and no verb writes a fresh one meanwhile (`no_log`). Restore it from git (it is committed at each phase close); what was appended since the last close is redone (`cycle start` again if the log lost it, the assertions, the routings). An unrestorable log is an `environment` ask (`templates/ask.md`).
 - **A convention break**: fix the file, or, for a commit, record the link the commit should have carried (`fix-link`) or merge again in the form; history is not rewritten on a shared branch without the user.
 - **A wrong entry in the log**: `state.py correct <seq> --why`, then record the right fact.
 - **A cycle that cannot close**: `state.py cycle abandon --why`; the next `cycle start` reads the newest handshake there is, and a change none of whose cycles closed starts as on a first cycle.

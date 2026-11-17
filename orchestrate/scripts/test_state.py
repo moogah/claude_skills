@@ -789,3 +789,106 @@ def test_a_journal_entry_names_who_wrote_it_from_the_closed_set(home):
     code, _, err = home.run("assert", "batch_composed", "--by", "someone")
     assert code == 1 and err["error"] == "bad_by"
     home.ok("assert", "batch_composed", "--by", "orchestrator")
+
+
+# ---------------------------------------------------------------- the decisions of 2026-11-16
+
+def test_a_findings_first_route_names_its_decoration(home):
+    """IR-E1: a first route with no --decoration is refused; a later one may give the resolution alone."""
+    cycle = started(home)
+    home.finding(cycle, "arch-cycle-1-1")
+    code, _, err = home.run("route", "arch-cycle-1-1", "--resolution", "inline-fixed")
+    assert code == 1 and err["error"] == "no_decoration" and "arch-cycle-1-1" in err["message"]
+    assert not home.ok("log", "--kind", "finding-routed")["entries"]
+    home.ok("route", "arch-cycle-1-1", "--decoration", "hardening", "--resolution", "pending")
+    home.ok("route", "arch-cycle-1-1", "--resolution", "hardening-list")
+    assert home.ok("log", "--kind", "finding-routed")["entries"][-1]["resolution"] == "hardening-list"
+
+
+def test_a_corrected_first_route_leaves_the_finding_unrouted(home):
+    cycle = started(home)
+    home.finding(cycle, "arch-cycle-1-1")
+    seq = home.ok("route", "arch-cycle-1-1", "--decoration", "blocking")["seq"]
+    home.ok("correct", str(seq), "--why", "the wrong finding")
+    code, _, err = home.run("route", "arch-cycle-1-1", "--resolution", "pending")
+    assert code == 1 and err["error"] == "no_decoration"
+
+
+def test_an_answered_ask_in_the_inbox_holds_cycle_start(home):
+    """asks group 4: asks § An answered ask is handled before the next spawn, by a phase agent."""
+    home.designed()
+    home.ask("ask-chg-1", status="answered", answer="yes")
+    home.ask("ask-chg-2", answer="no")  # open, its answer not yet read: not held here
+    code, _, err = home.run("cycle", "start", "--cycle", "cycle-1")
+    assert code == 1 and err["error"] == "answered_ask_waiting"
+    assert err["asks"] == ["ask-chg-1"] and "inbox/ask-chg-1.org" in err["message"]
+    assert not (home.dir / "events.jsonl").exists()
+    home.ask("ask-chg-1", status="deferred", answer="later")
+    home.ok("cycle", "start", "--cycle", "cycle-1")
+
+
+@pytest.mark.parametrize("phase", ["plan", "execute", "integrate"])
+def test_an_answered_ask_in_the_inbox_holds_every_phase_gate(home, phase):
+    cycle = started(home)
+    for p in ("plan", "execute", "integrate")[:("plan", "execute", "integrate").index(phase)]:
+        home.close(cycle, p)
+    home.ask(f"ask-{cycle}-1", status="answered", answer="yes")
+    c = check(home.gate(phase), "answered_asks_applied")
+    assert c["ok"] is False and f"ask-{cycle}-1" in c["reason"]
+    home.ask(f"ask-{cycle}-1", status="open")
+    assert check(home.gate(phase), "answered_asks_applied")["ok"] is True
+
+
+def _lost_log(home):
+    cycle = started(home)
+    home.brief(cycle, "a")
+    home.close(cycle, "plan")
+    (home.dir / "cycles" / cycle / "execute-handover.md").write_text("* Merged\n* Open\n* Next\n")
+    (home.dir / "events.jsonl").unlink()
+    return cycle
+
+
+def test_status_names_a_lost_log(home):
+    """asks group 7 (R3-1): with a cycle's files and close on disk and no log, status says the log is
+    missing, not that the main path has ended or no cycle is open."""
+    cycle = _lost_log(home)
+    home.task("a", status="done", critical=True)
+    out = home.ok("status")
+    assert out["stage"] == "event log missing"
+    lost = out["log_missing"]
+    assert lost["in_git"] is None and "environment ask" in out["next"]
+    assert f".orchestrator/changes/chg/cycles/{cycle}/execute-handover.md" in lost["evidence"]
+    assert any(f"Orchestrator: {cycle} plan closed" in e for e in lost["evidence"])
+
+
+def test_status_points_at_the_logs_copy_in_git(home):
+    cycle = started(home)
+    git(home.root, "add", ".orchestrator")
+    home.close(cycle, "plan")
+    (home.dir / "events.jsonl").unlink()
+    out = home.ok("status")
+    assert out["stage"] == "event log missing" and out["log_missing"]["in_git"]
+    assert "restore" in out["next"]
+
+
+@pytest.mark.parametrize("argv", [
+    ("note", "note", "x"), ("route", "arch-1", "--decoration", "blocking"), ("blocker", "a", "ask-1"),
+    ("correct", "1", "--why", "x"), ("assert", "batch_composed", "--by", "orchestrator"),
+    ("cycle", "abandon", "--why", "x"), ("gate",)])
+def test_no_verb_but_cycle_start_writes_a_fresh_log(home, argv):
+    cycle = _lost_log(home)
+    home.task("a")
+    home.finding(cycle, "arch-1")
+    code, _, err = home.run(*argv)
+    assert code == 1 and err["error"] == "no_log", err
+    assert not (home.dir / "events.jsonl").exists()
+    assert "execute-handover.md" in err["message"]
+
+
+def test_a_note_before_any_cycle_is_refused(home):
+    home.designed()
+    code, _, err = home.run("note", "note", "x")
+    assert code == 1 and err["error"] == "no_log"
+    assert not (home.dir / "events.jsonl").exists()
+    home.ok("cycle", "start", "--cycle", "cycle-1")
+    home.ok("note", "note", "x")

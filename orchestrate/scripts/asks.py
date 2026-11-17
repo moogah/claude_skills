@@ -504,6 +504,45 @@ def _ask_aliases(rec):
         rec["raised_by"] = rb
     return rec
 
+def _recommendation(value, options):
+    """A recommendation as the file places it, {option, why}, from {option, why} or {label, why}; a
+    shape it cannot place is refused, never dropped (R4-11: a `label` key was dropped, and the ask
+    went out with no * Recommendation)."""
+    if value is None:
+        return None
+    if not isinstance(value, dict) or set(value) - {"option", "label", "why"}:
+        raise Refusal("bad_recommendation", "recommendation is {\"option\": <an option's label>, \"why\": <text>} "
+                                            f"(or \"label\" for \"option\"); got {json.dumps(value)}")
+    names = {v for k in ("option", "label") if isinstance(v := value.get(k), str) and v.strip()}
+    why = value.get("why")
+    if len(names) != 1 or not (why is None or isinstance(why, str)):
+        raise Refusal("bad_recommendation", "recommendation names one option, as \"option\" or \"label\", "
+                                            f"and why; got {json.dumps(value)}")
+    name = names.pop().strip()
+    labels = [o.get("label") for o in options or [] if isinstance(o, dict)]
+    if labels and _norm(name) not in {_norm(l) for l in labels}:
+        raise Refusal("bad_recommendation", f"recommendation {name!r} is none of the options: "
+                                            + ", ".join(repr(l) for l in labels))
+    return {"option": name, "why": why}
+
+
+def _commit_ask(home, rel, subject):
+    """Commits the one ask file in the home (templates/ask.md § Commit rule): that path only, whatever
+    else is staged. The short sha, or None when the file was already committed as it stands."""
+    def g(*a):
+        return subprocess.run(["git", "-C", home, *a], capture_output=True, text=True)
+    r = g("add", "--", rel)
+    if r.returncode == 0 and g("diff", "--cached", "--quiet", "--", rel).returncode == 0:
+        return None
+    if r.returncode == 0:
+        r = g("commit", "-q", "-m", subject, "--only", "--", rel)
+    if r.returncode != 0:
+        raise Refusal("not_committed", f"{rel} is written but not committed in the home: "
+                                       f"{(r.stderr or r.stdout).strip()}; commit it with the subject {subject!r}",
+                      path=rel)
+    return g("rev-parse", "--short", "HEAD").stdout.strip()
+
+
 # ---------------------------------------------------------------- files
 
 def ask_rel(ch, ask_id, status, fallback_cycle):
@@ -607,6 +646,7 @@ def verb_add(ch, args):
     cycle = _cycle(ch, args.cycle)
     files = ask_files(ch)
     rec = {**ASK_DEFAULTS, **ASK_FILE_DEFAULTS, **{k: v for k, v in rec_in.items() if k != "path"}}
+    rec["recommendation"] = _recommendation(rec.get("recommendation"), rec.get("options"))
     if not rec.get("id"):
         prefix = f"ask-{cycle or ch.name}-"
         rec["id"] = prefix + str(next_seq(list(files), prefix))
@@ -631,6 +671,9 @@ def verb_add(ch, args):
         text = ask_to_org(rec)
     _atomic_write(abs_path, text)
     out = {"ok": True, "id": rec["id"], "path": rel, "status": rec["status"]}
+    sha = _commit_ask(ch.home, rel, f"{rec['id']}: {rec['question']}")
+    if sha:
+        out["commit"] = sha
     if moved:
         out["superseded"] = {"id": rec["revised_from"], "moved_via": moved}
     return out
@@ -654,6 +697,9 @@ def verb_set(ch, args):
         raise Refusal("no_drawer", f"{rel} has no :PROPERTIES: drawer with :ID:, :KIND: and :STATUS:; "
                                    "restore it from git or write it by hand (templates/ask.md)")
     rec["id"] = args.id
+    if "recommendation" in updates:
+        updates["recommendation"] = _recommendation(updates["recommendation"],
+                                                    updates.get("options", rec.get("options")))
     new = {**rec, **updates}
     if new.get("status") in ASK_ANSWERED and not new.get("decision"):
         raise Refusal("answer_required", f"status {new['status']} needs an answer under * Answer "

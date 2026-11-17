@@ -377,6 +377,25 @@ class Change:
             return out
         return self._cached("raw_events", read)
 
+    def lost_log(self):
+        """What says a cycle ran when the event log is not on disk: [evidence], else [] (record § A
+        missing event log is restored from git). A change on the older state file has none to lose."""
+        if os.path.exists(self.log_path) or os.path.exists(os.path.join(self.dir, "state.json")):
+            return []
+        out = [self.rel(p) for p in sorted(glob.glob(os.path.join(self.dir, "cycles", "*", "*-handover.md")))]
+        out += [f"cycles/{os.path.basename(p)}/" for p in sorted(glob.glob(os.path.join(self.dir, "cycles", "*")))
+                if os.path.isdir(p)]
+        out += [f"commit {sha[:12]} {s!r}" for sha, s in self.home_subjects() if CLOSE_RE.match(s)
+                and os.path.isdir(os.path.join(self.dir, "cycles", CLOSE_RE.match(s)["cycle"]))]
+        if copy := self.log_copy():
+            out.append(f"{self.rel(self.log_path)} in commit {copy}")
+        return out
+
+    def log_copy(self):
+        """The newest home commit that holds the event log, or None."""
+        return (git(self.home, "log", "-1", "--format=%h", "--diff-filter=AM", "--", self.rel(self.log_path))
+                or "").strip() or None
+
     def events(self, kind=None):
         """The log with every corrected entry left out."""
         def applied():
@@ -822,6 +841,8 @@ def evaluate_gate(ch, cycle, phase):
                 if a.status == "open" and a.answer and not a.readback:
                     problems.append(f"ask {a.id} has an answer not acted on (apply it, or write the readback)")
             put("asks_routed", problems, "every open ask is in the handshake and no answer waits")
+    put("answered_asks_applied", [f"ask {i} is answered and not applied ({p})" for i, p in answered_waiting(ch)],
+        "no answered ask waits in the inbox")
     asserted = {e["check"]: e for e in ch.events("asserted") if e["cycle"] == cycle and e["phase"] == phase}
     for name in ASSERTED[phase]:
         e = asserted.get(name)
@@ -908,6 +929,13 @@ def where(ch):
         out.update(stage="open, no intent", next="write the intent (flows/open.md)")
     elif status[:1] == ["done"]:
         out.update(stage="done", next="nothing")
+    elif lost := ch.lost_log():
+        rel, copy = ch.rel(ch.log_path), ch.log_copy()
+        out.update(stage="event log missing", log_missing={"path": rel, "evidence": lost, "in_git": copy},
+                   next=(f"restore {rel} from the home's git (`git -C <home> checkout {copy} -- {rel}`) and redo "
+                         "what was appended since that close (state.md § Recovery)" if copy else
+                         f"{rel} is in no commit of the home: an environment ask; write no log meanwhile "
+                         "(state.md § Recovery)"))
     elif status[:1] == ["mvp"] and len(status) >= 4 and _unanswered(ch, status[3]):
         out.update(stage="MVP decision", next=f"wait for the user's answer to {status[3]}")
     elif not ch.design_has_seams():
@@ -932,6 +960,13 @@ def where(ch):
     return out
 
 
+def answered_waiting(ch):
+    """[(id, path)] of the asks in the inbox whose status is answered: each is applied (or declined,
+    superseded) before the phase's next spawn, cycle start or close (asks § An answered ask is handled
+    before the next spawn, by a phase agent)."""
+    return [(a.id, ch.rel(a.path)) for a in ch.asks() if a.status == "answered"]
+
+
 def _unanswered(ch, ask_id):
     a = ch.find_ask(ask_id)
     return a is None or not (a.answer or a.status in ("answered", "applied"))
@@ -941,6 +976,8 @@ def _unanswered(ch, ask_id):
 
 def append_event(ch, kind, cycle, **fields):
     """Appends one entry under a lock and returns it. The only write the state layer makes."""
+    if kind != "cycle-started":
+        _require_log(ch)
     missing = [k for k in EVENT_FIELDS[kind] if fields.get(k) in (None, "")]
     if missing:
         raise Refusal("bad_entry", f"a {kind} entry needs {', '.join(missing)}")
@@ -964,7 +1001,20 @@ def _require_open_change(ch):
         raise Refusal("change_not_open", f"{ch.name} has no change.json; open it first (flows/open.md)")
 
 
+def _require_log(ch):
+    """Only `cycle start` begins a log; any other writer, and a reader of the open cycle, refuses while
+    there is none, so a lost log is never replaced by a fresh one (record § A lost or older record is
+    recovered, never invented)."""
+    if not os.path.exists(ch.log_path):
+        lost = ch.lost_log()
+        raise Refusal("no_log", f"{ch.rel(ch.log_path)} does not exist; only `state.py cycle start` begins it"
+                      + (f". A cycle ran ({'; '.join(lost)}): restore the log from the home's git, or, with no "
+                         "copy there, an environment ask (state.md § Recovery)" if lost else ""),
+                      **({"evidence": lost} if lost else {}))
+
+
 def _require_open_cycle(ch):
+    _require_log(ch)
     cycle, phase = ch.open_cycle()
     if not cycle:
         raise Refusal("no_open_cycle", f"{ch.name} has no open cycle")
@@ -1034,6 +1084,11 @@ def verb_cycle_start(ch, args):
     cycle, _ = ch.open_cycle()
     if cycle:
         raise Refusal("cycle_open", f"{cycle} is open; close it or `state.py cycle abandon --why`")
+    waiting = answered_waiting(ch)
+    if waiting:
+        raise Refusal("answered_ask_waiting", "an answered ask waits in the inbox; apply it before the cycle "
+                      "starts (templates/ask.md): " + ", ".join(f"{i} ({p})" for i, p in waiting),
+                      asks=[i for i, _ in waiting])
     # record § No cycle starts in a home whose git ignores the record; § No cycle starts while the
     # code root holds a record of its own.
     if _git_ignores(ch.home, ".orchestrator"):
@@ -1093,6 +1148,10 @@ def verb_route(ch, args):
         raise Refusal("no_finding", f"no finding file for {args.finding} under findings/ or cycles/*/findings/")
     if not (args.decoration or args.resolution):
         raise Refusal("bad_entry", "route needs --decoration, --resolution or both")
+    if not args.decoration and args.finding not in ch.routing():
+        raise Refusal("no_decoration", f"{args.finding} has not been routed: its first route names "
+                                       "--decoration blocking or hardening (templates/architect-finding.md "
+                                       "§ Routing); later routes may give --resolution alone")
     r = args.resolution
     if r and r not in RESOLUTIONS and not r.startswith(RESOLUTION_PREFIXES):
         raise Refusal("bad_resolution", f"{r!r}: one of {', '.join(RESOLUTIONS)}, or candidate-task-<name>, "
@@ -1120,6 +1179,7 @@ def verb_fix_link(ch, args):
 
 
 def verb_correct(ch, args):
+    _require_log(ch)
     target = next((e for e in ch.raw_events() if e["seq"] == args.seq), None)
     if target is None:
         raise Refusal("no_entry", f"no entry {args.seq} in {ch.rel(ch.log_path)}")

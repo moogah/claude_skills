@@ -327,6 +327,19 @@ def test_intent_selects_touched_and_named_scenarios(tree, capsys):
     assert out["unmatched_names"] == ["ws § Gone away"]
 
 
+def test_intent_with_no_scenario_prints_a_whole_summary_line(tree, capsys):
+    """item 15 (R5-8): design-round § The round's commit message carries the coverage summary; a change
+    with no scenario gets `0 scenarios`, not `0 scenarios: `."""
+    _git(tree, "init", "-q")
+    _git(tree, "-c", "user.email=t@t", "-c", "user.name=t", "add", ".")
+    _git(tree, "-c", "user.email=t@t", "-c", "user.name=t", "commit", "-qm", "base")
+    base = subprocess.run(["git", "-C", str(tree), "rev-parse", "HEAD"], capture_output=True, text=True).stdout.strip()
+    (tree / "intent.org").write_text(f"#+TITLE: c\n#+BASE: {base}\n\n* Capabilities\n- none\n")
+    assert cov.main(["--root", str(tree), "--intent", str(tree / "intent.org")]) == 0
+    lines = capsys.readouterr().out.split("\n")
+    assert "0 scenarios" in lines and not any(l.startswith("0 scenarios:") for l in lines)
+
+
 def test_intent_without_base_is_refused(tree, capsys):
     (tree / "intent.org").write_text("#+TITLE: c\n* Capabilities\n")
     assert cov.main(["--root", str(tree), "--intent", str(tree / "intent.org")]) == 1

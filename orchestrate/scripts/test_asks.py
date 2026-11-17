@@ -35,8 +35,12 @@ def _g(cwd, *args):
 
 
 @pytest.fixture
-def repo(tmp_path):
+def repo(tmp_path, monkeypatch):
     """A git home with the change `chg` open on the home itself and cycle-1 started in its log."""
+    for k in ("GIT_AUTHOR_NAME", "GIT_COMMITTER_NAME"):
+        monkeypatch.setenv(k, "t")
+    for k in ("GIT_AUTHOR_EMAIL", "GIT_COMMITTER_EMAIL"):
+        monkeypatch.setenv(k, "t@t")
     (tmp_path / ".claude" / "orchestrator").mkdir(parents=True)
     (tmp_path / ".claude" / "orchestrator" / "config.yaml").write_text("overlay-version: 1\nproject: t\n")
     _g(tmp_path, "init", "-q", "-b", "main")
@@ -130,7 +134,7 @@ def test_set_updates_drawer_and_moves(run, repo):
     code, _, err = run("set", "ask-cycle-1-1", "status=applied")
     assert code == 1 and err["error"] == "applied_via_required"
     code, out, _ = run("set", "ask-cycle-1-1", "status=applied", "applied_via=commit abc")
-    assert code == 0 and out["moved_via"] == "rename"
+    assert code == 0 and out["moved_via"] == "git mv"  # add committed it
     assert out["path"] == f"{CH}/cycles/cycle-1/asks/ask-cycle-1-1.org"
     assert not (repo / CH / "inbox" / "ask-cycle-1-1.org").exists()
     assert ":APPLIED_VIA: commit abc" in (repo / out["path"]).read_text()
@@ -189,7 +193,7 @@ def test_inbox_reports_answers_and_tolerates_edits(run, repo):
     e4 = by["ask-cycle-1-4"]
     assert e4["answer"] is None and e4["problems"] == [] and e4["question"] == "Which way?"
     assert e4["answer_candidate"] == {"section": "Discussion", "text": "Do it"}
-    assert out["problems"] == [] and not any(e["tracked"] for e in out["asks"])
+    assert out["problems"] == [] and all(e["tracked"] for e in out["asks"])  # add commits each
     code, out, _ = run("set", "ask-cycle-1-4", "decision=Do it", "status=answered")
     assert code == 0
     kept = (repo / out["path"]).read_text()
@@ -254,3 +258,43 @@ def test_a_design_round_ask_keeps_its_if_unanswered(run, repo):
     assert code == 0, err
     doc = asks.AskDoc((repo / out["path"]).read_text())
     assert doc.section_text("If unanswered").strip() == wait
+
+
+# ---------------------------------------------------------------- the decisions of 2026-11-16
+
+def test_add_commits_the_ask_file_alone(run, repo):
+    """asks group 5: add commits the file it writes in the home, that path only, subject `<id>: <question>`."""
+    (repo / "other.txt").write_text("staged, not the ask's\n")
+    _g(repo, "add", "other.txt")
+    code, out, err = run("add", json.dumps(ASK))
+    assert code == 0, err
+    log = _g(repo, "log", "-1", "--format=%h%x1f%s", "--name-only").stdout.split("\n")
+    assert log[0] == f"{out['commit']}\x1fask-cycle-1-1: Which way?"
+    assert [l for l in log[1:] if l] == [out["path"]]
+    assert _g(repo, "diff", "--cached", "--name-only").stdout.split() == ["other.txt"]
+
+
+def test_add_refuses_when_the_home_cannot_commit(run, repo):
+    (repo / ".gitignore").write_text(".orchestrator/\n")
+    code, _, err = run("add", json.dumps(ASK))
+    assert code == 1 and err["error"] == "not_committed" and err["path"] == f"{CH}/inbox/ask-cycle-1-1.org"
+
+
+def test_add_places_a_recommendation_given_as_label(run, repo):
+    """asks group 6 (R4-11): {label, why} is placed as {option, why} is."""
+    for key in ("label", "option"):
+        code, out, err = run("add", json.dumps({**ASK, "recommendation": {key: "Do it", "why": "it is cheap"}}))
+        assert code == 0, err
+        assert "* Recommendation\n\n- Do it :: it is cheap\n" in (repo / out["path"]).read_text()
+    code, out, err = run("set", out["id"], 'recommendation={"label": "Do nothing", "why": "no one asked"}')
+    assert code == 0, err
+    assert "- Do nothing :: no one asked" in (repo / out["path"]).read_text()
+
+
+@pytest.mark.parametrize("rec", [{"choice": "Do it", "why": "x"}, {"why": "x"}, "Do it",
+                                 {"option": "Do it", "label": "Do nothing", "why": "x"},
+                                 {"option": "Something else", "why": "x"}])
+def test_add_refuses_a_recommendation_it_cannot_place(run, repo, rec):
+    code, _, err = run("add", json.dumps({**ASK, "recommendation": rec}))
+    assert code == 1 and err["error"] == "bad_recommendation"
+    assert not (repo / CH / "inbox").exists()

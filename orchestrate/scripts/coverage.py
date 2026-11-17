@@ -689,7 +689,9 @@ def print_report(rows, unresolved, bad_props, root, unmatched=()):
         print(f"| {org_cell(r['capability'])} | {org_cell(r['scenario'])} | {org_cell(r['status'])} | "
               f"{org_cell(', '.join(r['citations']))} |")
     order = STATUS_ORDER + ["none", "uncited"]
-    print(f"\n{len(rows)} scenarios: " + ", ".join(f"{counts[k]} {k}" for k in order if k in counts))
+    # A change with no scenario gets a whole line, no dangling colon (R5-8: `0 scenarios: `).
+    print(f"\n{len(rows)} scenarios" + (": " + ", ".join(f"{counts[k]} {k}" for k in order if k in counts)
+                                       if rows else ""))
     if bad_props:
         print(f"\n:TEST: properties that resolve to no test ({len(bad_props)}):")
         for sc, value, why in bad_props:
