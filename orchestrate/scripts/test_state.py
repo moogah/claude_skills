@@ -588,6 +588,9 @@ def test_a_red_baseline_is_read_through_the_comparison(home):
 def test_asks_for_a_cycle_are_those_its_git_touched(home):
     home.designed()
     home.ask("ask-cycle-0-1", status="applied", answer="yes")  # resolved before the cycle
+    (home.dir / "cycles" / "cycle-0" / "asks").mkdir(parents=True)  # where a settled ask lives
+    (home.dir / "events.jsonl").touch()  # an earlier cycle's log, so its directory is no lost-log evidence
+    (home.dir / "inbox" / "ask-cycle-0-1.org").rename(home.dir / "cycles" / "cycle-0" / "asks" / "ask-cycle-0-1.org")
     git(home.root, "add", "-A")
     git(home.root, "commit", "-q", "-m", "earlier")
     import time
@@ -838,13 +841,47 @@ def test_an_answered_ask_in_the_inbox_holds_cycle_start(home):
     """asks group 4: asks § An answered ask is handled before the next spawn, by a phase agent."""
     home.designed()
     home.ask("ask-chg-1", status="answered", answer="yes")
-    home.ask("ask-chg-2", answer="no")  # open, its answer not yet read: not held here
+    home.ask("ask-chg-2", answer="no")  # open with an exact answer: answered all the same
+    home.ask("ask-chg-3", answer="no, unless it is a refund", readback="Refunds only.")  # waits on the user's yes
     code, _, err = home.run("cycle", "start", "--cycle", "cycle-1")
     assert code == 1 and err["error"] == "answered_ask_waiting"
-    assert err["asks"] == ["ask-chg-1"] and "inbox/ask-chg-1.org" in err["message"]
+    assert err["asks"] == ["ask-chg-1", "ask-chg-2"] and "inbox/ask-chg-1.org" in err["message"]
     assert not (home.dir / "events.jsonl").exists()
     home.ask("ask-chg-1", status="deferred", answer="later")
+    home.ask("ask-chg-2", status="applied", answer="no")  # settled with no cycle open: waits for cycle start
     home.ok("cycle", "start", "--cycle", "cycle-1")
+
+
+def test_status_shows_the_asks_the_gates_hold_on_and_names_them_first_in_next(home):
+    """asks group 4: an answer waiting in any form is the one set status, the gates and check start read."""
+    cycle = started(home)
+    home.ask(f"ask-{cycle}-1", status="answered", answer="yes")
+    home.ask(f"ask-{cycle}-2", answer="the second, for refunds")             # free text, no readback yet
+    home.ask(f"ask-{cycle}-3", answer="maybe", readback="Refunds only.")      # readback waits on the yes
+    home.ask(f"ask-{cycle}-4", answer="maybe", readback="Refunds only.\n\nyes")  # confirmed, still open
+    home.ask(f"ask-{cycle}-5", status="declined", answer="no")               # settled, not moved
+    home.ask(f"ask-{cycle}-6", status="deferred", answer="later")            # deferred stays in the inbox
+    home.ask(f"ask-{cycle}-7")                                                # unanswered
+    want = [f"ask-{cycle}-{n}" for n in (1, 2, 4, 5)]
+    out = home.ok("status")
+    assert out["inbox"]["answered"] == want
+    assert out["next"].startswith("handle the answered asks first") and all(i in out["next"] for i in want)
+    assert f"ask-{cycle}-3" not in out["next"]
+    c = check(home.gate("plan"), "answered_asks_applied")
+    assert c["ok"] is False and all(i in c["reason"] for i in want) and f"ask-{cycle}-3" not in c["reason"]
+
+
+def test_an_answered_ask_in_the_inbox_holds_a_task_start(home):
+    """asks § An answered ask is handled before the next spawn, by a phase agent."""
+    cycle = started(home)
+    home.task("a")
+    home.ask(f"ask-{cycle}-1", answer="yes")
+    code, _, err = home.run("check", "start", "a")
+    assert code == 1 and err["error"] == "answered_ask_waiting" and err["asks"] == [f"ask-{cycle}-1"]
+    home.ask(f"ask-{cycle}-1", status="answered", answer="yes", readback="Yes means refunds too.")
+    assert home.run("check", "start", "a")[0] == 1  # answered is answered, readback or not
+    (home.dir / "inbox" / f"ask-{cycle}-1.org").unlink()
+    home.ok("check", "start", "a")
 
 
 @pytest.mark.parametrize("phase", ["plan", "execute", "integrate"])

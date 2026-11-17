@@ -87,6 +87,8 @@ The one statement of when a piece of **scope** earns work: a feature, an option,
 
 Otherwise it is not built and not asked about. An agent that thinks it matters writes it as one `thought` line, and it stays that line. Cleanup is scope: a project prior that asks for it ("removing leftovers") makes a dead-code or duplication thought into work without an ask.
 
+The check shapes the recommendation, never whether a finding is asked: a Design in question, a `spec-signal`, a promise the user's own words conflict with, and the product question beside a corrected stale sentence are `decision` asks whatever the goals say and whether or not every test passes both ways; the check shapes only the ask's recommendation (on scope, the do-nothing option, `templates/ask.md`).
+
 The check applies to scope, not to defects. A defect in code or text that exists is reported and routed by § Routing whether or not anyone has seen it fail. Its fix stays inside the defect: the change that makes the wrong case right. An option, a generalisation or a new behaviour proposed along with the fix is scope and takes the check.
 
 ## Routing

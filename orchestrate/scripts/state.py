@@ -918,8 +918,8 @@ def where(ch):
     intent = ch.intent()
     out["intent"] = {"approved": intent["approved"], "status": " ".join(intent["status"]) or None}
     inbox = ch.asks()
-    out["inbox"] = {"open": sum(a.status == "open" for a in inbox),
-                    "answered": [a.id for a in inbox if a.status == "open" and a.answer]}
+    waiting = [i for i, _ in answered_waiting(ch)]
+    out["inbox"] = {"open": sum(a.status == "open" for a in inbox), "answered": waiting}
     # Every ask still waiting, those that block work first (SKILL.md § The dispatcher puts the rest in this order).
     out["asks"] = [a.summary() for a in sorted((a for a in inbox if a.status in ("open", "answered")),
                                                key=lambda a: not a.blocks)]
@@ -954,17 +954,37 @@ def where(ch):
                    next="integrate's MVP decision (flows/integrate.md § 9), not another plan")
     else:
         out.update(stage="designed, no cycle open", next="start a plan: state.py cycle start (flows/plan.md)")
+    if waiting and out["stage"] not in ("done", "event log missing"):
+        out["next"] = (f"handle the answered asks first (templates/ask.md § Answer protocol): {', '.join(waiting)}; "
+                       f"then {out['next']}")
     breaks = convention_breaks(ch)
     if breaks:
         out["convention_breaks"] = len(breaks)
     return out
 
 
+def _waits_on_phase_agent(a):
+    """An inbox ask whose answer the phase agent has still to handle (templates/ask.md § Answer protocol):
+    status answered; open with an answer, unless its readback is written and waits on the user's yes;
+    applied, declined or superseded and still in the inbox though its id names a cycle (one settled
+    while no cycle was open waits there for `cycle start`). Deferred stays in the inbox by rule."""
+    if a.status == "answered":
+        return True
+    if a.status == "open":
+        if not a.answer:
+            return False
+        confirmed = a.readback and any(re.sub(r"\s+", " ", l.casefold()).strip().rstrip(".!?;:,")
+                                       in ("yes", "confirmed", "ok") for l in a.readback.splitlines())
+        return not a.readback or bool(confirmed)
+    return a.status in ("applied", "declined", "superseded") and bool(re.fullmatch(r"ask-cycle-.+-\d+", a.id))
+
+
 def answered_waiting(ch):
-    """[(id, path)] of the asks in the inbox whose status is answered: each is applied (or declined,
-    superseded) before the phase's next spawn, cycle start or close (asks § An answered ask is handled
-    before the next spawn, by a phase agent)."""
-    return [(a.id, ch.rel(a.path)) for a in ch.asks() if a.status == "answered"]
+    """[(id, path)] of the inbox asks an answer waits on (_waits_on_phase_agent); `status` shows the same
+    ids as inbox.answered. Each is handled (applied, declined or superseded) before the phase's next
+    spawn, merge release, cycle start or close (asks § An answered ask is handled before the next spawn,
+    by a phase agent)."""
+    return [(a.id, ch.rel(a.path)) for a in ch.asks() if _waits_on_phase_agent(a)]
 
 
 def _unanswered(ch, ask_id):
@@ -1066,6 +1086,11 @@ def verb_check(ch, args):
             raise Refusal("not_done", f"{name} is not done: " + "; ".join(problems), problems=problems)
         return {"ok": True, "task": name, "merge_commit": sha}
     if args.what == "start":
+        waiting = answered_waiting(ch)
+        if waiting:
+            raise Refusal("answered_ask_waiting", f"{name} may not start: an answered ask waits in the inbox; "
+                          "handle it first (templates/ask.md § Answer protocol): "
+                          + ", ".join(f"{i} ({p})" for i, p in waiting), asks=[i for i, _ in waiting])
         problems = start_problems(ch, name)
         if problems:
             raise Refusal("blocked", f"{name} may not start: " + "; ".join(problems), problems=problems)
