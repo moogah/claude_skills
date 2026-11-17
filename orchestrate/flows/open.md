@@ -16,7 +16,7 @@ Not when the user wrote the intent and spec edits themselves: the round reads th
 
 The dispatcher's brief is the fixed one (`SKILL.md` § The dispatcher's loop) with the source in place of the cycle:
 
-> You are the phase agent for opening a change. Home: `<path>`. Source: `<the user's words, verbatim>` | `<.tasks/ paths>` | `<split ask id and its change>` | `research hand-off: <the research brief's path>, branch <the workspace integration branch>, change <the change's name>`. Run `home.py where`, then read and follow `~/.claude/skills/orchestrate/flows/open.md` to its commit. …
+> You are the phase agent for opening a change. Home: `<path>`. Source: `<the user's words, verbatim>` | `<.tasks/ paths>` | `<split ask id and its change>` | `research hand-off: <the research brief's path>, branch <the workspace integration branch>, change <the change's name>`. Run `python3 ~/.claude/skills/orchestrate/scripts/home.py where`, then read and follow `~/.claude/skills/orchestrate/flows/open.md` to its commit. …
 
 The dispatcher copies the user's words, or the research hand-off's brief path, branch and change name as the user or the research session gives them; it reads nothing to write the brief.
 
