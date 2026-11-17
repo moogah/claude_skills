@@ -8,7 +8,7 @@ A change's design is `docs/changes/<change>/design.org` in the code root, beside
 #+TITLE: <change>: design
 
 * Context
-<The code as it stands at the change's base, as far as the change needs it.>
+<The code as it stands now, as far as the change needs it: written at the design round and kept true as cycles merge (a sentence a merge makes untrue is a record correction at integrate's conformance, `flows/integrate.md` § 1).>
 
 * Decisions
 

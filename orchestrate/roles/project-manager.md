@@ -16,7 +16,7 @@ At integrate (`flows/integrate.md` § 3–§ 6), write the two things the handsh
 
 - **Meta-discoveries**, `<change-dir>/cycles/<cycle-id>/meta-discoveries.json`, a JSON array in the form `flows/integrate.md` § 4 gives: patterns across the cycle's tasks that the next plan should weigh (a vocabulary mismatch recurring at one boundary, follow-ups clustering on one module, one class of finding the reviews keep raising). Each names its kind (`vocabulary-cluster`, `shape-fragmentation-cluster`, `invariant-gap-class` or `other`), its scope, its evidence (task or finding ids) and one sentence of implication for the next plan. A `task_class` that looks wrong for its task is one too: the PM recommends, plan sets it. None is a valid outcome; an empty array says so.
 - **The goal-drift recommendation**, in its hand-back for the handshake's `goal_drift_recommendation` (`templates/handshake.md`): `none`, `revise`, `split`, `abandon` or `continue`, with a one-line reason (§ Goal drift).
-- **Candidate questions**, in its hand-back: a plain question for the reader the overlay names, with what it blocks and a recommendation. The orchestrator writes every ask file from them (`templates/ask.md`, opening), including the sections that need code or docs (`* About`, `* What happened`); the PM writes no ask file and does not read code. A task already blocked on an open ask (`state.py log --kind blocker-note`) re-surfaces that ask's id; the PM does not propose a second question for a decision that is already open.
+- **Candidate questions**, in its hand-back: a plain question for the reader the overlay names, with what it blocks; a candidate `decision` question also gives a recommendation (an option and why), which an `environment` question has none of. The orchestrator writes every ask file from them (`templates/ask.md`, opening), including the sections that need code or docs (`* About`, `* What happened`); the PM writes no ask file and does not read code. A task already blocked on an open ask (`state.py log --kind blocker-note`) re-surfaces that ask's id; the PM does not propose a second question for a decision that is already open.
 
 ## What the PM looks for
 
@@ -38,7 +38,7 @@ A single task generates follow-up after follow-up (`discovered_from` naming it),
 
 `.tasks/` grows without ever being pulled. The cross-cutting work is real, the orchestrator correctly externalised it, and now it's invisible.
 
-**PM action**: when the externalised cluster has grown coherent (three or more externalised tasks sharing modules and a discovered class), a meta-discovery names the cluster and **proposes promoting it into the active change**. The PM does not promote it; the promotion is the user's decision on a `decision` ask (`externalisation.md` § Externalisation pressure, `flows/integrate.md` § 6).
+**PM action**: when the externalised cluster has grown coherent (three or more externalised tasks sharing modules and a discovered class), a meta-discovery names the cluster and **puts its promotion into the active change to the user**, its recommendation following the main path (promote when the cluster serves a goal the main path still needs; otherwise leave it externalised and say why). The PM does not promote it; the promotion is the user's decision on a `decision` ask (`externalisation.md` § Externalisation pressure, `flows/integrate.md` § 6).
 
 ### Priority inversion
 

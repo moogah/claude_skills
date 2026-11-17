@@ -79,7 +79,7 @@ For each task in the batch, the orchestrator assembles the brief (per `roles/imp
 
 - Task body.
 - The cited seam rows, verbatim from `design.org`, and for each scenario in `cites_scenarios` its text from `docs/specs/` and its `coverage.py --scenario` row.
-- Cited `design.org` decisions and `intent.org` sections.
+- The `design.org` decisions the cited rows link to or the task names (in its Summary or a step), and the cited `intent.org` sections; no other decision.
 - Project standards (overlay's `roles/implementor.md`) and the project priors (`priors.md`).
 
 The brief framing is fixed — the seam rows are *reference material to pressure-test, not authority to defer to*. A row that turns out wrong is a push-back in `## Discoveries`; conformance amends the row at integrate.
@@ -101,7 +101,7 @@ The reason is one line a reader can check against the task body, written as the 
 - from a user's decision (a candidate integrate § 7 routed): true when the decision was routed to the main path;
 - drafted from a hardening entry after `harden`, from a meta-discovery, or as scope under the YAGNI check: false.
 
-A task whose source does not settle it is false, with the doubt in one `state.py note note` line; the user sees it with the MVP. After `rethink` every open task is set again against the new Goals. An `intent.org` with no `#+STATUS:` line gets one warning line (`templates/intent.md`). The record: a per-batch read of the Goals marked 143 of 168 tasks not drafted from the design as critical, in three homes, so the label said nothing about what held the MVP decision back.
+A task whose source does not settle it is false, with the doubt in one `state.py note note` line; the user sees it with the MVP. After `rethink`, list every file in `tasks/open/` and set `on_critical_path` on each against the new Goals, those the batch does not take included. An `intent.org` with no `#+STATUS:` line gets one warning line (`templates/intent.md`). The record: a per-batch read of the Goals marked 143 of 168 tasks not drafted from the design as critical, in three homes, so the label said nothing about what held the MVP decision back.
 
 Overlay can override via `critical-path.override-tasks` (explicit task list) or `critical-path.override-labels` (task_class values that are always critical-path).
 
