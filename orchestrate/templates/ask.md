@@ -82,7 +82,7 @@ No timestamps: git has them.
 | `* Readback` | orchestrator | Exists only when needed (free text or a rule): the answer restated as a consequence, 600 characters at most. |
 | `* Discussion` | anyone | Created when first needed; one `** <date> <who>` subheading per turn; preserved byte for byte by the tool. The orchestrator appends the turns of a discussion held in chat. |
 
-`asks.py add` takes the JSON fields (`question`, `about`, `observed`, `options`, `recommendation`, `default_if_unanswered`, `raised_by`, `blocks`, …) or `@draft.org`, a file in this shape whose prose it keeps; `asks.py set <id> field=value …` edits one field in place (`about=…`, `status=…`, `applied_via=…`, `decision_readback=…`).
+`asks.py add` takes the JSON fields (`question`, `about`, `observed`, `options`, `recommendation`, `default_if_unanswered`, `raised_by`, `blocks`, …) or `@draft.org`, a file in this shape whose prose it keeps; `recommendation` is `{"option": "<label>", "why": "<why>"}` (`label` is taken for `option`), naming one of the options, or `asks.py add` refuses `bad_recommendation`; `asks.py set <id> field=value …` edits one field in place (`about=…`, `status=…`, `applied_via=…`, `decision_readback=…`).
 
 ## Kinds and routing
 
@@ -121,7 +121,7 @@ For every phase; this is the one statement of when a question blocks the session
 
 `.orchestrator/` is tracked by the home repo. `home.py open` writes `.orchestrator/.gitignore` (the test outputs `baseline-*.txt` and `after-*.txt`, `*.tmp`) when absent; a home repo that ignores the directory loses the record (an `environment` ask: delete the line). The orchestrator commits, in the home:
 
-- an ask file when it is created (`git add .orchestrator/changes/<change>/inbox/<id>.org`; the subject names the id, so `git log --grep=ask-` finds the trail);
+- an ask file when it is created: `asks.py add` commits it itself, that path only, subject `<id>: <question>`, so `git log --grep=ask-` finds the trail (it refuses `not_committed` when git cannot, the file left written; commit it by hand with that subject);
 - an answer the dispatcher writes, given in a call or in chat, when it is written (the subject naming the id);
 - a readback when it is written, together with the user's answer it restates (one commit, the subject naming the id), and with it any `priors.md` line and `confirmation` file the answer produced;
 - an applied ask alongside the change that applies it (the moved file and the edit or merge in one commit, as the `--download-video` reversal was; one commit per repository with the same subject when the change is in a separate code root; a spec or `design.org` edit is in the code root, since the record lives under `docs/` there);
