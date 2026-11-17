@@ -67,11 +67,16 @@ What's deliberately not in this task. Reduces the "while I was there I also fixe
 ### Observations
 Empty in `tasks/open/`. The implementor appends here during execution. Per the brainstorm § implementor: out-of-scope findings during implementation belong in `## Observations`, not in new tasks. The orchestrator scans them after the merge (`flows/execute.md` § 5); the Reviewer never sees them.
 
-What belongs in `## Observations`:
+What belongs in `## Observations`, and nothing else (`roles/implementor.md` § What belongs in `## Observations`):
 - Departures from the task body's prescribed approach (with evidence)
-- Tests that pass but are weakly asserted; mocks that diverge from production
+- Tests that pass but are weakly asserted; mocks or fakes that diverge from the real thing
 - Spec/design contradictions or ambiguities the implementation forced you to resolve
+- A wrong premise the work absorbed, with what HEAD has
 - Speculative needs, one line each labelled `thought:`
+- A stray process the Implementor did not start
+- A failure that passed on a rerun while other runs were active, with both results
+
+Not a log of the work, a summary, the tests added or a confirmation that the approach held: a task done as prescribed has `- none`.
 
 What does NOT belong in `## Observations`: a push-back against a seam row the brief cited (a seam objection, written in `## Discoveries` only); a defect in code or text that exists outside the task. It is a `## Discoveries` entry with its kind (`issue` or `question`), listed in the report's `candidate_tasks`; the orchestrator routes it (`roles/implementor.md` § What belongs in `## Observations`).
 
