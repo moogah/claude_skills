@@ -298,3 +298,17 @@ def test_add_refuses_a_recommendation_it_cannot_place(run, repo, rec):
     code, _, err = run("add", json.dumps({**ASK, "recommendation": rec}))
     assert code == 1 and err["error"] == "bad_recommendation"
     assert not (repo / CH / "inbox").exists()
+
+
+def test_add_refuses_an_option_key_it_cannot_place(run, repo):
+    """record-state-missing SM-E6 (round 8): {label, description} wrote a bare label, the consequence dropped."""
+    opts = [dict(o) for o in ASK["options"]]
+    opts[0] = {"label": opts[0]["label"], "description": "what follows"}
+    code, _, err = run("add", json.dumps({**ASK, "options": opts}))
+    assert code == 1 and "unknown key description" in json.dumps(err)
+    assert not (repo / CH / "inbox").exists()
+
+
+def test_an_unknown_field_refusal_names_ref(run, repo):
+    code, _, err = run("add", json.dumps({**ASK, "what_happened": "x"}))
+    assert code == 1 and "also read: ref" in json.dumps(err)

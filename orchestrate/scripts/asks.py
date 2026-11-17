@@ -432,7 +432,7 @@ def validate_ask_full(rec, where, errors):
         return
     for k in rec:
         if k not in fields:
-            errors.append(f"{where}.{k}: unknown field (allowed: {', '.join(fields)})")
+            errors.append(f"{where}.{k}: unknown field (allowed: {', '.join(fields)}; also read: ref, as raised_by.ref)")
     for k, typ in fields.items():
         if k == "path":
             continue
@@ -456,6 +456,9 @@ def validate_ask_full(rec, where, errors):
     for i, o in enumerate(opts):
         if not isinstance(o, dict) or not isinstance(o.get("label"), str) or not o["label"].strip():
             errors.append(f"{where}.options[{i}]: expected {{label, consequence}}")
+        elif set(o) - {"label", "consequence"}:   # a key the file cannot place is refused, never dropped (round 8)
+            errors.append(f"{where}.options[{i}]: unknown key {', '.join(sorted(set(o) - {'label', 'consequence'}))} "
+                          "(expected {label, consequence})")
     if rec.get("kind") == "decision" and rec.get("status") == "open":
         if not rec.get("about"):
             errors.append(f"{where}.about: a decision says what the thing is for (templates/ask.md)")
