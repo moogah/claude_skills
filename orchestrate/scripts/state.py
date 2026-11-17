@@ -1167,7 +1167,7 @@ def verb_blocker(ch, args):
 
 def verb_note(ch, args):
     return append_event(ch, "note", ch.open_cycle()[0], note_kind=args.kind, text=_cap(args.text),
-                        ref=args.ref, by=_by(args.by), path=args.path)
+                        ref=args.ref, by=_by(args.by, required=True), path=args.path)
 
 
 def verb_fix_link(ch, args):
@@ -1258,7 +1258,7 @@ def build_parser():
     s.add_argument("kind", choices=NOTE_KINDS)
     s.add_argument("text")
     s.add_argument("--ref")
-    s.add_argument("--by")
+    s.add_argument("--by", help="who wrote it: one of the roles (the phase agent is orchestrator)")
     s.add_argument("--path")
     s = sub.add_parser("fix-link", help="link an inline-fix commit to its review when the subject does not")
     s.add_argument("commit")

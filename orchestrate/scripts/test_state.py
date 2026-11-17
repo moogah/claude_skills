@@ -223,7 +223,7 @@ def test_no_state_file_is_written(home):
     home.handshake(cycle)
     home.ok("assert", "open_tasks_refined_against_handshake", "--by", "orchestrator")
     before = home.files()
-    home.ok("note", "decision", "one line")
+    home.ok("note", "decision", "one line", "--by", "orchestrator")
     home.ok("status")
     home.gate("integrate")
     home.close(cycle, "integrate")
@@ -473,7 +473,7 @@ def test_the_log_is_only_appended(home):
     started(home)
     first = (home.dir / "events.jsonl").read_text()
     home.task("a")
-    home.ok("note", "discovery", "x", "--ref", "seam/a")
+    home.ok("note", "discovery", "x", "--ref", "seam/a", "--by", "orchestrator")
     home.ok("blocker", "a", "ask-cycle-1-1")
     after = (home.dir / "events.jsonl").read_text()
     assert after.startswith(first)
@@ -786,6 +786,8 @@ def test_a_journal_entry_names_who_wrote_it_from_the_closed_set(home):
     code, _, err = home.run("note", "note", "x", "--by", "someone")
     assert code == 1 and err["error"] == "bad_by"
     home.ok("note", "note", "x", "--by", "reviewer")
+    code, _, err = home.run("note", "note", "x")
+    assert code == 1 and err["error"] == "bad_by"
     code, _, err = home.run("assert", "batch_composed", "--by", "someone")
     assert code == 1 and err["error"] == "bad_by"
     home.ok("assert", "batch_composed", "--by", "orchestrator")
@@ -890,7 +892,7 @@ def test_status_points_at_the_logs_copy_in_git(home):
 
 
 @pytest.mark.parametrize("argv", [
-    ("note", "note", "x"), ("route", "arch-1", "--decoration", "blocking"), ("blocker", "a", "ask-1"),
+    ("note", "note", "x", "--by", "orchestrator"), ("route", "arch-1", "--decoration", "blocking"), ("blocker", "a", "ask-1"),
     ("correct", "1", "--why", "x"), ("assert", "batch_composed", "--by", "orchestrator"),
     ("cycle", "abandon", "--why", "x"), ("gate",)])
 def test_no_verb_but_cycle_start_writes_a_fresh_log(home, argv):
@@ -905,8 +907,8 @@ def test_no_verb_but_cycle_start_writes_a_fresh_log(home, argv):
 
 def test_a_note_before_any_cycle_is_refused(home):
     home.designed()
-    code, _, err = home.run("note", "note", "x")
+    code, _, err = home.run("note", "note", "x", "--by", "orchestrator")
     assert code == 1 and err["error"] == "no_log"
     assert not (home.dir / "events.jsonl").exists()
     home.ok("cycle", "start", "--cycle", "cycle-1")
-    home.ok("note", "note", "x")
+    home.ok("note", "note", "x", "--by", "orchestrator")
