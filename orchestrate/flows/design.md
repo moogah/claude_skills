@@ -2,7 +2,7 @@
 
 The step between a change's spec edits and its first cycle. The Architect reads the scenarios the change touched and the code as it stands, writes the seams that will satisfy them into `docs/changes/<change>/design.org`, and writes the pending tests those scenarios and seams imply. Plan (`flows/plan.md`) drafts tasks from this document and the pending scenarios; integrate (`flows/integrate.md` § 1) checks merged code against it.
 
-The round is not a cycle. It runs before the first `state.py cycle start` and opens none. Its outputs are files in the code root: `design.org`, the pending tests, and a `:TEST: none:` property on each scenario no test is worth writing for. Like a phase, it runs in a phase agent the dispatcher spawns (`SKILL.md` § Two contexts) at `sonnet`, `medium` (`SKILL.md` § Agent settings: it coordinates; the Architect designs); that agent spawns the Architect, checks and commits its output, and hands back one line.
+The round is not a cycle. It runs before the first `state.py cycle start` and opens none. Its outputs are files in the code root: `design.org`, the pending tests, and a `:TEST: none:` property on each scenario no test is worth writing for. Like a phase, it runs in a phase agent the dispatcher spawns (`SKILL.md` § Two contexts) at `sonnet`, `medium` (`SKILL.md` § Agent settings: it coordinates; the Architect designs); that agent spawns the Architect, checks and commits its output, and hands back a short hand-back.
 
 ## When it runs
 
@@ -25,7 +25,7 @@ You are the Architect for the design round of change `<change>`. Read and follow
 - The change's directory in the home: `<change-dir>`. A defect you find is a finding file in its `findings/`, `arch-<change>-<n>.md` (`trigger: design-round`).
 - Your thought file: `<scratch>/architect-design-round/thoughts.md`, one `thought:` line per speculative need; the phase agent copies them into the round's commit message.
 - Your scratch directory, for probes: `<scratch>/architect-design-round/`; `roles/implementor.md` § A machine shared with other agents holds for you too.
-- When you are done, hand back one line (`roles/architect.md` § Output).
+- When you are done, hand back a short hand-back (`roles/architect.md` § Output).
 
 design_round_input:
   intent: docs/changes/<change>/intent.org

@@ -16,7 +16,7 @@ For each task in the batch, the orchestrator:
    - `-C "$CODE_ROOT"` names the repository; the path is under the home's worktrees folder.
 3. Runs the overlay's `worktree.init` hook if defined.
 4. Runs `state.py check start <task-name>`, which refuses while a task in its `blocked_by` has no merge commit on the change branch, then spawns an Implementor agent (`Agent` tool, `subagent_type: general-purpose`, description `implementor: <task-name>`) at the task's agent setting: the task file's `agent.implementor` when the plan wrote a task override (`templates/task-body.md`), otherwise the role default, `model: opus`, `effort: medium`. Both are passed on every call; the description is how `report.py` knows the agent's role and task (`report.md`). The call returns at once and the agent runs concurrently with the orchestrator and the other agents; its completion arrives as a notification. No polling, no `sleep`: when nothing can run, the orchestrator ends its turn and is woken by the hand-back.
-5. Hands the agent its brief, `<change-dir>/cycles/<cycle-id>/briefs/<task-name>.md`, which plan assembled and wrote (`flows/plan.md` § 5), so the review and the audit trail see what the Implementor saw. The brief names the report path, `$ORCH_CHANGE_DIR/cycles/<cycle-id>/reports/<task-name>.md` (the orchestrator creates the directory), and the task's scratch directory, `<task-name>/` under the session's scratch directory, a Reviewer's `review-<task-name>/` (`roles/implementor.md` § A machine shared with other agents); the Implementor writes its report there and hands back one line (`SKILL.md` § Hand-back lines).
+5. Hands the agent its brief, `<change-dir>/cycles/<cycle-id>/briefs/<task-name>.md`, which plan assembled and wrote (`flows/plan.md` § 5), so the review and the audit trail see what the Implementor saw. The brief names the report path, `$ORCH_CHANGE_DIR/cycles/<cycle-id>/reports/<task-name>.md` (the orchestrator creates the directory), and the task's scratch directory, `<task-name>/` under the session's scratch directory, a Reviewer's `review-<task-name>/` (`roles/implementor.md` § A machine shared with other agents); the Implementor writes its report there and hands back a short hand-back (`SKILL.md` § Hand-back lines).
 6. Sets the task file's `status: in_progress`.
 
 When an agent completes, the orchestrator reads its one line and verifies at least one commit landed on the worktree branch (`git -C "$CODE_ROOT" rev-parse "$BRANCH_NAME"` against the sha in the line). No commits on a line other than `blocked` → `status: failed` in the task file (worktree retained for debugging). A `blocked` Implementor commits nothing: its task stays blocked at its base, its report's `commit_sha` empty. The report file is read at integrate; in execute the orchestrator opens it only when the line carries `deviated` or `candidates=<n>`.
@@ -103,7 +103,7 @@ You are the Reviewer for task `<task-name>` of change `<change>`, cycle `<cycle-
 - Home: `<home>`. The change directory: `<change-dir>`.
 - The merge candidate, checked out clean at `merge_commit` <sha>: `<checkout path>`.
 - Your scratch directory, for probes: `<scratch>/review-<task-name>/` (create it; delete it when you are done).
-- Write your findings to `<change-dir>/cycles/<cycle-id>/reviews/<task-name>.md`, then hand back one line (`SKILL.md` § Hand-back lines).
+- Write your findings to `<change-dir>/cycles/<cycle-id>/reviews/<task-name>.md`, then hand back a short hand-back (`SKILL.md` § Hand-back lines).
 - The project's test command, run from the checkout's root: `<test.command>`
 
 <the reviewer_input block, every field filled in; a field with nothing to pass says `none`>
@@ -120,7 +120,7 @@ The orchestrator holds every one of these sources and builds the input from the 
 
 #### Delegated review, always
 
-Every review is delegated: a separate general-purpose Agent per task, at the Reviewer's setting above. The Reviewer writes its findings file and hands back one line with the counts (`SKILL.md` § Hand-back lines); the orchestrator opens the file when the count is not zero. The execute phase agent runs on Sonnet (`SKILL.md` § Agent settings), so a review in its own context would judge code below the Reviewer's setting; inline review, once the default for a batch of two or fewer, is retired.
+Every review is delegated: a separate general-purpose Agent per task, at the Reviewer's setting above. The Reviewer writes its findings file and hands back a short hand-back with the counts (`SKILL.md` § Hand-back lines); the orchestrator opens the file when the count is not zero. The execute phase agent runs on Sonnet (`SKILL.md` § Agent settings), so a review in its own context would judge code below the Reviewer's setting; inline review, once the default for a batch of two or fewer, is retired.
 
 The input contract is author-blind. The Reviewer may run the test command and its own probes read-only in the scratch directory its brief names (`review-<task-name>/`, § 1) against the `merge_commit` checkout (`roles/reviewer.md` § Probes); the probes' output goes in the findings file, never into the repository.
 

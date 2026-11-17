@@ -146,7 +146,7 @@ A line that names a defect present at `merge_commit` (a variable read where noth
 
 `## Thoughts` is the file's last section when it is there; what was looked for and ruled out goes in the Summary, not in a section after it.
 
-Then the Reviewer hands back **one line** and nothing else (`SKILL.md` § Hand-back lines):
+Then the Reviewer hands back **a short hand-back**, this one line and nothing else (`SKILL.md` § Hand-back lines):
 
 ```
 reviewed <task-name> issues=<n> questions=<n> spec-signal=<n> thoughts=<n>

@@ -1,6 +1,6 @@
 # Opening a change
 
-The step that turns what the user asked for into a change the design round can take: `docs/changes/<change>/intent.org` (`templates/intent.md`) and the change's edits to `docs/specs/` (`templates/spec.md`), committed in the code root. Like the round, it is not a cycle and needs no state file; it runs in a phase agent the dispatcher spawns (`SKILL.md` § Two contexts) at `opus`, `medium` (`SKILL.md` § Agent settings: the intent and the spec edits are what every later role cites), which writes the record, commits it and hands back one line. The design round follows (`flows/design.md`).
+The step that turns what the user asked for into a change the design round can take: `docs/changes/<change>/intent.org` (`templates/intent.md`) and the change's edits to `docs/specs/` (`templates/spec.md`), committed in the code root. Like the round, it is not a cycle and needs no state file; it runs in a phase agent the dispatcher spawns (`SKILL.md` § Two contexts) at `opus`, `medium` (`SKILL.md` § Agent settings: the intent and the spec edits are what every later role cites), which writes the record, commits it and hands back a short hand-back. The design round follows (`flows/design.md`).
 
 ## When it runs
 
@@ -60,7 +60,7 @@ First `coverage.py --root "$CODE_ROOT" --intent docs/changes/<change>/intent.org
 
 `open <change>: <c> capabilities, <s> scenarios, <q> open questions; <code-root-from-home>/docs/changes/<change>/intent.org` · `open: failed, <why>` · `open: covered by <change>, task <task>; <task file>` · `adopt <change>; <code-root-from-home>/docs/changes/<change>/intent.org`
 
-`<c>` is the number of capabilities the intent's Capabilities names; `<s>` the scenarios the change's spec edits add or change, together with those the intent names `stated, not met` (a scenario the change deletes is not counted); `<q>` the intent's open questions. Each line is at most 200 characters.
+`<c>` is the number of capabilities the intent's Capabilities names; `<s>` the scenarios the change's spec edits add or change, together with those the intent names `stated, not met` (a scenario the change deletes is not counted); `<q>` the intent's open questions. Each hand-back is at most 1,000 characters (`SKILL.md` § Hand-back lines); the form above is the usual length.
 
 A failed opening leaves nothing behind: it removes any branch and worktree it made (`git worktree remove`, `git branch -D`, and the change's `change.json` in the home) and any file it wrote, so a retry starts clean.
 

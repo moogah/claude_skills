@@ -141,7 +141,7 @@ This report is **for the orchestrator only**. It is read at integrate alongside 
 
 ## Hand-back
 
-The last thing the Implementor does is hand back **one line**, at most 200 characters, and nothing else (`SKILL.md` § Hand-back lines):
+The last thing the Implementor does is hand back **a short hand-back**, at most 1,000 characters, holding nothing of the report: one line in the form below, and nothing else (`SKILL.md` § Hand-back lines):
 
 ```
 done <task-name> <commit-sha>
