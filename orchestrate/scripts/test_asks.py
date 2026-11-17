@@ -311,4 +311,9 @@ def test_add_refuses_an_option_key_it_cannot_place(run, repo):
 
 def test_an_unknown_field_refusal_names_ref(run, repo):
     code, _, err = run("add", json.dumps({**ASK, "what_happened": "x"}))
-    assert code == 1 and "also read: ref" in json.dumps(err)
+    assert code == 1 and "a top-level ref is also read" in json.dumps(err)
+
+
+def test_a_raised_by_with_no_role_is_refused(run, repo):
+    code, _, err = run("add", json.dumps({**ASK, "raised_by": {"ref": "x"}}))
+    assert code == 1 and "raised_by: no role" in json.dumps(err)

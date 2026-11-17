@@ -432,7 +432,11 @@ def validate_ask_full(rec, where, errors):
         return
     for k in rec:
         if k not in fields:
-            errors.append(f"{where}.{k}: unknown field (allowed: {', '.join(fields)}; also read: ref, as raised_by.ref)")
+            errors.append(f"{where}.{k}: unknown field (allowed: {', '.join(fields)}; a top-level ref is also read: "
+                          "the id or path the ask is against, kept as raised_by's ref)")
+    rb = rec.get("raised_by")
+    if isinstance(rb, dict) and not rb.get("role"):
+        errors.append(f"{where}.raised_by: no role (give raised_by as a role name, or as {{role, ref}})")
     for k, typ in fields.items():
         if k == "path":
             continue
@@ -700,6 +704,8 @@ def verb_set(ch, args):
         raise Refusal("no_drawer", f"{rel} has no :PROPERTIES: drawer with :ID:, :KIND: and :STATUS:; "
                                    "restore it from git or write it by hand (templates/ask.md)")
     rec["id"] = args.id
+    if isinstance(updates.get("raised_by"), str):
+        updates["raised_by"] = {"role": updates["raised_by"], "ref": (rec.get("raised_by") or {}).get("ref")}
     if "recommendation" in updates:
         updates["recommendation"] = _recommendation(updates["recommendation"],
                                                     updates.get("options", rec.get("options")))
