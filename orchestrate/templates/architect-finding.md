@@ -87,13 +87,15 @@ The one statement of when a piece of **scope** earns work: a feature, an option,
 
 Otherwise it is not built and not asked about. An agent that thinks it matters writes it as one `thought` line, and it stays that line. Cleanup is scope: a project prior that asks for it ("removing leftovers") makes a dead-code or duplication thought into work without an ask.
 
-The check shapes the recommendation, never whether a finding is asked: a Design in question, a `spec-signal`, a promise the user's own words conflict with, and the product question beside a corrected stale sentence are `decision` asks whatever the goals say and whether or not every test passes both ways; the check shapes only the ask's recommendation (on scope, the do-nothing option, `templates/ask.md`).
+The check shapes the recommendation, never whether a finding is asked: a Design in question, a `spec-signal`, a promise the user's own words conflict with, and the product question beside a corrected stale sentence are `decision` asks, unless already settled (§ Routing), whether or not every test passes both ways; the check shapes only the ask's recommendation (on scope, the do-nothing option, `templates/ask.md`).
 
 The check applies to scope, not to defects. A defect in code or text that exists is reported and routed by § Routing whether or not anyone has seen it fail. Its fix stays inside the defect: the change that makes the wrong case right. An option, a generalisation or a new behaviour proposed along with the fix is scope and takes the check.
 
 ## Routing
 
 The orchestrator routes each `issue` and `question`, at the step the flow names (`flows/execute.md` § 5 and § 8, `flows/integrate.md` § 1 and § 7, `flows/plan.md` § 3). The reporter does not route. Routing writes the **decoration**, in Conventional Comments' sense: `blocking` (fixed in the change, before the MVP decision) or `hardening` (on the change's hardening list).
+
+**Already settled.** A question the user already answered on record is not asked, by any route below: an intent goal or non-goal, a `priors.md` line, or a `design.org` Decision recording an answered ask (not one the Architect made alone). One journal line names the answer, so the user can object: `state.py note decision "settled: <finding> by <answer>" --by orchestrator`; never a step in a task, which no one would review.
 
 First, the two routes that do not depend on the main path:
 
@@ -129,7 +131,7 @@ The `--resolution` of an Architect finding's latest `state.py route` says how it
 - `candidate-task-<name>` — routed at integrate § 7 to a candidate the next plan writes as a task; integrate's `handshake_written` fails when the handshake's `candidate_tasks` has no entry of that name
 - `followup-task-<task-name>` — became a task; the field carries the task name
 - `reverted` — the implicated merge was reverted
-- `accepted-with-note` — the user accepted the defect as it is; carries the ask id whose `decision_readback` is the rationale, or the `priors.md` line that already answered it
+- `accepted-with-note` — the user accepted the defect as it is; carries the ask id whose `decision_readback` is the rationale, or the recorded answer that settled it (§ Routing)
 - `hardening-list` — on the change's hardening list, awaiting the MVP decision; it becomes `followup-task-<task-name>` when the user chooses to harden and stays `hardening-list` when they stop
 
 `noted` was retired on 2026-10-14 with the demonstrated-reason rule it served; findings that carry it keep it.
