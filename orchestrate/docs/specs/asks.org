@@ -24,12 +24,19 @@ the dispatcher's (=dispatcher=); what a task blocked on an ask records is the re
 :END:
 Every question only the user can answer, whichever role raised it, SHALL be one org file, written
 when the question is raised, in any phase. The phase agent SHALL write it; the role that raised the
-question SHALL NOT.
+question SHALL NOT. A question the record already holds the user's own answer to SHALL NOT be asked:
+one journal line SHALL name the answer that settles it.
 
 *** Scenario: A question for the user is one file, written when it is raised
 - *WHEN* any role raises a question only the user can answer
 - *THEN* one ask file holds it, written at once
 - *AND* the phase agent writes it, not the role that raised it
+
+*** Scenario: A question the user's recorded answer settles is not asked
+- *WHEN* a finding or question is one the record already holds the user's own answer to: a goal or non-goal of the intent, a prior, or a Decision of the design that records the user's answer to an ask (a Decision the Architect made alone is not one)
+- *THEN* no ask file is written for it
+- *AND* one journal line names the answer that settles it
+- *AND* no step answering it is written into a task in its place
 
 ** Requirement: An ask file is known by its form
 :PROPERTIES:
@@ -131,7 +138,7 @@ never asked about.
 - *AND* the change's journal records the correction in one line
 
 *** Scenario: A finding can give both a correction and a decision ask
-- *WHEN* a finding shows a stale sentence and the product question behind it
+- *WHEN* a finding shows a stale sentence and the product question behind it, which no answer of the user's in the record settles
 - *THEN* the sentence is corrected and journaled at once
 - *AND* the product question is a =decision= ask of its own
 
@@ -295,7 +302,7 @@ analysis can.
 - *AND* it says what it blocks, in the =blocks= field of the finding's form (the =reviewer= spec's): a task, a merge, the next plan, the change's done, or nothing
 
 *** Scenario: What reading can supply, the phase agent fills
-- *WHEN* a finding routed to the user lacks something that reading supplies (a help text, the document it cites)
+- *WHEN* a finding routed to the user, which no answer of the user's in the record settles, lacks something that reading supplies (a help text, the document it cites)
 - *THEN* the phase agent fills it and writes the ask
 
 *** Scenario: What only analysis can supply goes back to the role
