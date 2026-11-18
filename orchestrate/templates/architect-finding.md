@@ -95,7 +95,7 @@ The check applies to scope, not to defects. A defect in code or text that exists
 
 The orchestrator routes each `issue` and `question`, at the step the flow names (`flows/execute.md` § 5 and § 8, `flows/integrate.md` § 1 and § 7, `flows/plan.md` § 3). The reporter does not route. Routing writes the **decoration**, in Conventional Comments' sense: `blocking` (fixed in the change, before the MVP decision) or `hardening` (on the change's hardening list).
 
-**Already settled.** A question the user already answered on record is not asked, by any route below: an intent goal or non-goal, a `priors.md` line, or a `design.org` Decision recording an answered ask (not one the Architect made alone). One journal line names the answer, so the user can object: `state.py note decision "settled: <finding> by <answer>" --by orchestrator`; never a step in a task, which no one would review.
+**Already settled.** A question is not asked, by any route below, when the record holds the user's own answer to that same question: an intent goal or non-goal, a `priors.md` line, or a `design.org` Decision recording an answered ask (not one the Architect made alone). An answer that only bears on the question does not settle it, and the question is asked. Settling closes a question, never a defect or work outside the change, which is still routed. One journal line names the answer, so the user can object: `state.py note decision "settled: <finding> by <answer>" --by orchestrator`; never a step in a task, which no one would review.
 
 First, the two routes that do not depend on the main path:
 
