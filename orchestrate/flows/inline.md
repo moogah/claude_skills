@@ -1,10 +1,28 @@
 # Inline path
 
-For trivial tasks where agent + worktree overhead dominates the work. The entire cycle collapses into the orchestrator's own context: a phase agent the dispatcher spawns for the inline path (`SKILL.md` § Two contexts) at `sonnet`, `medium` (`SKILL.md` § Agent settings: the triage below keeps the work to one file), so the dispatcher itself reads no code. Its own review runs at that setting; a change that needs a stronger reviewer is not inline (§ Bailout rule).
+You are the phase agent for the inline path: one small edit the user asked for, made in your own context.
+
+## Collapsed cycle
+
+The cycle's three phases run here as three steps of yours:
+
+- Plan → the triage (§ When to take the inline path).
+- Execute → the edit, its verification and your review of the diff (§ Inline operations, steps 1–2).
+- Integrate → the integrate question (§ Inline operations, step 3).
+
+Run all three. Ask the integrate question even when the edit looks trivial: it is what catches a "trivial" edit that surfaces a contract issue, and most answers are "no; close".
+
+You are the reviewer. Make the edit in the code root, the change's worktree. Create no worktree. Spawn no Implementor and no Reviewer.
+
+## When NOT to use inline even if technically eligible
+
+The inline path takes only a request outside a cycle's batch: between cycles, or while a cycle is open.
+
+- The request is for a task already in a cycle's batch, however small → do not make it; that cycle's execute does. Write no task file and no note. Hand back `inline <task>: bailed out, <why>; <task file>`, naming the batch task's file.
 
 ## When to take the inline path
 
-The triage criteria (lifted from older emacs skill §4 and promoted to core):
+Triage the request before any edit. The triage keeps the work to one file and off every seam, because your review runs at `sonnet`, `medium`. A change that needs a stronger reviewer than that → **No**.
 
 | Signal | Take inline path |
 |---|---|
@@ -14,86 +32,84 @@ The triage criteria (lifted from older emacs skill §4 and promoted to core):
 | Regenerating one artifact (e.g. tangling one literate file) | Yes |
 | Editing one config value | Yes |
 | Fixing a typo in a comment or docstring | Yes |
-| Anything touching ≥2 files | **No** — go to standard cycle |
-| Anything touching a seam's owning symbols (a `## Seams` row in the change's `design.org`) | **No** — a seam edit deserves the full Reviewer path and integrate's conformance check |
-| Anything that requires running tests with state setup | **No** — needs a worktree |
+| Anything touching ≥2 files | **No** |
+| Anything touching a seam's owning symbols (a `## Seams` row in the change's `design.org`) | **No**: a seam edit needs the full Reviewer path and integrate's conformance check |
+| Anything that requires running tests with state setup | **No**: it needs a worktree |
 | Anything where the verification command's output isn't trivially predictable | **No** |
 
-When in doubt, take the standard path. The cost of running a small task as a worktree is small; the cost of taking an inline path on something that turns out to be larger is the bailout (see below).
-
-A request the triage refuses is a bailout with nothing to revert: the task file stays open in `tasks/open/` with the triage's reason, and the line is `inline <task>: bailed out, <why>; <task file>`. The triage comes first: a request it refuses bails out even when it also puts the change's design or a spec in question, and no ask is filed; the reason in the task file names the question, so the next plan's Architect sees it with the whole design. A request for a task already in a cycle's batch (§ When NOT to use inline even if technically eligible) writes no task file and no note of its own: the line names the batch task's file.
-
-## Collapsed cycle
-
-In the inline path, plan / execute / integrate collapse into the orchestrator's own context:
-
-- **Plan** = "is this trivial enough?" (the triage above).
-- **Execute** = the inline edit + verification.
-- **Integrate** = "does the trivial edit change a seam row in `design.org`?"
-
-The integrate question is **not skipped** — that's what catches the case where a "trivial" edit surfaces a contract issue. Most inline tasks integrate to "no; close." But the question still gets asked.
+- In doubt → **No**.
+- **No** → write the task file (§ Inline operations, step 0), then bail out with nothing to revert (§ Bailout rule), the triage's reason as the note.
+- **No**, and the request also puts the change's design or a spec in question → bail out all the same and file no ask. Name the question in the note, so the next plan's Architect sees it with the whole design.
+- **Yes** → § Inline operations.
 
 ## Inline operations
 
-0. **Write the task file** in the change's `tasks/open/` at the home, from the request the brief carries (`templates/task-body.md`); a bailout leaves it there.
-1. **Make the edit** in the code root, the change's worktree (no task worktree).
-2. **Run the verification command** in the code root (overlay's `test.command`, or a narrower command if obviously sufficient), its output kept as `<change-dir>/after-<task>-<ts>.txt` (the after-file § Why preserve the integrate question greps); the commit message names the command. Then read the diff (`git -C "$CODE_ROOT" diff`) against the request before going on: the orchestrator is the reviewer here, and the tests and `git status` do not show what the edit says.
-3. **Check the seam rows**: does this edit change a seam row in the change's `design.org` (its statement or owning symbols)? If yes, bail out (§ Bailout rule): a record correction is integrate's. A design in question is a `decision` file in the inbox, presented only under the inline rule (`templates/ask.md` § The inline rule: the phase agent hands back `stopped`, the dispatcher asks).
-4. **Update the task file** at the home: one line saying what was checked for what the edit exposed and what was found ("nothing" included); a defect the change's design already plans to fix (a Decision, a seam row, a pending test) is not one the edit exposed: the line names it as planned and where, and it is not routed; its `status` to `done` directly (skipping `needs_review` / `reviewed`). Inline path skips formal review because the orchestrator IS the reviewer. The task file is the record, whether or not a cycle is open: an inline task has no `Merge task` commit and no review file, so `state.py check done` is not run for it, and it is in no batch (no brief), so no gate reads it. A follow-up written here gets `state.py check new <name>` like any task file.
-5. **Commit** with the subject `Inline task <task>: <description>`: the code in the code root, the task file and any ask file in the home (one commit when the home is the code root, one working tree; otherwise one commit in each, as when the change's worktree is apart from the home's checkout). Hand back `inline <task>: done <sha>; <task file>`, or, stopped on a design in question, `inline <task>: stopped, ask <id> blocks commit; <ask file>`.
+"Bail out" in these steps means: follow § Bailout rule.
+
+**0. Write the task file** in the change's `tasks/open/` at the home, from the request your brief carries. Read `templates/task-body.md` § Frontmatter and § Body sections for its fields. Give it `status: ready`.
+
+- The task came from a discovery → fill its provenance fields `discovered_from`, `discovered_by`, `discovered_class`, and run `state.py check new <name>`.
+
+**1. Make the edit** in the code root.
+
+- A cycle is open and an after-test is running in the code root → wait for it to finish before you edit.
+- The edit touches a second file → bail out.
+  - A text correction in another file (step 3) is not part of the edit and does not count.
+- The edit touches a seam's owning symbols → bail out.
+- The edit needs more than a paragraph of context re-read → bail out.
+
+**2. Verify and review.**
+
+1. Run the verification command in the code root: the overlay's `test.command`, or a narrower command if obviously sufficient.
+2. Keep its output as `<change-dir>/after-<task>-<ts>.txt`.
+3. The command fails in a way that isn't trivially fixable → bail out.
+4. Read the diff, `git -C "$CODE_ROOT" diff`, against the request. The tests and `git status` do not show what the edit says; the diff does.
+
+**3. Ask the integrate question.** Check each of these:
+
+- **Seam rows.** Check the task's `cites_seams` against the `## Seams` rows in the change's `design.org`. The edit changes a row's statement or owning symbols → bail out and leave the row as it is (a record correction is integrate's).
+- **The after-file.** Grep it for anything new the verification output revealed.
+- **What the edit exposed** in the code or text beside it. Route each finding (`templates/architect-finding.md` § Routing):
+  - A defect the change's design already plans to fix (a Decision, a seam row, a pending test) → not exposed. Do not route it and do not bail out; name it as planned, and where, in step 4's line.
+  - An untrue sentence in the file being edited → correct it in the same edit, prose only.
+  - An untrue sentence in another file → correct it, prose only, in a commit of its own with the subject `Text correction: <what>`.
+  - A defect off the change's main path → one entry on the change's hardening list, `:REF:` the task. Read `templates/hardening.md` § The hardening list for the entry's form.
+  - A defect on the change's main path → bail out. Name the defect and its evidence in the bailout note; the next plan rewrites the task with the defect in view.
+  - A speculative need → one `thought:` line in the task body's `## Observations`.
+  - Write no new task file and no follow-up candidate for any of these.
+- **The design.** The edit puts the change's design in question → file a `decision` ask in the change's inbox (read `templates/ask.md` § The file for its fields) that blocks your commit. Leave the edit uncommitted. Hand back `inline <task>: stopped, ask <id> blocks commit; <ask file>`. Put no question to the user: the dispatcher asks (`templates/ask.md` § The inline rule).
+
+**4. Update the task file** at the home.
+
+1. Add one line saying what was checked for what the edit exposed and what was found, "nothing" included.
+2. Set `status: done` directly, with no `needs_review` or `reviewed` between.
+
+The task file is the task's record, whether or not a cycle is open; while one is open, its `status: done` is what shows the task done in that cycle, outside its batch. Do not run `state.py check done` for it: an inline task has no `Merge task` commit and no review file.
+
+**5. Commit** with the subject `Inline task <task>: <description>`, the message naming the verification command.
+
+- Commit the code in the code root, and the task file and any ask file in the home.
+- The home is the code root (one working tree) → one commit.
+- Otherwise → one commit in each.
+
+Hand back:
+
+```
+inline <task>: done <sha>; <task file>
+```
 
 ## Bailout rule
 
-**If an inline turns out larger than triaged: stop, revert, reschedule as a worktree task.**
+**If an inline turns out larger than triaged: stop, revert, and put the task back for a later cycle's batch.**
 
-Specifically: if any of these happen during the inline edit, bail out:
+1. Revert the code root:
+   - No commit made yet (the inline path commits last) → `git -C "$CODE_ROOT" checkout .`
+   - A commit already made → `git revert <commit>` in the code root, not `git reset`, so the history keeps it.
+   - The triage refused the request → nothing to revert.
+2. Leave the task in `tasks/open/` with `status: ready`.
+3. Add a note to the task body: `inline path bailed out: <reason>; rescheduled as worktree.` The reason states what was found and where its evidence is: a record for the next plan, not steps.
+4. Hand back:
 
-- The edit touches a second file unexpectedly.
-- The verification command fails in a way that isn't trivially fixable.
-- An adjacent issue surfaces that warrants its own fix.
-- The change requires re-reading more than a paragraph of context.
-- The change touches a seam's owning symbols.
-
-Bail-out procedure:
-1. `git -C "$CODE_ROOT" checkout .` to revert the code root's working tree (no commit was made yet — inline path commits last).
-2. Mark the task `status: ready` (it remains in the open queue).
-3. Add a note in the task body: "inline path bailed out: <reason>; rescheduled as worktree." The reason states what was found and where the evidence is; it is a record for the next plan, not steps.
-4. Hand back `inline <task>: bailed out, <why>; <task file>`.
-5. The next standard cycle picks it up.
-
-If a commit was already made and bail-out is needed, revert via `git revert <commit>` in the code root rather than `git reset` — preserves the audit trail.
-
-## Why preserve the integrate question
-
-The brainstorm names this explicitly. Even trivial edits can surface contract issues; pretending they can't is what produces silent contract drift. The integrate question is cheap to ask:
-
-- Did this edit touch a seam's owning symbols? → check `cites_seams` of the implicit "task" against the `## Seams` rows in `design.org`.
-- Did the verification command's output reveal anything new? → grep the after-file.
-- Did the edit expose a defect in adjacent code or text? → the inline path creates no work. Routed by `templates/architect-finding.md` § Routing:
-  - an untrue sentence is a text correction, prose only: in the file being edited, in the same edit; in another file, in its own commit, which the one-file triage does not count;
-  - a defect off the change's main path is a hardening-list entry (`templates/hardening.md`, `:REF:` the task);
-  - a defect on the main path, unless the design already plans its fix (step 4), is the bailout's "adjacent issue": bail out, name the defect and its evidence in the bailout note, and hand back `inline <task>: bailed out, <why>; <task file>`. The next plan carries the task, rewrites it with the defect in view (`flows/plan.md` § 2) and the Architect checks it (§ 3).
-  - a speculative need is one `thought:` line in the task body's `## Observations`.
-
-Most answers are "no; close." That's fine. The discipline is in asking, not in finding.
-
-## What inline path does NOT skip
-
-- The integrate question (above).
-- Provenance fields if the inline task is a follow-up: `discovered_from`, `discovered_by`, `discovered_class`.
-- The task file's `status: done` and the commit naming the task: the record, read by `state.py status` for the main path.
-
-## What inline path DOES skip
-
-- Worktree creation.
-- Implementor agent spawn.
-- Reviewer agent spawn (orchestrator is the reviewer).
-- The `needs_review` / `reviewed` intermediate states (status goes `ready → done` directly).
-- Author-blind review (irrelevant — single actor).
-- The full integrate phase (replaced by the integrate question).
-
-## When NOT to use inline even if technically eligible
-
-If the change is part of a larger batch where parallel implementation is the point of using the orchestrator at all, take the standard path even for individually trivial tasks. The point of the standard path is throughput; collapsing every trivial task into inline serializes the batch.
-
-The orchestrator's batch-composer (in `flows/plan.md`) decides this. Inline path is for trivial fixes the user asks for **outside a batch**, between cycles or while one is open (then the task is added to the cycle's state as done, and the edit waits for a running after-test in the code root to finish), not for tasks already in a batch.
+```
+inline <task>: bailed out, <why>; <task file>
+```
