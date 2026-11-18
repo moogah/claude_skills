@@ -60,7 +60,7 @@ First `coverage.py --root "$CODE_ROOT" --intent docs/changes/<change>/intent.org
 
 `open <change>: <c> capabilities, <s> scenarios, <q> open questions; <code-root-from-home>/docs/changes/<change>/intent.org` · `open: failed, <why>` · `open: covered by <change>, task <task>; <task file>` · `adopt <change>; <code-root-from-home>/docs/changes/<change>/intent.org`
 
-`<c>` is the number of capabilities the intent's Capabilities names; `<s>` the scenarios the change's spec edits add or change, together with those the intent names `stated, not met` (a scenario the change deletes is not counted); `<q>` the intent's open questions. Each hand-back is at most 1,000 characters (`SKILL.md` § Hand-back lines); the form above is the usual length.
+`<c>` is the number of capabilities the intent's Capabilities names; `<s>` the scenarios the change's spec edits add or change, together with those the intent names `stated, not met` (a scenario the change deletes is not counted); `<q>` the intent's open questions. Each hand-back is its one line, with nothing before or after it (`SKILL.md` § Hand-back lines); the form above is the usual length.
 
 A failed opening leaves nothing behind: it removes any branch and worktree it made (`git worktree remove`, `git branch -D`, and the change's `change.json` in the home) and any file it wrote, so a retry starts clean.
 

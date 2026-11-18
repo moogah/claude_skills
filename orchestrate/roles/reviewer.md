@@ -110,8 +110,9 @@ clean_review: false      # true if no findings
 
 ## Summary
 
-<One paragraph. What you looked at; what you looked for in each of the three directions and ruled
-out, so that silence on a direction is a real silence; what you found. A clean review says the same.>
+<One paragraph of prose, no list and no sub-headings. What you looked at; what you looked for and ruled
+out, naming each of the three directions in a clause, so that silence on a direction is a real silence;
+what you found. A clean review says the same.>
 
 ## Findings
 
