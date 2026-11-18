@@ -102,8 +102,8 @@ def test_add_with_no_cycle_names_the_change(run, repo):
     code, out, err = run("add", json.dumps(ASK))
     assert code == 0, err
     assert out["id"] == "ask-chg-1" and out["path"] == f"{CH}/inbox/ask-chg-1.org"
-    code, out, err = run("add", json.dumps(ASK), "--cycle", "cycle-9")
-    assert code == 0 and out["id"] == "ask-cycle-9-1"
+    code, out, err = run("add", json.dumps(ASK))
+    assert code == 0 and out["id"] == "ask-chg-2"
 
 
 def test_a_settled_ask_with_no_cycle_waits_in_the_inbox(run, repo):
@@ -242,12 +242,23 @@ def test_state_layer_reads_what_asks_writes(run, repo):
     assert (a.id, a.kind, a.status, a.blocks, a.answer_label()) == ("ask-cycle-1-1", "decision", "open", ["t1"], "Do it")
 
 
-def test_set_moves_a_settled_ask_to_the_cycle_given(run, repo):
+def test_add_and_set_refuse_a_cycle_option(run, repo):
+    """No cycle can be named by hand: with none open, add names the ask for its change and set leaves a
+    settled one in the inbox (asks § An ask raised with no open cycle is named for its change; § An ask
+    settled before any cycle waits in the inbox for the first)."""
     (repo / CH / "events.jsonl").unlink()
+    with pytest.raises(SystemExit) as e:
+        run("add", json.dumps(ASK), "--cycle", "cycle-9")
+    assert e.value.code == 2
+    assert not (repo / CH / "cycles" / "cycle-9").exists()
     code, out, err = run("add", json.dumps({**ASK, "id": "ask-chg-1"}))
     assert code == 0, err
-    code, out, err = run("set", "ask-chg-1", "decision=Do it", "status=applied", "applied_via=x", "--cycle", "cycle-9")
-    assert code == 0 and out["path"] == f"{CH}/cycles/cycle-9/asks/ask-chg-1.org"
+    with pytest.raises(SystemExit) as e:
+        run("set", "ask-chg-1", "decision=Do it", "status=applied", "applied_via=x", "--cycle", "cycle-9")
+    assert e.value.code == 2
+    code, out, err = run("set", "ask-chg-1", "decision=Do it", "status=applied", "applied_via=x")
+    assert code == 0 and out["path"] == f"{CH}/inbox/ask-chg-1.org"
+    assert not (repo / CH / "cycles" / "cycle-9").exists()
 
 
 def test_a_design_round_ask_keeps_its_if_unanswered(run, repo):

@@ -628,11 +628,10 @@ def _ask_input(raw, home=None):
     return _ask_aliases(rec), None, None
 
 
-def _cycle(ch, explicit):
-    """The open cycle, else --cycle, else None: an ask raised with no cycle open is named for its
-    change (asks spec)."""
+def _cycle(ch):
+    """The open cycle, else None: an ask raised with no cycle open is named for its change (asks spec)."""
     open_cycle, _ = ch.open_cycle()
-    return open_cycle or explicit
+    return open_cycle
 
 
 def _supersede(ch, files, old_id, cycle):
@@ -652,7 +651,7 @@ def _supersede(ch, files, old_id, cycle):
 
 def verb_add(ch, args):
     rec_in, draft, draft_path = _ask_input(args.json, ch.home)
-    cycle = _cycle(ch, args.cycle)
+    cycle = _cycle(ch)
     files = ask_files(ch)
     rec = {**ASK_DEFAULTS, **ASK_FILE_DEFAULTS, **{k: v for k, v in rec_in.items() if k != "path"}}
     rec["recommendation"] = _recommendation(rec.get("recommendation"), rec.get("options"))
@@ -763,7 +762,7 @@ def verb_set(ch, args):
             doc.set_section("Readback", rb.rstrip() + "\n\nyes")
         updates["readback"] = "confirmed"
     final = ask_from_org(doc, args.id)
-    new_rel = ask_rel(ch, args.id, final["status"], ch.open_cycle()[0] or args.cycle)
+    new_rel = ask_rel(ch, args.id, final["status"], _cycle(ch))
     _atomic_write(os.path.join(ch.home, rel), doc.text())
     moved = _move_ask_file(ch.home, rel, new_rel) if new_rel != rel else None
     _git(ch.home, "add", "--", new_rel)  # stage the file as written (a move stages none of its edits)
@@ -820,12 +819,10 @@ def build_parser():
     sub = p.add_subparsers(dest="verb", required=True)
     s = sub.add_parser("add", help="write a new ask file from JSON, @file.json or @draft.org")
     s.add_argument("json")
-    s.add_argument("--cycle", help="the cycle the id names when none is open")
     s.set_defaults(fn=verb_add)
     s = sub.add_parser("set", help="set <id> field=value …: edit the file, move it when its status says so")
     s.add_argument("id")
     s.add_argument("fields", nargs="+")
-    s.add_argument("--cycle", help="the cycle whose asks/ a terminal ask moves to when its id names none and none is open")
     s.set_defaults(fn=verb_set)
     s = sub.add_parser("inbox", help="every inbox file with its answer (read-only)")
     s.set_defaults(fn=verb_inbox)
