@@ -72,7 +72,7 @@ The brainstorm names this explicitly. Even trivial edits can surface contract is
 - Did the edit expose a defect in adjacent code or text? → the inline path creates no work. Routed by `templates/architect-finding.md` § Routing:
   - an untrue sentence is a text correction, prose only: in the file being edited, in the same edit; in another file, in its own commit, which the one-file triage does not count;
   - a defect off the change's main path is a hardening-list entry (`templates/hardening.md`, `:REF:` the task);
-  - a defect on the main path is the bailout's "adjacent issue": bail out, name the defect and its evidence in the bailout note, and hand back `inline <task>: bailed out, <why>; <task file>`. The next plan carries the task, rewrites it with the defect in view (`flows/plan.md` § 2) and the Architect checks it (§ 3).
+  - a defect on the main path, unless the design already plans its fix (step 4), is the bailout's "adjacent issue": bail out, name the defect and its evidence in the bailout note, and hand back `inline <task>: bailed out, <why>; <task file>`. The next plan carries the task, rewrites it with the defect in view (`flows/plan.md` § 2) and the Architect checks it (§ 3).
   - a speculative need is one `thought:` line in the task body's `## Observations`.
 
 Most answers are "no; close." That's fine. The discipline is in asking, not in finding.
