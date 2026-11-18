@@ -643,7 +643,9 @@ def _supersede(ch, files, old_id, cycle):
     doc.set_prop("STATUS", "superseded")
     _atomic_write(os.path.join(ch.home, rel), doc.text())
     new_rel = ask_rel(ch, old_id, "superseded", cycle)
-    return _move_ask_file(ch.home, rel, new_rel) if new_rel != rel else None
+    moved = _move_ask_file(ch.home, rel, new_rel) if new_rel != rel else None
+    _git(ch.home, "add", "--", new_rel)  # the move alone stages no edit: stage the file as written
+    return moved
 
 
 # ---------------------------------------------------------------- verbs
@@ -764,6 +766,7 @@ def verb_set(ch, args):
     new_rel = ask_rel(ch, args.id, final["status"], ch.open_cycle()[0] or args.cycle)
     _atomic_write(os.path.join(ch.home, rel), doc.text())
     moved = _move_ask_file(ch.home, rel, new_rel) if new_rel != rel else None
+    _git(ch.home, "add", "--", new_rel)  # stage the file as written (a move stages none of its edits)
     out = {"ok": True, "id": args.id, "changed": sorted(updates), "status": final["status"], "path": new_rel}
     if moved:
         out["moved_via"] = moved

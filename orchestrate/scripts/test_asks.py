@@ -317,3 +317,27 @@ def test_an_unknown_field_refusal_names_ref(run, repo):
 def test_a_raised_by_with_no_role_is_refused(run, repo):
     code, _, err = run("add", json.dumps({**ASK, "raised_by": {"ref": "x"}}))
     assert code == 1 and "raised_by: no role" in json.dumps(err)
+
+
+def test_set_stages_the_moved_file_with_its_edits(run, repo):
+    run("add", json.dumps(ASK))
+    code, out, _ = run("set", "ask-cycle-1-1", "decision=Do it", "status=applied", "applied_via=commit abc")
+    assert code == 0
+    assert _g(repo, "diff", "--name-only").stdout.strip() == ""  # nothing left unstaged
+    assert ":APPLIED_VIA: commit abc" in _g(repo, "show", f":{out['path']}").stdout
+
+
+def test_set_stages_an_edit_that_does_not_move(run, repo):
+    run("add", json.dumps(ASK))
+    code, out, _ = run("set", "ask-cycle-1-1", "decision=Do it")
+    assert code == 0
+    assert _g(repo, "diff", "--name-only").stdout.strip() == ""
+    assert "Do it" in _g(repo, "show", f":{out['path']}").stdout
+
+
+def test_add_superseding_stages_the_old_files_edit(run, repo):
+    run("add", json.dumps(ASK))
+    run("add", json.dumps({**ASK, "revised_from": "ask-cycle-1-1"}))
+    assert _g(repo, "diff", "--name-only").stdout.strip() == ""
+    old = f"{CH}/cycles/cycle-1/asks/ask-cycle-1-1.org"
+    assert ":STATUS: superseded" in _g(repo, "show", f":{old}").stdout
