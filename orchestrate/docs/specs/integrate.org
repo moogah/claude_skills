@@ -209,7 +209,7 @@ that review is open.
 - *THEN* it is one entry on the change's hardening list
 
 *** Scenario: A spec signal from the whole-change review is an ask
-- *WHEN* the whole-change review signals that the design or a spec may be what is wrong
+- *WHEN* the whole-change review signals that the design or a spec may be what is wrong, and no answer of the user's in the record settles it (=asks= § A question the user's recorded answer settles is not asked)
 - *THEN* an ask file is written for it
 
 ** Requirement: When the main path works end to end, the change stops for the MVP decision

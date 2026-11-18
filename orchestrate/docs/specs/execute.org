@@ -358,13 +358,13 @@ list.
 - *AND* the task can be done
 
 *** Scenario: A spec signal becomes an ask at once and does not hold its task
-- *WHEN* a review signals that the design or a spec may be what is wrong
+- *WHEN* a review signals that the design or a spec may be what is wrong, and no answer of the user's in the record settles it (=asks= § A question the user's recorded answer settles is not asked)
 - *THEN* an ask file is written at once, naming the review file
 - *AND* the task is not held by it
 - *AND* no step answering it is written into a later task's body in its place
 
 *** Scenario: A spec signal's stopgap is applied before done and named in the ask
-- *WHEN* a spec signal carries a stopgap
+- *WHEN* a spec signal that becomes an ask carries a stopgap
 - *THEN* the stopgap is applied as an inline fix before the task is done, and the ask names it
 - *AND* a stopgap that would answer the ask is not applied, and the ask says so
 
