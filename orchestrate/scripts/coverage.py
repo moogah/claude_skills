@@ -383,6 +383,8 @@ _BUTTER = re.compile(r"^\s+(.*?)\s+(?:(PENDING|FAILED|SKIPPED)\s+|(!! CANCELLED 
 # lands after the title and pushes the time to a line of its own: the title's line is the last
 # indented one before it.
 _TIME_ONLY = re.compile(r"^\s*(?:(?:PENDING|FAILED|SKIPPED)\s+)?\(\d[\d.]*(?:ms|s|m)\)\s*$")
+# A spec that quits a reader in batch (C-g in a keyboard macro) prints the bell and "Quit" before its time.
+_QUIT = re.compile(r"^(?:\x07|Quit)+")
 _PYTEST = re.compile(r"^(\S+?\.py)::(\S+?)(?:\[[^\]]*\])?\s+(PASSED|FAILED|ERROR|SKIPPED|XFAIL|XPASS)\b")
 _SUMMARIES = {"Buttercup": re.compile(r"^Ran (\d+) (?:out of \d+ )?specs?\b", re.M),
               "ERT": re.compile(r"^Ran (\d+) tests?,", re.M),
@@ -440,8 +442,9 @@ def parse_output(text):
         if m:
             run.it.setdefault(m.group(2), set()).add(_COLOUR[m.group(1)])
             continue
-        if _TIME_ONLY.match(line) and prev:
-            m = _BUTTER.match(prev + line)
+        bare = _QUIT.sub("", line)
+        if _TIME_ONLY.match(bare) and prev:
+            m = _BUTTER.match(prev + bare)
             if m:
                 run.glued.setdefault(m.group(1), set()).add("pending" if m.group(3) else word[m.group(2)])
             prev = ""
@@ -492,10 +495,10 @@ def citation_status(form, run):
         found = run.ert.get(form.name)
     else:
         found = run.it.get(form.name)
-        if not found:  # a line a message split: the title, then the message, with no space between
+        if not found:  # a line a message split: the title alone, or the title then the message with no space between
             n = len(form.name)
             found = set().union(*[st for k, st in run.glued.items()
-                                  if k.startswith(form.name) and len(k) > n and not k[n].isspace()])
+                                  if k.startswith(form.name) and (len(k) == n or not k[n].isspace())])
     return worst(found) if found else "not run"
 
 

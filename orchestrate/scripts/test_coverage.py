@@ -211,6 +211,20 @@ def test_lines_a_message_splits_are_joined():
     assert _statuses('(it "offers no menu" (f))', out) == {"offers no menu": "not run"}
 
 
+def test_a_time_alone_or_after_a_quit_is_read():
+    # Trimmed from gptel-assistant's run-20261118-160801-77308.log (arch-cycle-1795027904-5): a spec
+    # whose output starts on a line of its own leaves its title unglued, and its time alone on a later
+    # line; a spec that quits a reader in batch prints the bell and "Quit" before its time. All three
+    # passed; the old reader gave their scenarios "not run".
+    out = (FIX / "quit-and-lone-time.txt").read_text()
+    elisp = ('(it "leaves no REPL when a value is refused (Scenario: gptel/assistant \u00a7 Picking no system prompt for a session is refused)" (f))\n'
+             '(it "opens no REPL for upstream\'s readers in a draft whose REPL is closed (Scenario: gptel/assistant \u00a7 The assistant menu is refused in an agent\'s REPL)" (f))\n'
+             '(it "reads with the session values in a draft (Scenario: gptel/assistant \u00a7 Upstream\'s menu in a session\'s draft starts from the session\'s values)" (f))\n')
+    assert list(_statuses(elisp, out).values()) == ["pass", "pass", "pass"]
+    # a title that only begins like one of them is still not taken for it
+    assert _statuses('(it "leaves no REPL when a value" (f))', out) == {"leaves no REPL when a value": "not run"}
+
+
 def test_a_title_holding_newlines_is_joined():
     # Trimmed from useful-in-buffer-completion's after-snippet-keeps-paren-closed-further-on-fix: the
     # it string's \n escapes print as line breaks inside the green result (arch-cycle-1792328155-4).

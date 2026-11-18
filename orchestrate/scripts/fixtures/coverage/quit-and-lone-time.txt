@@ -1,0 +1,15 @@
+Running 3 specs.
+
+gptel-assistant draft
+  leaves no REPL when a value is refused (Scenario: gptel/assistant § Picking no system prompt for a session is refused)
+[GPTEL-INFO] Created branch directory: /tmp/x/branches/main
+[GPTEL-INFO] Unregistered branch: assistant-1/main
+ (112.56ms)
+  opens no REPL for upstream's readers in a draft whose REPL is closed (Scenario: gptel/assistant § The assistant menu is refused in an agent's REPL)[GPTEL-INFO] Created branch directory: /tmp/y
+Edit canceled
+QuitQuit (36.23ms)
+  reads with the session values in a draft (Scenario: gptel/assistant § Upstream's menu in a session's draft starts from the session's values)
+[GPTEL-INFO] Unregistered branch: menu-1/main
+Quit (178.49ms)
+
+Ran 3 specs, 0 failed, in 0.4 seconds.
