@@ -24,7 +24,7 @@ The dispatcher copies the user's words, or the research hand-off's brief path, b
 
 ### 1. Read
 
-The source; the `* Purpose` of every file under `docs/specs/`, to find the capabilities the source touches, and those files in full; `docs/glossary.org` if it exists; `priors.md`; the two templates. **Not the code.** The round is the design side's one read of HEAD (`flows/design.md` § When it runs); a claim the source makes about the code ("the layout switch autosaves without the predicate check") goes into the intent's Why as the source states it, and the round checks it.
+The source; the `* Purpose` of every file under `docs/specs/`, to find the capabilities the source touches, and those files in full; `docs/glossary.org` if it exists; the overlay's `priors.md`; the two templates. **Not the code.** The round is the design side's one read of HEAD (`flows/design.md` § When it runs); a claim the source makes about the code ("the layout switch autosaves without the predicate check") goes into the intent's Why as the source states it, and the round checks it.
 
 ### 2. Name, repository and base
 
