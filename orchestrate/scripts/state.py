@@ -682,6 +682,96 @@ def main_path_ended(ch, intent=None):
     return bool(on_path) and all(t["fm"].get("status") in CLOSED for t in on_path)
 
 
+def _hardening_entries(ch):
+    """[(heading, {property: value})] of the change's hardening.org (templates/hardening.md)."""
+    p = os.path.join(ch.dir, "hardening.org")
+    if not os.path.exists(p):
+        return []
+    out = []
+    for line in open(p, encoding="utf-8").read().split("\n"):
+        if line.startswith("* "):
+            out.append((line[2:].strip(), {}))
+        elif out and (m := re.fullmatch(r"\s*:([A-Za-z_]+):\s*(.*)", line)):
+            out[-1][1][m.group(1).upper()] = m.group(2).strip()
+    return out
+
+
+def done_owed(ch, cycle):
+    """(owed, why) for integrate § 9's Done after `harden`: the intent at `mvp <date> <commit> <ask>`, that
+    ask applied with `harden`, every hardening entry worked (`:TASK:`, the task closed) or `:LEFT:`, no open
+    task on the main path or in any cycle's batch, no candidate in this cycle, and this cycle's whole-change
+    review run on a HEAD later than the MVP's. Read from the record alone; anything unreadable is not owed."""
+    status = ch.intent()["status"]
+    if status[:1] != ["mvp"] or len(status) < 4:
+        return False, "the intent's status line is not at mvp"
+    a = ch.find_ask(status[3])
+    if a is None or a.status != "applied" or not re.match(r"harden\b", (a.answer or "").strip().casefold()):
+        return False, f"the MVP ask {status[3]} is not applied with harden"
+    tasks = ch.tasks()
+    for head, props in _hardening_entries(ch):
+        t = props.get("TASK")
+        if not props.get("LEFT") and not (t and tasks.get(t, {}).get("fm", {}).get("status") in CLOSED):
+            return False, f"hardening entry {head!r} is not worked or left"
+    batched = {n for c in ch.cycles() for n in ch.batch(c)}
+    for n, t in tasks.items():
+        if t["fm"].get("status") not in CLOSED and (_truthy(t["fm"].get("on_critical_path")) or n in batched):
+            return False, f"task {n} is open"
+    for p in (os.path.join(ch.cycle_dir(cycle), "candidate-tasks.json"), os.path.join(ch.dir, f"handshake-{cycle}.json")):
+        try:
+            data = json.load(open(p))
+        except (OSError, json.JSONDecodeError):
+            continue
+        if (data.get("candidate_tasks") if isinstance(data, dict) else data):
+            return False, f"{ch.rel(p)} holds a candidate"
+    if any((r["resolution"] or "pending") == "pending" for r in ch.routing().values() if r["decoration"] == "blocking"):
+        return False, "a blocking finding is pending"
+    review = os.path.join(ch.cycle_dir(cycle), "reviews", "whole-change.md")
+    if not os.path.exists(review):
+        return False, f"no whole-change review in {cycle}"
+    if _same_sha(status[2], str((read_frontmatter(review)[0] or {}).get("merge_commit") or "")):
+        return False, f"{cycle}'s whole-change review read the MVP's HEAD"
+    return True, f"harden was applied ({status[3]}), its work is closed and {cycle}'s whole-change review is clean"
+
+
+def done_made_problems(ch):
+    """Why the done step is not made (integrate § 9 Done): the intent's `#+STATUS: done` with a `* Status`,
+    committed on the change branch, and that commit merged into the workspace integration branch
+    (`change.json`'s `from`), when the change has one."""
+    intent = ch.intent()
+    if intent["status"][:1] != ["done"]:
+        return [f"intent.org's status line is {' '.join(intent['status'])!r}, not `done <date> <HEAD>`"]
+    problems = []
+    if not re.search(r"^\* Status[ \t]*$", open(intent["path"], encoding="utf-8").read(), re.M):
+        problems.append("intent.org has no `* Status` with the closing summary")
+    rel = os.path.relpath(intent["path"], ch.worktree)
+    committed = git(ch.worktree, "show", f"{ch.branch}:./{rel}") or ""
+    if not re.search(r"^#\+STATUS:[ \t]*done\b", committed, re.M):
+        problems.append(f"the done line is not committed on {ch.branch}")
+        return problems
+    frm = (ch.rec or {}).get("from")
+    sha = (git(ch.worktree, "log", "-1", "--format=%H", ch.branch, "--", f"./{rel}") or "").strip()
+    if frm and git(ch.worktree, "merge-base", "--is-ancestor", sha, frm) is None:
+        problems.append(f"{ch.branch} is not merged into {frm} (`git merge --no-ff {ch.name} -m \"Merge {ch.name}\"` "
+                        "in that branch's worktree)")
+    return problems
+
+
+def done_step_problems(ch):
+    """A `done` line, whatever led to it, is committed and merged (integrate § 9 Done); [] otherwise."""
+    if ch.intent()["status"][:1] == ["done"]:
+        return done_made_problems(ch), "the change is done: the line committed with its summary, and merged"
+    return [], "the intent is not done"
+
+
+def done_advice(ch, cycle):
+    """Advice, not a refusal: the done step after `harden` looks owed (done_owed) and is not made; or None."""
+    if not cycle or ch.intent()["status"][:1] == ["done"]:
+        return None
+    owed, why = done_owed(ch, cycle)
+    return (f"the done step looks owed and is not made: {why}; see flows/integrate.md § 9 Done (the done line "
+            "with the closing summary, its commit, the merge into the workspace integration branch)") if owed else None
+
+
 def handshake_problems(path, prior=False):
     if not path or not os.path.exists(path):
         return [f"{path} does not exist"]
@@ -841,6 +931,7 @@ def evaluate_gate(ch, cycle, phase):
                 if a.status == "open" and a.answer and not a.readback:
                     problems.append(f"ask {a.id} has an answer not acted on (apply it, or write the readback)")
             put("asks_routed", problems, "every open ask is in the handshake and no answer waits")
+        put("done_step_made", *done_step_problems(ch))
     put("answered_asks_applied", [f"ask {i} is answered and not applied ({p})" for i, p in answered_waiting(ch)],
         "no answered ask waits in the inbox")
     asserted = {e["check"]: e for e in ch.events("asserted") if e["cycle"] == cycle and e["phase"] == phase}
@@ -848,7 +939,11 @@ def evaluate_gate(ch, cycle, phase):
         e = asserted.get(name)
         checks.append({"check": name, "kind": "asserted", "ok": bool(e), "by": e and e["by"], "at": e and e["at"],
                        "reason": "asserted" if e else f"not asserted (state.py assert {name} --by <role>)"})
-    return {"cycle": cycle, "phase": phase, "passes": all(c["ok"] for c in checks), "checks": checks}
+    report = {"cycle": cycle, "phase": phase, "passes": all(c["ok"] for c in checks), "checks": checks}
+    advice = done_advice(ch, cycle) if phase == "integrate" else None
+    if advice:
+        report["advice"] = [advice]
+    return report
 
 
 def convention_breaks(ch):
@@ -954,6 +1049,17 @@ def where(ch):
                    next="integrate's MVP decision (flows/integrate.md § 9), not another plan")
     else:
         out.update(stage="designed, no cycle open", next="start a plan: state.py cycle start (flows/plan.md)")
+    if out["stage"] == "cycle open":
+        advice = out["gate"].get("advice")
+    elif out["stage"] in ("designed, no cycle open", "main path ended"):
+        last = (ch.cycles() or [None])[-1]
+        closed = last and "integrate" in ch.closed_phases(last) and last not in ch.abandoned()
+        advice = [a] if closed and (a := done_advice(ch, last)) else None
+    else:
+        advice = None
+    if advice:
+        out["advice"] = advice
+        out["next"] += f" (advice: {advice[0]})"
     if waiting and out["stage"] not in ("done", "event log missing"):
         out["next"] = (f"handle the answered asks first (templates/ask.md § Answer protocol): {', '.join(waiting)}; "
                        f"then {out['next']}")

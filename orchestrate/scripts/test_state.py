@@ -949,3 +949,152 @@ def test_a_note_before_any_cycle_is_refused(home):
     assert not (home.dir / "events.jsonl").exists()
     home.ok("cycle", "start", "--cycle", "cycle-1")
     home.ok("note", "note", "x", "--by", "orchestrator")
+
+
+# ---------------------------------------------------------------- the done step after harden (integrate § 9 Done)
+
+def _hardened(home, answer="harden", entries=(("TASK", "h"), ("LEFT", "ask-cycle-1-1")), h_status="done"):
+    """A change at its MVP whose decision was applied with `answer`, in cycle-2's integrate after the hardening
+    task `h` merged, with a whole-change review of that merge, the handshake written and the check asserted."""
+    home.designed()
+    home.ok("cycle", "start", "--cycle", "cycle-2")
+    mvp = home.merge("a")
+    home.task("a", status="done", critical=True)
+    home.intent(status=f"mvp 2026-11-01 {mvp[:12]} ask-cycle-1-1")
+    home.ask("ask-cycle-1-1", status="applied", blocks=["plan"], options=("harden", "rethink", "stop"), answer=answer)
+    (home.dir / "cycles" / "cycle-2" / "asks").mkdir(parents=True)
+    (home.dir / "inbox" / "ask-cycle-1-1.org").rename(home.dir / "cycles" / "cycle-2" / "asks" / "ask-cycle-1-1.org")
+    home.task("h", status=h_status)
+    home.brief("cycle-2", "h")
+    sha = home.merge("h")
+    (home.dir / "hardening.org").write_text("#+TITLE: Hardening list: chg\n" + "".join(
+        f"\n* issue (hardening): entry {i}\n:PROPERTIES:\n:SEVERITY: low\n" + (f":{k}: {v}\n" if k else "") + ":END:\nbody\n"
+        for i, (k, v) in enumerate(entries)))
+    home.close("cycle-2", "plan")
+    home.close("cycle-2", "execute")
+    home.review("cycle-2", "whole-change", sha)
+    home.handshake("cycle-2")
+    home.ok("assert", "open_tasks_refined_against_handshake", "--by", "orchestrator")
+    return "cycle-2"
+
+
+def _done(home, merged=True, commit=True):
+    """integrate § 9 Done: the done line with its summary, committed on chg, and chg merged into `ws`."""
+    git(home.wt, "branch", "ws", home.base)
+    rec = json.loads((home.dir / "change.json").read_text())
+    (home.dir / "change.json").write_text(json.dumps({**rec, "from": "ws"}))
+    text = (home.record / "intent.org").read_text()
+    (home.record / "intent.org").write_text(text.replace("#+STATUS: mvp", "#+STATUS: done 2026-11-02 x #")
+                                            + "\n* Status\n** done\nthe closing summary\n")
+    if commit:
+        git(home.wt, "add", "-A")
+        git(home.wt, "commit", "-q", "-m", "Done: chg")
+    if merged:
+        ws = home.root / "ws-wt"
+        git(home.wt, "worktree", "add", "-q", str(ws), "ws")
+        git(ws, "merge", "-q", "--no-ff", "chg", "-m", "Merge chg")
+
+
+def test_a_done_step_owed_and_not_made_is_advice_not_a_refusal(home):
+    _hardened(home)
+    g = home.gate("integrate")
+    assert g["passes"] is True and check(g, "done_step_made")["ok"] is True
+    assert len(g["advice"]) == 1 and "looks owed" in g["advice"][0] and "§ 9 Done" in g["advice"][0]
+    out = home.ok("status")
+    assert out["advice"] == g["advice"] and out["next"].startswith("close integrate") and "looks owed" in out["next"]
+
+
+def test_a_done_step_made_passes_integrates_gate(home):
+    _hardened(home)
+    _done(home)
+    g = home.gate("integrate")
+    assert check(g, "done_step_made")["ok"] is True and g["passes"] is True and "advice" not in g
+
+
+@pytest.mark.parametrize("merged,commit,missing", [(False, True, "not merged into ws"), (False, False, "not committed")])
+def test_a_done_line_not_committed_or_not_merged_fails_the_gate(home, merged, commit, missing):
+    _hardened(home)
+    _done(home, merged=merged, commit=commit)
+    c = check(home.gate("integrate"), "done_step_made")
+    assert c["ok"] is False and missing in c["reason"]
+
+
+def test_a_closed_cycle_owing_the_done_step_advises_it_in_status(home):
+    cycle = _hardened(home)
+    home.close(cycle, "integrate")
+    out = home.ok("status")
+    assert out["stage"] == "designed, no cycle open" and out["next"].startswith("start a plan")
+    assert "§ 9 Done" in out["next"] and "looks owed" in out["advice"][0]
+    home.ok("cycle", "start", "--cycle", "cycle-3")
+
+
+def test_an_open_task_never_batched_off_the_main_path_does_not_hold_the_done_step(home):
+    _hardened(home)
+    home.task("left-off-path", status="ready")
+    assert home.gate("integrate").get("advice")
+
+
+@pytest.mark.parametrize("answer", ["stop", "rethink", ""])
+def test_no_done_step_is_owed_without_a_harden_answer(home, answer):
+    _hardened(home, answer=answer)
+    assert _not_owed(home)
+
+
+@pytest.mark.parametrize("status", ["approved", "divergent 2026-11-02 ask-cycle-1-1"])
+def test_no_done_step_is_owed_off_the_mvp_line(home, status):
+    _hardened(home)
+    home.intent(status=status)
+    assert _not_owed(home)
+
+
+def test_no_done_step_is_owed_while_the_mvp_ask_is_open(home):
+    _hardened(home)
+    p = home.dir / "cycles" / "cycle-2" / "asks" / "ask-cycle-1-1.org"
+    p.write_text(p.read_text().replace(":STATUS: applied", ":STATUS: open").replace("\nharden\n", "\n\n"))
+    assert _not_owed(home)
+
+
+@pytest.mark.parametrize("entries,h_status", [((("TASK", "h"), (None, None)), "done"),
+                                              ((("TASK", "h"),), "failed"), ((("TASK", "other"),), "done")])
+def test_no_done_step_is_owed_while_hardening_work_is_left(home, entries, h_status):
+    _hardened(home, entries=entries, h_status=h_status)
+    assert _not_owed(home)
+
+
+def test_no_done_step_is_owed_while_a_main_path_task_is_open(home):
+    _hardened(home)
+    home.task("again", status="ready", critical=True)
+    assert _not_owed(home)
+
+
+def test_no_done_step_is_owed_while_a_candidate_or_a_blocking_finding_remains(home):
+    cycle = _hardened(home)
+    (home.dir / "cycles" / cycle / "candidate-tasks.json").write_text(json.dumps([{"name": "fix"}]))
+    assert _not_owed(home)
+    (home.dir / "cycles" / cycle / "candidate-tasks.json").write_text("[]")
+    home.finding(cycle, "rev-1")
+    home.ok("route", "rev-1", "--decoration", "blocking")
+    assert _not_owed(home)
+
+
+def test_no_done_step_is_owed_without_a_whole_change_review_after_the_mvp(home):
+    cycle = _hardened(home)
+    review = home.dir / "cycles" / cycle / "reviews" / "whole-change.md"
+    mvp = (home.record / "intent.org").read_text().split("#+STATUS: mvp 2026-11-01 ")[1][:12]
+    review.write_text(review.read_text().replace(review.read_text().split("merge_commit: ")[1].split("\n")[0], mvp))
+    assert _not_owed(home)
+    review.unlink()
+    assert _not_owed(home)
+
+
+def test_a_change_with_no_mvp_decision_passes_the_done_check(home):
+    cycle = _executed(home)
+    home.close(cycle, "execute")
+    home.handshake(cycle)
+    home.ok("assert", "open_tasks_refined_against_handshake", "--by", "orchestrator")
+    assert _not_owed(home) and "advice" not in home.ok("status")
+
+
+def _not_owed(home):
+    g = home.gate("integrate")
+    return check(g, "done_step_made")["ok"] is True and "advice" not in g
