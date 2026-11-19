@@ -32,9 +32,9 @@ WORKTREE = os.path.normpath(f"{HERE}/../../..")
 EVALS = os.environ.get("PAGES_EVALS", os.path.normpath(f"{WORKTREE}/../../evals"))
 WORKSPACE = os.path.dirname(EVALS)
 CUT = 600
-# The trees a page shows: the one that implements the specs first, then the reference skill. state-layer is set
-# aside until the specs and the eval design are done (the evals spec, D18).
-TREES = ("skill-evals", "main")
+# The trees a page shows: the one that implements the specs first, then the reference skill. On this branch the
+# state layer implements them (every case holds a validation trial on state-layer-evals, no counted run yet).
+TREES = ("state-layer-evals", "main")
 
 
 def sh(*a, cwd=None):
