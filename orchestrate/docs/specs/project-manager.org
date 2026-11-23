@@ -1,0 +1,216 @@
+#+TITLE: project-manager
+#+OPTIONS: ^:{} -:nil
+#+STATUS: draft 2026-11-13, extracted from the reference skill (=main= =e356da7=); eight gaps opened; at the hand-off review 2026-11-13: G8 applied, its role default added; the sections' order, the throughput rows the recommendation's values, goal drift's drainage, the queue, the candidates' rows and the failed prose pass filled; no gap open; accepted 2026-11-13 by the user at the hand-off review; amended 2026-11-14 after acceptance (a process ask is counted, not listed; every marked line is a signal), from the evals' build-out (=research/skill-evals/overnight/plan.org= § Decided with the user, 2026-11-14 morning); amended 2026-11-14 after acceptance (the PM digest retired into the handshake, =research/skill-evals/state-layer/plan.org= F4-1); amended 2026-11-14 after acceptance (F1-3: adopted from the state layer, =research/skill-evals/state-layer/plan.org=)
+
+* Purpose
+
+The PM reads where a change stands once a cycle, against the goals its intent states, and leaves
+what the next plan should weigh: the patterns it saw across the cycle's tasks (the meta-discoveries)
+and a recommendation on goal drift, both carried to the next plan in the handshake. It proposes the
+questions the cycle raises for the user. It is a reading and judging role: it computes no counts and
+reads no code. On a follow-up cascade it starts the Architect's conformance over the cluster. It
+writes no code, no task file and no ask file, and decides nothing: when the PM runs and what becomes
+of its meta-discoveries and recommendation are the integrate phase's, how a candidate question
+becomes an ask is the =asks= capability's, and spend and quality by role are read on demand from the
+record, by no agent of the cycle.
+
+* Requirements
+
+** Requirement: The PM reads the cycle against the intent's goals and computes nothing
+:PROPERTIES:
+:GOAL:     none stated
+:END:
+The PM SHALL read the cycle from the change's record against the goals the intent states, SHALL
+read no code, and SHALL compute no count, ratio or signal: what it finds is a meta-discovery, the
+goal-drift recommendation or a candidate question, never a number.
+
+*** Scenario: The PM computes no counts
+- *WHEN* the PM has run
+- *THEN* it has written no count, ratio, throughput row or signal
+- *AND* each thing it found is a meta-discovery, its goal-drift recommendation or a candidate question
+
+*** Scenario: The PM reads the cycle's record and the intent
+- *WHEN* the PM is spawned
+- *THEN* what it reads is the change's intent, its tasks and the cross-change backlog, the cycle's findings and reviews, the hardening list, the prior handshakes, the inbox and the cycle's journal
+
+*** Scenario: The PM reads the whole-change review
+- *WHEN* the whole-change review ran in the cycle
+- *THEN* the PM reads its review and the corrections it led to
+
+*** Scenario: The PM reads no code
+- *WHEN* the PM has run
+- *THEN* it has read no file of the code root's code
+- *AND* a question that needs the code read is one for the Architect
+
+** Requirement: The PM leaves the cycle's meta-discoveries in one file
+:PROPERTIES:
+:GOAL:     none stated
+:END:
+The PM SHALL write the cycle's meta-discoveries as one file in the cycle's directory, each naming
+its kind, its scope, its evidence and one sentence of what it means for the next plan; none is a
+valid outcome.
+
+*** Scenario: The meta-discoveries are one file in the cycle's directory
+- *WHEN* the PM has run
+- *THEN* the cycle's directory in the home holds =meta-discoveries.json=, a JSON array
+
+*** Scenario: Each meta-discovery names its kind, scope, evidence and implication
+- *WHEN* the PM writes a meta-discovery
+- *THEN* it has its kind (=vocabulary-cluster=, =shape-fragmentation-cluster=, =invariant-gap-class= or =other=), its scope, the ids of the tasks or findings that show it, and one sentence of its implication for the next plan
+
+*** Scenario: A cycle with no pattern leaves an empty array
+- *WHEN* the PM sees no pattern across the cycle's tasks
+- *THEN* the meta-discoveries file holds an empty array
+
+** Requirement: The PM hands back its recommendation and its questions
+:PROPERTIES:
+:GOAL:     none stated
+:END:
+The PM SHALL hand back its goal-drift recommendation, with a one-line reason, and the candidate
+questions the cycle raises, each plain, saying what it blocks and recommending an answer; the
+phase agent writes the ask files from them.
+
+*** Scenario: The PM hands back its goal-drift recommendation and its candidate questions
+- *WHEN* the PM's pass ends
+- *THEN* its hand-back holds its goal-drift recommendation with a one-line reason
+- *AND* the candidate questions it proposes
+
+** Requirement: Each pattern the PM reads leads to what it recommends
+:PROPERTIES:
+:GOAL:     none stated
+:END:
+When the PM reads a pattern in the cycle, it SHALL say what the pattern recommends, as a
+meta-discovery, a candidate question or its goal-drift recommendation; on a follow-up cascade it
+SHALL start the Architect's conformance over the cluster instead of raising a question.
+
+*** Scenario: A follow-up cascade is a meta-discovery naming the cluster
+- *WHEN* the PM reads follow-ups cascading from one task, across Implementors
+- *THEN* a meta-discovery names the cluster: the source task and the tasks discovered from it
+
+*** Scenario: A cascade starts the Architect's conformance, not a question
+- *WHEN* the PM reads a follow-up cascade from one task
+- *THEN* the PM spawns the Architect's conformance scoped to the cluster of the source task and the tasks discovered from it
+- *AND* no candidate question is raised for the cascade
+
+*** Scenario: The cascade's conformance brief names the cluster and its mission
+- *WHEN* the PM spawns the Architect's conformance for a cascade
+- *THEN* its brief names the cluster, the source task, the tasks discovered from it, their discovered classes and the modules the diffs implicate
+- *AND* asks which seam rows the cluster's tasks cite, whether the merged code matches them, which rows need amending and whether a seam is missing
+- *AND* asks for every defect found as a finding with its kind and severity
+
+*** Scenario: The cascade's conformance runs at its role default and is recorded
+- *WHEN* the PM spawns the Architect's conformance for a cascade
+- *THEN* the run is at the Architect's conformance role default
+- *AND* its spawn's description names an Architect conformance run and the cycle
+
+*** Scenario: A cascade's conformance is recorded as applied without asking
+- *WHEN* the PM has spawned the Architect's conformance for a cascade
+- *THEN* a =confirmation= ask records the run as applied without asking
+
+*** Scenario: A coherent externalised cluster is proposed for promotion
+- *WHEN* three or more externalised tasks share modules and a discovered class
+- *THEN* a meta-discovery names the cluster and puts its promotion into the active change to the user, its recommendation following the main path
+- *AND* the PM does not promote it
+
+*** Scenario: Priority inversion is a meta-discovery that recommends the main path
+- *WHEN* the PM reads tasks off the main path taking the cycle while tasks on the main path sit blocked or unstarted
+- *THEN* a meta-discovery recommends that the next plan return to the main path
+
+*** Scenario: A recurring failure of one kind of task is a meta-discovery and a candidate process question
+- *WHEN* the PM reads the same kind of task failing the same way across cycles, such as reviews sending back one class of task for the same reason
+- *THEN* a meta-discovery names it
+- *AND* the PM proposes a candidate =process= question for it
+
+*** Scenario: A pause is recommended when the design looks wrong
+- *WHEN* the PM reads a follow-up cascade and the main path starved in the same cycle
+- *THEN* its goal-drift recommendation is =revise=, its reason naming the cascade and the starved main path
+- *AND* the PM does not pause it
+
+** Requirement: Blocked work reaches the user as an ask that already waits or a candidate question
+:PROPERTIES:
+:GOAL:     none stated
+:END:
+The PM SHALL name the open ask a blocked task already waits on instead of raising another, and
+SHALL turn every other blocker into a candidate question the user can read without the code; the
+PM SHALL write no ask file.
+
+*** Scenario: A task blocked on an ask re-surfaces that ask
+- *WHEN* a task is blocked on an open ask
+- *THEN* the PM's hand-back names that ask for the task
+- *AND* no new candidate question is raised for it
+
+*** Scenario: A task blocked on anything else is a candidate question
+- *WHEN* a task is blocked on something other than an ask
+- *THEN* the PM proposes a candidate question for it
+
+*** Scenario: A candidate question is plain, says what it blocks and recommends
+- *WHEN* the PM proposes a candidate question
+- *THEN* it is a plain question for the reader the project's configuration names
+- *AND* it says what it blocks
+- *AND* a candidate =decision= question gives a recommendation
+
+*** Scenario: The PM writes no ask file
+- *WHEN* the PM has run
+- *THEN* it has written no ask file; its candidate questions are in its hand-back only
+
+** Requirement: On goal drift the PM recommends and the user decides
+:PROPERTIES:
+:GOAL:     G2 (O-NS-2)
+:END:
+The PM SHALL read the main path against the intent's goals across cycles and SHALL hand back a
+goal-drift recommendation, =none= when nothing drifted, with a one-line reason; the recommendation
+SHALL change nothing until the user decides.
+
+*** Scenario: Goal drift fires when the main path stalls while other work completes
+- *WHEN* the tasks on the main path stay open or blocked while tasks off the main path merge, cycle after cycle
+- *THEN* the PM's goal-drift recommendation is other than =none=, with a one-line reason
+
+*** Scenario: The goal-drift recommendation is one of the ask's options, or none
+- *WHEN* the PM hands back its goal-drift recommendation
+- *THEN* it is =revise=, =split=, =abandon= or =continue= when the PM reads goal drift, and =none= when it does not
+
+*** Scenario: The goal-drift recommendation changes nothing
+- *WHEN* the PM recommends a course on goal drift
+- *THEN* the PM changes neither the intent's goals nor its status line
+- *AND* the course is the user's to decide
+
+** Requirement: The PM acts only through its meta-discoveries, its hand-back and the cascade run
+:PROPERTIES:
+:GOAL:     none stated
+:END:
+The PM SHALL change no code and no task's text, and SHALL spawn no Implementor or Reviewer; what it
+writes in the change is its meta-discoveries file and, on a cascade, the conformance it starts.
+
+*** Scenario: The PM writes only its meta-discoveries file
+- *WHEN* the PM has run
+- *THEN* the only file it wrote is the cycle's meta-discoveries file
+
+*** Scenario: The PM changes no code and no task's text
+- *WHEN* the PM has run
+- *THEN* the code root has no change of its making
+- *AND* no task file's text has changed
+
+*** Scenario: The PM writes nothing to the queue
+- *WHEN* the PM has run
+- *THEN* no task's labels, priority, class or blocker note has changed by its hand
+- *AND* any re-prioritisation or relabelling it has in mind is a meta-discovery the next plan weighs
+
+*** Scenario: The PM spawns no Implementor or Reviewer
+- *WHEN* the PM has run
+- *THEN* no spawn the PM made is an Implementor or a Reviewer
+
+** Requirement: The PM's role default
+:PROPERTIES:
+:GOAL:     none stated
+:END:
+The PM SHALL run at its role default.
+
+*** Scenario: The PM's agent pass runs at sonnet, medium
+- *WHEN* the PM is spawned
+- *THEN* it runs at =sonnet=, =medium=
+
+* Gaps
+
+No gap open. The eight the first draft had were filled 2026-11-13 at the hand-off review
+(=research/skill-evals/extraction/project-manager.org= § Gap decisions). The amendment of 2026-11-14
+(F4-1) opened none.

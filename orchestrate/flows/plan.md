@@ -14,14 +14,14 @@ First, the MVP decision (`templates/hardening.md`). When `state.py status` lists
 
 - `design_diff` — the seam rows conformance added, amended or retired last cycle.
 - `pm_digest_path` — the prior digest, for context.
-- `meta_discoveries` — patterns to weigh when drafting this batch.
+- `meta_discoveries` — patterns to weigh when drafting this batch. A task drafted from one names its label in its provenance.
 - `user_resolved_goal_drift` — any revise / split / abandon decisions the user made.
 - `asks_for_user_open` (may be empty; each entry's `path` names the file in `<change-dir>/inbox/`, read the ask there), `asks_for_user_resolved` (may be empty).
 - `task_refinements` — each open task's impact set: what last cycle changed that its body has not yet absorbed.
 - `candidate_tasks` — the follow-ups and answered asks that need a new task, each with its source quoted; plan writes them (§ 2).
 - `journal` — the prior cycle's discoveries and decisions, one line each.
 
-On a first cycle (`--first-cycle`) there is no handshake and nothing to read. Otherwise, if the file is missing or any field is missing (not "empty array" — actually missing), `init` refuses to start. Direct the user to close the prior cycle properly (`state.py close`) or to abandon it explicitly (`state.py close --abandon --why`). This is an `environment`-kind ask (`templates/ask.md`): asked at once, since there is no state to record it in; the phase agent hands back `stopped` with the question and the dispatcher asks it (`SKILL.md` § Two contexts).
+On a first cycle (`--first-cycle`) there is no handshake and nothing to read. Otherwise, if the file is missing or any field is missing (not "empty array" — actually missing), `init` refuses to start. Direct the user to close the prior cycle properly (`state.py close`) or to abandon it explicitly (`state.py close --abandon --why`). This is an `environment`-kind ask (`templates/ask.md`): a file in the inbox whose id names the change, since no cycle is open, asked at once; the phase agent hands back `stopped` with the question and the dispatcher asks it (`SKILL.md` § Two contexts).
 
 This is the brainstorm's loop-closure contract: each cycle's discoveries must update the next cycle's plan.
 
@@ -31,7 +31,7 @@ Read the overlay's `priors.md` alongside the handshake (`overlay.md` § Priors):
 
 ### 2. Read the design and draft the candidate tasks
 
-The input is the change's `design.org` (`templates/design.md`), its Seams table and Decisions, and `coverage.py --intent docs/changes/<change>/intent.org` (`templates/spec.md` § Coverage), the change's scenarios with their status. A change with no Seams table, or with an `uncited` scenario among its own, has not finished its design round (`flows/design.md`); run it before this cycle, not inside it. A `design.org` whose § Open Questions has an entry with no Decision has not finished its round either, and plan drafts nothing, since a task drafted on a provisional answer is the rework the record paid for (`flows/design.md` § 5). Write each such entry as a `decision` ask file (`state.py record add asks`, `blocks: [plan]`, `ref: design.org § Open Questions`; an entry that already has an open file is not written twice), commit them in one commit, and hand back `plan <cycle-id>: stopped, asks <ids> block plan; <change-dir>/inbox/`. Resumed with the answers: write each into § Decisions and the spec it settles, in place (`templates/ask.md` § Answer protocol), apply the asks, run the scoped re-run any answer calls for, then draft.
+The input is the change's `design.org` (`templates/design.md`), its Seams table and Decisions, and `coverage.py --intent docs/changes/<change>/intent.org` (`templates/spec.md` § Coverage), the change's scenarios with their status. A change whose `design.org` has no Seams section (a table, or the one line saying no scenario needs a seam), an `uncited` scenario among its own, or an § Open Questions entry with no Decision has not finished its design round (`flows/design.md`): plan opens no cycle, drafts nothing and writes no answer into the design, and hands back `plan: failed, design round unfinished: <what>; docs/changes/<change>/design.org`; the dispatcher spawns the round. The round files its own questions and writes their answers (`flows/design.md` § 5); a task drafted on a provisional answer is the rework the record paid for.
 
 The orchestrator drafts the candidate task files for this cycle under `<change>/tasks/open/` at the home (`$ORCH_HOME/.orchestrator/changes/<change>/tasks/open/`, per `templates/task-body.md`) from three sources, in this order:
 
@@ -58,7 +58,7 @@ The Architect, spawned at its role default (`model: opus`, `effort: medium`) and
 Then:
 
 - A task with a **Wrong** premise is rewritten or split by the orchestrator before the batch freezes; the rewrite is the correction, not a stanza.
-- A defect the check finds outside every task's scope is a finding (`state.py record add findings`, every string field at most 280 characters, `trigger: premise-check`, `discovered_from: batch-<cycle-id>`) with its kind and evidence, routed now by `templates/architect-finding.md` § Routing (`record set findings <id> decoration=…`): a `hardening` one is added to the hardening list at once (`resolution=hardening-list`), a `blocking` one becomes a candidate when integrate § 7 runs, and the next plan writes it. A speculative need the check notices is a `thought:` journal line. One whose `blocks` names a task in this batch is settled now: a `blocking` finding becomes an in-batch task or a rewrite of the task it blocks; a `decision` it raises is an ask file (`state.py record add asks`), presented before `batch_composed` only under the inline rule (`templates/ask.md` § The inline rule; the phase agent hands back `stopped` and the dispatcher asks); otherwise the task it blocks is `blocked` with `blocker_note: <ask-id>`, left out of the batch, and the plan goes on.
+- A defect the check finds outside every task's scope is a finding (`state.py record add findings`, every string field at most 280 characters, `trigger: premise-check`, `discovered_from: batch-<cycle-id>`) with its kind and evidence, routed now by `templates/architect-finding.md` § Routing (`record set findings <id> decoration=…`): a `hardening` one is added to the hardening list at once (`resolution=hardening-list`), a `blocking` one becomes a candidate when integrate § 7 runs, and the next plan writes it. A speculative need the check notices is a `thought:` journal line. One whose `blocks` names a task in this batch is settled now: a `blocking` finding becomes an in-batch task or a rewrite of the task it blocks; a `decision` it raises is an ask file (`state.py record add asks`), under the inline rule as execute applies it (`templates/ask.md` § The inline rule): plan finishes the rest of the batch and hands back `stopped` naming the ask; the dispatcher asks a present user; resumed with the user absent, the task it blocks is `blocked` with `blocker_note: <ask-id>`, left out of the batch, and plan passes its gate.
 - A seam row the check finds stale (the code or the test tree is right, the row is not) is a record correction (`templates/design.md` § Seams): the orchestrator fixes the row, cutting rather than adding when the staleness is implementation detail, writes one `state.py note note "record-correction: <what>" --ref <seam-id>` (at most 280 characters, or the tool refuses `text_too_long`; `--path` names a file for more) and commits the row in the code root with a subject naming it. No ask file. The check itself does not edit `design.org`.
 
 The record shows why this step exists: the plan-time review of the batch against HEAD found a three-way return value described as two-way, two contradicting log messages, and a task premise that split a task, none of it inside any task's stated scope, and every one of its outputs was used.
@@ -67,7 +67,7 @@ The record shows why this step exists: the plan-time review of the batch against
 
 Select which candidates this cycle will run. The batch composer balances:
 
-- Critical-path coverage: ≥1 task on the critical path per cycle, unless the prior integrate explicitly deferred.
+- Critical-path coverage: ≥1 task on the critical path per cycle while one is ready, until the change's MVP decision; after `harden` a batch may hold none.
 - Dependencies: `blocked_by` names the tasks a candidate must follow; execute spawns a task when its `blocked_by` tasks have merged.
 - Total batch size: the plan's judgment (no overlay key); default 3–7 tasks, or fewer when the design has fewer seams left to implement.
 
