@@ -7,6 +7,8 @@ description: "Identify and propose improvements to the research and orchestrate 
 
 Formalises the loop the skills workspace ran by hand from 2026-09-26: the skills run in the homes, the record is read and described, a judgement names what to change, the change is made where it belongs, and the next run checks whether it worked. A run ends in a **proposals file** the user decides on; nothing is applied before the user answers.
 
+`<orchestrate>` below is the orchestrate skill's directory where this runs: orchestrate is not installed globally but pinned per place, at `.claude/skills/orchestrate/` in the home or workspace (the nearest directory above the cwd that has one).
+
 The user's attention is one of the two costs this skill weighs. A run hands the user a few rows and one question, not a report.
 
 ## Terms
@@ -79,7 +81,7 @@ Anything else goes under `* Seen once` in the proposals file, one line with its 
 
 The skill designs none of them; the design is that next step's work. Applying such a row writes the next step's entry point (§ 5).
 
-**Not the product.** The skill judges the process and the skills, never the product's code, specs or design. A product defect seen on the way goes to the change's record by the existing path: an `issue` entry on the open change's hardening list (`~/.claude/skills/orchestrate/templates/hardening.md`), or a `.tasks/` item of the home with its provenance when no change is open. It is not a proposal. A run in the skills workspace writes nothing into a home but the marks on process asks (§ Intake): it lists each product defect under `* For the homes` in its proposals file, one line with the home and the citation, and the user routes it, or the next run in that home does.
+**Not the product.** The skill judges the process and the skills, never the product's code, specs or design. A product defect seen on the way goes to the change's record by the existing path: an `issue` entry on the open change's hardening list (`<orchestrate>/templates/hardening.md`), or a `.tasks/` item of the home with its provenance when no change is open. It is not a proposal. A run in the skills workspace writes nothing into a home but the marks on process asks (§ Intake): it lists each product defect under `* For the homes` in its proposals file, one line with the home and the citation, and the user routes it, or the next run in that home does.
 
 ### 4. Present and decide
 
@@ -103,7 +105,7 @@ In the same session, after the answer. Each applied row gets `:APPLIED_VIA:` (th
 - **The limit.** A process row whose edit touches more than three files of the skills (a script and its test count as two) gets its refinement entry written, marked `Not yet applied`, and the edit is handed to a fresh session: tell the user to start Claude Code in the skills workspace with "Apply the refinement `<entry title>` from refinements.org".
 - **A new step or role**, accepted: in the skills workspace, a `roadmap.org` § Next item naming the research effort or the refinement session to run, with the row's observation and cost line; in a home, the row is process scope and goes to the skills as above.
 - **Deferred rows**: in the skills workspace also a bullet under `roadmap.org` § Deferred until a demonstrated reason, with the reason. **Declined rows** stay only in the proposals file, with the user's words; the next run reads them (§ 2).
-- **Never installed or pushed.** The skill does not fast-forward `~/.claude/skills`, push, or tag; those are the user's acts. Say in the closing message that the branch is ahead of the installed text when it is.
+- **Never installed or pushed.** The skill does not tag, release or install (`bin/skill-release`), or push; those are the user's acts. Say in the closing message that the branch is ahead of the installed text when it is.
 
 ### 6. Close: the run's own cost
 
@@ -123,7 +125,7 @@ The homes' `:KIND: process` ask files reach the skills the same way: a run in th
 | The user's | the same transcripts and the home's files | typed prompts and question-tool calls (`cost.py`); ask files of kind `decision` raised (`inbox/` and `cycles/*/asks/`); reading handed over, as the lines and words of the files the user is asked to read (`cost.py --reading <file>`) |
 
 ```
-python3 ~/.claude/skills/process-improvement/scripts/cost.py [--project <dir>] [--session <id-prefix>] [--since <ISO time>] [--reading <file> ...]
+python3 ${CLAUDE_SKILL_DIR}/scripts/cost.py [--project <dir>] [--session <id-prefix>] [--since <ISO time>] [--reading <file> ...]
 ```
 
 With no `--project` it uses the project directory of the cwd; with no `--session`, the most recently written transcript there (the running session). `--since` counts only records from that time, so a run that started part-way through a session counts itself. It prints org lines for `* Cost`. For a cycle's or a change's cost, point it at the dispatcher's session and the window the cycle ran in.
